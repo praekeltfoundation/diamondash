@@ -1,4 +1,4 @@
-''' Web app for displaying dashboard components sourced from Graphite data '''
+"""Web app for displaying dashboard components sourced from Graphite data"""
 
 from klein import resource, route
 from twisted.web.client import getPage
@@ -11,25 +11,25 @@ _graphite_url = "http://127.0.0.1:8000"
 
 
 class DashboardElement(Element):
-    ''' Loads dashboard template '''
+    """Loads dashboard template"""
 
     loader = XMLFile('templates/dashboard.xml')
 
 
 @route('/static/')
 def static(request):
-    ''' routing for all static files (css, js) '''
+    """Routing for all static files (css, js)"""
     return File("./static")
 
 
 @route('/')
 def show_index(request):
-    ''' routing for homepage '''
+    """Routing for homepage"""
     return DashboardElement()
 
 
 @route('/render/')
 def redirect_render(request):
-    ''' async redirection of render request to graphite '''
+    """Async redirection of render request to graphite"""
     render_url = _graphite_url + request.uri
     return getPage(render_url)
