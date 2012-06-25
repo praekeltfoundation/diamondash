@@ -10,6 +10,38 @@ var metrics =
 [
   {
 	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
   }
 ];
 
