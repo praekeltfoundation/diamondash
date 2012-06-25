@@ -10,6 +10,38 @@ var metrics =
 [
   {
 	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
+  },
+
+  {
+	"target": "vumi.random.count.sum"
+  },
+
+  {
+	"target": "vumi.random.timer.avg"
   }
 ];
 
@@ -164,18 +196,13 @@ function updateGraphs(i) {
 function buildContainers() {
   var falseTargets = 0;
   for (var i=0; i<metrics.length; i++) {
-    if (metrics[i].target === false) {
-      $('#main').append('<div id="false"></div>');
-      falseTargets++;
-    } else {
-      var j = i - falseTargets;
-      $('#main').append(
-        '<div id="graph" class="graph' + j + '">' +
-        '<div id="overlay-name" class="overlay-name' + j + '"></div>' +
-        '<div id="overlay-number" class="overlay-number' + j + '"></div>' +
-        '</div>'
-      );
-    }
+    var j = i - falseTargets;
+    $('#main').append(
+      '<div id="widget" class="graph' + j + '">' +
+      '<div id="overlay-name" class="overlay-name' + j + '"></div>' +
+      '<div id="overlay-number" class="overlay-number' + j + '"></div>' +
+      '</div>'
+	);
   }
 }
 
