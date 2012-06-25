@@ -50,7 +50,7 @@ function constructGraphs() {
     aliases[i] = metrics[i].alias || metrics[i].target;
     datum[i] = [{ x:0, y:0 }];
     graphs[i] = new Rickshaw.Graph({
-      element: document.querySelector('.graph' + i),
+      element: document.querySelector('#graph' + i),
       width: 348,
       height: 100,
       interpolation: 'step-after',
@@ -181,14 +181,14 @@ function updateGraphs(i) {
     } else {
       lastValueDisplay = parseInt(lastValue);
     }
-    $('.overlay-name' + i).text(aliases[i]);
-    $('.overlay-number' + i).text(lastValueDisplay);
+    $('#overlay-name' + i).text(aliases[i]);
+    $('#overlay-number' + i).text(lastValueDisplay);
     if (metrics[i].unit) {
-      $('.overlay-number' + i).append('<span class="unit">' + metrics[i].unit + '</span>');
+      $('#overlay-number' + i).append('<span class="unit">' + metrics[i].unit + '</span>');
     }
   } else {
-    $('.overlay-name' + i).text(aliases[i]);
-    $('.overlay-number' + i).html('<span class="error">NF</span>');
+    $('#overlay-name' + i).text(aliases[i]);
+    $('#overlay-number' + i).html('<span class="error">NF</span>');
   }
 }
 
@@ -198,9 +198,9 @@ function buildContainers() {
   for (var i=0; i<metrics.length; i++) {
     var j = i - falseTargets;
     $('#main').append(
-      '<div id="widget" class="graph' + j + '">' +
-      '<div id="overlay-name" class="overlay-name' + j + '"></div>' +
-      '<div id="overlay-number" class="overlay-number' + j + '"></div>' +
+      '<div class="widget" id="graph' + j + '">' +
+      '<div class="overlay-name" id="overlay-name' + j + '"></div>' +
+      '<div class="overlay-number" id="overlay-number' + j + '"></div>' +
       '</div>'
 	);
   }
