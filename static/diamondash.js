@@ -181,14 +181,14 @@ function updateGraphs(i) {
     } else {
       lastValueDisplay = parseInt(lastValue);
     }
-    $('#overlay-name' + i).text(aliases[i]);
-    $('#overlay-number' + i).text(lastValueDisplay);
+    $('#overlay-name-' + i).text(aliases[i]);
+    $('#overlay-number-' + i).text(lastValueDisplay);
     if (metrics[i].unit) {
-      $('#overlay-number' + i).append('<span class="unit">' + metrics[i].unit + '</span>');
+      $('#overlay-number-' + i).append('<span class="unit">' + metrics[i].unit + '</span>');
     }
   } else {
-    $('#overlay-name' + i).text(aliases[i]);
-    $('#overlay-number' + i).html('<span class="error">NF</span>');
+    $('#overlay-name-' + i).text(aliases[i]);
+    $('#overlay-number-' + i).html('<span class="error">NF</span>');
   }
 }
 

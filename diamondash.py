@@ -15,6 +15,36 @@ class DashboardElement(Element):
 
     loader = XMLFile('templates/dashboard.xml')
 
+    def __init__(self, config_filename):
+        self.widget_configuration = {}
+        self.read_config_file(config_filename)
+
+    def read_config_file(self, config_filename):
+        """Loads dashboard information from a config file"""
+        # TODO load from config file
+        self.widget_configs = {
+            'random_count_sum': {
+                'type': 'graph'
+                'metric': 'vumi.random.count.sum'
+            },
+            'random_timer_average': {
+                'type': 'graph'
+                'metric': 'vumi.random.timer.avg'
+            }
+        }
+
+    @renderer
+    def widget(self, request, tag):
+        for widget_name, widget_config in self.widget_configs:
+            new_tag = tag.clone()
+            if (widget_config['type'] == 'graph'):
+                new_tag.fillSlots(widget_class_slot='widget graph')
+
+            new_tag.fillSlots(widget_name_slot=widget_name,
+                              widget_id_slot=widget_name)
+            yield new_tag
+                     
+
 
 @route('/static/')
 def static(request):
@@ -27,6 +57,9 @@ def show_index(request):
     """Routing for homepage"""
     return DashboardElement()
 
+#def _get_data():
+#    """"""
+    # TODO
 
 @route('/render/')
 def redirect_render(request):
