@@ -9,14 +9,17 @@
   <body>
     <div id="dashboard-container">
       <div t:render="widget">
+        <t:attr name="style">
+          <t:slot name="widget_style_slot" />
+        </t:attr>
         <t:attr name="class">
           <t:slot name="widget_class_slot" />
         </t:attr>
         <t:attr name="id">
           <t:slot name="widget_id_slot" />
         </t:attr>
-        <div class="widget-name">
-          <t:slot name="widget_name_slot"/>
+        <div class="widget-title">
+          <t:slot name="widget_title_slot"/>
         </div>
       </div>
       <script src="/static/diamondash.js" type="text/javascript"></script>

@@ -17,18 +17,15 @@ var metrics =
 ];
 
 function constructWidgets() {
-	graphElements = document.querySelectorAll('.widget'); 
+	graphElements = document.querySelectorAll('.graph'); 
 
     for (var i = 0; i < graphElements.length; i++) {
         aliases[i] = 'not important';
 		datum[i] = [{ x:0, y:0 }];
 		graphs[i] = new Rickshaw.Graph({
 			element: graphElements[i],
-			width: 348,
-			height: 100,
 			interpolation: 'step-after',
 			series: [{
-			name: aliases[i],
 			color: '#afdab1',
 			data: datum[i]
 			}]

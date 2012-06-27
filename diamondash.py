@@ -24,10 +24,14 @@ class DashboardElement(Element):
         # TODO load from config file
         self.widget_configs = {
             'random_count_sum': {
+                'title': 'Sum of random count',
                 'type': 'graph',
-                'metric': 'vumi.random.count.sum'
+                'metric': 'vumi.random.count.sum',
+                'width': '300px',
+                'height': '150px'
             },
             'random_timer_average': {
+                'title': 'Average of random timer',
                 'type': 'graph',
                 'metric': 'vumi.random.timer.avg'
             }
@@ -38,11 +42,20 @@ class DashboardElement(Element):
         for widget_name, widget_config in self.widget_configs.items():
             new_tag = tag.clone()
             widget_class_attr = 'widget'
+            widget_style_attr = ''
 
-            if (widget_config['type'] == 'graph'):
+            # TODO use graph as default type
+            if widget_config['type'] == 'graph':
                 widget_class_attr += ' graph'
 
-            new_tag.fillSlots(widget_name_slot=widget_name,
+            if 'width' in widget_config:
+                widget_style_attr += 'width: ' + widget_config['width'] + '; '
+
+            if 'height' in widget_config:
+                widget_style_attr += 'height: ' + widget_config['height'] + '; '
+
+            new_tag.fillSlots(widget_title_slot=widget_config['title'],
+                              widget_style_slot=widget_style_attr,
                               widget_class_slot=widget_class_attr,
                               widget_id_slot=widget_name)
             yield new_tag
@@ -77,7 +90,8 @@ def construct_render_url(request):
 @route('/render/')
 def render(request):
     """Routing for client render request"""
-    render_url = construct_render_url(request)
+    #render_url = construct_render_url(request)
+    render_url = _graphite_url + request.uri
     d = getPage(render_url)
-    d.addCallback(format_render_results)
+    #d.addCallback(format_render_results)
     return d
