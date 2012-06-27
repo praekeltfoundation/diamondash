@@ -1,7 +1,7 @@
 """Tests for diamondash's server side"""
 
 from twisted.trial import unittest
-
+from twisted.internet.protocol import Protocol
 
 class FakeHTTP(Protocol):
     def dataReceived(self, data):
@@ -11,12 +11,11 @@ class FakeHTTP(Protocol):
 
 class MockGraphiteServer(object):
     """
-    A 'fake' Graphite server providing metrics from
-    pre-collected data in a file
+    #A 'fake' Graphite server providing metrics from
+    #pre-collected data in a file
     """
 
     # TODO implement the test server
-
 
 class WebServerTester(unittest.TestCase):
     """Tests the diamondash web server functionality"""
@@ -27,6 +26,7 @@ class WebServerTester(unittest.TestCase):
         from client side render requests
         """
         #TODO
+        self.assertEqual(1, 0)
 
     def test_format_render_results(self):
         """
@@ -34,6 +34,7 @@ class WebServerTester(unittest.TestCase):
         as expected by the client side
         """
         # TODO
+        self.assertEqual(1, 0)
 
     def test_format_render_nulls(self):
         """
@@ -41,3 +42,4 @@ class WebServerTester(unittest.TestCase):
         handled appropriately
         """
         # TODO
+        self.assertEqual(1, 0)

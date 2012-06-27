@@ -6,7 +6,6 @@ var period = (typeof period == 'undefined') ? 5 : period;
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
-
     for (var i = 0; i < graphElements.length; i++) {
 		data[i] = [{ x:0, y:0 }];
 		graphs[i] = new Rickshaw.Graph({
