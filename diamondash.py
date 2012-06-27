@@ -7,8 +7,7 @@ from twisted.web.static import File
 from twisted.python import log
 
 # TODO load from args
-_graphite_url = "http://127.0.0.1:8000"
-
+graphite_url = "http://127.0.0.1:8000"
 
 class DashboardElement(Element):
     """Loads dashboard template"""
@@ -93,7 +92,7 @@ def construct_render_url(request):
 def render(request):
     """Routing for client render request"""
     #render_url = construct_render_url(request)
-    render_url = _graphite_url + request.uri
+    render_url = graphite_url + request.uri
     d = getPage(render_url)
     #d.addCallback(format_render_results)
     return d
