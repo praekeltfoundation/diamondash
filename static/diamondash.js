@@ -130,9 +130,6 @@ function updateGraphs(i) {
 // build our graph objects
 constructWidgets();
 
-// set our last known value at invocation
-Rickshaw.Graph.prototype.lastKnownValue = 0;
-
 // build our url
 constructUrl(period);
 
