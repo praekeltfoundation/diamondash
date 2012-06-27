@@ -7,7 +7,7 @@
     <script src="/static/rickshaw.min.js" type="text/javascript"></script>
   </head>
   <body>
-    <div t:render="main" id="main">
+    <div id="dashboard-container">
       <div t:render="widget">
         <t:attr name="class">
           <t:slot name="widget_class_slot" />
@@ -20,5 +20,6 @@
         </span>
       </div>
       <script src="/static/diamondash.js" type="text/javascript"></script>
-    </body>
+    </div>
+  </body>
 </html>

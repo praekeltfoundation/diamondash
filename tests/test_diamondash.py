@@ -25,3 +25,4 @@ class WebServerTester(unittest.TestCase):
     #    """Tests whether data is obtained properly"""
         # TODO
 
+    # TODO validate obtained data
