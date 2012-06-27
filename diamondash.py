@@ -17,9 +17,9 @@ class DashboardElement(Element):
 
     def __init__(self, config_filename):
         self.widget_configuration = {}
-        self.read_config_file(config_filename)
+        self._read_config_file(config_filename)
 
-    def read_config_file(self, config_filename):
+    def _read_config_file(self, config_filename):
         """Loads dashboard information from a config file"""
         # TODO load from config file
         self.widget_configs = {
@@ -60,13 +60,24 @@ def show_index(request):
     return DashboardElement('./etc/dashboard.yml')
 
 
-#def _get_data():
-#    """"""
+def format_render_results(results):
+    """
+    Formats the json output received from graphite on response from a render
+    request into something usable from the client side
+    """
+    # TODO
+
+
+def construct_render_url(request):
+    """Constructs the graphite render url based on the client's request uri"""
+    uri = request.uri['/render/'.length:]
     # TODO
 
 
 @route('/render/')
-def redirect_render(request):
-    """Async redirection of render request to graphite"""
-    render_url = _graphite_url + request.uri
-    return getPage(render_url)
+def render(request):
+    """Routing for client render request"""
+    render_url = construct_render_url(request)
+    d = getPage(render_url)
+    d.addCallback(format_render_results)
+    return d

@@ -20,9 +20,24 @@ class MockGraphiteServer(object):
 
 class WebServerTester(unittest.TestCase):
     """Tests the diamondash web server functionality"""
-    
-    #def test_get_data(self):
-    #    """Tests whether data is obtained properly"""
+
+    def test_construct_render_url(self):
+        """
+        Tests whether graphite render request urls are constructed properly
+        from client side render requests
+        """
+        #TODO
+
+    def test_format_render_results(self):
+        """
+        Tests whether graphite render results are formatted
+        as expected by the client side
+        """
         # TODO
 
-    # TODO validate obtained data
+    def test_format_render_nulls(self):
+        """
+        Tests whether null values in graphite render results are
+        handled appropriately
+        """
+        # TODO
