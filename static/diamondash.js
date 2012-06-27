@@ -5,17 +5,6 @@ var aliases = []; // alias strings
 // minutes of data in the live feed
 var period = (typeof period == 'undefined') ? 5 : period;
 
-var metrics =
-[
-  {
-	"target": "vumi.random.count.sum"
-  },
-
-  {
-	"target": "vumi.random.timer.avg"
-  }
-];
-
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
 
@@ -36,14 +25,18 @@ function constructWidgets() {
 
 var currentUrl = ""
 function constructUrl(period) {
+	widgetElements = document.querySelectorAll('.widget'); 
+
 	var targets = "";
-	for (var i=0; i < metrics.length; i++) {
+	for (var i=0; i < widgetElements.length; i++) {
 		if (i != 0) {
 			targets += '&';
 		}
-		targets += ('target=' + encodeURI(metrics[i].target));
+		targets += ('target=' + encodeURI($.trim(widgetElements[i].id)));
 	}
 	currentUrl = '/render/?' + targets + '&from=-' + period + 'minutes&format=json';
+
+	console.log(currentUrl);
 }
 
 // refresh the graph
@@ -57,27 +50,6 @@ function refreshData(immediately) {
 				}
 			}
 
-			// check our thresholds and update color
-			var lastValue = datum[i][datum[i].length - 1].y;
-			var warning = metrics[i].warning;
-			var critical = metrics[i].critical;
-			if (critical > warning) {
-				if (lastValue >= critical) {
-					graphs[i].series[0].color = '#d59295';
-				} else if (lastValue >= warning) {
-					graphs[i].series[0].color = '#f5cb56';
-				} else {
-					graphs[i].series[0].color = '#afdab1';
-				}
-			} else {
-				if (lastValue <= critical) {
-					graphs[i].series[0].color = '#d59295';
-				} else if (lastValue <= warning) {
-					graphs[i].series[0].color = '#f5cb56';
-				} else {
-					graphs[i].series[0].color = '#afdab1';
-				}
-			}
 			// we want to render immediately, i.e.
 			// as soon as ajax completes
 			// used for time period / pause view
@@ -85,6 +57,7 @@ function refreshData(immediately) {
 				updateGraphs(i);
 			}
 		}
+
 		values = null;
 	});
 

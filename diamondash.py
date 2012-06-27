@@ -23,14 +23,16 @@ class DashboardElement(Element):
         """Loads dashboard information from a config file"""
         # TODO load from config file
         self.widget_configs = {
-            'random_count_sum': {
+            #'random_count_sum': {
+            'vumi.random.count.sum': { # will be removed soon
                 'title': 'Sum of random count',
                 'type': 'graph',
                 'metric': 'vumi.random.count.sum',
                 'width': '300px',
                 'height': '150px'
             },
-            'random_timer_average': {
+            #'random_timer_average': {
+            'vumi.random.timer.avg': { # will be removed soon
                 'title': 'Average of random timer',
                 'type': 'graph',
                 'metric': 'vumi.random.timer.avg'
