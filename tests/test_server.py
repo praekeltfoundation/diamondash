@@ -172,4 +172,5 @@ class DiamondashServerClientTestCase(unittest.TestCase):
         before = self._TEST_DATA['test_format_render_results_for_graph']['before']
         after = self._TEST_DATA['test_format_render_results_for_graph']['after']
         formatted = server.format_render_results(before)
-        self.assertEqual(formatted, after)
+        formatted_str = json.loads(formatted)
+        self.assertEqual(formatted_str, after)

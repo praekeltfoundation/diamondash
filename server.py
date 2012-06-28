@@ -66,7 +66,7 @@ def format_render_results(results):
     """
     formatted_data = []
     for [y, x] in results:
-        formatted_data.append({u'x': x, u'y': y})
+        formatted_data.append({'x': x, 'y': y})
     return json.dumps(formatted_data)
 
 
