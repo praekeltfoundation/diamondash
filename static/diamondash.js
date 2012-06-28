@@ -13,6 +13,7 @@ function constructWidgets() {
 			data: [{ x:0, y:0 }]
 			}]
 		});
+
 		graphs[i].render();
 	}
 }
