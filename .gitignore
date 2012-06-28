@@ -2,8 +2,7 @@
 
 # Packages
 *.egg
-*.egg-info
-dist
+*.egg-info dist
 build
 eggs
 parts
@@ -28,3 +27,6 @@ pip-log.txt
 
 twistd.pid
 _trial_temp
+
+*.pyc
+*.swp
