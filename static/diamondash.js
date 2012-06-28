@@ -1,57 +1,44 @@
 var graphs = []; // rickshaw objects
-var data = []; // metric data
-
-// minutes of data in the live feed
-var period = (typeof period == 'undefined') ? 5 : period;
+var widgetElements = document.querySelectorAll('.widget')
+var dashboardName = 'test_dashboard' // TODO change to support multiple dashboards
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
-		data[i] = [{ x:0, y:0 }];
 		graphs[i] = new Rickshaw.Graph({
 			element: graphElements[i],
 			interpolation: 'step-after',
 			series: [{
 			color: '#afdab1',
-			data: data[i]
+			data: [{ x:0, y:0 }]
 			}]
 		});
 		graphs[i].render();
 	}
 }
 
-var currentUrl = ""
-function constructUrl(period) {
-	widgetElements = document.querySelectorAll('.widget'); 
-
-	var targets = "";
-	for (var i=0; i < widgetElements.length; i++) {
-		if (i != 0) {
-			targets += '&';
-		}
-		targets += ('target=' + encodeURI($.trim(widgetElements[i].id)));
-	}
-	currentUrl = '/render/?' + targets + '&from=-' + period + 'minutes&format=json';
+function constructUrl(widgetElement) {
+	return '/render/' + dashboardName + '/' + $.trim(widgetElements[i].id);
 }
 
-// refresh the graph
 function updateWidgets() {
-	getData(function(values) {
-		for (var i = 0; i < graphs.length; i++) {
-			for (var j = 0; j < values[i].length; j++) {
-				if (typeof values[i][j] !== "undefined") {
-					data[i][j] = values[i][j];
+	for (var i = 0; i < widgetElements.length; i++) {
+		url = constructUrl(widgetElement)
+		getData(url, function(values) {
+				for (var j = 0; j < values.length; j++) {
+						graphs[i].data[j] = values[j];
+					}
 				}
+				graphs[i].update();
 			}
-			updateGraph(i);
-		}
 
-		values = null;
-	});
+			values = null;
+		});
+	}
 }
 
 // retrieve the data from Graphite
-function getData(cbDataReceived) {
+function getData(currentUrl, cbDataReceived) {
 	var obtainedData = [];
 	$.ajax({
 
@@ -68,50 +55,14 @@ function getData(cbDataReceived) {
 			console.log("Error: " + xhr + " " + textStatus + " " + errorThrown);
 		},
 		url: currentUrl
-	}).done(function(d) {
-		if (d.length > 0) {
-			for (var i = 0; i < d.length; i++) {
-				obtainedData[i] = [];
-				obtainedData[i][0] = {
-					x: d[i].datapoints[0][1],
-					y: d[i].datapoints[0][0] || graphs[i].lastKnownValue || 0
-				};
-				for (var j = 1; j < d[i].datapoints.length; j++) {
-					obtainedData[i][j] = {
-						x: d[i].datapoints[j][1],
-						y: d[i].datapoints[j][0] || graphs[i].lastKnownValue
-					};
-					if (typeof d[i].datapoints[j][0] === "number") {
-						graphs[i].lastKnownValue = d[i].datapoints[j][0];
-					}
-				}
-			} 
-		}
-		cbDataReceived(obtainedData);
+	}).done(function(responseData) {
+		if (responseData.length > 0)
+		    cbDataReceived(responseData);
 	});
 }
 
-// perform the actual graph object and
-// overlay name and number updates
-function updateGraph(i) {
-	// update our graph
-	graphs[i].update();
-	if (data[i][data[i].length - 1] !== undefined) {
-		var lastValue = data[i][data[i].length - 1].y;
-		var lastValueDisplay;
-		if ((typeof lastValue == 'number') && lastValue < 2.0) {
-			lastValueDisplay = Math.round(lastValue*1000)/1000;
-		} else {
-			lastValueDisplay = parseInt(lastValue);
-		}
-	}
-}
-
 constructWidgets();
-constructUrl(period);
+updateWidgets();
 
-updateWidgets(true);
-
-// define our refresh and start interval
 var updateInterval = (typeof refresh == 'undefined') ? 2000 : refresh;
 var updateId = setInterval(updateWidgets, updateInterval);
