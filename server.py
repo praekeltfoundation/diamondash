@@ -78,13 +78,6 @@ def purify_render_results(results):
     return results
 
 
-def get_datapoints(results):
-    """
-    Obtains datapoints from graphite render results
-    """
-    # TODO
-
-
 def get_render_results(render_url):
     """Gets render results from graphite"""
     return getPage(render_url)
