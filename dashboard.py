@@ -16,8 +16,7 @@ class Dashboard(Element):
             self.name = name
             self.widget_config = widget_config
 
-    @classmethod
-    def read_config_file(cls, config_filename):
+    def read_config_file(self, config_filename):
         """Loads dashboard information from a config file"""
         # TODO load from config file
         # TODO allow mulitple dashboards (instead of 'test_dashboard')
@@ -48,11 +47,11 @@ class Dashboard(Element):
             if config['type'] == 'graph':
                 class_attr += ' graph'
 
-            if 'width' in widget_config:
+            if 'width' in config:
                 style_attr += 'width: ' + \
                     config['width'] + '; '
 
-            if 'height' in widget_config:
+            if 'height' in config:
                 style_attr += 'height: ' + \
                     config['height'] + '; '
 

@@ -107,6 +107,7 @@ class DiamondashServerClientTestCase(unittest.TestCase):
     ----------------------
     """
 
+    # TODO url construction tests widget or dashboard not found
     # TODO url construction tests for other widget types
 
     def test_construct_render_url_for_graph(self):

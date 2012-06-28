@@ -1,5 +1,6 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
+import json
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
@@ -40,7 +41,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard('./etc/dashboard.yml')
+    dashboard = Dashboard(config_filename='./etc/dashboard.yml')
     add_dashboard(dashboard)
     return dashboard
 
@@ -66,7 +67,7 @@ def format_render_results(results):
     formatted_data = []
     for [y, x] in results:
         formatted_data.append({u'x': x, u'y': y})
-    return formatted_data
+    return json.dumps(formatted_data)
 
 
 def purify_render_results(results):
@@ -82,14 +83,17 @@ def get_render_results(render_url):
     """Gets render results from graphite"""
     return getPage(render_url)
 
+def get_datapoints(data):
+    return json.loads(data)[0]['datapoints']
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
     # TODO check for invalid dashboards
-    render_url = construct_render_url(dashboard_name, widget_name)
+    render_url = construct_render_url(dashboard_name.encode('utf-8'), 
+                                      widget_name.encode('utf-8'))
     d = get_render_results(render_url)
-    d.addCallback(lambda data: data['datapoints'])
+    d.addCallback(get_datapoints)
     d.addCallback(purify_render_results)
     d.addCallback(format_render_results)
     return d

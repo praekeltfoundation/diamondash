@@ -1,41 +1,44 @@
 var graphs = []; // rickshaw objects
-var widgetElements = document.querySelectorAll('.widget')
-var dashboardName = 'test_dashboard' // TODO change to support multiple dashboards
+var dashboardName = 'test-dashboard' // TODO change to support multiple dashboards
+var updateInterval = (typeof refresh == 'undefined') ? 2000 : refresh;
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
-		graphs[i] = new Rickshaw.Graph({
+		graphs[i] = {
+			'name': $.trim(graphElements[i].id),
+			'data': [{ x:0, y:0 }],
+			'object': undefined
+		};
+		
+		graphs[i].object = new Rickshaw.Graph({
 			element: graphElements[i],
 			interpolation: 'step-after',
 			series: [{
 			color: '#afdab1',
-			data: [{ x:0, y:0 }]
+			data: graphs[i].data 
 			}]
 		});
 
-		graphs[i].render();
+		graphs[i].object.render();
 	}
 }
 
-function constructUrl(widgetElement) {
-	return '/render/' + dashboardName + '/' + $.trim(widgetElements[i].id);
+function constructUrl(widgetName) {
+	return '/render/' + dashboardName + '/' + widgetName;
 }
 
 function updateWidgets() {
-	for (var i = 0; i < widgetElements.length; i++) {
-		url = constructUrl(widgetElement)
-		getData(url, function(values) {
-				for (var j = 0; j < values.length; j++) {
-						graphs[i].data[j] = values[j];
-					}
-				}
-				graphs[i].update();
-			}
-
+	$.each(graphs, function(i, graph) { 
+		url = constructUrl(graph.name)
+		getData(url, 
+		function(values) {
+			for (var j = 0; j < values.length; j++)
+				graph.data[j] = values[j];
+			graph.object.update();
 			values = null;
 		});
-	}
+	});
 }
 
 // retrieve the data from Graphite
@@ -65,5 +68,4 @@ function getData(currentUrl, cbDataReceived) {
 constructWidgets();
 updateWidgets();
 
-var updateInterval = (typeof refresh == 'undefined') ? 2000 : refresh;
 var updateId = setInterval(updateWidgets, updateInterval);
