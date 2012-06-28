@@ -1,12 +1,13 @@
 """Tests for diamondash's server side"""
 
 import json
+from diamondash import diamondash_server
+from pkg_resources import resource_stream
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
 from twisted.python import log
-from diamondash import diamondash
 
 
 class MockGraphiteServerProtocol(Protocol):
@@ -54,11 +55,11 @@ class MockGraphiteServerMixin(object):
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     """Tests the diamondash web server functionality"""
 
-    _TEST_DATA = json.load('test_diamondash_data.json')
+    _TEST_DATA = json.load( resource_stream(__name__, 'test_diamondash_data.json'))
 
     def startUp(self):
         self.start_graphite_ws()
-        diamondash.graphite_url = self.graphite_url
+        diamondash_server.graphite_url = self.graphite_url
 
     def tearDown(self):
         self.stop_graphite_ws()
@@ -75,9 +76,26 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Tests whether graphite render request urls are constructed
         properly from client side render requests
         """
-        render_url = diamondash.construct_render_url('random_count_sum')
-        #TODO
-        self.assertEqual(1, 0)
+        test_dashboard_name = 'test-dashboard'
+        test_widget_configs = {
+            'random-count-sum': {
+                'type': 'graph',
+                'metric': 'vumi.random.count.sum',
+            },
+        }
+
+        diamondash_server.DashboardConfig(dashboard_name=test_dashboard_name,
+                        widget_configs=test_widget_configs)
+
+        client_request_uri = '/render/test-dashboard/random-count-sum'
+
+        correct_render_url = diamondash_server.graphite_url + \
+            '/render/?target=vumi.random.count.sum&from=-' + \
+            str(diamondash_server.render_time_span) + 'minutes&format=json'
+
+        test_render_url = diamondash_server.construct_render_url('test-dashboard',
+                                                          'random-count-sum')
+        self.assertEqual(test_render_url, correct_render_url)
 
     """
     Purification tests

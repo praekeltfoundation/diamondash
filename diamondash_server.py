@@ -8,7 +8,42 @@ from twisted.python import log
 
 # TODO load from args
 graphite_url = "http://127.0.0.1:8000"
-render_time_period = 5
+render_time_span = 5
+dashboards = {}
+
+
+class DashboardConfig(object):
+    """Holds configuration for a dashboard"""
+
+    def __init__(self, config_filename='', dashboard_name='',
+                 widget_configs=''):
+        if config_filename:
+            self._read_config_file(config_filename)
+        else:
+            self.dashboard_name = dashboard_name
+            self.widget_configs = widget_configs
+        dashboards.update({ dashboard_name: self })
+
+    def _read_config_file(self, config_filename):
+        """Loads dashboard information from a config file"""
+        # TODO load from config file
+        # TODO allow mulitple dashboards (instead of 'test_dashboard')
+        self.dashboard_name = 'test-dashboard'
+        self.widget_configs = {
+            'random-count-sum': {
+                'title': 'Sum of random count',
+                'type': 'graph',
+                'metric': 'vumi.random.count.sum',
+                'width': '300px',
+                'height': '150px'
+            },
+            'random-timer-average': {
+                'title': 'Average of random timer',
+                'type': 'graph',
+                'metric': 'vumi.random.timer.avg'
+            }
+        }
+
 
 class DashboardElement(Element):
     """Loads dashboard template"""
@@ -16,26 +51,7 @@ class DashboardElement(Element):
     loader = XMLFile('templates/dashboard.xml')
 
     def __init__(self, config_filename):
-        self.widget_configuration = {}
-        self._read_config_file(config_filename)
-
-    def _read_config_file(self, config_filename):
-        """Loads dashboard information from a config file"""
-        # TODO load from config file
-        self.widget_configs = {
-            'random_count_sum': {
-                'title': 'Sum of random count',
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-                'width': '300px',
-                'height': '150px'
-            },
-            'random_timer_average': {
-                'title': 'Average of random timer',
-                'type': 'graph',
-                'metric': 'vumi.random.timer.avg'
-            }
-        }
+        DashboardConfig(config_filename)
 
     @renderer
     def widget(self, request, tag):
@@ -75,12 +91,11 @@ def show_index(request):
     return DashboardElement('./etc/dashboard.yml')
 
 
-def construct_render_url(request):
+def construct_render_url(dashboard_name, widget_name):
     """
     Constructs the graphite render url based
     on the client's request uri
     """
-    uri = request.uri['/render/'.length:]
     # TODO
 
 
@@ -111,10 +126,11 @@ def get_render_results(render_url):
     return getPage(render_url)
 
 
-@route('/render/')
-def render(request):
+@route('/render/<string:dashboard_name>/<string:widget_name>')
+def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
-    render_url = construct_render_url(request)
+    # TODO check for invalid dashboards
+    render_url = construct_render_url(dashboard_name, widget_name)
     d = get_render_results(render_url)
     d.addCallback(lambda data: data['datapoints'])
     d.addCallback(purify_render_results)
