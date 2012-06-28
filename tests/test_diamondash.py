@@ -1,9 +1,11 @@
 """Tests for diamondash's server side"""
 
+import json
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
+from twisted.python import log
 from diamondash import diamondash
 
 
@@ -17,6 +19,7 @@ class MockGraphiteServerProtocol(Protocol):
 
     def _parse_request(self, data):
         # TODO
+        log.msg(data)
         pass
 
     def _construct_response(self, response_data):
@@ -48,12 +51,10 @@ class MockGraphiteServerMixin(object):
         return self.server.loseConnection()
 
 
-_GRAPHITE_RESPONSE_DATA = json.load('graphite_response_data.json')
-_FORMATTED_DATA = json.load('formatted_data.json')
-
-
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     """Tests the diamondash web server functionality"""
+
+    _TEST_DATA = json.load('test_diamondash_data.json')
 
     def startUp(self):
         self.start_graphite_ws()
@@ -61,14 +62,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     def tearDown(self):
         self.stop_graphite_ws()
-
-    def test_invalid_client_request(self):
-        """
-        Tests whether invalid client requests are
-        handled appropriately
-        """
-        #TODO
-        self.assertEqual(1, 0)
 
     """
     Url construction tests
@@ -120,7 +113,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     # TODO render tests for other widget types
 
-    def test_get_render_results(self):
+    def test_get_render_results_for_graph(self):
         """Tests whether graphite render results are obtained properly"""
         # TODO
         self.assertEqual(1, 0)

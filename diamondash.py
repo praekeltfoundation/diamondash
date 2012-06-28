@@ -8,7 +8,7 @@ from twisted.python import log
 
 # TODO load from args
 graphite_url = "http://127.0.0.1:8000"
-
+render_time_period = 5
 
 class DashboardElement(Element):
     """Loads dashboard template"""
@@ -49,11 +49,11 @@ class DashboardElement(Element):
                 widget_class_attr += ' graph'
 
             if 'width' in widget_config:
-                widget_style_attr += 'width: ' +
+                widget_style_attr += 'width: ' + \
                 widget_config['width'] + '; '
 
             if 'height' in widget_config:
-                widget_style_attr += 'height: ' +
+                widget_style_attr += 'height: ' + \
                 widget_config['height'] + '; '
 
             new_tag.fillSlots(widget_title_slot=widget_config['title'],
@@ -97,14 +97,17 @@ def purify_render_results(results):
     Fixes problems with the results obtained from
     graphite (eg. null values)
     """
-   # TODO eliminate nulls
+    # TODO eliminate nulls
+
+def get_datapoints(results):
+    """
+    Obtains datapoints from graphite render results
+    """
+    # TODO 
 
 
-def get_render_results(render_url, purify, format):
-    """
-    Gets render results from graphite, purifies them,
-    formats them and returns them
-    """
+def get_render_results(render_url):
+    """Gets render results from graphite"""
     return getPage(render_url)
 
 
@@ -113,6 +116,7 @@ def render(request):
     """Routing for client render request"""
     render_url = construct_render_url(request)
     d = get_render_results(render_url)
+    d.addCallback(lambda data: data['datapoints'])
     d.addCallback(purify_render_results)
     d.addCallback(format_render_results)
     return d
