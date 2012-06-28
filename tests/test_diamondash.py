@@ -79,10 +79,23 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     def test_construct_render_url_for_graph(self):
         """
-        Tests whether graphite render request urls are constructed properly
-        from client side render requests
+        Tests whether graphite render request urls are constructed
+        properly from client side render requests
         """
+        render_url = diamondash.construct_render_url('random_count_sum')
         #TODO
+        self.assertEqual(1, 0)
+
+    """
+    Purification tests
+    ------------------
+    """
+    def test_purify_render_results_nulls(self):
+        """
+        Tests whether null values in graphite render results are
+        handled appropriately
+        """
+        # TODO
         self.assertEqual(1, 0)
 
     """
@@ -92,18 +105,22 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     # TODO formatting tests for other widget types
 
-    def test_format_render_nulls(self):
-        """
-        Tests whether null values in graphite render results are
-        handled appropriately
-        """
-        # TODO
-        self.assertEqual(1, 0)
-
     def test_format_render_results_for_graph(self):
         """
         Tests whether graphite render results are formatted
         as expected by the client side for graph widgets
         """
+        # TODO
+        self.assertEqual(1, 0)
+
+    """
+    Tests for getting results from graphite
+    ---------------------------------------
+    """
+
+    # TODO render tests for other widget types
+
+    def test_get_render_results(self):
+        """Tests whether graphite render results are obtained properly"""
         # TODO
         self.assertEqual(1, 0)

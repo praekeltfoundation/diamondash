@@ -9,6 +9,7 @@ from twisted.python import log
 # TODO load from args
 graphite_url = "http://127.0.0.1:8000"
 
+
 class DashboardElement(Element):
     """Loads dashboard template"""
 
@@ -22,16 +23,14 @@ class DashboardElement(Element):
         """Loads dashboard information from a config file"""
         # TODO load from config file
         self.widget_configs = {
-            #'random_count_sum': {
-            'vumi.random.count.sum': { # will be removed soon
+            'random_count_sum': {
                 'title': 'Sum of random count',
                 'type': 'graph',
                 'metric': 'vumi.random.count.sum',
                 'width': '300px',
                 'height': '150px'
             },
-            #'random_timer_average': {
-            'vumi.random.timer.avg': { # will be removed soon
+            'random_timer_average': {
                 'title': 'Average of random timer',
                 'type': 'graph',
                 'metric': 'vumi.random.timer.avg'
@@ -50,10 +49,12 @@ class DashboardElement(Element):
                 widget_class_attr += ' graph'
 
             if 'width' in widget_config:
-                widget_style_attr += 'width: ' + widget_config['width'] + '; '
+                widget_style_attr += 'width: ' +
+                widget_config['width'] + '; '
 
             if 'height' in widget_config:
-                widget_style_attr += 'height: ' + widget_config['height'] + '; '
+                widget_style_attr += 'height: ' +
+                widget_config['height'] + '; '
 
             new_tag.fillSlots(widget_title_slot=widget_config['title'],
                               widget_style_slot=widget_style_attr,
@@ -74,25 +75,44 @@ def show_index(request):
     return DashboardElement('./etc/dashboard.yml')
 
 
-def format_render_results(results):
-    """
-    Formats the json output received from graphite on response from a render
-    request into something usable from the client side
-    """
-    # TODO
-
-
 def construct_render_url(request):
-    """Constructs the graphite render url based on the client's request uri"""
+    """
+    Constructs the graphite render url based
+    on the client's request uri
+    """
     uri = request.uri['/render/'.length:]
     # TODO
+
+
+def format_render_results(results):
+    """
+    Formats the json output received from graphite into
+    something usable by rickshaw
+    """
+    # TODO
+
+
+def purify_render_results(results):
+    """
+    Fixes problems with the results obtained from
+    graphite (eg. null values)
+    """
+   # TODO eliminate nulls
+
+
+def get_render_results(render_url, purify, format):
+    """
+    Gets render results from graphite, purifies them,
+    formats them and returns them
+    """
+    return getPage(render_url)
 
 
 @route('/render/')
 def render(request):
     """Routing for client render request"""
-    #render_url = construct_render_url(request)
-    render_url = graphite_url + request.uri
-    d = getPage(render_url)
-    #d.addCallback(format_render_results)
+    render_url = construct_render_url(request)
+    d = get_render_results(render_url)
+    d.addCallback(purify_render_results)
+    d.addCallback(format_render_results)
     return d
