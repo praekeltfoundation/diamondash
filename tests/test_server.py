@@ -1,9 +1,11 @@
 """Tests for diamondash's server side"""
 
 import json
+from urllib import urlencode
+from pkg_resources import resource_stream
+from klein.test_resource import requestMock
 from diamondash import server
 from diamondash.dashboard import Dashboard
-from pkg_resources import resource_stream
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
@@ -22,7 +24,7 @@ class MockGraphiteServerProtocol(Protocol):
         return data.split(' ')[1]
 
     def construct_response(self, request_uri):
-        response_data = self.factory.test_data.get(request_uri)
+        response_data = self.factory.response_data.get(request_uri)
         response = ["HTTP/1.1 %s" % (response_data['code'],)]
         response.extend(['', json.dumps(response_data['body'])])
         return '\r\n'.join(response)
@@ -39,11 +41,16 @@ class MockGraphiteServerMixin(object):
     Graphite response data
     """
 
+    _RESPONSE_DATA = json.load(
+        resource_stream(__name__, 'response_data.json'))
+
+    graphite_ws = None
+
     @inlineCallbacks
-    def start_graphite_ws(self, test_data):
+    def start_graphite_ws(self):
         factory = Factory()
         factory.protocol = MockGraphiteServerProtocol
-        factory.test_data = test_data
+        factory.response_data = self._RESPONSE_DATA;
         self.graphite_ws = yield reactor.listenTCP(0, factory)
         address = self.graphite_ws.getHost()
         self.graphite_url = "http://%s:%s" % (address.host, address.port)
@@ -52,23 +59,17 @@ class MockGraphiteServerMixin(object):
         return self.graphite_ws.loseConnection()
 
 
-class DiamondashServerGraphiteTestCase(unittest.TestCase,
-                                       MockGraphiteServerMixin):
-    """Tests the diamondash web server's communication with graphite"""
+class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     _TEST_DATA = json.load(
-        resource_stream(__name__, 'graphite_test_data.json'))
+        resource_stream(__name__, 'test_data.json'))
 
-    @inlineCallbacks
     def setUp(self):
-        yield self.start_graphite_ws(self._TEST_DATA)
-
-        # initialise the server configuration
-        server.server_config = server.ServerConfig(
-            graphite_url=self.graphite_url)
+        self.graphite_ws = None
 
     def tearDown(self):
-        self.stop_graphite_ws()
+        if self.graphite_ws:
+            self.stop_graphite_ws()
 
     # TODO render tests for other widget types
 
@@ -80,27 +81,43 @@ class DiamondashServerGraphiteTestCase(unittest.TestCase,
         response = json.loads(response_data)
         self.assertEqual(response, expected_response)
 
-    def test_getPage_for_graph(self):
-        """Tests whether graphite render results are obtained properly"""
-        render_uri = ''.join([
-            '/render/?target=vumi.random.count.sum',
-            '&from=-5minutes',
-            '&format=json'])
-        render_url = self.graphite_url + render_uri
-        expected_response = self._TEST_DATA[render_uri]['body']
-        d = server.getPage(render_url)
-        d.addCallback(self.assert_response, expected_response)
-        return d
+    @inlineCallbacks
+    def test_render_for_graph(self):
+        """
+        Should build a graphite url from the passed in client
+        request, send a request to graphite, apply transformations, 
+        and return data useable by the client side
+        """
+        yield self.start_graphite_ws()
 
+        test_render_time_span = 5
 
-class DiamondashServerClientTestCase(unittest.TestCase):
-    """
-    Tests the diamondash web server's response logic for client side
-    requests (eg. url construction and data formatting)
-    """
+        # initialise the server configuration
+        server.config = server.ServerConfig(
+            graphite_url=self.graphite_url,
+            render_time_span=test_render_time_span)
 
-    _TEST_DATA = json.load(
-        resource_stream(__name__, 'client_test_data.json'))
+        # add a test dashboard
+        test_dashboard_name = 'test-dashboard'
+        test_widget_name = 'random-count-sum'
+        test_widget_config = {
+            test_widget_name: {
+                'type': 'graph',
+                'metric': 'vumi.random.count.sum',
+            },
+        }
+        server.add_dashboard(Dashboard(
+            name=test_dashboard_name,
+            widget_config=test_widget_config))
+
+        input = self._TEST_DATA['test_render_for_graph']['input']
+        request = requestMock(input, host=self.graphite_ws.getHost().host,
+                              port=self.graphite_ws.getHost().port)
+        output = self._TEST_DATA['test_render_for_graph']['output']
+        d = server.render(request, test_dashboard_name, 
+                          test_widget_name)
+        d.addCallback(self.assert_response, output)
+        yield d
 
     """
     Url construction tests
@@ -112,9 +129,18 @@ class DiamondashServerClientTestCase(unittest.TestCase):
 
     def test_construct_render_url_for_graph(self):
         """
-        Tests whether graphite render request urls are constructed
-        properly from client side render requests
+        Should construct render request urls acceptable to graphite
+        from a client side graph render request
         """
+        # initialise the server configuration
+        test_graphite_url = "http://127.0.0.1:8000"
+        test_render_time_span = 5
+        server.config = server.ServerConfig(
+            graphite_url=test_graphite_url,
+            render_time_span=test_render_time_span)
+
+
+        # add a test dashboard
         test_dashboard_name = 'test-dashboard'
         test_widget_config = {
             'random-count-sum': {
@@ -122,24 +148,17 @@ class DiamondashServerClientTestCase(unittest.TestCase):
                 'metric': 'vumi.random.count.sum',
             },
         }
-
-        # initialise the server configuration
-        server.server_config = server.ServerConfig(
-            graphite_url="http://127.0.0.1:8000",
-            render_time_span=5)
-
-        # add a test dashboard
         server.add_dashboard(Dashboard(
             name=test_dashboard_name,
             widget_config=test_widget_config))
 
-        client_request_uri = '/render/test-dashboard/random-count-sum'
-
-        correct_render_url = ''.join([
-            'http://127.0.0.1:8000',
-            '/render/?from=-5minutes',
-            '&target=vumi.random.count.sum',
-            '&format=json'])
+        params = {
+            'target': 'vumi.random.count.sum',
+            'from': '-%sminutes' % (test_render_time_span,),
+            'format': 'json'
+            }
+        correct_render_url = "%s/render/?%s" % (test_graphite_url,
+                                                urlencode(params))
 
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
@@ -150,13 +169,13 @@ class DiamondashServerClientTestCase(unittest.TestCase):
     Purification tests
     ------------------
     """
-    def test_purify_render_results_nulls(self):
+    def test_purify_render_results_skip_nulls(self):
         """
-        Tests whether null values in graphite render results are
-        handled appropriately
+        Should return datapoints without null values by
+        skipping coordinates withh null x or y values
         """
-        before = self._TEST_DATA['test_purify_render_results_nulls']['before']
-        after = self._TEST_DATA['test_purify_render_results_nulls']['after']
+        before = self._TEST_DATA['test_purify_render_results_skip_nulls']['before']
+        after = self._TEST_DATA['test_purify_render_results_skip_nulls']['after']
         purified = server.purify_render_results(before)
         self.assertEqual(purified, after)
 
@@ -169,8 +188,8 @@ class DiamondashServerClientTestCase(unittest.TestCase):
 
     def test_format_render_results_for_graph(self):
         """
-        Tests whether graphite render results are formatted
-        as expected by the client side for graph widgets
+        Should format datapoints in graphite's format to 
+        datapoints in rickshaw's format
         """
         before = self._TEST_DATA['test_format_render_results_for_graph']['before']
         after = self._TEST_DATA['test_format_render_results_for_graph']['after']
