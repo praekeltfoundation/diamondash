@@ -16,8 +16,7 @@ class ServerConfig(object):
     diamondash web server
     """
 
-    def __init__(self, graphite_url=None,
-                 render_time_span=None):
+    def __init__(self, graphite_url=None, render_time_span=None):
         # TODO init from args or config file
         # TODO allow mulitiple dashboards
 
@@ -52,7 +51,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard(config_filename='./etc/test_dashboard.yml')
+    dashboard = Dashboard.from_config_file('./etc/test_dashboard.yml')
     add_dashboard(dashboard)
     return dashboard
 

@@ -106,9 +106,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'metric': 'vumi.random.count.sum',
             },
         }
-        server.add_dashboard(Dashboard(
-            name=test_dashboard_name,
-            widget_config=test_widget_config))
+        server.add_dashboard(Dashboard(test_dashboard_name, test_widget_config))
 
         input = self._TEST_DATA['test_render_for_graph']['input']
         request = requestMock(input, host=self.graphite_ws.getHost().host,
@@ -139,7 +137,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             graphite_url=test_graphite_url,
             render_time_span=test_render_time_span)
 
-
         # add a test dashboard
         test_dashboard_name = 'test-dashboard'
         test_widget_config = {
@@ -148,9 +145,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'metric': 'vumi.random.count.sum',
             },
         }
-        server.add_dashboard(Dashboard(
-            name=test_dashboard_name,
-            widget_config=test_widget_config))
+        server.add_dashboard(Dashboard(test_dashboard_name, test_widget_config))
 
         params = {
             'target': 'vumi.random.count.sum',
