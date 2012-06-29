@@ -40,15 +40,17 @@ class Dashboard(Element):
         for name, config in self.widget_config.items():
             new_tag = tag.clone()
 
-            # TODO use graph as default type
-            if 'type' in config:
-                class_attr = 'widget %s' % (config['type'],)
+            if 'type' not in config:
+                config['type'] = 'graph'
+            class_attr_list = ['widget', config['type']]
+            class_attr = ' '.join('%s' % attr for attr in class_attr_list)
 
             style_attr_dict = {}
             for style_key in ['width', 'height']:
                 if style_key in config:
                     style_attr_dict[style_key] = config[style_key]
-            style_attr = ';'.join('%s %s' % item for item in style_attr_dict.items())
+            style_attr = '; '.join('%s: %s' % item for item in style_attr_dict.items())
+
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,

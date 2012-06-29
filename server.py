@@ -86,7 +86,7 @@ def purify_render_results(results):
     graphite (eg. null values)
     """
     # TODO decide what to do with y values based on config
-    results = [[y, x] for [y, x] in results if (y is not None) or (x is not None)]
+    results = [[y, x] for [y, x] in results if (y is not None) and (x is not None)]
     return results
 
 
