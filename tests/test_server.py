@@ -50,7 +50,7 @@ class MockGraphiteServerMixin(object):
     def start_graphite_ws(self):
         factory = Factory()
         factory.protocol = MockGraphiteServerProtocol
-        factory.response_data = self._RESPONSE_DATA;
+        factory.response_data = self._RESPONSE_DATA
         self.graphite_ws = yield reactor.listenTCP(0, factory)
         address = self.graphite_ws.getHost()
         self.graphite_url = "http://%s:%s" % (address.host, address.port)

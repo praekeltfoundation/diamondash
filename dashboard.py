@@ -39,19 +39,16 @@ class Dashboard(Element):
     def widget(self, request, tag):
         for name, config in self.widget_config.items():
             new_tag = tag.clone()
-            class_attr = 'widget'
-            style_attr = ''
 
             # TODO use graph as default type
-            if config['type'] == 'graph':
-                class_attr += ' graph'
+            if 'type' in config:
+                class_attr = 'widget %s' % (config['type'],)
 
             style_attr_dict = {}
             for style_key in ['width', 'height']:
                 if style_key in config:
                     style_attr_dict[style_key] = config[style_key]
-            style_attr = ';'.join('%s %s' % \
-                item for item in style_attr_dict.items())
+            style_attr = ';'.join('%s %s' % item for item in style_attr_dict.items())
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
