@@ -1,11 +1,14 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 import json
+from urllib import urlencode
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
 from dashboard import Dashboard
 
+DEFAULT_GRAPHITE_URL = "http://127.0.0.1:8000"
+DEFAULT_RENDER_TIME_SPAN = 5
 
 class ServerConfig(object):
     """
@@ -13,9 +16,16 @@ class ServerConfig(object):
     diamondash web server
     """
 
-    def __init__(self, graphite_url="http://127.0.0.1:8000",
-                 render_time_span=5):
+    def __init__(self, graphite_url=None,
+                 render_time_span=None):
         # TODO init from args or config file
+
+        if graphite_url is None:
+            graphite_url = DEFAULT_GRAPHITE_URL
+
+        if render_time_span is None:
+            render_time_span = DEFAULT_RENDER_TIME_SPAN
+
         self.graphite_url = graphite_url
         self.render_time_span = render_time_span
         self.dashboards = {}
@@ -52,10 +62,12 @@ def construct_render_url(dashboard_name, widget_name):
     on the client's request uri
     """
     metric = config.dashboards[dashboard_name].widget_config[widget_name]['metric']
-    render_url = config.graphite_url + \
-        '/render/?target=' + metric + \
-        '&from=-' + str(config.render_time_span) + 'minutes' + \
-        '&format=json'
+    params = {
+        'target': metric,
+        'from': '-%sminutes' % (config.render_time_span,),
+        'format': 'json'
+        }
+    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params))
     return render_url
 
 
@@ -64,9 +76,7 @@ def format_render_results(results):
     Formats the json output received from graphite into
     something usable by rickshaw
     """
-    formatted_data = []
-    for [y, x] in results:
-        formatted_data.append({'x': x, 'y': y})
+    formatted_data = [{'x': x, 'y': y} for y, x in results]
     return json.dumps(formatted_data)
 
 
@@ -75,16 +85,15 @@ def purify_render_results(results):
     Fixes problems with the results obtained from
     graphite (eg. null values)
     """
-    results = [[y, x] for [y, x] in results if y and x]
+    # TODO decide what to do with y values based on config
+    results = [[y, x] for [y, x] in results \
+        if (y is not None) and (x is not None)]
     return results
 
 
-def get_render_results(render_url):
-    """Gets render results from graphite"""
-    return getPage(render_url)
-
 def get_datapoints(data):
     return json.loads(data)[0]['datapoints']
+
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
@@ -92,7 +101,7 @@ def render(request, dashboard_name, widget_name):
     # TODO check for invalid dashboards
     render_url = construct_render_url(dashboard_name.encode('utf-8'), 
                                       widget_name.encode('utf-8'))
-    d = get_render_results(render_url)
+    d = getPage(render_url)
     d.addCallback(get_datapoints)
     d.addCallback(purify_render_results)
     d.addCallback(format_render_results)

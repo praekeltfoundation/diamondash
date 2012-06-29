@@ -80,15 +80,15 @@ class DiamondashServerGraphiteTestCase(unittest.TestCase,
         response = json.loads(response_data)
         self.assertEqual(response, expected_response)
 
-    def test_get_render_results_for_graph(self):
+    def test_getPage_for_graph(self):
         """Tests whether graphite render results are obtained properly"""
-        # TODO
-        render_uri = '/render/?target=vumi.random.count.sum' + \
-            '&from=-5minutes' + \
-            '&format=json'
+        render_uri = ''.join([
+            '/render/?target=vumi.random.count.sum',
+            '&from=-5minutes',
+            '&format=json'])
         render_url = self.graphite_url + render_uri
         expected_response = self._TEST_DATA[render_uri]['body']
-        d = server.get_render_results(render_url)
+        d = server.getPage(render_url)
         d.addCallback(self.assert_response, expected_response)
         return d
 
@@ -135,12 +135,15 @@ class DiamondashServerClientTestCase(unittest.TestCase):
 
         client_request_uri = '/render/test-dashboard/random-count-sum'
 
-        correct_render_url = 'http://127.0.0.1:8000' + \
-            '/render/?target=vumi.random.count.sum&from=-' + \
-            '5minutes&format=json'
+        correct_render_url = ''.join([
+            'http://127.0.0.1:8000',
+            '/render/?from=-5minutes',
+            '&target=vumi.random.count.sum',
+            '&format=json'])
 
-        constructed_render_url = \
-            server.construct_render_url('test-dashboard', 'random-count-sum')
+        constructed_render_url = server.construct_render_url(
+            'test-dashboard', 
+            'random-count-sum')
         self.assertEqual(constructed_render_url, correct_render_url)
 
     """

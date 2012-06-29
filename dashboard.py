@@ -8,9 +8,8 @@ class Dashboard(Element):
 
     loader = XMLFile('templates/dashboard.xml')
 
-    def __init__(self, config_filename='', name='',
-                 widget_config=''):
-        if config_filename:
+    def __init__(self, config_filename=None, name=None, widget_config=None):
+        if config_filename is not None:
             self.read_config_file(config_filename)
         else:
             self.name = name
@@ -47,13 +46,12 @@ class Dashboard(Element):
             if config['type'] == 'graph':
                 class_attr += ' graph'
 
-            if 'width' in config:
-                style_attr += 'width: ' + \
-                    config['width'] + '; '
-
-            if 'height' in config:
-                style_attr += 'height: ' + \
-                    config['height'] + '; '
+            style_attr_dict = {}
+            for style_key in ['width', 'height']:
+                if style_key in config:
+                    style_attr_dict[style_key] = config[style_key]
+            style_attr = ';'.join('%s %s' % \
+                item for item in style_attr_dict.items())
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
