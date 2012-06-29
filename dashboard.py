@@ -1,6 +1,8 @@
 """Dashboard functionality for the diamondash web app"""
 
+import re
 import yaml
+from unidecode import unidecode
 from pkg_resources import resource_string
 from twisted.web.template import Element, renderer, XMLFile
 
@@ -10,35 +12,56 @@ class Dashboard(Element):
 
     loader = XMLFile('templates/dashboard.xml')
 
-    def __init__(self, name, widget_config):
-        self.name = name
-        self.widget_config = widget_config
+    def __init__(self, config):
+        self.config = self.parse_config(config)
+
+    @classmethod 
+    def parse_config(cls, config):
+        if 'name' not in config:
+            raise DashboardConfigError('%s: Dashboard name not specified.' % (filename,))
+
+        config['name'] = slugify(config['name'])
+
+        widget_dict = {}
+        for w_name, w_config in config['widgets'].items():
+            if 'metric' not in w_config: 
+                raise DashboardConfigError(
+                    '%s: Widget "%s" needs a metric.' % (filename, w_name))
+            if 'title' not in w_config: 
+                raise DashboardConfigError(
+                    '%s: Widget "%s" needs a title.' % (filename, w_name))
+
+            w_name = slugify(w_name)
+
+            if 'type' not in w_config:
+                w_config['type'] = 'graph' 
+
+            if 'null_filter' not in w_config:
+                w_config['null_filter'] = 'skip'
+
+            widget_dict.update({w_name: w_config})
+
+        # update widget dict to dict with slugified widget names
+        config['widgets'] = widget_dict
+
+        return config
+
 
     @classmethod
     def from_config_file(cls, filename):
         """Loads dashboard information from a config file"""
         # TODO check and test for invalid config files
-        data = yaml.safe_load(resource_string(__name__, './etc/test_dashboard.yml'))
 
-        if not data['name']:
-            raise DashboardConfigFileError('%s: Dashboard name not specified.' % (filename,))
+        try: 
+            config = yaml.safe_load(resource_string(__name__, filename))
+        except IOError:
+            raise DashboardConfigError('File %s not found.' % (filename,))
 
-        name = data['name']
-        widget_config = data['widgets']
-
-        for widget, config in widget_config:
-            if not widget:
-                raise BadConfigFileError('%s: Every widget needs a name.') % (filename,))
-            if 'metric' not in config: 
-                raise DashboardConfigFileError('%s: Widget "%s" needs a metric.' % (filename, widget))
-            if 'title' not in config: 
-                raise DashboardConfigFileError('%s: Widget "%s" needs a title.' % (filename, widget))
-
-        return cls(name, widget_config)
+        return cls(config)
 
     @renderer
     def widget(self, request, tag):
-        for name, config in self.widget_config.items():
+        for name, config in self.config['widgets'].items():
             new_tag = tag.clone()
 
             # TODO use graph as default type
@@ -58,5 +81,14 @@ class Dashboard(Element):
             yield new_tag
 
 
-class BadConfigFileError(Exception):
-    """Raised a config file does not contain a compulsory attribute"""
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+def slugify(text):
+    """Slugifies the passed in text"""
+    result = []
+    for word in _punct_re.split(text.lower()):
+        result.extend(unidecode(word).split())
+    return '-'.join(result)
+
+
+class DashboardConfigError(Exception):
+    """Raised if a config file does not contain a compulsory attribute"""

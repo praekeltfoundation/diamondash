@@ -37,7 +37,7 @@ config = ServerConfig()
 
 def add_dashboard(dashboard):
     """Adds a new dashboard to the web server"""
-    config.dashboards.update({dashboard.name: dashboard})
+    config.dashboards.update({dashboard.config['name']: dashboard})
 
 
 @route('/static/')
@@ -61,7 +61,7 @@ def construct_render_url(dashboard_name, widget_name):
     Constructs the graphite render url based
     on the client's request uri
     """
-    metric = config.dashboards[dashboard_name].widget_config[widget_name]['metric']
+    metric = config.dashboards[dashboard_name].config['widgets'][widget_name]['metric']
     params = {
         'target': metric,
         'from': '-%sminutes' % (config.render_time_span,),
@@ -79,14 +79,27 @@ def format_render_results(results):
     formatted_data = [{'x': x, 'y': y} for y, x in results]
     return json.dumps(formatted_data)
 
+def zeroize_nulls(results):
+    """
+    Filters null y values in results obtained from graphite 
+    as zeroes (zeroize /is/ a word, wiktionary it)
+    """
+    return [[y, x] if y is not None else [0, x]
+            for [y, x] in results if x is not None]
 
-def purify_render_results(results):
+
+def skip_nulls(results):
+    """Skips null y values in results obtained from graphite"""
+    return [[y, x] for [y, x] in results if (y is not None) and (x is not None)]
+
+
+def purify_render_results(results, null_filter):
     """
     Fixes problems with the results obtained from
     graphite (eg. null values)
     """
-    # TODO decide what to do with y values based on config
-    results = [[y, x] for [y, x] in results if (y is not None) or (x is not None)]
+    results = null_filter(results)
+    # TODO other types of purification
     return results
 
 
@@ -97,11 +110,14 @@ def get_datapoints(data):
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
-    # TODO check for invalid dashboards
-    render_url = construct_render_url(dashboard_name.encode('utf-8'), 
-                                      widget_name.encode('utf-8'))
+    # TODO check for invalid dashboards and widgets
+    dashboard_name = dashboard_name.encode('utf-8')
+    widget_name = widget_name.encode('utf-8')
+    render_url = construct_render_url(dashboard_name, widget_name)
+
     d = getPage(render_url)
     d.addCallback(get_datapoints)
-    d.addCallback(purify_render_results)
+    null_filter = config.dashboards[dashboard_name].config['widgets'][widget_name]['null_filter']
+    d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
     d.addCallback(format_render_results)
     return d
