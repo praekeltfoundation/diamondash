@@ -1,6 +1,8 @@
 .widget {
-  position: relative;
-  float: left;
-  padding: 10px;
-  margin: 10px;
+	position: relative;
+	float: left;
+	padding: 10px;
+	margin: 10px;
+	width: 348px;
+	height: 100px;
 }
