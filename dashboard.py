@@ -1,5 +1,7 @@
 """Dashboard functionality for the diamondash web app"""
 
+import yaml
+from pkg_resources import resource_string
 from twisted.web.template import Element, renderer, XMLFile
 
 
@@ -17,23 +19,10 @@ class Dashboard(Element):
 
     def read_config_file(self, config_filename):
         """Loads dashboard information from a config file"""
-        # TODO load from config file
-        # TODO allow mulitple dashboards (instead of 'test_dashboard')
-        self.name = 'test-dashboard'
-        self.widget_config = {
-            'random-count-sum': {
-                'title': 'Sum of random count',
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-                'width': '300px',
-                'height': '150px'
-            },
-            'random-timer-average': {
-                'title': 'Average of random timer',
-                'type': 'graph',
-                'metric': 'vumi.random.timer.avg'
-            }
-        }
+        # TODO check and test for invalid config files
+        data = yaml.safe_load(resource_string(__name__, './etc/test_dashboard.yml'))
+        self.name = data['name']
+        self.widget_config = data['widgets']
 
     @renderer
     def widget(self, request, tag):

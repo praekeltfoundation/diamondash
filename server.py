@@ -19,6 +19,7 @@ class ServerConfig(object):
     def __init__(self, graphite_url=None,
                  render_time_span=None):
         # TODO init from args or config file
+        # TODO allow mulitiple dashboards
 
         if graphite_url is None:
             graphite_url = DEFAULT_GRAPHITE_URL
@@ -51,7 +52,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard(config_filename='./etc/dashboard.yml')
+    dashboard = Dashboard(config_filename='./etc/test_dashboard.yml')
     add_dashboard(dashboard)
     return dashboard
 
