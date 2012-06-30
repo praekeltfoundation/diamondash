@@ -6,6 +6,7 @@ from pkg_resources import resource_stream
 from klein.test_resource import requestMock
 from diamondash import server
 from diamondash.dashboard import Dashboard
+from diamondash.server import ServerConfigFactory
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
@@ -90,14 +91,14 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_render_time_span = 5
+        test_render_period = 5
 
         # initialise the server configuration
-        server.config = server.ServerConfig(
+        server.config = ServerConfigFactory.from_args(
             graphite_url=self.graphite_url,
-            render_time_span=test_render_time_span)
+            render_period=test_render_period)
 
-        config = {
+        dashboard_config = {
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
@@ -107,7 +108,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             }
         }
-        server.add_dashboard(Dashboard(config))
+        server.add_dashboard(Dashboard(dashboard_config))
 
         input = self._TEST_DATA['test_render_for_graph']['input']
         request = requestMock(input, host=self.graphite_ws.getHost().host,
@@ -132,12 +133,12 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         # initialise the server configuration
         test_graphite_url = "http://127.0.0.1:8000"
-        test_render_time_span = 5
-        server.config = server.ServerConfig(
+        test_render_period = 5
+        server.config = ServerConfigFactory.from_args(
             graphite_url=test_graphite_url,
-            render_time_span=test_render_time_span)
+            render_period=test_render_period)
 
-        config = {
+        dashboard_config = {
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
@@ -147,11 +148,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             }
         }
-        server.add_dashboard(Dashboard(config))
+        server.add_dashboard(Dashboard(dashboard_config))
 
         params = {
             'target': 'vumi.random.count.sum',
-            'from': '-%sminutes' % (test_render_time_span,),
+            'from': '-%sminutes' % (test_render_period,),
             'format': 'json'
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,

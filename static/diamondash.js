@@ -1,6 +1,6 @@
 var graphs = []; // rickshaw objects
 var dashboardName = 'test-dashboard' // TODO change to support multiple dashboards
-var updateInterval = (typeof refresh == 'undefined') ? 2000 : refresh;
+var updateInterval = (typeof requestInterval == 'undefined') ? 2000 : (requestInterval * 1000);
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
