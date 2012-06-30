@@ -1,38 +1,59 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 import json
+import yaml
 from urllib import urlencode
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
 from dashboard import Dashboard
 
-DEFAULT_GRAPHITE_URL = "http://127.0.0.1:8000"
-DEFAULT_RENDER_TIME_SPAN = 5
 
-class ServerConfig(object):
+DEFAULT_CONFIG_FILEPATH = './etc/diamondash.yml' 
+DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
+DEFAULT_RENDER_PERIOD = 5
+DEFAULT_REQUEST_INTERVAL = 2
+
+
+class ServerConfigFactory(object):
     """
     Holds configuration information for the
     diamondash web server
     """
 
-    def __init__(self, graphite_url=None,
-                 render_time_span=None):
-        # TODO init from args or config file
+    def __new__(cls, config):
+        # TODO init from args
+        # TODO load dashboards from directory of config files
+        config = parse_config(config)
+        config['dashboards'] = {}
+        config['client_vars'] = 'var %s=%s;' % ('requestInterval',
+                                                config['request_interval'])
 
-        if graphite_url is None:
-            graphite_url = DEFAULT_GRAPHITE_URL
+    @classmethod 
+    def parse_config(cls, config):
+        if config['graphite_url'] not in config:
+            config['graphite_url'] = DEFAULT_GRAPHITE_URL
 
-        if render_time_span is None:
-            render_time_span = DEFAULT_RENDER_TIME_SPAN
+        if config['render_period'] not in config:
+            config['render_period'] = DEFAULT_RENDER_TIME_SPAN
 
-        self.graphite_url = graphite_url
-        self.render_time_span = render_time_span
-        self.dashboards = {}
+        if config['request_interval'] not in config:
+            config['request_interval'] = DEFAULT_REQUEST_INTERVAL
+
+    @classmethod
+    def from_config_file(cls, filepath):
+        """Loads the diamondash configuration from a config file"""
+
+        try: 
+            config = yaml.safe_load(resource_string(__name__, filepath))
+        except IOError:
+            raise ConfigError('File %s not found.' % (filename,))
+
+        return cls(config)
 
 
 # initialise the server configuration
-config = ServerConfig()
+config = ServerConfigFactory(DEFAULT_CONFIG_FILEPATH)
 
 
 def add_dashboard(dashboard):
@@ -43,7 +64,7 @@ def add_dashboard(dashboard):
 @route('/static/')
 def static(request):
     """Routing for all static files (css, js)"""
-    return File("./static")
+    return File('./static')
 
 
 @route('/')
@@ -64,10 +85,10 @@ def construct_render_url(dashboard_name, widget_name):
     metric = config.dashboards[dashboard_name].widget_config[widget_name]['metric']
     params = {
         'target': metric,
-        'from': '-%sminutes' % (config.render_time_span,),
+        'from': '-%sminutes' % (config.config['render_period'],),
         'format': 'json'
         }
-    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params))
+    render_url = "%s/render/?%s" % (config.config['graphite_url'], urlencode(params))
     return render_url
 
 
@@ -105,3 +126,6 @@ def render(request, dashboard_name, widget_name):
     d.addCallback(purify_render_results)
     d.addCallback(format_render_results)
     return d
+
+class ConfigError(Exception):
+    """Raised if the config file does not contain a compulsory attribute"""

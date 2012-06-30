@@ -1,6 +1,7 @@
 """Dashboard functionality for the diamondash web app"""
 
 from twisted.web.template import Element, renderer, XMLFile
+from diamondash import server
 
 
 class Dashboard(Element):
@@ -57,3 +58,10 @@ class Dashboard(Element):
                               widget_class_slot=class_attr,
                               widget_id_slot=name)
             yield new_tag
+
+    @renderer
+    def config_script(self, request, tag):
+        # Note how convenient it is to pass these attributes in!
+        # TODO fix injection vulnerability
+        tag.fillSlots(config_variables='alert("aaaaaaah!");')
+        return tag
