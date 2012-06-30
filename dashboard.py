@@ -1,7 +1,10 @@
 """Dashboard functionality for the diamondash web app"""
 
+import re
+import yaml
+from unidecode import unidecode
+from pkg_resources import resource_string
 from twisted.web.template import Element, renderer, XMLFile
-from diamondash import server
 
 
 class Dashboard(Element):
@@ -9,49 +12,67 @@ class Dashboard(Element):
 
     loader = XMLFile('templates/dashboard.xml')
 
-    def __init__(self, config_filename=None, name=None, widget_config=None):
-        if config_filename is not None:
-            self.read_config_file(config_filename)
-        else:
-            self.name = name
-            self.widget_config = widget_config
+    def __init__(self, config):
+        self.config = self.parse_config(config)
 
-    def read_config_file(self, config_filename):
+    @classmethod 
+    def parse_config(cls, config):
+        if 'name' not in config:
+            raise DashboardConfigError('%s: Dashboard name not specified.' % (filename,))
+
+        config['name'] = slugify(config['name'])
+
+        widget_dict = {}
+        for w_name, w_config in config['widgets'].items():
+            if 'metric' not in w_config: 
+                raise DashboardConfigError(
+                    '%s: Widget "%s" needs a metric.' % (filename, w_name))
+            if 'title' not in w_config: 
+                raise DashboardConfigError(
+                    '%s: Widget "%s" needs a title.' % (filename, w_name))
+
+            w_name = slugify(w_name)
+
+            if 'type' not in w_config:
+                w_config['type'] = 'graph' 
+
+            if 'null_filter' not in w_config:
+                w_config['null_filter'] = 'skip'
+
+            widget_dict.update({w_name: w_config})
+
+        # update widget dict to dict with slugified widget names
+        config['widgets'] = widget_dict
+
+        return config
+
+
+    @classmethod
+    def from_config_file(cls, filename):
         """Loads dashboard information from a config file"""
-        # TODO load from config file
-        # TODO allow mulitple dashboards (instead of 'test_dashboard')
-        self.name = 'test-dashboard'
-        self.widget_config = {
-            'random-count-sum': {
-                'title': 'Sum of random count',
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-                'width': '300px',
-                'height': '150px'
-            },
-            'random-timer-average': {
-                'title': 'Average of random timer',
-                'type': 'graph',
-                'metric': 'vumi.random.timer.avg'
-            }
-        }
+        # TODO check and test for invalid config files
+
+        try: 
+            config = yaml.safe_load(resource_string(__name__, filename))
+        except IOError:
+            raise DashboardConfigError('File %s not found.' % (filename,))
+
+        return cls(config)
 
     @renderer
     def widget(self, request, tag):
-        for name, config in self.widget_config.items():
+        for name, config in self.config['widgets'].items():
             new_tag = tag.clone()
 
-            if 'type' not in config:
-                config['type'] = 'graph'
-            class_attr_list = ['widget', config['type']]
-            class_attr = ' '.join('%s' % attr for attr in class_attr_list)
+            # TODO use graph as default type
+            if 'type' in config:
+                class_attr = 'widget %s' % (config['type'],)
 
             style_attr_dict = {}
             for style_key in ['width', 'height']:
                 if style_key in config:
                     style_attr_dict[style_key] = config[style_key]
-            style_attr = '; '.join('%s: %s' % item for item in style_attr_dict.items())
-
+            style_attr = ';'.join('%s %s' % item for item in style_attr_dict.items())
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
@@ -59,9 +80,24 @@ class Dashboard(Element):
                               widget_id_slot=name)
             yield new_tag
 
-    @renderer
+
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+def slugify(text):
+    """Slugifies the passed in text"""
+    result = []
+    for word in _punct_re.split(text.lower()):
+        result.extend(unidecode(word).split())
+    return '-'.join(result)
+
+@renderer
     def config_script(self, request, tag):
         # Note how convenient it is to pass these attributes in!
         # TODO fix injection vulnerability
         tag.fillSlots(config_variables='alert("aaaaaaah!");')
         return tag
+
+
+class DashboardConfigError(Exception):
+    """Raised if a config file does not contain a compulsory attribute"""
+    
+
