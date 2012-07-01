@@ -29,8 +29,9 @@ class ServerConfigFactory(object):
         # TODO load dashboards from directory of config files
         config = cls.parse_config(config)
         config['dashboards'] = {}
-        config['client_vars'] = 'var %s=%s;' % ('requestInterval',
-                                                config['request_interval'])
+        config['client_vars'] = {
+                'requestInterval': config['request_interval']
+            }
         return config
 
     @classmethod 

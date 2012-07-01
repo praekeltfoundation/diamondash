@@ -14,8 +14,9 @@ class Dashboard(Element):
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
     def __init__(self, config, client_vars=None):
-        self.client_vars = client_vars if client_vars is not None else ''
         self.config = self.parse_config(config)
+        self.client_vars = client_vars if client_vars is not None else {}
+        self.client_vars['dashboardName'] = '"%s"' % (config['name'],)
 
     @classmethod 
     def parse_config(cls, config):
@@ -26,8 +27,7 @@ class Dashboard(Element):
 
         widget_dict = {}
         for w_name, w_config in config['widgets'].items():
-            if 'metric' not in w_config: 
-                raise ConfigError(
+            if 'metric' not in w_config: raise ConfigError(
                     'Widget "%s" needs a metric.' % (w_name,))
             if 'title' not in w_config: 
                 raise ConfigError(
@@ -84,10 +84,13 @@ class Dashboard(Element):
 
     @renderer
     def config_script(self, request, tag):
-        # Note how convenient it is to pass these attributes in!
         # TODO fix injection vulnerability
+
+        #flatten into javascript statements
+        client_vars_str = '; '.join('var %s = %s' % item for item in self.client_vars.items())
+
         if self.client_vars is not None:
-            tag.fillSlots(client_vars=self.client_vars)
+            tag.fillSlots(client_vars=client_vars_str)
         return tag
 
 
