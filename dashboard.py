@@ -74,7 +74,7 @@ class Dashboard(Element):
             for style_key in ['width', 'height']:
                 if style_key in config:
                     style_attr_dict[style_key] = config[style_key]
-            style_attr = ';'.join('%s %s' % item for item in style_attr_dict.items())
+            style_attr = ';'.join('%s: %s' % item for item in style_attr_dict.items())
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,

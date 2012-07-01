@@ -2,14 +2,13 @@
 
 import json
 import yaml
-from os import path
 from urllib import urlencode
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
 from dashboard import Dashboard
 from exceptions import ConfigError
-from pkg_resources import resource_string
+from pkg_resources import resource_string, resource_filename
 
 
 DEFAULT_CONFIG_FILEPATH = './etc/diamondash.yml' 
@@ -76,7 +75,7 @@ def add_dashboard(dashboard):
 @route('/static/')
 def static(request):
     """Routing for all static files (css, js)"""
-    return File('%s/static' % (path.dirname(__file__),))
+    return File(resource_filename(__name__, './static'))
 
 
 @route('/')
