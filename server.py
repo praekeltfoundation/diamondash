@@ -6,6 +6,7 @@ from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
 from dashboard import Dashboard
+from pkg_resources import resource_string, resource_stream, resource_filename
 
 DEFAULT_GRAPHITE_URL = "http://127.0.0.1:8000"
 DEFAULT_RENDER_TIME_SPAN = 5
@@ -43,7 +44,7 @@ def add_dashboard(dashboard):
 @route('/static/')
 def static(request):
     """Routing for all static files (css, js)"""
-    return File("./static")
+    return File(resource_filename(__name__, './static'))
 
 
 @route('/')

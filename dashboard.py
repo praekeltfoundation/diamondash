@@ -3,14 +3,14 @@
 import re
 import yaml
 from unidecode import unidecode
-from pkg_resources import resource_string
+from pkg_resources import resource_string, resource_stream
 from twisted.web.template import Element, renderer, XMLFile
 
 
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
-    loader = XMLFile('templates/dashboard.xml')
+    loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
     def __init__(self, config):
         self.config = self.parse_config(config)
