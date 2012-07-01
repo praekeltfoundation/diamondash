@@ -18,7 +18,7 @@ class Dashboard(Element):
     @classmethod 
     def parse_config(cls, config):
         if 'name' not in config:
-            raise DashboardConfigError('%s: Dashboard name not specified.' % (filename,))
+            raise DashboardConfigError('Dashboard name not specified.')
 
         config['name'] = slugify(config['name'])
 
@@ -26,10 +26,10 @@ class Dashboard(Element):
         for w_name, w_config in config['widgets'].items():
             if 'metric' not in w_config: 
                 raise DashboardConfigError(
-                    '%s: Widget "%s" needs a metric.' % (filename, w_name))
+                    'Widget "%s" needs a metric.' % (w_name,))
             if 'title' not in w_config: 
                 raise DashboardConfigError(
-                    '%s: Widget "%s" needs a title.' % (filename, w_name))
+                    'Widget "%s" needs a title.' % (w_name,))
 
             w_name = slugify(w_name)
 
