@@ -69,13 +69,14 @@ config = ServerConfigFactory.from_config_file(DEFAULT_CONFIG_FILEPATH)
 
 def add_dashboard(dashboard):
     """Adds a new dashboard to the web server"""
-    config['dashboards'].update({dashboard.config['name']: dashboard})
+    dashboard_name = dashboard.config['name']
+    config['dashboards'][dashboard_name] = dashboard
 
 
 @route('/static/')
 def static(request):
     """Routing for all static files (css, js)"""
-    return File(resource_filename(__name__, './static'))
+    return File(resource_filename(__name__, 'static'))
 
 
 @route('/')
@@ -83,7 +84,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard.from_config_file('./etc/test_dashboard.yml', config['client_vars'])
+    dashboard = Dashboard.from_config_file(resource_filename(__name__, 'etc/test_dashboard.yml'))
     add_dashboard(dashboard)
     return dashboard
 

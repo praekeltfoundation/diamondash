@@ -33,18 +33,12 @@ class Dashboard(Element):
                 raise DashboardConfigError(
                     'Widget "%s" needs metric(s).' % (w_name,))
 
-            if 'title' not in w_config: 
-                w_config['title'] = w_name
-
+            w_config.setdefault('title', w_name)
             w_name = slugify(w_name)
+            w_config.setdefault('type', 'graph')
+            w_config.setdefault('null_filter', 'skip')
 
-            if 'type' not in w_config:
-                w_config['type'] = 'graph' 
-
-            if 'null_filter' not in w_config:
-                w_config['null_filter'] = 'skip'
-
-            widget_dict.update({w_name: w_config})
+            widget_dict[w_name] = w_config
 
         # update widget dict to dict with slugified widget names
         config['widgets'] = widget_dict
@@ -58,21 +52,13 @@ class Dashboard(Element):
         # TODO check and test for invalid config files
 
         try: 
-            config = yaml.safe_load(resource_string(__name__, filename))
+            config = yaml.safe_load(open(filename))
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
 
         return cls(config)
 
     def get_widget(self, w_name):
-        """Returns a widget using the passed in widget name"""
-        return self.config['widgets'][w_name]
-
-    def get_widget_targets(self, w_name):
-        """Returns a widget using the passed in widget name"""
-        return self.config['widgets'][w_name]['metrics'].values()
-
-    def get_widgets(self, w_name):
         """Returns a widget using the passed in widget name"""
         return self.config['widgets'][w_name]
 
