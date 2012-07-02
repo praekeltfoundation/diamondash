@@ -62,13 +62,12 @@ def construct_render_url(dashboard_name, widget_name):
     Constructs the graphite render url based
     on the client's request uri
     """
-    metric = config.dashboards[dashboard_name].config['widgets'][widget_name]['metric']
     params = {
-        'target': metric,
+        'target': config.dashboards[dashboard_name].get_widget_targets(widget_name),
         'from': '-%sminutes' % (config.render_time_span,),
         'format': 'json'
         }
-    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params))
+    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params, True))
     return render_url
 
 

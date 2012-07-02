@@ -25,9 +25,9 @@ class Dashboard(Element):
 
         widget_dict = {}
         for w_name, w_config in config['widgets'].items():
-            if 'metric' not in w_config: 
+            if 'metrics' not in w_config: 
                 raise DashboardConfigError(
-                    'Widget "%s" needs a metric.' % (w_name,))
+                    'Widget "%s" needs metric(s).' % (w_name,))
 
             if 'title' not in w_config: 
                 w_config['title'] = w_name
@@ -59,6 +59,14 @@ class Dashboard(Element):
             raise DashboardConfigError('File %s not found.' % (filename,))
 
         return cls(config)
+
+    def get_widgets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]
+
+    def get_widget_targets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]['metrics'].values()
 
     @renderer
     def widget(self, request, tag):

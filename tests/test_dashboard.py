@@ -35,7 +35,7 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(config['widgets']['random-timer-average']['title'], 
                          'this is an explicit title')
 
-    def test_no_widget_metric(self):
+    def test_no_widget_metrics(self):
         """Should assert an error if a widget in the config file has no name"""
         self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 
-                          'tests/no_widget_metric.yml')
+                          'tests/no_widget_metrics.yml')

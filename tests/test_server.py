@@ -103,7 +103,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum': {
                     'title': 'a graph',
                     'type': 'graph',
-                    'metric': 'vumi.random.count.sum'
+                    'metrics': {
+                        'random count sum': 'vumi.random.count.sum'
+                     }
                 }
             }
         }
@@ -143,7 +145,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum': {
                     'title': 'a graph',
                     'type': 'graph',
-                    'metric': 'vumi.random.count.sum'
+                    'metrics': {
+                        'random count sum': 'vumi.random.count.sum'
+                     }
                 }
             }
         }
