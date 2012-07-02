@@ -8,4 +8,5 @@ widgets:
     random-timer-average:
         title: Average of random timer
         type: graph
-        metric: vumi.random.timer.avg
+        metrics: 
+            'random timer average': vumi.random.timer.avg

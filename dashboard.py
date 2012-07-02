@@ -23,15 +23,17 @@ class Dashboard(Element):
         if 'name' not in config:
             raise ConfigError('Dashboard name not specified.')
 
+        config['title'] = config['name']
         config['name'] = slugify(config['name'])
 
         widget_dict = {}
         for w_name, w_config in config['widgets'].items():
-            if 'metric' not in w_config: raise ConfigError(
-                    'Widget "%s" needs a metric.' % (w_name,))
+            if 'metrics' not in w_config: 
+                raise DashboardConfigError(
+                    'Widget "%s" needs metric(s).' % (w_name,))
+
             if 'title' not in w_config: 
-                raise ConfigError(
-                    'Widget "%s" needs a title.' % (w_name,))
+                w_config['title'] = w_name
 
             w_name = slugify(w_name)
 
@@ -59,16 +61,33 @@ class Dashboard(Element):
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
 
-        return cls(config, client_vars)
+        return cls(config)
+
+    def get_widgets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]
+
+    def get_widget_targets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]['metrics'].values()
+
+    def get_widgets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]
+
+    def get_widget_targets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]['metrics'].values()
 
     @renderer
     def widget(self, request, tag):
-        for name, config in self.config['widgets'].items():
+        for w_name, config in self.config['widgets'].items():
             new_tag = tag.clone()
 
-            # TODO use graph as default type
-            if 'type' in config:
-                class_attr = 'widget %s' % (config['type'],)
+            if 'type' not in config:
+                config['type'] = 'graph'
+            class_attr_list = ['widget', config['type']]
+            class_attr = ' '.join('%s' % attr for attr in class_attr_list)
 
             style_attr_dict = {}
             for style_key in ['width', 'height']:
@@ -79,7 +98,7 @@ class Dashboard(Element):
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
-                              widget_id_slot=name)
+                              widget_id_slot=w_name)
             yield new_tag
 
     @renderer
