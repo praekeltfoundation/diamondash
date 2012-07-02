@@ -7,7 +7,8 @@ from pkg_resources import resource_string, resource_stream, resource_filename
 from twisted.trial import unittest
 
 from diamondash import server
-from diamondash.dashboard import slugify, Dashboard, DashboardConfigError
+from diamondash.dashboard import slugify, Dashboard
+from diamondash.exceptions import ConfigError
 
 
 class DashboardTestCase(unittest.TestCase):
@@ -18,11 +19,11 @@ class DashboardTestCase(unittest.TestCase):
 
     def test_from_config_file_not_found(self):
         """Should assert an error if the dashboard in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/non_existent_file.yml')
+        self.assertRaises(ConfigError, Dashboard.from_config_file, 'tests/non_existent_file.yml')
 
     def test_no_dashboard_name(self):
         """Should assert an error if the dashboard in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/no_dashboard_name.yml')
+        self.assertRaises(ConfigError, Dashboard.from_config_file, 'tests/no_dashboard_name.yml')
 
     def test_widget_title(self):
         """
@@ -36,4 +37,4 @@ class DashboardTestCase(unittest.TestCase):
 
     def test_no_widget_metrics(self):
         """Should assert an error if a widget in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/no_widget_metrics.yml')
+        self.assertRaises(ConfigError, Dashboard.from_config_file, 'tests/no_widget_metrics.yml')

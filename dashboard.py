@@ -6,6 +6,7 @@ import yaml
 from unidecode import unidecode
 from pkg_resources import resource_string, resource_stream
 from twisted.web.template import Element, renderer, XMLFile
+from exceptions import ConfigError
 
 
 class Dashboard(Element):
@@ -13,13 +14,15 @@ class Dashboard(Element):
 
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
-    def __init__(self, config):
+    def __init__(self, config, client_vars=None):
         self.config = self.parse_config(config)
+        self.client_vars = client_vars if client_vars is not None else {}
+        self.client_vars['dashboardName'] = '"%s"' % (config['name'],)
 
     @classmethod 
     def parse_config(cls, config):
         if 'name' not in config:
-            raise DashboardConfigError('Dashboard name not specified.')
+            raise ConfigError('Dashboard name not specified.')
 
         config['title'] = config['name']
         config['name'] = slugify(config['name'])
@@ -44,16 +47,16 @@ class Dashboard(Element):
 
 
     @classmethod
-    def from_config_file(cls, filename):
+    def from_config_file(cls, filename, client_vars=None):
         """Loads dashboard information from a config file"""
         # TODO check and test for invalid config files
 
         try: 
             config = yaml.safe_load(open(filename))
         except IOError:
-            raise DashboardConfigError('File %s not found.' % (filename,))
+            raise ConfigError('File %s not found.' % (filename,))
 
-        return cls(config)
+        return cls(config, client_vars)
 
     def get_widget(self, w_name):
         """Returns a widget using the passed in widget name"""
@@ -77,14 +80,24 @@ class Dashboard(Element):
             for style_key in ['width', 'height']:
                 if style_key in config:
                     style_attr_dict[style_key] = config[style_key]
-            style_attr = '; '.join('%s: %s' % item for item in style_attr_dict.items())
-
+            style_attr = ';'.join('%s: %s' % item for item in style_attr_dict.items())
 
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
                               widget_id_slot=w_name)
             yield new_tag
+
+    @renderer
+    def config_script(self, request, tag):
+        # TODO fix injection vulnerability
+
+        #flatten into javascript statements
+        client_vars_str = '; '.join('var %s = %s' % item for item in self.client_vars.items())
+
+        if self.client_vars is not None:
+            tag.fillSlots(client_vars=client_vars_str)
+        return tag
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
@@ -94,6 +107,3 @@ def slugify(text):
     for word in _punct_re.split(text.lower()):
         result.extend(unidecode(word).split())
     return '-'.join(result)
-
-class DashboardConfigError(Exception):
-    """Raised if a config file does not contain a compulsory attribute"""
