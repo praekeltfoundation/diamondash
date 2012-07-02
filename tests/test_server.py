@@ -2,15 +2,17 @@
 
 import json
 from urllib import urlencode
+
 from pkg_resources import resource_stream
 from klein.test_resource import requestMock
-from diamondash import server
-from diamondash.dashboard import Dashboard
-from diamondash.server import ServerConfigFactory
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
+
+from diamondash import server
+from diamondash.dashboard import Dashboard
+from diamondash.server import ServerConfigFactory
 
 
 class MockGraphiteServerProtocol(Protocol):

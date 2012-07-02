@@ -1,6 +1,7 @@
 """Dashboard functionality for the diamondash web app"""
 
 import re
+
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_string, resource_stream

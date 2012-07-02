@@ -1,15 +1,15 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 import json
-import yaml
 from urllib import urlencode
+
+import yaml
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from dashboard import Dashboard
-from exceptions import ConfigError
-from pkg_resources import resource_string, resource_filename
+from pkg_resources import resource_string, resource_stream, resource_filename
 
+from dashboard import Dashboard
 
 DEFAULT_CONFIG_FILEPATH = './etc/diamondash.yml' 
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
