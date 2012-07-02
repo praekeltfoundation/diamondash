@@ -11,61 +11,39 @@ from pkg_resources import resource_string, resource_stream, resource_filename
 
 from dashboard import Dashboard
 
-DEFAULT_CONFIG_FILEPATH = './etc/diamondash.yml' 
+DEFAULT_CONFIG_FILEPATH = 'etc/diamondash.yml' 
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 DEFAULT_RENDER_PERIOD = 5
 DEFAULT_REQUEST_INTERVAL = 2
 
+def build_config(overrides):
+    config = {
+            'graphite_url': DEFAULT_GRAPHITE_URL,
+            'render_period': DEFAULT_RENDER_PERIOD,
+            'request_interval': DEFAULT_REQUEST_INTERVAL,
+            'dashboards': {},
+        }
 
-class ServerConfigFactory(object):
-    """
-    Holds configuration information for the
-    diamondash web server
-    """
+    config.update(overrides)
 
-    def __new__(cls, config):
-        # TODO init from args
-        # TODO load dashboards from directory of config files
-        config = cls.parse_config(config)
-        config['dashboards'] = {}
-        config['client_vars'] = {
-                'requestInterval': config['request_interval']
-            }
-        return config
+    config['client_vars'] = {
+            'requestInterval': config['request_interval']
+        }
 
-    @classmethod 
-    def parse_config(cls, config):
-        if 'graphite_url' not in config:
-            config['graphite_url'] = DEFAULT_GRAPHITE_URL
+    return config
 
-        if 'render_period' not in config:
-            config['render_period'] = DEFAULT_RENDER_TIME_PERIOD
+def build_config_from_file(filepath):
+    """Loads the diamondash configuration from a config file"""
 
-        if 'request_interval' not in config:
-            config['request_interval'] = DEFAULT_REQUEST_INTERVAL
+    try: 
+        config = yaml.safe_load(resource_string(__name__, filepath))
+    except IOError:
+        raise ConfigError('File %s not found.' % (filename,))
 
-        return config
-
-    @classmethod
-    def from_config_file(cls, filepath):
-        """Loads the diamondash configuration from a config file"""
-
-        try: 
-            config = yaml.safe_load(resource_string(__name__, filepath))
-        except IOError:
-            raise ConfigError('File %s not found.' % (filename,))
-
-        return cls(config)
-
-    @classmethod
-    def from_args(cls, **kwargs):
-        """Loads the diamondash configuration from the passed in arguments"""
-        return cls(kwargs)
-
+    return build_config(config)
 
 # initialise the server configuration
-config = ServerConfigFactory.from_config_file(DEFAULT_CONFIG_FILEPATH)
-
+config = build_config_from_file(DEFAULT_CONFIG_FILEPATH)
 
 def add_dashboard(dashboard):
     """Adds a new dashboard to the web server"""
@@ -84,7 +62,8 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard.from_config_file(resource_filename(__name__, 'etc/test_dashboard.yml'))
+    dashboard = Dashboard.from_config_file(
+        resource_filename(__name__, 'etc/test_dashboard.yml'))
     add_dashboard(dashboard)
     return dashboard
 

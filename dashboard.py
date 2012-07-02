@@ -56,7 +56,7 @@ class Dashboard(Element):
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
 
-        return cls(config)
+        return cls(config, client_vars)
 
     def get_widget(self, w_name):
         """Returns a widget using the passed in widget name"""
