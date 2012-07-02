@@ -1,0 +1,9 @@
+name: 'Test Dashboard'
+widgets:
+    'Sum of random count':
+        metrics: 
+           'Sum of random count': vumi.random.count.sum
+
+    'Average of random timer':
+        metrics: 
+           'Average of random timer': vumi.random.timer.avg

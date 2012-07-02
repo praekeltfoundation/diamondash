@@ -2,14 +2,16 @@
 
 import json
 from urllib import urlencode
+
 from pkg_resources import resource_stream
 from klein.test_resource import requestMock
-from diamondash import server
-from diamondash.dashboard import Dashboard
 from twisted.trial import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
+
+from diamondash import server
+from diamondash.dashboard import Dashboard
 
 
 class MockGraphiteServerProtocol(Protocol):
@@ -62,7 +64,7 @@ class MockGraphiteServerMixin(object):
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     _TEST_DATA = json.load(
-        resource_stream(__name__, 'test_data.json'))
+        resource_stream(__name__, 'server_test_data.json'))
 
     def setUp(self):
         self.graphite_ws = None
@@ -97,25 +99,25 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             graphite_url=self.graphite_url,
             render_time_span=test_render_time_span)
 
-        # add a test dashboard
-        test_dashboard_name = 'test-dashboard'
-        test_widget_name = 'random-count-sum'
-        test_widget_config = {
-            test_widget_name: {
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-            },
+        config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random count sum': 'vumi.random.count.sum'
+                     }
+                }
+            }
         }
-        server.add_dashboard(Dashboard(
-            name=test_dashboard_name,
-            widget_config=test_widget_config))
+        server.add_dashboard(Dashboard(config))
 
         input = self._TEST_DATA['test_render_for_graph']['input']
         request = requestMock(input, host=self.graphite_ws.getHost().host,
                               port=self.graphite_ws.getHost().port)
         output = self._TEST_DATA['test_render_for_graph']['output']
-        d = server.render(request, test_dashboard_name, 
-                          test_widget_name)
+        d = server.render(request, 'test-dashboard', 'random-count-sum')
         d.addCallback(self.assert_response, output)
         yield d
 
@@ -139,18 +141,19 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             graphite_url=test_graphite_url,
             render_time_span=test_render_time_span)
 
-
-        # add a test dashboard
-        test_dashboard_name = 'test-dashboard'
-        test_widget_config = {
-            'random-count-sum': {
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-            },
+        config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random count sum': 'vumi.random.count.sum'
+                     }
+                }
+            }
         }
-        server.add_dashboard(Dashboard(
-            name=test_dashboard_name,
-            widget_config=test_widget_config))
+        server.add_dashboard(Dashboard(config))
 
         params = {
             'target': 'vumi.random.count.sum',
@@ -169,14 +172,24 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     Purification tests
     ------------------
     """
-    def test_purify_render_results_skip_nulls(self):
+    def test_skip_nulls(self):
         """
         Should return datapoints without null values by
         skipping coordinates withh null x or y values
         """
-        before = self._TEST_DATA['test_purify_render_results_skip_nulls']['before']
-        after = self._TEST_DATA['test_purify_render_results_skip_nulls']['after']
-        purified = server.purify_render_results(before)
+        before = self._TEST_DATA['test_skip_nulls']['before']
+        after = self._TEST_DATA['test_skip_nulls']['after']
+        purified = server.skip_nulls(before)
+        self.assertEqual(purified, after)
+
+    def test_zeroize_nulls(self):
+        """
+        Should return datapoints without null values by
+        skipping coordinates with null x or y values
+        """
+        before = self._TEST_DATA['test_zeroize_nulls']['before']
+        after = self._TEST_DATA['test_zeroize_nulls']['after']
+        purified = server.zeroize_nulls(before)
         self.assertEqual(purified, after)
 
     """
