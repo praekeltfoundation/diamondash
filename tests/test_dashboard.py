@@ -3,6 +3,7 @@
 
 import json
 
+from pkg_resources import resource_string, resource_stream, resource_filename
 from twisted.trial import unittest
 
 from diamondash import server
@@ -17,13 +18,11 @@ class DashboardTestCase(unittest.TestCase):
 
     def test_from_config_file_not_found(self):
         """Should assert an error if the dashboard in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 
-                          'tests/non_existent_file.yml')
+        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/non_existent_file.yml')
 
     def test_no_dashboard_name(self):
         """Should assert an error if the dashboard in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 
-                          'tests/no_dashboard_name.yml')
+        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/no_dashboard_name.yml')
 
     def test_widget_title(self):
         """
@@ -31,13 +30,10 @@ class DashboardTestCase(unittest.TestCase):
         widget title using a title key if it is explicitly specified, even
         when the two different conventions are mixed in a config file
         """
-        config = Dashboard.from_config_file('tests/widget_title.yml').config
-        self.assertEqual(config['widgets']['random-count-sum']['title'], 
-                         'random count sum')
-        self.assertEqual(config['widgets']['random-timer-average']['title'], 
-                         'this is an explicit title')
+        config = Dashboard.from_config_file(resource_filename(__name__, 'widget_title.yml')).config
+        self.assertEqual(config['widgets']['random-count-sum']['title'], 'random count sum')
+        self.assertEqual(config['widgets']['random-timer-average']['title'], 'this is an explicit title')
 
     def test_no_widget_metrics(self):
         """Should assert an error if a widget in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 
-                          'tests/no_widget_metrics.yml')
+        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 'tests/no_widget_metrics.yml')
