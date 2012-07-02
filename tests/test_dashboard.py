@@ -2,9 +2,11 @@
 """Tests for diamondash's dashboard"""
 
 import json
+
+from twisted.trial import unittest
+
 from diamondash import server
 from diamondash.dashboard import slugify, Dashboard, DashboardConfigError
-from twisted.trial import unittest
 
 
 class DashboardTestCase(unittest.TestCase):

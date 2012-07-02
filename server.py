@@ -2,11 +2,13 @@
 
 import json
 from urllib import urlencode
+
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from dashboard import Dashboard
 from pkg_resources import resource_string, resource_stream, resource_filename
+
+from dashboard import Dashboard
 
 DEFAULT_GRAPHITE_URL = "http://127.0.0.1:8000"
 DEFAULT_RENDER_TIME_SPAN = 5
