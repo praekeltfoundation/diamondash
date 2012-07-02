@@ -12,6 +12,7 @@ from twisted.internet.protocol import Protocol, Factory
 
 from diamondash import server
 from diamondash.dashboard import Dashboard
+from diamondash.server import build_config
 
 
 class MockGraphiteServerProtocol(Protocol):
@@ -63,7 +64,7 @@ class MockGraphiteServerMixin(object):
 
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
-    _TEST_DATA = json.load(
+    TEST_DATA = json.load(
         resource_stream(__name__, 'server_test_data.json'))
 
     def setUp(self):
@@ -92,14 +93,15 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_render_time_span = 5
+        test_overrides = {
+                'graphite_url': self.graphite_url,
+                'render_period': 5
+            }
 
         # initialise the server configuration
-        server.config = server.ServerConfig(
-            graphite_url=self.graphite_url,
-            render_time_span=test_render_time_span)
+        server.config = build_config(test_overrides)
 
-        config = {
+        dashboard_config = {
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
@@ -111,12 +113,12 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             }
         }
-        server.add_dashboard(Dashboard(config))
+        server.add_dashboard(Dashboard(dashboard_config))
 
-        input = self._TEST_DATA['test_render_for_graph']['input']
+        input = self.TEST_DATA['test_render_for_graph']['input']
         request = requestMock(input, host=self.graphite_ws.getHost().host,
                               port=self.graphite_ws.getHost().port)
-        output = self._TEST_DATA['test_render_for_graph']['output']
+        output = self.TEST_DATA['test_render_for_graph']['output']
         d = server.render(request, 'test-dashboard', 'random-count-sum')
         d.addCallback(self.assert_response, output)
         yield d
@@ -134,14 +136,18 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should construct render request urls acceptable to graphite
         from a client side graph render request
         """
-        # initialise the server configuration
-        test_graphite_url = "http://127.0.0.1:8000"
-        test_render_time_span = 5
-        server.config = server.ServerConfig(
-            graphite_url=test_graphite_url,
-            render_time_span=test_render_time_span)
 
-        config = {
+        test_render_period = 5
+        test_graphite_url = 'http://127.0.0.1:8000'
+        test_overrides = {
+                'graphite_url': test_graphite_url,
+                'render_period': test_render_period,
+            }
+
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
+
+        dashboard_config = {
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
@@ -153,11 +159,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             }
         }
-        server.add_dashboard(Dashboard(config))
+        server.add_dashboard(Dashboard(dashboard_config))
 
         params = {
             'target': 'vumi.random.count.sum',
-            'from': '-%sminutes' % (test_render_time_span,),
+            'from': '-%sminutes' % (test_render_period,),
             'format': 'json'
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
@@ -177,8 +183,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should return datapoints without null values by
         skipping coordinates withh null x or y values
         """
-        before = self._TEST_DATA['test_skip_nulls']['before']
-        after = self._TEST_DATA['test_skip_nulls']['after']
+        before = self.TEST_DATA['test_skip_nulls']['before']
+        after = self.TEST_DATA['test_skip_nulls']['after']
         purified = server.skip_nulls(before)
         self.assertEqual(purified, after)
 
@@ -187,8 +193,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should return datapoints without null values by
         skipping coordinates with null x or y values
         """
-        before = self._TEST_DATA['test_zeroize_nulls']['before']
-        after = self._TEST_DATA['test_zeroize_nulls']['after']
+        before = self.TEST_DATA['test_zeroize_nulls']['before']
+        after = self.TEST_DATA['test_zeroize_nulls']['after']
         purified = server.zeroize_nulls(before)
         self.assertEqual(purified, after)
 
@@ -204,8 +210,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should format datapoints in graphite's format to 
         datapoints in rickshaw's format
         """
-        before = self._TEST_DATA['test_format_render_results_for_graph']['before']
-        after = self._TEST_DATA['test_format_render_results_for_graph']['after']
+        before = self.TEST_DATA['test_format_render_results_for_graph']['before']
+        after = self.TEST_DATA['test_format_render_results_for_graph']['after']
         formatted = server.format_render_results(before)
         formatted_str = json.loads(formatted)
         self.assertEqual(formatted_str, after)

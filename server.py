@@ -3,6 +3,7 @@
 import json
 from urllib import urlencode
 
+import yaml
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
@@ -10,38 +11,44 @@ from pkg_resources import resource_string, resource_stream, resource_filename
 
 from dashboard import Dashboard
 
-DEFAULT_GRAPHITE_URL = "http://127.0.0.1:8000"
-DEFAULT_RENDER_TIME_SPAN = 5
+DEFAULT_CONFIG_FILEPATH = 'etc/diamondash.yml' 
+DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
+DEFAULT_RENDER_PERIOD = 5
+DEFAULT_REQUEST_INTERVAL = 2
 
-class ServerConfig(object):
-    """
-    Holds configuration information for the
-    diamondash web server
-    """
+def build_config(overrides):
+    config = {
+            'graphite_url': DEFAULT_GRAPHITE_URL,
+            'render_period': DEFAULT_RENDER_PERIOD,
+            'request_interval': DEFAULT_REQUEST_INTERVAL,
+            'dashboards': {},
+        }
 
-    def __init__(self, graphite_url=None, render_time_span=None):
-        # TODO init from args or config file
-        # TODO allow mulitiple dashboards
+    config.update(overrides)
 
-        if graphite_url is None:
-            graphite_url = DEFAULT_GRAPHITE_URL
+    config['client_vars'] = {
+            'requestInterval': config['request_interval']
+        }
 
-        if render_time_span is None:
-            render_time_span = DEFAULT_RENDER_TIME_SPAN
+    return config
 
-        self.graphite_url = graphite_url
-        self.render_time_span = render_time_span
-        self.dashboards = {}
+def build_config_from_file(filepath):
+    """Loads the diamondash configuration from a config file"""
 
+    try: 
+        config = yaml.safe_load(resource_string(__name__, filepath))
+    except IOError:
+        raise ConfigError('File %s not found.' % (filename,))
+
+    return build_config(config)
 
 # initialise the server configuration
-config = ServerConfig()
-
+config = build_config_from_file(DEFAULT_CONFIG_FILEPATH)
 
 def add_dashboard(dashboard):
     """Adds a new dashboard to the web server"""
     dashboard_name = dashboard.config['name']
-    config.dashboards[dashboard_name] = dashboard
+    config['dashboards'][dashboard_name] = dashboard
 
 
 @route('/static/')
@@ -55,7 +62,8 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
-    dashboard = Dashboard.from_config_file(resource_filename(__name__, 'etc/test_dashboard.yml'))
+    dashboard = Dashboard.from_config_file(
+        resource_filename(__name__, 'etc/test_dashboard.yml'))
     add_dashboard(dashboard)
     return dashboard
 
@@ -66,11 +74,11 @@ def construct_render_url(dashboard_name, widget_name):
     on the client's request uri
     """
     params = {
-        'target': config.dashboards[dashboard_name].get_widget_targets(widget_name),
-        'from': '-%sminutes' % (config.render_time_span,),
+        'target': config['dashboards'][dashboard_name].get_widget_targets(widget_name),
+        'from': '-%sminutes' % (config['render_period'],),
         'format': 'json'
         }
-    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params, True))
+    render_url = "%s/render/?%s" % (config['graphite_url'], urlencode(params, True))
     return render_url
 
 
@@ -120,7 +128,7 @@ def render(request, dashboard_name, widget_name):
 
     d = getPage(render_url)
     d.addCallback(get_datapoints)
-    null_filter = config.dashboards[dashboard_name].config['widgets'][widget_name]['null_filter']
+    null_filter = config['dashboards'][dashboard_name].get_widget(widget_name)['null_filter']
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
     d.addCallback(format_render_results)
     return d
