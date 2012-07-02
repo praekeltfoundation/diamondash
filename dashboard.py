@@ -20,6 +20,7 @@ class Dashboard(Element):
         if 'name' not in config:
             raise DashboardConfigError('Dashboard name not specified.')
 
+        config['title'] = config['name']
         config['name'] = slugify(config['name'])
 
         widget_dict = {}
@@ -27,9 +28,9 @@ class Dashboard(Element):
             if 'metric' not in w_config: 
                 raise DashboardConfigError(
                     'Widget "%s" needs a metric.' % (w_name,))
+
             if 'title' not in w_config: 
-                raise DashboardConfigError(
-                    'Widget "%s" needs a title.' % (w_name,))
+                w_config['title'] = w_name
 
             w_name = slugify(w_name)
 
@@ -61,7 +62,7 @@ class Dashboard(Element):
 
     @renderer
     def widget(self, request, tag):
-        for name, config in self.config['widgets'].items():
+        for w_name, config in self.config['widgets'].items():
             new_tag = tag.clone()
 
             if 'type' not in config:
@@ -79,7 +80,7 @@ class Dashboard(Element):
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
-                              widget_id_slot=name)
+                              widget_id_slot=w_name)
             yield new_tag
 
 

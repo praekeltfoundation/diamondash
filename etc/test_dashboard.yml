@@ -1,13 +1,7 @@
-name: test-dashboard
+name: 'Test Dashboard'
 widgets:
-    random-count-sum:
-        title: Sum of random count
+    'Sum of random count':
         metric: vumi.random.count.sum
-        type: graph
-        width: 300px
-        height: 150px
-        null_filter: zeroize
-    random-timer-average:
-        title: Average of random timer
-        type: graph
+
+    'Average of random timer':
         metric: vumi.random.timer.avg
