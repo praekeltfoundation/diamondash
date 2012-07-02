@@ -1,43 +1,71 @@
 """Dashboard functionality for the diamondash web app"""
 
+import re
+
+import yaml
+from unidecode import unidecode
+from pkg_resources import resource_string, resource_stream
 from twisted.web.template import Element, renderer, XMLFile
 
 
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
-    loader = XMLFile('templates/dashboard.xml')
+    loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
-    def __init__(self, config_filename=None, name=None, widget_config=None):
-        if config_filename is not None:
-            self.read_config_file(config_filename)
-        else:
-            self.name = name
-            self.widget_config = widget_config
+    def __init__(self, config):
+        self.config = self.parse_config(config)
 
-    def read_config_file(self, config_filename):
+    @classmethod 
+    def parse_config(cls, config):
+        if 'name' not in config:
+            raise DashboardConfigError('Dashboard name not specified.')
+
+        config['title'] = config['name']
+        config['name'] = slugify(config['name'])
+
+        widget_dict = {}
+        for w_name, w_config in config['widgets'].items():
+            if 'metrics' not in w_config: 
+                raise DashboardConfigError(
+                    'Widget "%s" needs metric(s).' % (w_name,))
+
+            w_config.setdefault('title', w_name)
+            w_name = slugify(w_name)
+            w_config.setdefault('type', 'graph')
+            w_config.setdefault('null_filter', 'skip')
+
+            widget_dict[w_name] = w_config
+
+        # update widget dict to dict with slugified widget names
+        config['widgets'] = widget_dict
+
+        return config
+
+
+    @classmethod
+    def from_config_file(cls, filename):
         """Loads dashboard information from a config file"""
-        # TODO load from config file
-        # TODO allow mulitple dashboards (instead of 'test_dashboard')
-        self.name = 'test-dashboard'
-        self.widget_config = {
-            'random-count-sum': {
-                'title': 'Sum of random count',
-                'type': 'graph',
-                'metric': 'vumi.random.count.sum',
-                'width': '300px',
-                'height': '150px'
-            },
-            'random-timer-average': {
-                'title': 'Average of random timer',
-                'type': 'graph',
-                'metric': 'vumi.random.timer.avg'
-            }
-        }
+        # TODO check and test for invalid config files
+
+        try: 
+            config = yaml.safe_load(open(filename))
+        except IOError:
+            raise DashboardConfigError('File %s not found.' % (filename,))
+
+        return cls(config)
+
+    def get_widget(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]
+
+    def get_widget_targets(self, w_name):
+        """Returns a widget using the passed in widget name"""
+        return self.config['widgets'][w_name]['metrics'].values()
 
     @renderer
     def widget(self, request, tag):
-        for name, config in self.widget_config.items():
+        for w_name, config in self.config['widgets'].items():
             new_tag = tag.clone()
 
             if 'type' not in config:
@@ -55,5 +83,17 @@ class Dashboard(Element):
             new_tag.fillSlots(widget_title_slot=config['title'],
                               widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
-                              widget_id_slot=name)
+                              widget_id_slot=w_name)
             yield new_tag
+
+
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+def slugify(text):
+    """Slugifies the passed in text"""
+    result = []
+    for word in _punct_re.split(text.lower()):
+        result.extend(unidecode(word).split())
+    return '-'.join(result)
+
+class DashboardConfigError(Exception):
+    """Raised if a config file does not contain a compulsory attribute"""
