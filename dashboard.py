@@ -113,10 +113,10 @@ class Dashboard(Element):
         return tag
 
 
-_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
-def slugify(text):
-    """Slugifies the passed in text"""
-    result = []
-    for word in _punct_re.split(text.lower()):
-        result.extend(unidecode(word).split())
-    return '-'.join(result)
+    _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+    def slugify(text):
+        """Slugifies the passed in text"""
+        result = []
+        for word in _punct_re.split(text.lower()):
+            result.extend(unidecode(word).split())
+        return '-'.join(result)
