@@ -55,5 +55,5 @@ class DashboardTestCase(unittest.TestCase):
 
     def test_no_widget_metrics(self):
         """Should assert an error if a widget in the config file has no name"""
-        self.assertRaises(DashboardConfigError, Dashboard.from_config_file, 
+        self.assertRaises(ConfigError, Dashboard.from_config_file, 
                           'tests/no_widget_metrics.yml')

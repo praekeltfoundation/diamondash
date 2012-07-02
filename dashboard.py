@@ -63,7 +63,7 @@ class Dashboard(Element):
 
         return cls(config)
 
-    def get_widgets(self, w_name):
+    def get_widget(self, w_name):
         """Returns a widget using the passed in widget name"""
         return self.config['widgets'][w_name]
 
@@ -113,10 +113,10 @@ class Dashboard(Element):
         return tag
 
 
-    _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
-    def slugify(text):
-        """Slugifies the passed in text"""
-        result = []
-        for word in _punct_re.split(text.lower()):
-            result.extend(unidecode(word).split())
-        return '-'.join(result)
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+def slugify(text):
+    """Slugifies the passed in text"""
+    result = []
+    for word in _punct_re.split(text.lower()):
+        result.extend(unidecode(word).split())
+    return '-'.join(result)

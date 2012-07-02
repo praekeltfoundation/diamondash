@@ -94,11 +94,11 @@ def construct_render_url(dashboard_name, widget_name):
     on the client's request uri
     """
     params = {
-        'target': config.dashboards[dashboard_name].get_widget_targets(widget_name),
-        'from': '-%sminutes' % (config.render_time_span,),
+        'target': config['dashboards'][dashboard_name].get_widget_targets(widget_name),
+        'from': '-%sminutes' % (config['render_period'],),
         'format': 'json'
         }
-    render_url = "%s/render/?%s" % (config.graphite_url, urlencode(params, True))
+    render_url = "%s/render/?%s" % (config['graphite_url'], urlencode(params, True))
     return render_url
 
 
@@ -148,7 +148,7 @@ def render(request, dashboard_name, widget_name):
 
     d = getPage(render_url)
     d.addCallback(get_datapoints)
-    null_filter = config.dashboards[dashboard_name].config['widgets'][widget_name]['null_filter']
+    null_filter = config['dashboards'][dashboard_name].get_widget(widget_name)['null_filter']
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
     d.addCallback(format_render_results)
     return d
