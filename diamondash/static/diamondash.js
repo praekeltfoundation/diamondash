@@ -12,7 +12,7 @@ function constructWidgets() {
 		
 		graphs[i].object = new Rickshaw.Graph({
 			element: graphElements[i],
-			interpolation: 'step-after',
+			renderer: 'line',
 			series: [{
 			color: '#afdab1',
 			data: graphs[i].data 
