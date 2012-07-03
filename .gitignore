@@ -25,6 +25,7 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 
+twistd.log
 twistd.pid
 _trial_temp
 

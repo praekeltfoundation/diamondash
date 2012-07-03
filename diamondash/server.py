@@ -7,6 +7,11 @@ import yaml
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
+from twisted.web import server, static, twcgi, script, demo, distrib, wsgi
+from twisted.internet import interfaces, reactor
+from twisted.python import usage, reflect, threadpool
+from twisted.spread import pb
+from twisted.application import internet, service, strports
 from pkg_resources import resource_string, resource_stream, resource_filename
 
 from dashboard import Dashboard
@@ -64,7 +69,7 @@ def show_index(request):
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
     dashboard = Dashboard.from_config_file(
-        '%s/../etc/diamondash.yml' %
+        '%s/../etc/test_dashboard.yml' %
         (os.path.dirname(__file__),))
     add_dashboard(dashboard)
     return dashboard
@@ -134,3 +139,14 @@ def render(request, dashboard_name, widget_name):
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
     d.addCallback(format_render_results)
     return d
+
+class Options(usage.Options):
+    """Command line args when run as a twistd plugin"""
+    optParameters = ["port", "p", 1235, "The port number to listen on."]]
+
+def makeService(options):
+    s = service.MultiService()
+    root = resource()
+    site = server.Site(root)
+    strports.service('8080', site).setServiceParent(s)
+    return s
