@@ -18,20 +18,24 @@ class Dashboard(Element):
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
     def __init__(self, config, client_config=None):
-
-        self.client_config = client_config if client_config is not None else {}
-        self.config = self.parse_config(config)
+        self.config, self.client_config = self.parse_config(config, client_config)
         self.client_config['dashboardName'] = '"%s"' % (config['name'],)
 
 
     @classmethod 
-    def parse_config(cls, config):
+    def parse_config(cls, config, client_config=None):
         if 'name' not in config:
             raise ConfigError('Dashboard name not specified.')
 
 
         config['title'] = config['name']
         config['name'] = slugify(config['name'])
+
+        if client_config is None:
+            client_config = {}
+
+        client_config.setdefault('widgets', {})
+        client_config['widgets'].setdefault('metrics', {})
 
         widget_dict = {}
         client_widget_dict = {}
@@ -45,7 +49,7 @@ class Dashboard(Element):
             w_config.setdefault('null_filter', 'skip')
 
             metric_dict = {}
-            for m_name, m_config in w_config['metrics']:
+            for m_name, m_config in w_config['metrics'].items():
                 if 'target' not in m_config: 
                     raise ConfigError('Widget "%s" needs a target for metric "%s".' 
                         % (w_name, m_name))
@@ -53,9 +57,9 @@ class Dashboard(Element):
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
                 metric_dict[m_name] = m_config
-                m_client_config = {k: m_config[k] for k in CLIENT_METRIC_KEYS 
+                m_client_config = {k: m_config[k] for k in cls.CLIENT_METRIC_KEYS 
                                  if k in m_config}
-                self.client_config['widgets']['metrics'][m_name] = m_client_config
+                client_config['widgets']['metrics'][m_name] = m_client_config
             w_config['metrics'] = metric_dict
 
             widget_dict[w_name] = w_config
@@ -63,7 +67,7 @@ class Dashboard(Element):
         # update widget dict to dict with slugified widget names
         config['widgets'] = widget_dict
 
-        return config
+        return config, client_config
 
 
     @classmethod
@@ -84,7 +88,9 @@ class Dashboard(Element):
 
     def get_widget_targets(self, w_name):
         """Returns a widget using the passed in widget name"""
-        return self.config['widgets'][w_name]['metrics'].values()
+        # TODO optimise?
+        metrics = self.config['widgets'][w_name]['metrics']
+        return [metric['target'] for metric in metrics.values()]
 
     @renderer
     def widget(self, request, tag):

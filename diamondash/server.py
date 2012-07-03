@@ -109,8 +109,9 @@ def format_render_results(results, dashboard_name, widget_name):
     Formats the json output received from graphite into
     something usable by rickshaw
     """
-    formatted_data = [{'x': x, 'y': y} for y, x in results]
-    return json.dumps(formatted_data)
+    #formatted_data = [{'x': x, 'y': y} for y, x in results]
+    #return json.dumps(formatted_data)
+    return '{}'
 
 
 def zeroize_nulls(results):
@@ -156,5 +157,5 @@ def render(request, dashboard_name, widget_name):
     d.addCallback(get_render_result_datapoints)
     null_filter = config['dashboards'][dashboard_name].get_widget(widget_name)['null_filter']
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
-    d.addCallback(format_render_results, widget_name)
+    d.addCallback(format_render_results, dashboard_name, widget_name)
     return d

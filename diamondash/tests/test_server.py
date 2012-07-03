@@ -28,8 +28,13 @@ class MockGraphiteServerProtocol(Protocol):
 
     def construct_response(self, request_uri):
         response_data = self.factory.response_data.get(request_uri)
-        response = ["HTTP/1.1 %s" % (response_data['code'],)]
-        response.extend(['', json.dumps(response_data['body'])])
+
+        if response_data is None:
+            response = ['HTTP/1.1 404', '', '']
+        else:
+            response = ['HTTP/1.1 %s' % (response_data['code'],)]
+            response.extend(['', json.dumps(response_data['body'])])
+
         return '\r\n'.join(response)
 
     def handle_request(self, data):
@@ -44,8 +49,7 @@ class MockGraphiteServerMixin(object):
     Graphite response data
     """
 
-    _RESPONSE_DATA = json.load(
-        resource_stream(__name__, 'response_data.json'))
+    RESPONSE_DATA = json.load(resource_stream(__name__, 'response_data.json'))
 
     graphite_ws = None
 
@@ -53,7 +57,7 @@ class MockGraphiteServerMixin(object):
     def start_graphite_ws(self):
         factory = Factory()
         factory.protocol = MockGraphiteServerProtocol
-        factory.response_data = self._RESPONSE_DATA
+        factory.response_data = self.RESPONSE_DATA
         self.graphite_ws = yield reactor.listenTCP(0, factory)
         address = self.graphite_ws.getHost()
         self.graphite_url = "http://%s:%s" % (address.host, address.port)
@@ -64,11 +68,9 @@ class MockGraphiteServerMixin(object):
 
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
-    TEST_DATA = json.load(
-        resource_stream(__name__, 'server_test_data.json'))
+    TEST_DATA = json.load(resource_stream(__name__, 'server_test_data.json'))
 
     def setUp(self):
-        server.config = None
         self.graphite_ws = None
 
     def tearDown(self):
@@ -152,7 +154,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         'metrics': {
                             'random-count-sum': {
                                 'target': 'vumi.random.count.sum'
-                             }
+                             },
                             'random-timer-average': {
                                 'target': 'vumi.random.timer.avg'
                              }
@@ -246,10 +248,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
-                        'random count sum': {
+                        'random-count-sum': {
                             'target': 'vumi.random.count.sum'
-                         }
-                        'random timer average': {
+                         },
+                        'random-timer-average': {
                             'target': 'vumi.random.timer.avg'
                          }
                      }
@@ -258,7 +260,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
-        targets = dashboard_config['random-count-sum-and-average'][metrics].values()
+        targets = ['vumi.random.count.sum', 'vumi.random.timer.avg']
 
         params = {
             'target': targets,
@@ -344,7 +346,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'metrics': {
                         'random-count-sum': {
                             'target': 'vumi.random.count.sum'
-                         }
+                         },
                         'random-timer-average': {
                             'target': 'vumi.random.timer.avg'
                          }
