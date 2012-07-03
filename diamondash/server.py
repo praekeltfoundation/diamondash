@@ -87,6 +87,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing
     # TODO handle multiple dashboards
+    # NOTE the not so nice looking line below is temporary
     return config['dashboards'].values()[0]
 
 
@@ -109,9 +110,13 @@ def format_render_results(results, dashboard_name, widget_name):
     Formats the json output received from graphite into
     something usable by rickshaw
     """
-    #formatted_data = [{'x': x, 'y': y} for y, x in results]
-    #return json.dumps(formatted_data)
-    return '{}'
+    formatted_data = {}
+    widget = config['dashboards'][dashboard_name].get_widget(widget_name)
+    metrics = widget['metrics']
+    for metric_name, datapoints in zip(metrics.keys(), results):
+        metric_formatted_data = [{'x': x, 'y': y} for y, x in datapoints]
+        formatted_data[metric_name] = metric_formatted_data
+    return json.dumps(formatted_data)
 
 
 def zeroize_nulls(results):
@@ -133,8 +138,8 @@ def purify_render_results(results, null_filter):
     Fixes problems with the results obtained from
     graphite (eg. null values)
     """
-    results = null_filter(results)
-    return results
+    purified = [null_filter(datapoints) for datapoints in results]
+    return purified
 
 
 def get_render_result_datapoints(data):
@@ -142,7 +147,7 @@ def get_render_result_datapoints(data):
     Obtaints the datapoints from the result returned from
     graphite from a render request
     """
-    return json.loads(data)[0]['datapoints']
+    return [metric['datapoints'] for metric in json.loads(data)]
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
