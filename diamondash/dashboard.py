@@ -4,7 +4,7 @@ import re
 
 import yaml
 from unidecode import unidecode
-from pkg_resources import resource_string, resource_stream
+from pkg_resources import resource_stream
 from twisted.web.template import Element, renderer, XMLFile
 from exceptions import ConfigError
 
@@ -23,6 +23,7 @@ class Dashboard(Element):
     def parse_config(cls, config):
         if 'name' not in config:
             raise ConfigError('Dashboard name not specified.')
+
 
         config['title'] = config['name']
         config['name'] = slugify(config['name'])
