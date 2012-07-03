@@ -1,5 +1,6 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
+from os import path, listdir
 import json
 from urllib import urlencode
 
@@ -7,28 +8,53 @@ import yaml
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.web import server, static, twcgi, script, demo, distrib, wsgi
-from twisted.internet import interfaces, reactor
-from twisted.python import usage, reflect, threadpool
-from twisted.spread import pb
+from twisted.python import usage
+from twisted.web import server, static
 from twisted.application import internet, service, strports
-from pkg_resources import resource_string, resource_stream, resource_filename
+from pkg_resources import resource_filename
 
 from dashboard import Dashboard
 
+
+CONFIG_FILENAME = 'diamondash.yml'
+DEFAULT_PORT = '8080'
+DEFAULT_CONFIG_DIR = '/etc/diamondash'
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 DEFAULT_RENDER_PERIOD = 5
 DEFAULT_REQUEST_INTERVAL = 2
+config = {}
 
-def build_config(overrides):
+
+def build_config(args=None):
+    """
+    Builds the config, initialised to defaults,
+    updated with a config file and finally args
+    """
     config = {
+            'port': DEFAULT_PORT,
+            'config_dir': DEFAULT_CONFIG_DIR,
             'graphite_url': DEFAULT_GRAPHITE_URL,
             'render_period': DEFAULT_RENDER_PERIOD,
             'request_interval': DEFAULT_REQUEST_INTERVAL,
             'dashboards': {},
         }
 
-    config.update(overrides)
+    # TODO test
+
+    if args:
+        config['config_dir'] = args.get('config_dir', DEFAULT_CONFIG_DIR)
+
+    # load config file if it exists and update config
+    if path.exists(config['config_dir']):
+        filepath = '%s/%s' % (config['config_dir'], CONFIG_FILENAME)
+        file_config = yaml.safe_load(open(filepath))
+        config.update(file_config)
+
+    # update config using args
+    if args:
+        config.update(args)
+
+    config = add_dashboards(config)
 
     config['client_vars'] = {
             'requestInterval': config['request_interval']
@@ -36,25 +62,19 @@ def build_config(overrides):
 
     return config
 
-def build_config_from_file(filename):
-    """Loads the diamondash configuration from a config file"""
 
-    try: 
-        config = yaml.safe_load(open(filename))
-    except IOError:
-        raise ConfigError('File %s not found.' % (filename,))
+def add_dashboards(config):
+    """Adds the dashboards to the web server"""
+    dashboards_path = '%s/dashboards' % (config['config_dir'],)
 
-    return build_config(config)
+    if path.exists(dashboards_path):
+        for filename in listdir(dashboards_path):
+            filepath = '%s/%s' % (dashboards_path, filename)
+            dashboard = Dashboard.from_config_file(filepath)
+            dashboard_name = dashboard.config['name']
+            config['dashboards'][dashboard_name] = dashboard
 
-import os
-# initialise the server configuration
-config = build_config_from_file('%s/../etc/diamondash.yml' %
-        (os.path.dirname(__file__),))
-
-def add_dashboard(dashboard):
-    """Adds a new dashboard to the web server"""
-    dashboard_name = dashboard.config['name']
-    config['dashboards'][dashboard_name] = dashboard
+    return config
 
 
 @route('/static/')
@@ -66,13 +86,9 @@ def static(request):
 @route('/')
 def show_index(request):
     """Routing for homepage"""
-    # TODO dashboard routing (instead of adding a new dashboard)
+    # TODO dashboard routing
     # TODO handle multiple dashboards
-    dashboard = Dashboard.from_config_file(
-        '%s/../etc/test_dashboard.yml' %
-        (os.path.dirname(__file__),))
-    add_dashboard(dashboard)
-    return dashboard
+    return config['dashboards'].values()[0]
 
 
 def construct_render_url(dashboard_name, widget_name):
@@ -142,11 +158,17 @@ def render(request, dashboard_name, widget_name):
 
 class Options(usage.Options):
     """Command line args when run as a twistd plugin"""
-    optParameters = ["port", "p", 1235, "The port number to listen on."]]
+    # TODO other args
+    optParameters = [["port", "p", DEFAULT_PORT, "Port number for diamondash to listen on"], 
+                     ["config_dir", "c", DEFAULT_CONFIG_DIR, "Config dir"]]
 
 def makeService(options):
+    global config 
+    config = build_config(options)
+
     s = service.MultiService()
     root = resource()
     site = server.Site(root)
-    strports.service('8080', site).setServiceParent(s)
+    strports.service(options['port'], site).setServiceParent(s)
+
     return s
