@@ -1,11 +1,12 @@
 var graphs = []; // rickshaw objects
-var requestInterval = (typeof requestInterval == 'undefined') ? 2000 : (requestInterval * 1000);
+var requestInterval = (config.requestInterval is undefined) ? 2000 : (config.requestInterval * 1000);
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
+		widgetName = $.trim(graphElements[i].id)
 		graphs[i] = {
-			'name': $.trim(graphElements[i].id),
+			'name': widgetName,
 			'data': [{ x:0, y:0 }],
 			'object': undefined
 		};
@@ -14,8 +15,8 @@ function constructWidgets() {
 			element: graphElements[i],
 			renderer: 'line',
 			series: [{
-			color: '#afdab1',
-			data: graphs[i].data 
+				color: '#0051cc',
+				data: graphs[i].data 
 			}]
 		});
 

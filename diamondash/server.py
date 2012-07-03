@@ -55,7 +55,7 @@ def build_config(args=None):
 
     config = add_dashboards(config)
 
-    config['client_vars'] = {
+    config['client_config'] = {
             'requestInterval': config['request_interval']
         }
 
@@ -104,13 +104,14 @@ def construct_render_url(dashboard_name, widget_name):
     return render_url
 
 
-def format_render_results(results):
+def format_render_results(results, dashboard_name, widget_name):
     """
     Formats the json output received from graphite into
     something usable by rickshaw
     """
     formatted_data = [{'x': x, 'y': y} for y, x in results]
     return json.dumps(formatted_data)
+
 
 def zeroize_nulls(results):
     """
@@ -132,11 +133,14 @@ def purify_render_results(results, null_filter):
     graphite (eg. null values)
     """
     results = null_filter(results)
-    # TODO other types of purification
     return results
 
 
-def get_datapoints(data):
+def get_render_result_datapoints(data):
+    """
+    Obtaints the datapoints from the result returned from
+    graphite from a render request
+    """
     return json.loads(data)[0]['datapoints']
 
 
@@ -149,9 +153,8 @@ def render(request, dashboard_name, widget_name):
     render_url = construct_render_url(dashboard_name, widget_name)
 
     d = getPage(render_url)
-    d.addCallback(get_datapoints)
+    d.addCallback(get_render_result_datapoints)
     null_filter = config['dashboards'][dashboard_name].get_widget(widget_name)['null_filter']
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
-    d.addCallback(format_render_results)
+    d.addCallback(format_render_results, widget_name)
     return d
-

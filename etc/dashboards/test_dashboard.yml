@@ -2,8 +2,11 @@ name: 'Test Dashboard'
 widgets:
     'Sum of random count':
         metrics: 
-           'Sum of random count': vumi.random.count.sum
+           'Sum of random count': 
+               target: vumi.random.count.sum
+               color: '#afdab1'
 
     'Average of random timer':
         metrics: 
-           'Average of random timer': vumi.random.timer.avg
+           'Average of random timer': 
+               target: vumi.random.timer.avg
