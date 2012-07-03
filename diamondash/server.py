@@ -8,7 +8,6 @@ import yaml
 from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.python import usage
 from twisted.web import server, static
 from twisted.application import internet, service, strports
 from pkg_resources import resource_filename
@@ -156,19 +155,3 @@ def render(request, dashboard_name, widget_name):
     d.addCallback(format_render_results)
     return d
 
-class Options(usage.Options):
-    """Command line args when run as a twistd plugin"""
-    # TODO other args
-    optParameters = [["port", "p", DEFAULT_PORT, "Port number for diamondash to listen on"], 
-                     ["config_dir", "c", DEFAULT_CONFIG_DIR, "Config dir"]]
-
-def makeService(options):
-    global config 
-    config = build_config(options)
-
-    s = service.MultiService()
-    root = resource()
-    site = server.Site(root)
-    strports.service(options['port'], site).setServiceParent(s)
-
-    return s

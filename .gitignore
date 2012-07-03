@@ -25,9 +25,12 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 
+*.pyc
+*.swp
+
+# Twisted stuff
+dropin.cache
 twistd.log*
 twistd.pid
 _trial_temp
 
-*.pyc
-*.swp
