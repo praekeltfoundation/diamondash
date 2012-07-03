@@ -11,7 +11,6 @@ from pkg_resources import resource_string, resource_stream, resource_filename
 
 from dashboard import Dashboard
 
-DEFAULT_CONFIG_FILEPATH = 'etc/diamondash.yml' 
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 DEFAULT_RENDER_PERIOD = 5
 DEFAULT_REQUEST_INTERVAL = 2
@@ -32,18 +31,20 @@ def build_config(overrides):
 
     return config
 
-def build_config_from_file(filepath):
+def build_config_from_file(filename):
     """Loads the diamondash configuration from a config file"""
 
     try: 
-        config = yaml.safe_load(resource_string(__name__, filepath))
+        config = yaml.safe_load(open(filename))
     except IOError:
         raise ConfigError('File %s not found.' % (filename,))
 
     return build_config(config)
 
+import os
 # initialise the server configuration
-config = build_config_from_file(DEFAULT_CONFIG_FILEPATH)
+config = build_config_from_file('%s/../etc/diamondash.yml' %
+        (os.path.dirname(__file__),))
 
 def add_dashboard(dashboard):
     """Adds a new dashboard to the web server"""
@@ -63,7 +64,8 @@ def show_index(request):
     # TODO dashboard routing (instead of adding a new dashboard)
     # TODO handle multiple dashboards
     dashboard = Dashboard.from_config_file(
-        resource_filename(__name__, 'etc/test_dashboard.yml'))
+        '%s/../etc/diamondash.yml' %
+        (os.path.dirname(__file__),))
     add_dashboard(dashboard)
     return dashboard
 
