@@ -128,50 +128,61 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         d.addCallback(self.assert_response, output)
         yield d
 
-        @inlineCallbacks
-        def test_render_for_multimetric_graph(self):
-            """
-            Should build a graphite url from the passed in client
-            request, send a request to graphite, apply transformations, 
-            and return data useable by the client side
-            """
-            yield self.start_graphite_ws()
+    @inlineCallbacks
+    def test_render_for_multimetric_graph(self):
+        """
+        Should build a graphite url from the passed in client
+        request, send a request to graphite, apply transformations, 
+        and return data useable by the client side
+        """
+        yield self.start_graphite_ws()
 
-            test_overrides = {
-                    'graphite_url': self.graphite_url,
-                    'render_period': 5
-                }
+        test_overrides = {
+                'graphite_url': self.graphite_url,
+                'render_period': 5
+            }
 
-            # initialise the server configuration
-            server.config = build_config(test_overrides)
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
 
-            dashboard_config = {
-            'name': 'test-dashboard',
-            'widgets': {
-                    'random-count-sum-and-average': {
-                        'title': 'a graph',
-                        'type': 'graph',
-                        'metrics': {
-                            'random-count-sum': {
-                                'target': 'vumi.random.count.sum'
-                             },
-                            'random-timer-average': {
-                                'target': 'vumi.random.timer.avg'
-                             }
+        dashboard_config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum-and-average': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random-count-sum': {
+                            'target': 'vumi.random.count.sum'
+                         },
+                        'random-timer-average': {
+                            'target': 'vumi.random.timer.avg'
                          }
-                    }
+                     }
                 }
             }
-            server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
+        }
+        server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
-            input = self.TEST_DATA['test_render_for_multimetric_graph']['input']
-            request = requestMock(input, host=self.graphite_ws.getHost().host,
-                                  port=self.graphite_ws.getHost().port)
-            output = self.TEST_DATA['test_render_for_multimetric_graph']['output']
-            d = server.render(request, 'test-dashboard',
-                    'random-count-sum-and-average')
-            d.addCallback(self.assert_response, output)
-            yield d
+        input = self.TEST_DATA['test_render_for_multimetric_graph']['input']
+        request = requestMock(input, host=self.graphite_ws.getHost().host,
+                              port=self.graphite_ws.getHost().port)
+        output = self.TEST_DATA['test_render_for_multimetric_graph']['output']
+        d = server.render(request, 'test-dashboard',
+                'random-count-sum-and-average')
+        d.addCallback(self.assert_response, output)
+        yield d
+
+    def test_get_render_result_datapoints(self):
+        """
+        Should obtain a list of datapoint lists, each list
+        corresponding to a metric
+        """
+        before = self.TEST_DATA['test_get_render_result_datapoints']['before']
+        before_str = json.dumps(before)
+        result = server.get_render_result_datapoints(before_str)
+        after = self.TEST_DATA['test_get_render_result_datapoints']['after']
+        self.assertEqual(result, after)
 
     """
     Url construction tests
