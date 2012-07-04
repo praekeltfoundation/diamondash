@@ -7,7 +7,7 @@ var requestInterval = (config.requestInterval === undefined) ? DEFAULT_REQUEST_I
 // construct the widget objects using the config
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
-    for (var i = 0; i < graphElements.length; i++) {
+    for (i = 0; i < graphElements.length; i++) {
 		widgetName = $.trim(graphElements[i].id);
 		widgetConfig = config.widgets[widgetName];
 
@@ -19,8 +19,8 @@ function constructWidgets() {
 
 		j = 0;
 		metricSeries = [];
-		for (var metricName in widgetConfig.metrics) {
-			metric = widgetConfig.metrics[metricName]
+		for (metricName in widgetConfig.metrics) {
+			metric = widgetConfig.metrics[metricName];
 
 			graphs[i].data[metricName] = [{ x:0, y:0 }];
 			metricColor = (metric.color === undefined) ? DEFAULT_GRAPH_COLOUR : metric.color;
@@ -50,26 +50,33 @@ function constructUrl(widgetName) {
 // called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
-		url = constructUrl(graph.name)
+		url = constructUrl(graph.name);
 		getData(url, 
 		function(results) {
-			for (var metricName in results) {
+			for (metricName in results) {
 				resultMetricData = results[metricName];
 				graphMetricData = graph.data[metricName];
-				for (var j = 0; j < results[metricName].length; j++) {
+				for (j = 0; j < resultMetricData.length; j++) {
 					graphMetricData[j] = resultMetricData[j];
 				}
 				graph.data[metricName] = graphMetricData;
 			}
+
+			if (graph.name == 'multiple-metrics')
+				console.log(graph.data);
 			graph.object.update();
 			metricData = null;
 		});
+	});
+
+	$.each(graphs, function(i, graph) { 
+		graph.object.update();
 	});
 }
 
 // retrieve the data from the server
 function getData(currentUrl, cbDataReceived) {
-	var obtainedData = [];
+	obtainedData = [];
 	$.ajax({
 
 		/*beforeSend: function(xhr) {

@@ -50,6 +50,7 @@ class Dashboard(Element):
 
             client_config['widgets'].setdefault(w_name, {})
             client_config['widgets'][w_name].setdefault('metrics', {})
+            client_metric_config = client_config['widgets'][w_name]['metrics']
 
             metric_dict = {}
             for m_name, m_config in w_config['metrics'].items():
@@ -62,7 +63,7 @@ class Dashboard(Element):
                 metric_dict[m_name] = m_config
                 m_client_config = {k: m_config[k] for k in cls.CLIENT_METRIC_KEYS 
                                    if k in m_config}
-                client_config['widgets'][w_name]['metrics'][m_name] = m_client_config
+                client_metric_config[m_name] = m_client_config
             w_config['metrics'] = metric_dict
 
             widget_dict[w_name] = w_config
