@@ -12,20 +12,23 @@ function constructWidgets() {
 
 		graphs[i] = {
 			name: widgetName,
-			data: [],
+			data: {},
 			object: undefined
 		};
 
+		j = 0;
 		metricSeries = [];
 		for (var metricName in widgetConfig.metrics) {
 			metric = widgetConfig.metrics[metricName]
 
 			graphs[i].data[metricName] = [{ x:0, y:0 }];
 			metricColor = (metric.color === undefined) ? DEFAULT_GRAPH_COLOUR : metric.color;
-			metricSeries[metricName] = {
+			metricSeries[j] = {
 				data: graphs[i].data[metricName],
 				color: metricColor
 			}
+
+			j++;
 		}
 		
 		graphs[i].object = new Rickshaw.Graph({
@@ -46,9 +49,15 @@ function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
 		url = constructUrl(graph.name)
 		getData(url, 
-		function(metricData) {
-			for (var metricName in metricData)
-				graph.data[metricName] = metricData[metricName];
+		function(results) {
+			for (var metricName in results) {
+				resultMetricData = results[metricName];
+				graphMetricData = graph.data[metricName];
+				for (var j = 0; j < results[metricName].length; j++) {
+					graphMetricData[j] = resultMetricData[j];
+				}
+				graph.data[metricName] = graphMetricData;
+			}
 			graph.object.update();
 			metricData = null;
 		});
@@ -74,9 +83,8 @@ function getData(currentUrl, cbDataReceived) {
 		},
 		url: currentUrl
 	}).done(function(responseData) {
-		if (responseData.length > 0)
-		    cbDataReceived(responseData);
-	});
+			cbDataReceived(responseData);
+		});
 }
 
 constructWidgets();

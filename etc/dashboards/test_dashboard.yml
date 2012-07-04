@@ -4,9 +4,16 @@ widgets:
         metrics: 
            'Sum of random count': 
                target: vumi.random.count.sum
-               color: '#afdab1'
 
     'Average of random timer':
         metrics: 
+           'Average of random timer': 
+               target: vumi.random.timer.avg
+
+    'Multiple metrics':
+        metrics: 
+           'Sum of random count': 
+               target: vumi.random.count.sum
+               color: '#afdab1'
            'Average of random timer': 
                target: vumi.random.timer.avg
