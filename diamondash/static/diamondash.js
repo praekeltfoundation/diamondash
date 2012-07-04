@@ -1,9 +1,10 @@
 var DEFAULT_REQUEST_INTERVAL = 2000
 var DEFAULT_GRAPH_COLOUR = '#0051cc'
 
-var graphs = []; // rickshaw objects
+var graphs = [];
 var requestInterval = (config.requestInterval === undefined) ? DEFAULT_REQUEST_INTERVAL : config.requestInterval;
 
+// construct the widget objects using the config
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
@@ -41,10 +42,12 @@ function constructWidgets() {
 	}
 }
 
+// construct the url to be sent as a request to the server
 function constructUrl(widgetName) {
 	return '/render/' + config.dashboardName + '/' + widgetName;
 }
 
+// called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
 		url = constructUrl(graph.name)
@@ -64,7 +67,7 @@ function updateWidgets() {
 	});
 }
 
-// retrieve the data from Graphite
+// retrieve the data from the server
 function getData(currentUrl, cbDataReceived) {
 	var obtainedData = [];
 	$.ajax({
@@ -83,6 +86,7 @@ function getData(currentUrl, cbDataReceived) {
 		},
 		url: currentUrl
 	}).done(function(responseData) {
+			// callback fired when the response data is received
 			cbDataReceived(responseData);
 		});
 }
