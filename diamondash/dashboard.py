@@ -2,6 +2,7 @@
 
 import re
 
+import json
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_stream
@@ -19,7 +20,7 @@ class Dashboard(Element):
 
     def __init__(self, config, client_config=None):
         self.config, self.client_config = self.parse_config(config, client_config)
-        self.client_config['dashboardName'] = '"%s"' % (config['name'],)
+        self.client_config['dashboardName'] = config['name']
 
 
     @classmethod 
@@ -35,7 +36,6 @@ class Dashboard(Element):
             client_config = {}
 
         client_config.setdefault('widgets', {})
-        client_config['widgets'].setdefault('metrics', {})
 
         widget_dict = {}
         client_widget_dict = {}
@@ -48,6 +48,9 @@ class Dashboard(Element):
             w_config.setdefault('type', 'graph')
             w_config.setdefault('null_filter', 'skip')
 
+            client_config['widgets'].setdefault(w_name, {})
+            client_config['widgets'][w_name].setdefault('metrics', {})
+
             metric_dict = {}
             for m_name, m_config in w_config['metrics'].items():
                 if 'target' not in m_config: 
@@ -58,8 +61,8 @@ class Dashboard(Element):
                 m_name = slugify(m_name)
                 metric_dict[m_name] = m_config
                 m_client_config = {k: m_config[k] for k in cls.CLIENT_METRIC_KEYS 
-                                 if k in m_config}
-                client_config['widgets']['metrics'][m_name] = m_client_config
+                                   if k in m_config}
+                client_config['widgets'][w_name]['metrics'][m_name] = m_client_config
             w_config['metrics'] = metric_dict
 
             widget_dict[w_name] = w_config

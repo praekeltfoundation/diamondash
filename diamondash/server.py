@@ -56,7 +56,8 @@ def build_config(args=None):
     config = add_dashboards(config)
 
     config['client_config'] = {
-            'requestInterval': config['request_interval']
+            # convert to milliseconds and set client var
+            'requestInterval': config['request_interval'] * 1000 
         }
 
     return config

@@ -1,23 +1,37 @@
+var DEFAULT_REQUEST_INTERVAL = 2000
+var DEFAULT_GRAPH_COLOUR = '#0051cc'
+
 var graphs = []; // rickshaw objects
-var requestInterval = (config.requestInterval is undefined) ? 2000 : (config.requestInterval * 1000);
+var requestInterval = (config.requestInterval === undefined) ? DEFAULT_REQUEST_INTERVAL : config.requestInterval;
 
 function constructWidgets() {
 	graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
-		widgetName = $.trim(graphElements[i].id)
+		widgetName = $.trim(graphElements[i].id);
+		widgetConfig = config.widgets[widgetName];
+
 		graphs[i] = {
-			'name': widgetName,
-			'data': [{ x:0, y:0 }],
-			'object': undefined
+			name: widgetName,
+			data: [],
+			object: undefined
 		};
+
+		metricSeries = [];
+		for (var metricName in widgetConfig.metrics) {
+			metric = widgetConfig.metrics[metricName]
+
+			graphs[i].data[metricName] = [{ x:0, y:0 }];
+			metricColor = (metric.color === undefined) ? DEFAULT_GRAPH_COLOUR : metric.color;
+			metricSeries[metricName] = {
+				data: graphs[i].data[metricName],
+				color: metricColor
+			}
+		}
 		
 		graphs[i].object = new Rickshaw.Graph({
 			element: graphElements[i],
 			renderer: 'line',
-			series: [{
-				color: '#0051cc',
-				data: graphs[i].data 
-			}]
+			series: metricSeries
 		});
 
 		graphs[i].object.render();
@@ -25,18 +39,18 @@ function constructWidgets() {
 }
 
 function constructUrl(widgetName) {
-	return '/render/' + dashboardName + '/' + widgetName;
+	return '/render/' + config.dashboardName + '/' + widgetName;
 }
 
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
 		url = constructUrl(graph.name)
 		getData(url, 
-		function(values) {
-			for (var j = 0; j < values.length; j++)
-				graph.data[j] = values[j];
+		function(metricData) {
+			for (var metricName in metricData)
+				graph.data[metricName] = metricData[metricName];
 			graph.object.update();
-			values = null;
+			metricData = null;
 		});
 	});
 }
