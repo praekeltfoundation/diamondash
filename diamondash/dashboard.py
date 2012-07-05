@@ -48,9 +48,8 @@ class Dashboard(Element):
             w_config.setdefault('type', 'graph')
             w_config.setdefault('null_filter', 'skip')
 
-            client_config['widgets'].setdefault(w_name, {})
-            client_config['widgets'][w_name].setdefault('metrics', {})
-            client_metric_config = client_config['widgets'][w_name]['metrics']
+            client_widget_dict = client_config['widgets'].setdefault(w_name, {})
+            client_metric_config = client_widget_dict.setdefault('metrics', {})
 
             metric_dict = {}
             for m_name, m_config in w_config['metrics'].items():
