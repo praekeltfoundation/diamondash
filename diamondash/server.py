@@ -53,12 +53,12 @@ def build_config(args=None):
     if args:
         config.update(args)
 
-    config = add_dashboards(config)
-
     config['client_config'] = {
             # convert to milliseconds and set client var
             'requestInterval': config['request_interval'] * 1000 
         }
+
+    config = add_dashboards(config)
 
     return config
 
@@ -70,7 +70,8 @@ def add_dashboards(config):
     if path.exists(dashboards_path):
         for filename in listdir(dashboards_path):
             filepath = '%s/%s' % (dashboards_path, filename)
-            dashboard = Dashboard.from_config_file(filepath)
+            dashboard = Dashboard.from_config_file(filepath,
+                config['client_config'])
             dashboard_name = dashboard.config['name']
             config['dashboards'][dashboard_name] = dashboard
 
@@ -114,8 +115,12 @@ def format_render_results(results, dashboard_name, widget_name):
     formatted_data = {}
     widget = config['dashboards'][dashboard_name].get_widget(widget_name)
     metrics = widget['metrics']
+
+    # Find min length list to cut the lists at this length and keep d3 happy
+    length = min([len(datapoints) for datapoints in results]);
+
     for metric_name, datapoints in zip(metrics.keys(), results):
-        metric_formatted_data = [{'x': x, 'y': y} for y, x in datapoints]
+        metric_formatted_data = [{'x': x, 'y': y} for y, x in datapoints[:length]]
         formatted_data[metric_name] = metric_formatted_data
     return json.dumps(formatted_data)
 

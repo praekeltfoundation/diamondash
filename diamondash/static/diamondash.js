@@ -2,14 +2,14 @@ var DEFAULT_REQUEST_INTERVAL = 2000
 var DEFAULT_GRAPH_COLOUR = '#0051cc'
 
 var graphs = [];
-var requestInterval = (config.requestInterval === undefined) ? DEFAULT_REQUEST_INTERVAL : config.requestInterval;
+var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
 
 // construct the widget objects using the config
 function constructWidgets() {
-	graphElements = document.querySelectorAll('.graph'); 
-    for (i = 0; i < graphElements.length; i++) {
-		widgetName = $.trim(graphElements[i].id);
-		widgetConfig = config.widgets[widgetName];
+	var graphElements = document.querySelectorAll('.graph'); 
+    for (var i = 0; i < graphElements.length; i++) {
+		var widgetName = $.trim(graphElements[i].id);
+		var widgetConfig = config.widgets[widgetName];
 
 		graphs[i] = {
 			name: widgetName,
@@ -17,13 +17,13 @@ function constructWidgets() {
 			object: undefined
 		};
 
-		j = 0;
-		metricSeries = [];
-		for (metricName in widgetConfig.metrics) {
-			metric = widgetConfig.metrics[metricName];
+		var j = 0;
+		var metricSeries = [];
+		for (var metricName in widgetConfig.metrics) {
+			var metric = widgetConfig.metrics[metricName];
 
 			graphs[i].data[metricName] = [{ x:0, y:0 }];
-			metricColor = (metric.color === undefined) ? DEFAULT_GRAPH_COLOUR : metric.color;
+			var metricColor = metric.color || DEFAULT_GRAPH_COLOUR;
 			metricSeries[j] = {
 				data: graphs[i].data[metricName],
 				color: metricColor
@@ -50,33 +50,25 @@ function constructUrl(widgetName) {
 // called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
-		url = constructUrl(graph.name);
+		var url = constructUrl(graph.name);
 		getData(url, 
 		function(results) {
-			for (metricName in results) {
-				resultMetricData = results[metricName];
-				graphMetricData = graph.data[metricName];
-				for (j = 0; j < resultMetricData.length; j++) {
+			for (var metricName in results) {
+				var resultMetricData = results[metricName];
+				var graphMetricData = graph.data[metricName];
+				graphiteMetricData = resultMetricData
+
+				for (var j = 0; j < resultMetricData.length; j++) {
 					graphMetricData[j] = resultMetricData[j];
 				}
-				graph.data[metricName] = graphMetricData;
 			}
-
-			if (graph.name == 'multiple-metrics')
-				console.log(graph.data);
 			graph.object.update();
-			metricData = null;
 		});
-	});
-
-	$.each(graphs, function(i, graph) { 
-		graph.object.update();
 	});
 }
 
 // retrieve the data from the server
 function getData(currentUrl, cbDataReceived) {
-	obtainedData = [];
 	$.ajax({
 
 		/*beforeSend: function(xhr) {
