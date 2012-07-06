@@ -35,16 +35,18 @@ body{
 
 .legend {
 	text-align: center;
+	font-size: 0.8em;
 }
 
 .graph-time-label {
-	display: inline-block;
-	font-size: 14px;
+	position: absolute;
+	font-size: 12px;
+	color: #808080;
 }
 
 .metric-key-container {
 	display: inline-block;
-	margin: 0 0 0 30px;
+	margin: 0 0 0 15px;
 }
 
 .metric-key-swatch {
@@ -56,6 +58,20 @@ body{
 
 .metric-key-label {
 	display: inline-block;
+	font-weight: normal;
+}
+
+.metric-key-value-label {
+	display: inline-block;
+	margin: 0 0 0 2px;
+}
+
+.metric-key-value-label-inactive {
+	font-weight: bold;
+}
+
+.metric-key-value-label-active {
+	font-weight: normal;
 }
 
 .rickshaw_graph .detail {

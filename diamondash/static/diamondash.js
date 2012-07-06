@@ -1,27 +1,34 @@
 var DEFAULT_REQUEST_INTERVAL = 2000
 var DEFAULT_GRAPH_COLOUR = '#3333cc'
+var TIME_HOVER_OFFSET_X = 160;
+var TIME_HOVER_OFFSET_Y = -22;
 
 var graphs = [];
 var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
 
-function Hover(graphObject, widgetMetricsConfig, legend) {
+function Hover(graphObject, widgetMetricsConfig, legend, timeLabel) {
 	var HoverDetail = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
 		render: function(args) {
-			var timeLabel = legend.querySelector('.graph-time-label');
+			hoverX = args.detail[0].graphX;
 			timeLabel.innerHTML = args.formattedXValue;
+			timeLabelPosition = hoverX + TIME_HOVER_OFFSET_X;
+			timeLabel.style.left = timeLabelPosition + 'px';
 
 			// for each metric
 			args.detail.sort(function(a, b) { return a.order - b.order }).forEach(function(d) {
 				var title = widgetMetricsConfig[d.name].title;
 				var key = legend.querySelector('#metric-key-container-' + d.name);
 				var label = key.querySelector('#metric-key-label-' + d.name);
-				label.innerHTML = title + ": " + d.formattedYValue;
+				var valueLabel = key.querySelector('#metric-key-value-label-' + d.name);
+
+				label.innerHTML = title + ": ";
+				valueLabel.innerHTML = d.formattedYValue;
+				valueLabel.className = 'metric-key-value-label active';
 
 				var dot = document.createElement('div');
 				dot.className = 'dot';
 				dot.style.top = graphObject.y(d.value.y0 + d.value.y) + 'px';
 				dot.style.borderColor = d.series.color;
-
 				this.element.appendChild(dot);
 				dot.className = 'dot active';
 
@@ -46,10 +53,16 @@ function constructMetricKey(legend, metricName, metricTitle, metricColor) {
 	var label = document.createElement('div');
 	label.className = 'metric-key-label';
 	label.id = 'metric-key-label-'+metricName;
-	label.innerHTML = metricTitle;
+	label.innerHTML = metricTitle + ': ';
+
+	var valueLabel = document.createElement('span');
+	valueLabel.className = 'metric-key-value-label';
+	valueLabel.id = 'metric-key-value-label-'+metricName;
+	valueLabel.innerHTML = ' ';
 
 	metricKey.appendChild(swatch);
 	metricKey.appendChild(label);
+	metricKey.appendChild(valueLabel);
 	legend.appendChild(metricKey);
 }
 
@@ -58,7 +71,9 @@ function constructWidgets() {
 	var graphWidgets = document.querySelectorAll('.graph-widget'); 
     for (var i = 0; i < graphWidgets.length; i++) {
 		var widgetElement = graphWidgets[i];
+		var graphElement = widgetElement.querySelector('.graph');
 		var legend = widgetElement.querySelector('.legend');
+		var timeLabel = widgetElement.querySelector('.graph-time-label');
 		var widgetName = $.trim(widgetElement.id);
 		var widgetConfig = config.widgets[widgetName];
 		var graphObject = null;
@@ -84,7 +99,7 @@ function constructWidgets() {
 		}
 
 		graphObject = new Rickshaw.Graph({
-			element: widgetElement.querySelector('.graph'),
+			element: graphElement,
 			renderer: 'line',
 			series: metricSeries
 		});
@@ -100,14 +115,16 @@ function constructWidgets() {
 			tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
 		});
 
-		var hover = new Hover(graphObject, widgetConfig.metrics, legend);
+		var hover = new Hover(graphObject, widgetConfig.metrics, legend, timeLabel);
+		timeLabel.style.marginTop = graphElement.offsetHeight + TIME_HOVER_OFFSET_Y;
 
 		graphObject.render();
 
 		graphs[i] = {
 			name: widgetName,
 			data: graphData,
-			object: graphObject
+			object: graphObject,
+			container: widgetElement
 		};
 	}
 }
@@ -115,6 +132,22 @@ function constructWidgets() {
 // construct the url to be sent as a request to the server
 function constructUrl(widgetName) {
 	return '/render/' + config.dashboardName + '/' + widgetName;
+}
+
+var YFormatter = Rickshaw.Fixtures.Number.formatKMBT;
+function updateLegendValues(graph) {
+	var graphWidget = graph.container; 
+
+	var metrics = config.widgets[graph.name].metrics;
+	for (metricName in metrics) {
+		var valueLabel = graphWidget.querySelector(
+			'#metric-key-value-label-' + metricName);
+		var metricData = graph.data[metricName]
+		var lastCoord = metricData[metricData.length-1];
+		var lastValue = YFormatter(lastCoord.y);
+		valueLabel.innerHTML = lastValue;
+		valueLabel.className = 'metric-key-value-label inactive';
+	}
 }
 
 // called each update interval
@@ -131,7 +164,10 @@ function updateWidgets() {
 					graphMetricData[j] = resultMetricData[j];
 				}
 			}
+
 			graph.object.update();
+
+			//updateLegendValues(graph);
 		});
 	});
 }

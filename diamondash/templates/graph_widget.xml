@@ -1,7 +1,6 @@
 <div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class='graph-widget-container'>
 	<div class='y-axis'></div>
-	<div class='graph'></div>
-	<div class='legend'>
-		<div class='graph-time-label'></div>
-	</div>
+	<div class='graph'></div> 
+	<div class='graph-time-label'></div>
+	<div class='legend'></div>
 </div>
