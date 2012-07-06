@@ -60,8 +60,8 @@ class Dashboard(Element):
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
                 metric_dict[m_name] = m_config
-                m_client_config = {k: m_config[k] for k in cls.CLIENT_METRIC_KEYS 
-                                   if k in m_config}
+                m_client_config = dict((k, m_config[k]) 
+                    for k in cls.CLIENT_METRIC_KEYS if k in m_config)
                 client_metric_config[m_name] = m_client_config
             w_config['metrics'] = metric_dict
 
