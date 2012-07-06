@@ -1,48 +1,73 @@
-var graphs = []; // rickshaw objects
-var requestInterval = (typeof requestInterval == 'undefined') ? 2000 : (requestInterval * 1000);
+var DEFAULT_REQUEST_INTERVAL = 2000
+var DEFAULT_GRAPH_COLOUR = '#0051cc'
 
+var graphs = [];
+var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
+
+// construct the widget objects using the config
 function constructWidgets() {
-	graphElements = document.querySelectorAll('.graph'); 
+	var graphElements = document.querySelectorAll('.graph'); 
     for (var i = 0; i < graphElements.length; i++) {
+		var widgetName = $.trim(graphElements[i].id);
+		var widgetConfig = config.widgets[widgetName];
+
 		graphs[i] = {
-			'name': $.trim(graphElements[i].id),
-			'data': [{ x:0, y:0 }],
-			'object': undefined
+			name: widgetName,
+			data: {},
+			object: undefined
 		};
+
+		var j = 0;
+		var metricSeries = [];
+		for (var metricName in widgetConfig.metrics) {
+			var metric = widgetConfig.metrics[metricName];
+
+			graphs[i].data[metricName] = [{ x:0, y:0 }];
+			var metricColor = metric.color || DEFAULT_GRAPH_COLOUR;
+			metricSeries[j] = {
+				data: graphs[i].data[metricName],
+				color: metricColor
+			}
+
+			j++;
+		}
 		
 		graphs[i].object = new Rickshaw.Graph({
 			element: graphElements[i],
-			interpolation: 'step-after',
-			series: [{
-			color: '#afdab1',
-			data: graphs[i].data 
-			}]
+			renderer: 'line',
+			series: metricSeries
 		});
 
 		graphs[i].object.render();
 	}
 }
 
+// construct the url to be sent as a request to the server
 function constructUrl(widgetName) {
-	return '/render/' + dashboardName + '/' + widgetName;
+	return '/render/' + config.dashboardName + '/' + widgetName;
 }
 
+// called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
-		url = constructUrl(graph.name)
+		var url = constructUrl(graph.name);
 		getData(url, 
-		function(values) {
-			for (var j = 0; j < values.length; j++)
-				graph.data[j] = values[j];
+		function(results) {
+			for (var metricName in results) {
+				var resultMetricData = results[metricName];
+				var graphMetricData = graph.data[metricName];
+
+				for (var j = 0; j < resultMetricData.length; j++) {
+					graphMetricData[j] = resultMetricData[j];
+				}
+			}
 			graph.object.update();
-			values = null;
 		});
 	});
 }
 
-// retrieve the data from Graphite
+// retrieve the data from the server
 function getData(currentUrl, cbDataReceived) {
-	var obtainedData = [];
 	$.ajax({
 
 		/*beforeSend: function(xhr) {
@@ -59,9 +84,9 @@ function getData(currentUrl, cbDataReceived) {
 		},
 		url: currentUrl
 	}).done(function(responseData) {
-		if (responseData.length > 0)
-		    cbDataReceived(responseData);
-	});
+			// callback fired when the response data is received
+			cbDataReceived(responseData);
+		});
 }
 
 constructWidgets();
