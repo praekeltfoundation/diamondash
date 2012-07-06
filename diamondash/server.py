@@ -53,11 +53,12 @@ def build_config(args=None):
     if args:
         config.update(args)
 
-    config = add_dashboards(config)
-
-    config['client_vars'] = {
-            'requestInterval': config['request_interval']
+    config['client_config'] = {
+            # convert to milliseconds and set client var
+            'requestInterval': config['request_interval'] * 1000 
         }
+
+    config = add_dashboards(config)
 
     return config
 
@@ -69,7 +70,8 @@ def add_dashboards(config):
     if path.exists(dashboards_path):
         for filename in listdir(dashboards_path):
             filepath = '%s/%s' % (dashboards_path, filename)
-            dashboard = Dashboard.from_config_file(filepath)
+            dashboard = Dashboard.from_config_file(filepath,
+                config['client_config'])
             dashboard_name = dashboard.config['name']
             config['dashboards'][dashboard_name] = dashboard
 
@@ -87,6 +89,7 @@ def show_index(request):
     """Routing for homepage"""
     # TODO dashboard routing
     # TODO handle multiple dashboards
+    # NOTE the not so nice looking line below is temporary
     return config['dashboards'].values()[0]
 
 
@@ -104,13 +107,23 @@ def construct_render_url(dashboard_name, widget_name):
     return render_url
 
 
-def format_render_results(results):
+def format_render_results(results, dashboard_name, widget_name):
     """
     Formats the json output received from graphite into
     something usable by rickshaw
     """
-    formatted_data = [{'x': x, 'y': y} for y, x in results]
+    formatted_data = {}
+    widget = config['dashboards'][dashboard_name].get_widget(widget_name)
+    metrics = widget['metrics']
+
+    # Find min length list to cut the lists at this length and keep d3 happy
+    length = min([len(datapoints) for datapoints in results]);
+
+    for metric_name, datapoints in zip(metrics.keys(), results):
+        metric_formatted_data = [{'x': x, 'y': y} for y, x in datapoints[:length]]
+        formatted_data[metric_name] = metric_formatted_data
     return json.dumps(formatted_data)
+
 
 def zeroize_nulls(results):
     """
@@ -131,13 +144,16 @@ def purify_render_results(results, null_filter):
     Fixes problems with the results obtained from
     graphite (eg. null values)
     """
-    results = null_filter(results)
-    # TODO other types of purification
-    return results
+    purified = [null_filter(datapoints) for datapoints in results]
+    return purified
 
 
-def get_datapoints(data):
-    return json.loads(data)[0]['datapoints']
+def get_render_result_datapoints(data):
+    """
+    Obtaints the datapoints from the result returned from
+    graphite from a render request
+    """
+    return [metric['datapoints'] for metric in json.loads(data)]
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
@@ -149,9 +165,8 @@ def render(request, dashboard_name, widget_name):
     render_url = construct_render_url(dashboard_name, widget_name)
 
     d = getPage(render_url)
-    d.addCallback(get_datapoints)
+    d.addCallback(get_render_result_datapoints)
     null_filter = config['dashboards'][dashboard_name].get_widget(widget_name)['null_filter']
     d.addCallback(purify_render_results, skip_nulls if null_filter == 'skip' else zeroize_nulls)
-    d.addCallback(format_render_results)
+    d.addCallback(format_render_results, dashboard_name, widget_name)
     return d
-

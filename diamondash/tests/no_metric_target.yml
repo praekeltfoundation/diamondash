@@ -1,13 +1,8 @@
 name: test-dashboard
 widgets:
-    random-count-sum:
-        title: Sum of random count
-        type: graph
-        width: 300px
-        height: 150px
     random-timer-average:
         title: Average of random timer
         type: graph
         metrics: 
             'random timer average': 
-                target: vumi.random.timer.avg
+                color: '#444444'

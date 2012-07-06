@@ -28,8 +28,13 @@ class MockGraphiteServerProtocol(Protocol):
 
     def construct_response(self, request_uri):
         response_data = self.factory.response_data.get(request_uri)
-        response = ["HTTP/1.1 %s" % (response_data['code'],)]
-        response.extend(['', json.dumps(response_data['body'])])
+
+        if response_data is None:
+            response = ['HTTP/1.1 404', '', '']
+        else:
+            response = ['HTTP/1.1 %s' % (response_data['code'],)]
+            response.extend(['', json.dumps(response_data['body'])])
+
         return '\r\n'.join(response)
 
     def handle_request(self, data):
@@ -44,8 +49,7 @@ class MockGraphiteServerMixin(object):
     Graphite response data
     """
 
-    _RESPONSE_DATA = json.load(
-        resource_stream(__name__, 'response_data.json'))
+    RESPONSE_DATA = json.load(resource_stream(__name__, 'response_data.json'))
 
     graphite_ws = None
 
@@ -53,7 +57,7 @@ class MockGraphiteServerMixin(object):
     def start_graphite_ws(self):
         factory = Factory()
         factory.protocol = MockGraphiteServerProtocol
-        factory.response_data = self._RESPONSE_DATA
+        factory.response_data = self.RESPONSE_DATA
         self.graphite_ws = yield reactor.listenTCP(0, factory)
         address = self.graphite_ws.getHost()
         self.graphite_url = "http://%s:%s" % (address.host, address.port)
@@ -64,8 +68,7 @@ class MockGraphiteServerMixin(object):
 
 class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
-    TEST_DATA = json.load(
-        resource_stream(__name__, 'server_test_data.json'))
+    TEST_DATA = json.load(resource_stream(__name__, 'server_test_data.json'))
 
     def setUp(self):
         self.graphite_ws = None
@@ -108,7 +111,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
-                        'random count sum': 'vumi.random.count.sum'
+                        'luke the metric': {
+                            'target': 'vumi.random.count.sum'
+                         }
                      }
                 }
             }
@@ -123,13 +128,68 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         d.addCallback(self.assert_response, output)
         yield d
 
+    @inlineCallbacks
+    def test_render_for_multimetric_graph(self):
+        """
+        Should build a graphite url from the passed in client
+        request, send a request to graphite, apply transformations, 
+        and return data useable by the client side
+        """
+        yield self.start_graphite_ws()
+
+        test_overrides = {
+                'graphite_url': self.graphite_url,
+                'render_period': 5
+            }
+
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
+
+        dashboard_config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum-and-average': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random-count-sum': {
+                            'target': 'vumi.random.count.sum'
+                         },
+                        'random-timer-average': {
+                            'target': 'vumi.random.timer.avg'
+                         }
+                     }
+                }
+            }
+        }
+        server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
+
+        input = self.TEST_DATA['test_render_for_multimetric_graph']['input']
+        request = requestMock(input, host=self.graphite_ws.getHost().host,
+                              port=self.graphite_ws.getHost().port)
+        output = self.TEST_DATA['test_render_for_multimetric_graph']['output']
+        d = server.render(request, 'test-dashboard',
+                'random-count-sum-and-average')
+        d.addCallback(self.assert_response, output)
+        yield d
+
+    def test_get_render_result_datapoints(self):
+        """
+        Should obtain a list of datapoint lists, each list
+        corresponding to a metric
+        """
+        before = self.TEST_DATA['test_get_render_result_datapoints']['before']
+        before_str = json.dumps(before)
+        result = server.get_render_result_datapoints(before_str)
+        after = self.TEST_DATA['test_get_render_result_datapoints']['after']
+        self.assertEqual(result, after)
+
     """
     Url construction tests
     ----------------------
     """
 
     # TODO url construction tests widget or dashboard not found
-    # TODO url construction tests for other widget types
 
     def test_construct_render_url_for_graph(self):
         """
@@ -154,7 +214,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
-                        'random count sum': 'vumi.random.count.sum'
+                        'random count sum': {
+                            'target': 'vumi.random.count.sum'
+                         }
                      }
                 }
             }
@@ -172,6 +234,56 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
             'random-count-sum')
+        self.assertEqual(constructed_render_url, correct_render_url)
+
+    def test_construct_render_url_for_multimetric_graph(self):
+        """
+        Should construct render request urls acceptable to graphite
+        from a client side graph render request
+        """
+
+        test_render_period = 5
+        test_graphite_url = 'http://127.0.0.1:8000'
+        test_overrides = {
+                'graphite_url': test_graphite_url,
+                'render_period': test_render_period,
+            }
+
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
+
+        dashboard_config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum-and-average': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random-count-sum': {
+                            'target': 'vumi.random.count.sum'
+                         },
+                        'random-timer-average': {
+                            'target': 'vumi.random.timer.avg'
+                         }
+                     }
+                }
+            }
+        }
+        server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
+
+        targets = ['vumi.random.count.sum', 'vumi.random.timer.avg']
+
+        params = {
+            'target': targets,
+            'from': '-%sminutes' % (test_render_period,),
+            'format': 'json'
+            }
+        correct_render_url = "%s/render/?%s" % (test_graphite_url,
+                                                urlencode(params, True))
+
+        constructed_render_url = server.construct_render_url(
+            'test-dashboard', 
+            'random-count-sum-and-average')
         self.assertEqual(constructed_render_url, correct_render_url)
 
     """
@@ -203,15 +315,61 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     ----------------
     """
 
-    # TODO formatting tests for other widget types
-
     def test_format_render_results_for_graph(self):
         """
         Should format datapoints in graphite's format to 
         datapoints in rickshaw's format
         """
+
+        dashboard_config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'arnold-the-metric': {
+                            'target': 'vumi.random.count.sum'
+                         }
+                     }
+                }
+            }
+        }
+        server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
+
         before = self.TEST_DATA['test_format_render_results_for_graph']['before']
         after = self.TEST_DATA['test_format_render_results_for_graph']['after']
-        formatted = server.format_render_results(before)
+        formatted = server.format_render_results(before, 'test-dashboard', 'random-count-sum')
+        formatted_str = json.loads(formatted)
+        self.assertEqual(formatted_str, after)
+
+    def test_format_render_results_for_multimetric_graph(self):
+        """
+        Should format datapoints in graphite's format to 
+        datapoints in rickshaw's format
+        """
+        dashboard_config = {
+        'name': 'test-dashboard',
+        'widgets': {
+                'random-count-sum-and-average': {
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'metrics': {
+                        'random-count-sum': {
+                            'target': 'vumi.random.count.sum'
+                         },
+                        'random-timer-average': {
+                            'target': 'vumi.random.timer.avg'
+                         }
+                     }
+                }
+            }
+        }
+
+        server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
+        before = self.TEST_DATA['test_format_render_results_for_multimetric_graph']['before']
+        after = self.TEST_DATA['test_format_render_results_for_multimetric_graph']['after']
+        formatted = server.format_render_results(before, 'test-dashboard',
+            'random-count-sum-and-average')
         formatted_str = json.loads(formatted)
         self.assertEqual(formatted_str, after)
