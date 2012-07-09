@@ -11,9 +11,7 @@ class Options(usage.Options):
     optParameters = [["port", "p", webserver.DEFAULT_PORT, 
                       "Port number for diamondash to listen on"], 
                      ["config_dir", "c", webserver.DEFAULT_CONFIG_DIR, 
-                      "Config dir"],
-                     ["graphite_url", "g", webserver.DEFAULT_CONFIG_DIR, 
-                      "Graphite URL"]]
+                      "Config dir"]]
 
 def makeService(options):
     webserver.config = webserver.build_config(options)
