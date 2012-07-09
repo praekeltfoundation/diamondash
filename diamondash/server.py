@@ -17,7 +17,7 @@ from dashboard import Dashboard
 
 CONFIG_FILENAME = 'diamondash.yml'
 DEFAULT_PORT = '8080'
-DEFAULT_CONFIG_DIR = '/etc/diamondash'
+DEFAULT_CONFIG_DIR = 'etc/diamondash'
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 DEFAULT_RENDER_PERIOD = 5
 DEFAULT_REQUEST_INTERVAL = 2
