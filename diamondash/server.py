@@ -78,7 +78,7 @@ def add_dashboards(config):
     return config
 
 
-@route('/static/')
+@route('/diamondash/static/')
 def static(request):
     """Routing for all static files (css, js)"""
     return File(resource_filename(__name__, 'static'))
@@ -156,7 +156,7 @@ def get_render_result_datapoints(data):
     return [metric['datapoints'] for metric in json.loads(data)]
 
 
-@route('/render/<string:dashboard_name>/<string:widget_name>')
+@route('/diamondash/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
     # TODO check for invalid dashboards and widgets
