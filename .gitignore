@@ -34,3 +34,6 @@ twistd.log*
 twistd.pid
 _trial_temp
 
+# Supervisord stuff
+tmp/
+logs/
