@@ -17,7 +17,7 @@ from dashboard import Dashboard
 
 CONFIG_FILENAME = 'diamondash.yml'
 DEFAULT_PORT = '8080'
-DEFAULT_CONFIG_DIR = '/etc/diamondash'
+DEFAULT_CONFIG_DIR = 'etc/diamondash'
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 DEFAULT_RENDER_PERIOD = 5
 DEFAULT_REQUEST_INTERVAL = 2
@@ -78,7 +78,7 @@ def add_dashboards(config):
     return config
 
 
-@route('/diamondash/static/')
+@route('/static/')
 def static(request):
     """Routing for all static files (css, js)"""
     return File(resource_filename(__name__, 'static'))
@@ -156,7 +156,7 @@ def get_render_result_datapoints(data):
     return [metric['datapoints'] for metric in json.loads(data)]
 
 
-@route('/diamondash/render/<string:dashboard_name>/<string:widget_name>')
+@route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
     # TODO check for invalid dashboards and widgets

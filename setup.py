@@ -18,7 +18,7 @@ def parse_requirements(filename):
     return install_requires, dependency_links
 
 install_requires, dependency_links = parse_requirements(
-    "config/requirements.pip")
+    "requirements.pip")
 
 setup(
     name="diamondash",
