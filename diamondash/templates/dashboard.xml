@@ -1,6 +1,7 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+	<link rel="stylesheet" type="text/css" href="/static/rickshaw.min.css" />
     <link rel="stylesheet" type="text/css" href="/static/dashboard.css" />
     <script src="/static/jquery.min.js" type="text/javascript"></script>
     <script src="/static/d3.v2.min.js" type="text/javascript"></script>
@@ -8,7 +9,7 @@
   </head>
   <body>
     <div id="dashboard-container">
-      <div t:render="widget">
+      <div t:render="widget_renderer">
         <t:attr name="style">
           <t:slot name="widget_style_slot" />
         </t:attr>
@@ -21,6 +22,7 @@
         <div class="widget-title">
           <t:slot name="widget_title_slot"/>
         </div>
+        <t:slot name="widget_element_slot" />
       </div>
 	  <script t:render="config_script"><t:slot name="client_config"/></script>
       <script src="/static/diamondash.js" type="text/javascript"></script>
