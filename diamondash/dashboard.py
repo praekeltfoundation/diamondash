@@ -25,7 +25,7 @@ class Dashboard(Element):
 
     @classmethod
     def format_metric_target(cls, target, bucket_size):
-        bucket_size = '%sminutes' % (str(bucket_size),)
+        bucket_size = '%ss' % (str(bucket_size),)
         agg_method = "avg"
         metric_fn = target.rstrip(')').split('.')[-1]
         if target.startswith('integral('):
