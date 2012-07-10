@@ -6,7 +6,7 @@ import json
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_stream
-from twisted.web.template import Element, renderer, XMLFile
+from twisted.web.template import Element, renderer, XMLFile, Tag
 from exceptions import ConfigError
 
 
@@ -79,8 +79,8 @@ class Dashboard(Element):
                 m_client_config = dict((k, m_config[k]) 
                     for k in cls.CLIENT_METRIC_KEYS if k in m_config)
                 client_metric_config[m_name] = m_client_config
-            w_config['metrics'] = metric_dict
 
+            w_config['metrics'] = metric_dict
             widget_dict[w_name] = w_config
 
         # update widget dict to dict with slugified widget names
@@ -112,13 +112,11 @@ class Dashboard(Element):
         return [metric['target'] for metric in metrics.values()]
 
     @renderer
-    def widget(self, request, tag):
+    def widget_renderer(self, request, tag):
         for w_name, w_config in self.config['widgets'].items():
             new_tag = tag.clone()
 
-            if 'type' not in w_config:
-                w_config['type'] = 'graph'
-            class_attr_list = ['widget', w_config['type']]
+            class_attr_list = ['widget', '%s-widget' % (w_config['type'],)]
             class_attr = ' '.join('%s' % attr for attr in class_attr_list)
 
             style_attr_dict = {}
@@ -127,10 +125,17 @@ class Dashboard(Element):
                     style_attr_dict[style_key] = w_config[style_key]
             style_attr = ';'.join('%s: %s' % item for item in style_attr_dict.items())
 
+            # to not break the template with invalid types
+            widget_element = '' 
+
+            if w_config['type'] == 'graph':
+                widget_element = GraphWidget()
+
             new_tag.fillSlots(widget_title_slot=w_config['title'],
                               widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
-                              widget_id_slot=w_name)
+                              widget_id_slot=w_name,
+                              widget_element_slot=widget_element)
             yield new_tag
 
     @renderer
@@ -143,6 +148,12 @@ class Dashboard(Element):
         if self.client_config is not None:
             tag.fillSlots(client_config=client_config_str)
         return tag
+
+
+class GraphWidget(Element):
+    """GraphElement element that resides in a Dashboard element"""
+
+    loader = XMLFile(resource_stream(__name__, 'templates/graph_widget.xml'))
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
