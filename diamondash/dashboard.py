@@ -19,9 +19,20 @@ class Dashboard(Element):
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
     def __init__(self, config, client_config=None):
-        self.config, self.client_config = self.parse_config(config, client_config)
+        self.config, self.client_config = self.parse_config(
+            config, client_config)
         self.client_config['dashboardName'] = config['name']
 
+    @classmethod
+    def format_metric_target(cls, target, bucket_size):
+        bucket_size = '%sminutes' % (str(bucket_size),)
+        agg_method = "avg"
+        metric_fn = target.rstrip(')').split('.')[-1]
+        if target.startswith('integral('):
+            agg_method = 'max'
+        elif metric_fn in ('max', 'min', 'sum'):
+            agg_method = metric_fn
+        return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
 
     @classmethod 
     def parse_config(cls, config, client_config=None):
@@ -47,6 +58,7 @@ class Dashboard(Element):
             w_name = slugify(w_name)
             w_config.setdefault('type', 'graph')
             w_config.setdefault('null_filter', 'skip')
+            bucket_size = w_config.setdefault('bucket_size', 5)
 
             client_widget_dict = client_config['widgets'].setdefault(w_name, {})
             client_metric_config = client_widget_dict.setdefault('metrics', {})
@@ -56,6 +68,10 @@ class Dashboard(Element):
                 if 'target' not in m_config: 
                     raise ConfigError('Widget "%s" needs a target for metric "%s".' 
                         % (w_name, m_name))
+
+                m_config['original_target'] = m_config['target']
+                m_config['target'] = cls.format_metric_target(
+                        m_config['target'], bucket_size)
 
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
