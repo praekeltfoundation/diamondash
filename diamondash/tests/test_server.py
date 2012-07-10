@@ -110,6 +110,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum': {
                     'title': 'a graph',
                     'type': 'graph',
+                    'bucket_size': 5,
                     'metrics': {
                         'luke the metric': {
                             'target': 'vumi.random.count.sum'
@@ -151,6 +152,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum-and-average': {
                     'title': 'a graph',
                     'type': 'graph',
+                    'bucket_size': 5,
                     'metrics': {
                         'random-count-sum': {
                             'target': 'vumi.random.count.sum'
@@ -221,7 +223,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                      }
                 }
             }
-  "      }
+        }
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
         params = {
@@ -232,7 +234,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params))
 
-        print correct_render_url
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
             'random-count-sum')
@@ -284,7 +285,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params, True))
-        print correct_render_url
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
             'random-count-sum-and-average')
