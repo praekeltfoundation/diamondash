@@ -110,6 +110,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum': {
                     'title': 'a graph',
                     'type': 'graph',
+                    'bucket_size': 300,
                     'metrics': {
                         'luke the metric': {
                             'target': 'vumi.random.count.sum'
@@ -151,6 +152,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-count-sum-and-average': {
                     'title': 'a graph',
                     'type': 'graph',
+                    'bucket_size': 300,
                     'metrics': {
                         'random-count-sum': {
                             'target': 'vumi.random.count.sum'
@@ -211,6 +213,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
+                    'bucket_size': 240,
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
@@ -224,7 +227,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
         params = {
-            'target': 'vumi.random.count.sum',
+            'target': 'summarize(vumi.random.count.sum, "240s", "sum")',
             'from': '-%sminutes' % (test_render_period,),
             'format': 'json'
             }
@@ -256,6 +259,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum-and-average': {
+                    'bucket_size': 120,
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
@@ -271,7 +275,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
-        targets = ['vumi.random.count.sum', 'vumi.random.timer.avg']
+        targets = ['summarize(vumi.random.count.sum, "120s", "sum")',
+            'summarize(vumi.random.timer.avg, "120s", "avg")']
 
         params = {
             'target': targets,
@@ -280,7 +285,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params, True))
-
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
             'random-count-sum-and-average')
