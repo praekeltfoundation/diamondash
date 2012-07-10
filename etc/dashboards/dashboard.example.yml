@@ -1,4 +1,5 @@
 name: 'Test Dashboard'
+render_period: 3600
 widgets:
     'Sum of random count':
         metrics: 
