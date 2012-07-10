@@ -58,7 +58,7 @@ class Dashboard(Element):
             w_name = slugify(w_name)
             w_config.setdefault('type', 'graph')
             w_config.setdefault('null_filter', 'skip')
-            bucket_size = w_config.setdefault('bucket_size', 5)
+            bucket_size = w_config.setdefault('bucket_size', 300)
 
             client_widget_dict = client_config['widgets'].setdefault(w_name, {})
             client_metric_config = client_widget_dict.setdefault('metrics', {})
