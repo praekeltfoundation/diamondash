@@ -12,6 +12,7 @@ body{
 	float: left;
 	padding: 10px;
 	margin: 2px 10px;
+	position: relative;
 }
 
 .widget-title {
@@ -21,7 +22,6 @@ body{
 
 .graph {
 	float: left;
-	position: relative;
 	width: 800px;
 	height: 150px;
 }
@@ -33,13 +33,35 @@ body{
 	width: 40px;
 }
 
-.legend {
+.legend-container {
+	float: left;
+	height: 20px;
+	width: 800px;
+}
+
+.legend, .hover-legend {
+	height: 20px;
 	text-align: center;
 	font-size: 0.8em;
+
+	transition: opacity 0.25s linear;
+	-moz-transition: opacity 0.25s linear;
+	-o-transition: opacity 0.25s linear;
+	-webkit-transition: opacity 0.25s linear;
+}
+
+.legend.inactive, .hover-legend.inactive {
+	opacity: 0;
+}
+
+.hover-legend {
+	position: relative;
+	top: -20px;
+	font-weight: bold;
 }
 
 .graph-time-label {
-	position: absolute;
+	display: inline-block;
 	font-size: 12px;
 	color: #808080;
 }
@@ -64,14 +86,6 @@ body{
 .metric-key-value-label {
 	display: inline-block;
 	margin: 0 0 0 2px;
-}
-
-.metric-key-value-label-inactive {
-	font-weight: bold;
-}
-
-.metric-key-value-label-active {
-	font-weight: normal;
 }
 
 .rickshaw_graph .detail {
