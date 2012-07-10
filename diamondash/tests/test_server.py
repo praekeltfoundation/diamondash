@@ -211,6 +211,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum': {
+                    'bucket_size': 4,
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
@@ -224,12 +225,13 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
         params = {
-            'target': 'vumi.random.count.sum',
+            'target': 'summarize(vumi.random.count.sum, "4minutes", sum)',
             'from': '-%sminutes' % (test_render_period,),
             'format': 'json'
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params))
+        print correct_render_url
 
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
@@ -256,6 +258,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum-and-average': {
+                    'bucket_size': 2,
                     'title': 'a graph',
                     'type': 'graph',
                     'metrics': {
@@ -271,7 +274,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
         server.config['dashboards']['test-dashboard'] = Dashboard(dashboard_config)
 
-        targets = ['vumi.random.count.sum', 'vumi.random.timer.avg']
+        targets = ['summarize(vumi.random.count.sum, "2minutes", sum)',
+            'summarize(vumi.random.timer.avg, "2minutes", avg)']
 
         params = {
             'target': targets,
@@ -280,6 +284,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params, True))
+        print correct_render_url
 
         constructed_render_url = server.construct_render_url(
             'test-dashboard', 
