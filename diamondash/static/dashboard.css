@@ -1,8 +1,93 @@
+body{
+    font: medium/1.75 'Gill Sans','Gill Sans MT',Corbel,Helvetica,'Nimbus Sans L',sans-serif;
+    word-spacing: 0.1em;
+}
+
+#dashboard-container {
+	width: 960px;
+	margin: 0 auto;
+}
+
 .widget {
-	position: relative;
 	float: left;
 	padding: 10px;
-	margin: 10px;
-	width: 348px;
-	height: 100px;
+	margin: 2px 10px;
+	position: relative;
+}
+
+.widget-title {
+	text-align: center;
+	margin-bottom: 5px;
+}
+
+.graph {
+	float: left;
+	width: 800px;
+	height: 150px;
+}
+
+.y-axis {
+	float: left;
+	top: 0;
+	bottom: 0;
+	width: 40px;
+}
+
+.legend-container {
+	float: left;
+	height: 20px;
+	width: 800px;
+}
+
+.legend, .hover-legend {
+	height: 20px;
+	text-align: center;
+	font-size: 0.8em;
+
+	transition: opacity 0.25s linear;
+	-moz-transition: opacity 0.25s linear;
+	-o-transition: opacity 0.25s linear;
+	-webkit-transition: opacity 0.25s linear;
+}
+
+.legend.inactive, .hover-legend.inactive {
+	opacity: 0;
+}
+
+.hover-legend {
+	position: relative;
+	top: -20px;
+	font-weight: bold;
+}
+
+.graph-time-label {
+	display: inline-block;
+	font-size: 12px;
+	color: #808080;
+}
+
+.metric-key-container {
+	display: inline-block;
+	margin: 0 0 0 15px;
+}
+
+.metric-key-swatch {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	margin: 0 8px 0 0;
+}
+
+.metric-key-label {
+	display: inline-block;
+	font-weight: normal;
+}
+
+.metric-key-value-label {
+	display: inline-block;
+	margin: 0 0 0 2px;
+}
+
+.rickshaw_graph .detail {
+	background: none repeat scroll 0 0 rgba(0, 0, 0, 0.3);
 }
