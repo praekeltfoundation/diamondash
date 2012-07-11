@@ -4,7 +4,8 @@
 from pkg_resources import resource_filename
 from twisted.trial import unittest
 
-from diamondash.dashboard import slugify, Dashboard
+from diamondash.dashboard import (
+    parse_interval, slugify, Dashboard, DEFAULT_RENDER_PERIOD)
 from diamondash.exceptions import ConfigError
 
 
@@ -13,6 +14,17 @@ class DashboardTestCase(unittest.TestCase):
     def test_slugify(self):
         """Should change 'SomethIng_lIke tHis' to 'something-like-this'"""
         self.assertEqual(slugify('SoMeThing_liKe!tHis'), 'something-like-this')
+
+    def test_parse_interval(self):
+        """
+        Multiplier-suffixed intervals should be turned into integers correctly.
+        """
+        self.assertEqual(2, parse_interval(2))
+        self.assertEqual(2, parse_interval("2"))
+        self.assertEqual(2, parse_interval("2s"))
+        self.assertEqual(120, parse_interval("2m"))
+        self.assertEqual(7200, parse_interval("2h"))
+        self.assertEqual(86400 * 2, parse_interval("2d"))
 
     def test_from_config_file_not_found(self):
         """
@@ -66,3 +78,19 @@ class DashboardTestCase(unittest.TestCase):
                          'random count sum')
         self.assertEqual(test_metrics['random-timer-average']['title'],
                          'this is an explicit title')
+
+    def test_widget_render_period(self):
+        """
+        Should use the given render period if one is provided, otherwise the
+        default.
+        """
+        config = Dashboard.from_config_file(resource_filename(
+                __name__, 'widget_render_period.yml')).config
+
+        def assert_render_period(widget_name, render_period):
+            self.assertEqual(
+                config['widgets'][widget_name]['render_period'], render_period)
+
+        assert_render_period('default-render-period', DEFAULT_RENDER_PERIOD)
+        assert_render_period('explicit-render-period', 1337)
+        assert_render_period('suffix-render-period', 7200)
