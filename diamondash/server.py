@@ -5,14 +5,16 @@ import json
 from urllib import urlencode
 
 import yaml
-from klein import resource, route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.web import server, static
-from twisted.application import internet, service, strports
 from pkg_resources import resource_filename
+from klein import route, resource
 
 from dashboard import Dashboard
+
+
+# We need resource imported for klein magic. This makes pyflakes happy.
+resource = resource
 
 
 CONFIG_FILENAME = 'diamondash.yml'
@@ -134,7 +136,7 @@ def format_render_results(results, dashboard_name, widget_name):
         formatted_data[metric_name] = metric_formatted_data
     return json.dumps(formatted_data)
 
- 
+
 def zeroize_nulls(results):
     """
     Filters null y values in results obtained from graphite
@@ -164,12 +166,15 @@ def purify_render_results(results, dashboard_name, widget_name):
     """
     dashboard = config['dashboards'][dashboard_name]
     widget_config = dashboard.get_widget_config(widget_name)
-    null_filters_str = get_widget_null_filters(widget_config)
+    null_filter_strs = get_widget_null_filters(widget_config)
 
     # filter each metric according to is configured null filter
     purified = []
-    for null_filter_str, datapoints in zip(null_filters_str, results):
-        null_filter = skip_nulls if null_filter_str == 'skip' else zeroize_nulls
+    for null_filter_str, datapoints in zip(null_filter_strs, results):
+        null_filter = {
+            'skip': skip_nulls,
+            'zero': zeroize_nulls,
+            }.get(null_filter_str, zeroize_nulls)
         purified.append(null_filter(datapoints))
 
     return purified

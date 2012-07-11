@@ -6,7 +6,7 @@ import json
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_stream
-from twisted.web.template import Element, renderer, XMLFile, Tag
+from twisted.web.template import Element, renderer, XMLFile
 from exceptions import ConfigError
 
 
@@ -15,6 +15,29 @@ DEFAULT_NULL_FILTER = 'skip'
 DEFAULT_RENDER_PERIOD = 3600
 DEFAULT_BUCKET_SIZE = 300
 DEFAULT_DIFF_SIZE = 1800
+
+
+def parse_interval(interval):
+    """
+    Recognise 's', 'm', 'h', 'd' suffixes as seconds, minutes, hours and days.
+    Return integer seconds.
+    """
+    if not isinstance(interval, basestring):
+        # It isn't a string, so there's nothing to parse
+        return interval
+    suffixes = {
+        's': 1,
+        'm': 60,
+        'h': 3600,
+        'd': 86400,
+        }
+    try:
+        for suffix, multiplier in suffixes.items():
+            if interval.endswith(suffix):
+                return int(interval[:-1]) * multiplier
+        return int(interval)
+    except ValueError:
+        raise ConfigError("%r is not a valid time interval.")
 
 
 class Dashboard(Element):
@@ -68,12 +91,17 @@ class Dashboard(Element):
             w_config.setdefault('title', w_name)
             w_name = slugify(w_name)
             w_config.setdefault('type', DEFAULT_WIDGET_TYPE)
-            w_config.setdefault('null_filter', config['null_filter'])
-            w_config.setdefault('render_period', config['render_period'])
-            w_config.setdefault('diff_size', config['diff_size'])
-            bucket_size = w_config.setdefault('bucket_size', config['bucket_size'])
 
-            client_widget_dict = client_config['widgets'].setdefault(w_name, {})
+            for field in ['null_filter', 'render_period', 'diff_size',
+                          'bucket_size']:
+                w_config.setdefault(field, config[field])
+
+            for field in ['render_period', 'diff_size', 'bucket_size']:
+                w_config[field] = parse_interval(w_config[field])
+
+            bucket_size = w_config['bucket_size']
+            client_widget_dict = client_config['widgets'].setdefault(
+                w_name, {})
             client_metric_config = client_widget_dict.setdefault('metrics', {})
 
             metric_dict = {}
@@ -168,6 +196,8 @@ class GraphWidget(Element):
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+
+
 def slugify(text):
     """Slugifies the passed in text"""
     result = []
