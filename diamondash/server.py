@@ -5,12 +5,16 @@ import json
 from urllib import urlencode
 
 import yaml
-from klein import route
 from twisted.web.client import getPage
 from twisted.web.static import File
 from pkg_resources import resource_filename
+from klein import route, resource
 
 from dashboard import Dashboard
+
+
+# We need resource imported for klein magic. This makes pyflakes happy.
+resource = resource
 
 
 CONFIG_FILENAME = 'diamondash.yml'
