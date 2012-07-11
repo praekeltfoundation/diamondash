@@ -101,6 +101,7 @@ function constructWidgets() {
 		var widgetConfig = config.widgets[widgetName];
 		var graphObject = null;
 		var graphData = {};
+		var graphColors = {};
 
 		// build the structures needed for each metric
 		var j = 0;
@@ -113,9 +114,10 @@ function constructWidgets() {
 
 				graphData[metricName] = [{ x:0, y:0 }];
 				var metricColor = metric.color || DEFAULT_GRAPH_COLOUR;
+				graphColors[metricName] = metricColor;
 				metricSeries[j] = {
 					data: graphData[metricName],
-					color: metricColor,
+					color: graphColors[metricName],
 					name: metricName
 				};
 

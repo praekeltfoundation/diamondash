@@ -45,8 +45,8 @@ class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
     # keys to metric attributes needed by client
-    CLIENT_METRIC_KEYS = ['target', 'title', 'color', 'warning_threshold',
-                          'warning_color']
+    CLIENT_METRIC_KEYS = ['target', 'title', 'color', 'warning_max_threshold',
+                          'warning_min_threshold', 'warning_color']
 
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
@@ -118,9 +118,10 @@ class Dashboard(Element):
                     m_config['target'], bucket_size)
                 m_config.setdefault('null_filter', w_config['null_filter'])
 
-                if ('warning_threshold' in m_config):
-                    m_config.setdefault(
-                        'warning_colour', DEFAULT_WARNING_COLOR)
+                if ('warning_max_threshold' in m_config or
+                    'warning_min_threshold' in m_config):
+                    m_config.setdefault('warning_colour',
+                                        DEFAULT_WARNING_COLOR)
 
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
@@ -187,7 +188,7 @@ class Dashboard(Element):
         # TODO fix injection vulnerability
 
         #serialize client vars into a json string ready for javascript
-        client_config_str = 'var config = %s' % (
+        client_config_str = 'var config = %s;' % (
             json.dumps(self.client_config),)
 
         if self.client_config is not None:
