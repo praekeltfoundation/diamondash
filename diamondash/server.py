@@ -162,15 +162,15 @@ def purify_render_results(results, dashboard_name, widget_name):
     """
     dashboard = config['dashboards'][dashboard_name]
     widget_config = dashboard.get_widget_config(widget_name)
-    null_filters_str = get_widget_null_filters(widget_config)
+    null_filter_strs = get_widget_null_filters(widget_config)
 
     # filter each metric according to is configured null filter
     purified = []
-    for null_filter_str, datapoints in zip(null_filters_str, results):
+    for null_filter_str, datapoints in zip(null_filter_strs, results):
         null_filter = {
             'skip': skip_nulls,
             'zero': zeroize_nulls,
-            }.get(null_filters_str, zeroize_nulls)
+            }.get(null_filter_str, zeroize_nulls)
         purified.append(null_filter(datapoints))
 
     return purified
