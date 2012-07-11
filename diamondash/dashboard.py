@@ -15,6 +15,7 @@ DEFAULT_NULL_FILTER = 'skip'
 DEFAULT_RENDER_PERIOD = 3600
 DEFAULT_BUCKET_SIZE = 300
 DEFAULT_DIFF_SIZE = 1800
+DEFAULT_WARNING_COLOR = '#cc3333'
 
 
 def parse_interval(interval):
@@ -44,7 +45,8 @@ class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
     # keys to metric attributes needed by client
-    CLIENT_METRIC_KEYS = ['target', 'title', 'color']
+    CLIENT_METRIC_KEYS = ['target', 'title', 'color', 'warning_threshold',
+                          'warning_color']
 
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
@@ -115,6 +117,10 @@ class Dashboard(Element):
                 m_config['target'] = cls.format_metric_target(
                     m_config['target'], bucket_size)
                 m_config.setdefault('null_filter', w_config['null_filter'])
+
+                if ('warning_threshold' in m_config):
+                    m_config.setdefault(
+                        'warning_colour', DEFAULT_WARNING_COLOR)
 
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)

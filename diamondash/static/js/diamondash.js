@@ -1,5 +1,5 @@
-var DEFAULT_REQUEST_INTERVAL = 2000
-var DEFAULT_GRAPH_COLOUR = '#3333cc'
+var DEFAULT_REQUEST_INTERVAL = 2000;
+var DEFAULT_GRAPH_COLOUR = '#3333cc';
 
 var graphs = [];
 var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
@@ -11,7 +11,11 @@ function Hover(graph, widgetMetricsConfig, legend, hoverLegend) {
 			hoverTimeLabel.innerHTML = args.formattedXValue;
 
 			// for each metric
-			args.detail.sort(function(a, b) { return a.order - b.order }).forEach(function(d) {
+			args.detail.sort(
+				function(a, b) { 
+					return a.order - b.order;
+				}).forEach(
+				function(d) {
 				var title = widgetMetricsConfig[d.name].title;
 				var key = hoverLegend.querySelector('#metric-key-container-' + d.name);
 				var label = key.querySelector('#metric-key-label-' + d.name);
@@ -27,7 +31,7 @@ function Hover(graph, widgetMetricsConfig, legend, hoverLegend) {
 				this.element.appendChild(dot);
 				dot.className = 'dot active';
 
-				this.show()
+				this.show();
 			}, this);
 		},
 
@@ -37,7 +41,7 @@ function Hover(graph, widgetMetricsConfig, legend, hoverLegend) {
 			legend.classList.remove('inactive');
 			hoverLegend.classList.add('inactive');
 
-			if (typeof this.onHide == 'function') {
+			if (typeof this.onHide === 'function') {
 				this.onHide();
 			}
 		},
@@ -48,7 +52,7 @@ function Hover(graph, widgetMetricsConfig, legend, hoverLegend) {
 			legend.classList.add('inactive');
 			hoverLegend.classList.remove('inactive');
 
-			if (typeof this.onShow == 'function') {
+			if (typeof this.onShow === 'function') {
 				this.onShow();
 			}
 		}
@@ -87,7 +91,8 @@ function constructMetricKey(legend, metricName, metricTitle, metricColor) {
 // construct the widget objects using the config
 function constructWidgets() {
 	var graphWidgets = document.querySelectorAll('.graph-widget'); 
-    for (var i = 0; i < graphWidgets.length; i++) {
+	var i = 0;
+    for (i = 0; i < graphWidgets.length; i++) {
 		var widgetElement = graphWidgets[i];
 		var graphElement = widgetElement.querySelector('.graph');
 		var legend = widgetElement.querySelector('.legend');
@@ -100,21 +105,25 @@ function constructWidgets() {
 		// build the structures needed for each metric
 		var j = 0;
 		var metricSeries = [];
-		for (var metricName in widgetConfig.metrics) {
-			var metric = widgetConfig.metrics[metricName];
 
-			graphData[metricName] = [{ x:0, y:0 }];
-			var metricColor = metric.color || DEFAULT_GRAPH_COLOUR;
-			metricSeries[j] = {
-				data: graphData[metricName],
-				color: metricColor,
-				name: metricName
+		var metricName = 0;
+		for (metricName in widgetConfig.metrics) {
+			if (widgetConfig.metrics.hasOwnProperty(metricName)) {
+				var metric = widgetConfig.metrics[metricName];
+
+				graphData[metricName] = [{ x:0, y:0 }];
+				var metricColor = metric.color || DEFAULT_GRAPH_COLOUR;
+				metricSeries[j] = {
+					data: graphData[metricName],
+					color: metricColor,
+					name: metricName
+				};
+
+				constructMetricKey(legend, metricName, metric.title, metricColor);
+				constructMetricKey(hoverLegend, metricName, metric.title, metricColor);
+
+				j++;
 			}
-
-			constructMetricKey(legend, metricName, metric.title, metricColor);
-			constructMetricKey(hoverLegend, metricName, metric.title, metricColor);
-
-			j++;
 		}
 
 		graphObject = new Rickshaw.Graph({
@@ -165,15 +174,19 @@ function updateLegendValues(graph) {
 
 	var lastX = -1;
 	var metrics = config.widgets[graph.name].metrics;
+	var metricName = null;
 	for (metricName in metrics) {
-		var valueLabel = legend.querySelector('#metric-key-value-label-' + metricName);
-		var metricData = graph.data[metricName];
-		var lastCoord = metricData[metricData.length-1];
-		var lastValue = YFormatter(lastCoord.y);
-		if (lastCoord.x > lastX)
-			lastX = lastCoord.x;
-		valueLabel.innerHTML = lastValue;
-		valueLabel.className = 'metric-key-value-label inactive';
+		if (metrics.hasOwnProperty(metricName)) {
+			var valueLabel = legend.querySelector('#metric-key-value-label-' + metricName);
+			var metricData = graph.data[metricName];
+			var lastCoord = metricData[metricData.length-1];
+			var lastValue = YFormatter(lastCoord.y);
+			if (lastCoord.x > lastX) {
+				lastX = lastCoord.x;
+			}
+			valueLabel.innerHTML = lastValue;
+			valueLabel.className = 'metric-key-value-label inactive';
+		}
 	}
 
 	timeLabel.innerHTML = XFormatter(lastX);
@@ -185,12 +198,16 @@ function updateWidgets() {
 		var url = constructUrl(graph.name);
 		getData(url, 
 		function(results) {
-			for (var metricName in results) {
-				var resultMetricData = results[metricName];
-				var graphMetricData = graph.data[metricName];
+			var metricName = null;
+			for (metricName in results) {
+				if (results.hasOwnProperty(metricName)) {
+					var resultMetricData = results[metricName];
+					var graphMetricData = graph.data[metricName];
 
-				for (var j = 0; j < resultMetricData.length; j++) {
-					graphMetricData[j] = resultMetricData[j];
+					var j = 0;
+					for (j = 0; j < resultMetricData.length; j++) {
+						graphMetricData[j] = resultMetricData[j];
+					}
 				}
 			}
 
