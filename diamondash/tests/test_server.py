@@ -98,14 +98,15 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         test_overrides = {
                 'graphite_url': self.graphite_url,
-                'render_period': 5
             }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
+        test_render_period = 3600
         dashboard_config = {
         'name': 'test-dashboard',
+        'render_period': test_render_period,
         'widgets': {
                 'random-count-sum': {
                     'title': 'a graph',
@@ -140,14 +141,15 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         test_overrides = {
                 'graphite_url': self.graphite_url,
-                'render_period': 5
             }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
+        test_render_period = 3600
         dashboard_config = {
         'name': 'test-dashboard',
+        'render_period': test_render_period,
         'widgets': {
                 'random-count-sum-and-average': {
                     'title': 'a graph',
@@ -199,23 +201,23 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         from a client side graph render request
         """
 
-        test_render_period = 5
         test_graphite_url = 'http://127.0.0.1:8000'
         test_overrides = {
                 'graphite_url': test_graphite_url,
-                'render_period': test_render_period,
             }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
+        test_render_period = 3600
         dashboard_config = {
         'name': 'test-dashboard',
+        'render_period': test_render_period,
         'widgets': {
                 'random-count-sum': {
-                    'bucket_size': 240,
                     'title': 'a graph',
                     'type': 'graph',
+                    'bucket_size': 240,
                     'metrics': {
                         'random count sum': {
                             'target': 'vumi.random.count.sum'
@@ -228,7 +230,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         params = {
             'target': 'summarize(vumi.random.count.sum, "240s", "sum")',
-            'from': '-%sminutes' % (test_render_period,),
+            'from': '-%ss' % (test_render_period,),
             'format': 'json'
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
@@ -245,23 +247,23 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         from a client side graph render request
         """
 
-        test_render_period = 5
         test_graphite_url = 'http://127.0.0.1:8000'
         test_overrides = {
                 'graphite_url': test_graphite_url,
-                'render_period': test_render_period,
             }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
+        test_render_period = 3600
         dashboard_config = {
         'name': 'test-dashboard',
         'widgets': {
                 'random-count-sum-and-average': {
-                    'bucket_size': 120,
                     'title': 'a graph',
                     'type': 'graph',
+                    'render_period': test_render_period,
+                    'bucket_size': 120,
                     'metrics': {
                         'random-count-sum': {
                             'target': 'vumi.random.count.sum'
@@ -280,7 +282,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         params = {
             'target': targets,
-            'from': '-%sminutes' % (test_render_period,),
+            'from': '-%ss' % (test_render_period,),
             'format': 'json'
             }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
