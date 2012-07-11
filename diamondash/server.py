@@ -5,11 +5,9 @@ import json
 from urllib import urlencode
 
 import yaml
-from klein import resource, route
+from klein import route
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.web import server, static
-from twisted.application import internet, service, strports
 from pkg_resources import resource_filename
 
 from dashboard import Dashboard
@@ -134,7 +132,7 @@ def format_render_results(results, dashboard_name, widget_name):
         formatted_data[metric_name] = metric_formatted_data
     return json.dumps(formatted_data)
 
- 
+
 def zeroize_nulls(results):
     """
     Filters null y values in results obtained from graphite
@@ -169,7 +167,10 @@ def purify_render_results(results, dashboard_name, widget_name):
     # filter each metric according to is configured null filter
     purified = []
     for null_filter_str, datapoints in zip(null_filters_str, results):
-        null_filter = skip_nulls if null_filter_str == 'skip' else zeroize_nulls
+        null_filter = {
+            'skip': skip_nulls,
+            'zero': zeroize_nulls,
+            }.get(null_filters_str, zeroize_nulls)
         purified.append(null_filter(datapoints))
 
     return purified

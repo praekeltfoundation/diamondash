@@ -6,7 +6,7 @@ import json
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_stream
-from twisted.web.template import Element, renderer, XMLFile, Tag
+from twisted.web.template import Element, renderer, XMLFile
 from exceptions import ConfigError
 
 
@@ -71,9 +71,11 @@ class Dashboard(Element):
             w_config.setdefault('null_filter', config['null_filter'])
             w_config.setdefault('render_period', config['render_period'])
             w_config.setdefault('diff_size', config['diff_size'])
-            bucket_size = w_config.setdefault('bucket_size', config['bucket_size'])
+            bucket_size = w_config.setdefault(
+                'bucket_size', config['bucket_size'])
 
-            client_widget_dict = client_config['widgets'].setdefault(w_name, {})
+            client_widget_dict = client_config['widgets'].setdefault(
+                w_name, {})
             client_metric_config = client_widget_dict.setdefault('metrics', {})
 
             metric_dict = {}
@@ -168,6 +170,8 @@ class GraphWidget(Element):
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+
+
 def slugify(text):
     """Slugifies the passed in text"""
     result = []
