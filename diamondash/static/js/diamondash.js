@@ -27,13 +27,6 @@ function constructUrl(widgetName) {
 	return '/render/' + config.dashboardName + '/' + widgetName;
 }
 
-function warningThresholdReached(minThreshold, maxThreshold, value) {
-	return ((typeof minThreshold !== 'undefined'
-			&& value < minThreshold)
-		|| (typeof maxThreshold !== 'undefined'
-			&& value > maxThreshold));
-}
-
 // called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 

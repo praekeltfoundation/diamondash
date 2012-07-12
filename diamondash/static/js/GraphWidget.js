@@ -99,6 +99,13 @@ GraphWidget.prototype.update = function(results) {
 	this.object.update();
 };
 
+function warningThresholdReached(minThreshold, maxThreshold, value) {
+	return ((typeof minThreshold !== 'undefined'
+			&& value < minThreshold)
+		|| (typeof maxThreshold !== 'undefined'
+			&& value > maxThreshold));
+}
+
 // formats an time value on the x axis into a UTC string
 function xFormatter(x) { 
 	return new Date(x * 1000).toUTCString(); 
