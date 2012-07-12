@@ -36,7 +36,7 @@ def build_config(args=None):
         'graphite_url': DEFAULT_GRAPHITE_URL,
         'request_interval': DEFAULT_REQUEST_INTERVAL,
         'dashboards': {},
-    }
+        }
 
     # TODO test
 
@@ -56,7 +56,7 @@ def build_config(args=None):
     config['client_config'] = {
         # convert to milliseconds and set client var
         'requestInterval': int(config['request_interval']) * 1000
-    }
+        }
 
     config = add_dashboards(config)
 
@@ -111,7 +111,7 @@ def construct_render_url(dashboard_name, widget_name):
         'target': get_widget_targets(widget_config),
         'from': '-%ss' % (widget_config['render_period'],),
         'format': 'json'
-    }
+        }
     render_url = "%s/render/?%s" % (config['graphite_url'],
                                     urlencode(params, True))
     return render_url
