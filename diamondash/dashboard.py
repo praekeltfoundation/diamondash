@@ -136,10 +136,13 @@ class Dashboard(Element):
                     m_config['target'], bucket_size)
                 m_config.setdefault('null_filter', w_config['null_filter'])
 
-                if (parse_threshold(m_config, 'warning_max_treshold') or
-                    parse_threshold(m_config, 'warning_min_threshold')):
-                    m_config.setdefault('warning_color',
-                                        DEFAULT_WARNING_COLOR)
+                warning_max_treshold = parse_threshold(
+                    m_config, 'warning_max_treshold')
+                warning_min_treshold = parse_threshold(
+                    m_config, 'warning_min_treshold')
+                if ((warning_max_treshold is not None) or
+                   (warning_min_treshold is not None)):
+                    m_config.setdefault('warning_color', DEFAULT_WARNING_COLOR)
 
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
