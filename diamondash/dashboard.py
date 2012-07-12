@@ -15,6 +15,7 @@ DEFAULT_NULL_FILTER = 'skip'
 DEFAULT_RENDER_PERIOD = 3600
 DEFAULT_BUCKET_SIZE = 300
 DEFAULT_DIFF_SIZE = 1800
+DEFAULT_WARNING_COLOR = '#cc3333'
 
 
 def parse_interval(interval):
@@ -40,11 +41,41 @@ def parse_interval(interval):
         raise ConfigError("%r is not a valid time interval.")
 
 
+def parse_threshold(config, threshold_name):
+    """
+    Returns None if the treshold is not in the config
+    file, wraps the given treshold config value as an int
+    and returns it
+    """
+    if threshold_name not in config:
+        return None
+
+    treshold = int(config[threshold_name])
+    config[threshold_name] = treshold
+    return treshold
+
+
+def format_metric_target(target, bucket_size):
+    """
+    Formats a metric target to allow aggregation of metric values
+    based on the passed in bucket size
+    """
+    bucket_size = '%ss' % (str(bucket_size),)
+    agg_method = "avg"
+    metric_fn = target.rstrip(')').split('.')[-1]
+    if target.startswith('integral('):
+        agg_method = 'max'
+    elif metric_fn in ('max', 'min', 'sum'):
+        agg_method = metric_fn
+    return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
+
+
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
     # keys to metric attributes needed by client
-    CLIENT_METRIC_KEYS = ['target', 'title', 'color']
+    CLIENT_METRIC_KEYS = ['target', 'title', 'color', 'warning_max_threshold',
+                          'warning_min_threshold', 'warning_color']
 
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
@@ -52,17 +83,6 @@ class Dashboard(Element):
         self.config, self.client_config = self.parse_config(
             config, client_config)
         self.client_config['dashboardName'] = config['name']
-
-    @classmethod
-    def format_metric_target(cls, target, bucket_size):
-        bucket_size = '%ss' % (str(bucket_size),)
-        agg_method = "avg"
-        metric_fn = target.rstrip(')').split('.')[-1]
-        if target.startswith('integral('):
-            agg_method = 'max'
-        elif metric_fn in ('max', 'min', 'sum'):
-            agg_method = metric_fn
-        return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
 
     @classmethod
     def parse_config(cls, config, client_config=None):
@@ -112,9 +132,17 @@ class Dashboard(Element):
                         % (w_name, m_name))
 
                 m_config['original_target'] = m_config['target']
-                m_config['target'] = cls.format_metric_target(
+                m_config['target'] = format_metric_target(
                     m_config['target'], bucket_size)
                 m_config.setdefault('null_filter', w_config['null_filter'])
+
+                warning_max_treshold = parse_threshold(
+                    m_config, 'warning_max_treshold')
+                warning_min_treshold = parse_threshold(
+                    m_config, 'warning_min_treshold')
+                if ((warning_max_treshold is not None) or
+                   (warning_min_treshold is not None)):
+                    m_config.setdefault('warning_color', DEFAULT_WARNING_COLOR)
 
                 m_config.setdefault('title', m_name)
                 m_name = slugify(m_name)
@@ -181,7 +209,7 @@ class Dashboard(Element):
         # TODO fix injection vulnerability
 
         #serialize client vars into a json string ready for javascript
-        client_config_str = 'var config = %s' % (
+        client_config_str = 'var config = %s;' % (
             json.dumps(self.client_config),)
 
         if self.client_config is not None:
