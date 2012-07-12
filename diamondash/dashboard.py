@@ -43,15 +43,16 @@ def parse_interval(interval):
 
 def parse_threshold(config, threshold_name):
     """
-    Returns false if the treshold is not in the config
+    Returns None if the treshold is not in the config
     file, wraps the given treshold config value as an int
-    and returns true
+    and returns it
     """
     if threshold_name not in config:
-        return False
+        return None
 
-    config[threshold_name] = int(config[threshold_name])
-    return True
+    treshold = int(config[threshold_name])
+    config[threshold_name] = treshold
+    return treshold
 
 
 def format_metric_target(target, bucket_size):
