@@ -22,7 +22,7 @@ GRAPH_DEFAULTS = {
 
 # optional graph widget defaults
 OPT_GRAPH_DEFAULTS = {
-    'warning_colour': '#cc3333'
+    'warning_color': '#cc3333'
 }
 
 
@@ -64,16 +64,16 @@ def parse_interval(interval):
 
 def parse_threshold(config, threshold_name):
     """
-    Returns None if the treshold is not in the config
-    file, wraps the given treshold config value as an int
+    Returns None if the threshold is not in the config
+    file, wraps the given threshold config value as an int
     and returns it
     """
     if threshold_name not in config:
         return None
 
-    treshold = int(config[threshold_name])
-    config[threshold_name] = treshold
-    return treshold
+    threshold = int(config[threshold_name])
+    config[threshold_name] = threshold
+    return threshold
 
 
 def format_metric_target(target, bucket_size):
@@ -127,14 +127,16 @@ def parse_graph_widget_config(name, config, defaults):
             m_config['target'], bucket_size)
         m_config.setdefault('null_filter', config['null_filter'])
 
-        warning_max_treshold = parse_threshold(
-            m_config, 'warning_max_treshold')
-        warning_min_treshold = parse_threshold(
-            m_config, 'warning_min_treshold')
-        if ((warning_max_treshold is not None) or
-            (warning_min_treshold is not None)):
-            m_config.setdefault('warning_color',
-                                OPT_GRAPH_DEFAULTS['warning_color'])
+        warning_max_threshold = parse_threshold(
+            m_config, 'warning_max_threshold')
+        warning_min_threshold = parse_threshold(
+            m_config, 'warning_min_threshold')
+
+        if (warning_max_threshold is not None or
+            warning_min_threshold is not None):
+            m_config.setdefault(
+                'warning_color',
+                OPT_GRAPH_DEFAULTS['warning_color'])
 
         m_config.setdefault('title', m_name)
         m_name = slugify(m_name)
