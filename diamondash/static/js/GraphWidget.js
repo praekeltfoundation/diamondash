@@ -59,8 +59,8 @@ GraphWidget.prototype.initialize = function() {
 
 			this.seriesLookup[metricName] = metric;
 			series.push(metric);
-			constructMetricKey(this.legend, metricName, metricConfig.title, metricColor);
-			constructMetricKey(this.hoverLegend, metricName, metricConfig.title, metricColor);
+			buildMetricKey(this.legend, metricName, metricConfig.title, metricColor);
+			buildMetricKey(this.hoverLegend, metricName, metricConfig.title, metricColor);
 		}
 	}
 
@@ -154,8 +154,8 @@ GraphWidget.prototype.updateGraphDetails = function() {
 	this.timeLabel.innerHTML = xFormatter(lastX);
 };
 
-// Construct the passed in metric's key in the legend
-function constructMetricKey(legend, metricName, metricTitle, metricColor) {
+// Build the passed in metric's key in the legend
+function buildMetricKey(legend, metricName, metricTitle, metricColor) {
 	var metricKey = document.createElement('div');
 	metricKey.id = 'metric-key-container-' + metricName;
 	metricKey.className = 'metric-key-container';

@@ -9,9 +9,12 @@ from pkg_resources import resource_stream
 from twisted.web.template import Element, renderer, XMLFile
 from exceptions import ConfigError
 
-
+# dashboard defaults
+DEFAULT_REQUEST_INTERVAL = 2
 DEFAULT_WIDGET_TYPE = 'graph'
 DEFAULT_NULL_FILTER = 'skip'
+
+# graph widget related dashboard defaults
 DEFAULT_RENDER_PERIOD = 3600
 DEFAULT_BUCKET_SIZE = 300
 DEFAULT_DIFF_SIZE = 1800
@@ -31,7 +34,7 @@ def parse_interval(interval):
         'm': 60,
         'h': 3600,
         'd': 86400,
-        }
+    }
     try:
         for suffix, multiplier in suffixes.items():
             if interval.endswith(suffix):
@@ -70,98 +73,140 @@ def format_metric_target(target, bucket_size):
     return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
 
 
+def parse_graph_widget_config(name, config, defaults):
+    """
+    Parses a graph widget's config, applying changes
+    where appropriate and returning the resulting config
+    """
+    for field in ['null_filter', 'render_period', 'diff_size', 'bucket_size']:
+        config.setdefault(field, defaults[field])
+
+    for field in ['render_period', 'diff_size', 'bucket_size']:
+        config[field] = parse_interval(config[field])
+
+    metric_dict = {}
+    bucket_size = config['bucket_size']
+    for m_name, m_config in config['metrics'].items():
+        if 'target' not in m_config:
+            raise ConfigError(
+                'Widget "%s" needs a target for metric "%s".'
+                % (name, m_name))
+
+        m_config['original_target'] = m_config['target']
+        m_config['target'] = format_metric_target(
+            m_config['target'], bucket_size)
+        m_config.setdefault('null_filter', config['null_filter'])
+
+        warning_max_treshold = parse_threshold(
+            m_config, 'warning_max_treshold')
+        warning_min_treshold = parse_threshold(
+            m_config, 'warning_min_treshold')
+        if ((warning_max_treshold is not None) or
+            (warning_min_treshold is not None)):
+            m_config.setdefault('warning_color', DEFAULT_WARNING_COLOR)
+
+        m_config.setdefault('title', m_name)
+        m_name = slugify(m_name)
+        metric_dict[m_name] = m_config
+
+    config['metrics'] = metric_dict
+
+    return config
+
+
+def parse_lvalue_widget_config(name, config, defaults):
+    """
+    Parses an lvalue widget's config, applying changes
+    where appropriate and returning the resulting config
+    """
+
+
+def parse_config(config):
+    """
+    Parses a dashboard config, applying changes
+    where appropriate and returning the resulting config
+    """
+    if 'name' not in config:
+        raise ConfigError('Dashboard name not specified.')
+
+    config['title'] = config['name']
+    config['name'] = slugify(config['name'])
+
+    widget_defaults = {
+        'null_filter': DEFAULT_NULL_FILTER,
+        'render_period': DEFAULT_RENDER_PERIOD,
+        'diff_size': DEFAULT_DIFF_SIZE,
+        'bucket_size': DEFAULT_BUCKET_SIZE,
+        'request_interval': DEFAULT_REQUEST_INTERVAL
+    }
+    for field, default in widget_defaults.items():
+        widget_defaults[field] = config.setdefault(field, default)
+
+    config['request_interval'] = parse_interval(config['request_interval'])
+
+    widget_dict = {}
+    for w_name, w_config in config['widgets'].items():
+        if 'metrics' not in w_config:
+            raise ConfigError('Widget "%s" needs metric(s).' % (w_name,))
+
+        w_config.setdefault('title', w_name)
+        w_name = slugify(w_name)
+        w_config.setdefault('type', DEFAULT_WIDGET_TYPE)
+
+        if w_config['type'] == 'graph':
+            parse_widget_config = parse_graph_widget_config
+        elif w_config['type'] == 'lvalue':
+            parse_widget_config = parse_lvalue_widget_config
+
+        widget_dict[w_name] = parse_widget_config(w_name, w_config,
+                                                  widget_defaults)
+
+    # update widget dict
+    config['widgets'] = widget_dict
+
+    return config
+
+
+# metric attributes needed by client
+CLIENT_METRIC_ATTRS = ['target', 'title', 'color', 'warning_max_threshold',
+                      'warning_min_threshold', 'warning_color']
+
+
+def build_client_config(server_config):
+    """
+    Builds a client side dashboard config from the server's
+    dashboard config and returns it in JSON format
+    """
+    config = {}
+    config['name'] = server_config['name']
+
+    # convert the request interval to milliseconds for client side
+    config['request_interval'] = int(server_config['request_interval']) * 1000
+
+    w_configs = config.setdefault('widgets', {})
+    for w_name, w_server_config in server_config['widgets'].items():
+        w_configs[w_name] = {}
+        m_configs = w_configs[w_name].setdefault('metrics', {})
+        for m_name, m_server_config in w_server_config['metrics'].items():
+            attrs = dict((k, m_server_config[k])
+                         for k in CLIENT_METRIC_ATTRS
+                         if k in m_server_config)
+            m_configs[m_name] = attrs
+
+    return config
+
+
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
-    # keys to metric attributes needed by client
-    CLIENT_METRIC_KEYS = ['target', 'title', 'color', 'warning_max_threshold',
-                          'warning_min_threshold', 'warning_color']
-
     loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
 
-    def __init__(self, config, client_config=None):
-        self.config, self.client_config = self.parse_config(
-            config, client_config)
-        self.client_config['dashboardName'] = config['name']
+    def __init__(self, config):
+        self.config = parse_config(config)
+        self.client_config = build_client_config(self.config)
 
     @classmethod
-    def parse_config(cls, config, client_config=None):
-        if 'name' not in config:
-            raise ConfigError('Dashboard name not specified.')
-
-        config['title'] = config['name']
-        config['name'] = slugify(config['name'])
-
-        config.setdefault('null_filter', DEFAULT_NULL_FILTER)
-        config.setdefault('render_period', DEFAULT_RENDER_PERIOD)
-        config.setdefault('diff_size', DEFAULT_DIFF_SIZE)
-        config.setdefault('bucket_size', DEFAULT_BUCKET_SIZE)
-
-        if client_config is None:
-            client_config = {}
-
-        client_config.setdefault('widgets', {})
-
-        widget_dict = {}
-        client_widget_dict = {}
-        for w_name, w_config in config['widgets'].items():
-            if 'metrics' not in w_config:
-                raise ConfigError('Widget "%s" needs metric(s).' % (w_name,))
-
-            w_config.setdefault('title', w_name)
-            w_name = slugify(w_name)
-            w_config.setdefault('type', DEFAULT_WIDGET_TYPE)
-
-            for field in ['null_filter', 'render_period', 'diff_size',
-                          'bucket_size']:
-                w_config.setdefault(field, config[field])
-
-            for field in ['render_period', 'diff_size', 'bucket_size']:
-                w_config[field] = parse_interval(w_config[field])
-
-            bucket_size = w_config['bucket_size']
-            client_widget_dict = client_config['widgets'].setdefault(
-                w_name, {})
-            client_metric_config = client_widget_dict.setdefault('metrics', {})
-
-            metric_dict = {}
-            for m_name, m_config in w_config['metrics'].items():
-                if 'target' not in m_config:
-                    raise ConfigError(
-                        'Widget "%s" needs a target for metric "%s".'
-                        % (w_name, m_name))
-
-                m_config['original_target'] = m_config['target']
-                m_config['target'] = format_metric_target(
-                    m_config['target'], bucket_size)
-                m_config.setdefault('null_filter', w_config['null_filter'])
-
-                warning_max_treshold = parse_threshold(
-                    m_config, 'warning_max_treshold')
-                warning_min_treshold = parse_threshold(
-                    m_config, 'warning_min_treshold')
-                if ((warning_max_treshold is not None) or
-                   (warning_min_treshold is not None)):
-                    m_config.setdefault('warning_color', DEFAULT_WARNING_COLOR)
-
-                m_config.setdefault('title', m_name)
-                m_name = slugify(m_name)
-                metric_dict[m_name] = m_config
-                m_client_config = dict(
-                    (k, m_config[k])
-                    for k in cls.CLIENT_METRIC_KEYS if k in m_config)
-                client_metric_config[m_name] = m_client_config
-
-            w_config['metrics'] = metric_dict
-            widget_dict[w_name] = w_config
-
-        # update widget dict to dict with slugified widget names
-        config['widgets'] = widget_dict
-
-        return config, client_config
-
-    @classmethod
-    def from_config_file(cls, filename, client_config=None):
+    def from_config_file(cls, filename):
         """Loads dashboard information from a config file"""
         # TODO check and test for invalid config files
 
@@ -170,7 +215,7 @@ class Dashboard(Element):
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
 
-        return cls(config, client_config)
+        return cls(config)
 
     def get_widget_config(self, w_name):
         """Returns a widget using the passed in widget name"""
@@ -184,13 +229,6 @@ class Dashboard(Element):
             class_attr_list = ['widget', '%s-widget' % (w_config['type'],)]
             class_attr = ' '.join('%s' % attr for attr in class_attr_list)
 
-            style_attr_dict = {}
-            for style_key in ['width', 'height']:
-                if style_key in w_config:
-                    style_attr_dict[style_key] = w_config[style_key]
-            style_attr = ';'.join('%s: %s' % item
-                                  for item in style_attr_dict.items())
-
             # to not break the template with invalid types
             widget_element = ''
 
@@ -198,7 +236,6 @@ class Dashboard(Element):
                 widget_element = GraphWidget()
 
             new_tag.fillSlots(widget_title_slot=w_config['title'],
-                              widget_style_slot=style_attr,
                               widget_class_slot=class_attr,
                               widget_id_slot=w_name,
                               widget_element_slot=widget_element)
@@ -214,7 +251,7 @@ class Dashboard(Element):
 
         if self.client_config is not None:
             tag.fillSlots(client_config=client_config_str)
-        return tag
+            return tag
 
 
 class GraphWidget(Element):

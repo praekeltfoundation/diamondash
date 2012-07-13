@@ -5,7 +5,8 @@ from pkg_resources import resource_filename
 from twisted.trial import unittest
 
 from diamondash.dashboard import (
-    parse_interval, slugify, Dashboard, DEFAULT_RENDER_PERIOD)
+    parse_interval, slugify, format_metric_target, 
+    Dashboard, DEFAULT_RENDER_PERIOD)
 from diamondash.exceptions import ConfigError
 
 
@@ -25,6 +26,38 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(120, parse_interval("2m"))
         self.assertEqual(7200, parse_interval("2h"))
         self.assertEqual(86400 * 2, parse_interval("2d"))
+
+    def test_format_metric_target(self):
+        """
+        Metric targets should be formatted to be enclosed in a 'summarize()'
+        function with the bucket size and aggregation method as arguments.
+
+        The aggregation method should be determined from the
+        end of the metric target (avg, max, min, sum).
+        """
+        def assert_metric_target(target, bucket_size, expected):
+            result = format_metric_target(target, bucket_size)
+            self.assertEqual(result, expected)
+
+        target = 'vumi.random.count.sum'
+        bucket_size = 120
+        expected = 'summarize(vumi.random.count.sum, "120s", "sum")'
+        assert_metric_target(target, bucket_size, expected)
+
+        target = 'vumi.random.count.avg'
+        bucket_size = 620
+        expected = 'summarize(vumi.random.count.avg, "620s", "avg")'
+        assert_metric_target(target, bucket_size, expected)
+
+        target = 'vumi.random.count.max'
+        bucket_size = 120
+        expected = 'summarize(vumi.random.count.max, "120s", "max")'
+        assert_metric_target(target, bucket_size, expected)
+
+        target = 'integral(vumi.random.count.sum)'
+        bucket_size = 120
+        expected = 'summarize(integral(vumi.random.count.sum), "120s", "max")'
+        assert_metric_target(target, bucket_size, expected)
 
     def test_from_config_file_not_found(self):
         """
@@ -47,7 +80,7 @@ class DashboardTestCase(unittest.TestCase):
         two different conventions are mixed in a config file
         """
         config = Dashboard.from_config_file(resource_filename(
-                __name__, 'widget_title.yml')).config
+            __name__, 'widget_title.yml')).config
         self.assertEqual(
             config['widgets']['random-count-sum']['title'], 'random count sum')
         self.assertEqual(config['widgets']['random-timer-average']['title'],
@@ -72,7 +105,7 @@ class DashboardTestCase(unittest.TestCase):
         two different conventions are mixed in a config file
         """
         config = Dashboard.from_config_file(resource_filename(
-                __name__, 'metric_title.yml')).config
+            __name__, 'metric_title.yml')).config
         test_metrics = config['widgets']['test-widget']['metrics']
         self.assertEqual(test_metrics['random-count-sum']['title'],
                          'random count sum')
@@ -85,7 +118,7 @@ class DashboardTestCase(unittest.TestCase):
         default.
         """
         config = Dashboard.from_config_file(resource_filename(
-                __name__, 'widget_render_period.yml')).config
+            __name__, 'widget_render_period.yml')).config
 
         def assert_render_period(widget_name, render_period):
             self.assertEqual(

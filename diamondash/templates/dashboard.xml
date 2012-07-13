@@ -10,9 +10,6 @@
   <body>
     <div id="dashboard-container">
       <div t:render="widget_renderer">
-        <t:attr name="style">
-          <t:slot name="widget_style_slot" />
-        </t:attr>
         <t:attr name="class">
           <t:slot name="widget_class_slot" />
         </t:attr>

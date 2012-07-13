@@ -98,7 +98,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         test_overrides = {
             'graphite_url': self.graphite_url,
-            }
+        }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
@@ -115,11 +115,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'metrics': {
                         'luke the metric': {
                             'target': 'vumi.random.count.sum'
-                            }
                         }
                     }
                 }
             }
+        }
 
         dashboard_configs = server.config['dashboards']
         dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
@@ -144,7 +144,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         test_overrides = {
             'graphite_url': self.graphite_url,
-            }
+        }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
@@ -161,14 +161,14 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'metrics': {
                         'random-count-sum': {
                             'target': 'vumi.random.count.sum'
-                            },
+                        },
                         'random-timer-average': {
                             'target': 'vumi.random.timer.avg'
-                            }
                         }
                     }
                 }
             }
+        }
         dashboard_configs = server.config['dashboards']
         dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
 
@@ -178,19 +178,19 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                               port=self.graphite_ws.getHost().port)
         output = self.TEST_DATA[test_data_key]['output']
         d = server.render(request, 'test-dashboard',
-                'random-count-sum-and-average')
+                          'random-count-sum-and-average')
         d.addCallback(self.assert_response, output)
         yield d
 
-    def test_get_render_result_datapoints(self):
+    def test_get_result_datapoints(self):
         """
         Should obtain a list of datapoint lists, each list
         corresponding to a metric
         """
-        test_data_key = 'test_get_render_result_datapoints'
+        test_data_key = 'test_get_result_datapoints'
         before = self.TEST_DATA[test_data_key]['before']
         before_str = json.dumps(before)
-        result = server.get_render_result_datapoints(before_str)
+        result = server.get_result_datapoints(before_str)
         after = self.TEST_DATA[test_data_key]['after']
         self.assertEqual(result, after)
 
@@ -210,42 +210,34 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_graphite_url = 'http://127.0.0.1:8000'
         test_overrides = {
             'graphite_url': test_graphite_url,
-            }
+        }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
+        target = 'summarize(vumi.random.count.sum, "240s", "sum")'
         test_render_period = 3600
-        dashboard_config = {
-            'name': 'test-dashboard',
+        widget_config = {
+            'title': 'a graph',
+            'type': 'graph',
+            'bucket_size': 240,
             'render_period': test_render_period,
-            'widgets': {
+            'metrics': {
                 'random-count-sum': {
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'bucket_size': 240,
-                    'metrics': {
-                        'random count sum': {
-                            'target': 'vumi.random.count.sum'
-                            }
-                        }
-                    }
+                    'target': target
                 }
             }
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
+        }
 
         params = {
-            'target': 'summarize(vumi.random.count.sum, "240s", "sum")',
+            'target': target,
             'from': '-%ss' % (test_render_period,),
             'format': 'json'
-            }
+        }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params))
 
-        constructed_render_url = server.construct_render_url(
-            'test-dashboard',
-            'random-count-sum')
+        constructed_render_url = server.construct_render_url(widget_config)
         self.assertEqual(constructed_render_url, correct_render_url)
 
     def test_construct_render_url_for_multimetric_graph(self):
@@ -257,47 +249,37 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_graphite_url = 'http://127.0.0.1:8000'
         test_overrides = {
             'graphite_url': test_graphite_url,
-            }
+        }
 
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
         test_render_period = 3600
-        dashboard_config = {
-            'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum-and-average': {
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'render_period': test_render_period,
-                    'bucket_size': 120,
-                    'metrics': {
-                        'random-count-sum': {
-                            'target': 'vumi.random.count.sum'
-                            },
-                        'random-timer-average': {
-                            'target': 'vumi.random.timer.avg'
-                            }
-                        }
-                    }
+        targets = ['summarize(vumi.random.count.sum, "120s", "sum")',
+                   'summarize(vumi.random.timer.avg, "120s", "avg")']
+        widget_config = {
+            'title': 'a graph',
+            'type': 'graph',
+            'render_period': test_render_period,
+            'bucket_size': 120,
+            'metrics': {
+                'random-count-sum': {
+                    'target': targets[0]
+                },
+                'random-timer-average': {
+                    'target': targets[1]
                 }
             }
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
-
-        targets = ['summarize(vumi.random.count.sum, "120s", "sum")',
-            'summarize(vumi.random.timer.avg, "120s", "avg")']
+        }
 
         params = {
             'target': targets,
             'from': '-%ss' % (test_render_period,),
             'format': 'json'
-            }
+        }
         correct_render_url = "%s/render/?%s" % (test_graphite_url,
                                                 urlencode(params, True))
-        constructed_render_url = server.construct_render_url(
-            'test-dashboard',
-            'random-count-sum-and-average')
+        constructed_render_url = server.construct_render_url(widget_config)
         self.assertEqual(constructed_render_url, correct_render_url)
 
     """
@@ -331,67 +313,50 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     ----------------
     """
 
-    def test_format_render_results_for_graph(self):
+    def test_format_results_for_graph(self):
         """
         Should format datapoints in graphite's format to
         datapoints in rickshaw's format
         """
 
-        dashboard_config = {
-            'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum': {
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'metrics': {
-                        'arnold-the-metric': {
-                            'target': 'vumi.random.count.sum'
-                            }
-                        }
-                    }
+        widget_config = {
+            'title': 'a graph',
+            'type': 'graph',
+            'metrics': {
+                'arnold-the-metric': {
+                    'target': 'vumi.random.count.sum'
                 }
             }
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
+        }
 
-        test_data_key = 'test_format_render_results_for_graph'
+        test_data_key = 'test_format_results_for_graph'
         before = self.TEST_DATA[test_data_key]['before']
         after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_render_results(before, 'test-dashboard',
-                                                 'random-count-sum')
+        formatted = server.format_results_for_graph(before, widget_config)
         formatted_str = json.loads(formatted)
         self.assertEqual(formatted_str, after)
 
-    def test_format_render_results_for_multimetric_graph(self):
+    def test_format_results_for_multimetric_graph(self):
         """
         Should format datapoints in graphite's format to
         datapoints in rickshaw's format
         """
-        dashboard_config = {
-            'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum-and-average': {
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'metrics': {
-                        'random-count-sum': {
-                            'target': 'vumi.random.count.sum'
-                            },
-                        'random-timer-average': {
-                            'target': 'vumi.random.timer.avg'
-                            }
-                        }
-                    }
+        widget_config = {
+            'title': 'a graph',
+            'type': 'graph',
+            'metrics': {
+                'random-count-sum': {
+                    'target': 'vumi.random.count.sum'
+                },
+                'random-timer-average': {
+                    'target': 'vumi.random.timer.avg'
                 }
             }
+        }
 
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
-
-        test_data_key = 'test_format_render_results_for_multimetric_graph'
+        test_data_key = 'test_format_results_for_multimetric_graph'
         before = self.TEST_DATA[test_data_key]['before']
         after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_render_results(before, 'test-dashboard',
-            'random-count-sum-and-average')
+        formatted = server.format_results_for_graph(before, widget_config)
         formatted_str = json.loads(formatted)
         self.assertEqual(formatted_str, after)

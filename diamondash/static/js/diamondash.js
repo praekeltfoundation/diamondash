@@ -2,7 +2,7 @@ var DEFAULT_REQUEST_INTERVAL = 2000;
 var DEFAULT_GRAPH_COLOUR = '#3333cc';
 
 var graphs = [];
-var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
+var requestInterval = config.request_interval || DEFAULT_REQUEST_INTERVAL;
 
 
 // construct the widget objects using the config
@@ -24,7 +24,7 @@ function constructWidgets() {
 
 // construct the url to be sent as a request to the server
 function constructUrl(widgetName) {
-	return '/render/' + config.dashboardName + '/' + widgetName;
+	return '/render/' + config.name + '/' + widgetName;
 }
 
 // called each update interval
