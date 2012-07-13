@@ -2,7 +2,6 @@
 
 from os import path, listdir
 import json
-from urllib import urlencode
 
 import yaml
 from twisted.web.client import getPage
@@ -10,7 +9,7 @@ from twisted.web.static import File
 from pkg_resources import resource_filename
 from klein import route, resource
 
-from dashboard import Dashboard
+from dashboard import Dashboard, DASHBOARD_DEFAULTS
 
 
 # We need resource imported for klein magic. This makes pyflakes happy.
@@ -36,8 +35,6 @@ def build_config(args=None):
         'dashboards': {},
     }
 
-    # TODO test
-
     if args:
         config['config_dir'] = args.get('config_dir', DEFAULT_CONFIG_DIR)
 
@@ -51,19 +48,24 @@ def build_config(args=None):
     if args:
         config.update(args)
 
-    config = add_dashboards(config)
+    dashboard_defaults = dict((k, config[k])
+                              for k in DASHBOARD_DEFAULTS
+                              if k in config)
+
+    config = add_dashboards(config, dashboard_defaults)
 
     return config
 
 
-def add_dashboards(config):
+def add_dashboards(config, dashboard_defaults):
     """Adds the dashboards to the web server"""
     dashboards_path = '%s/dashboards' % (config['config_dir'],)
 
     if path.exists(dashboards_path):
         for filename in listdir(dashboards_path):
             filepath = '%s/%s' % (dashboards_path, filename)
-            dashboard = Dashboard.from_config_file(filepath)
+            dashboard = Dashboard.from_config_file(filepath,
+                                                   dashboard_defaults)
             dashboard_name = dashboard.config['name']
             config['dashboards'][dashboard_name] = dashboard
 
@@ -83,28 +85,6 @@ def show_index(request):
     # TODO handle multiple dashboards
     # NOTE the not so nice looking line below is temporary
     return config['dashboards'].values()[0]
-
-
-def get_widget_targets(widget_config):
-    """Returns the targets found in the passed in widget config"""
-    # TODO optimise?
-    metrics = widget_config['metrics']
-    return [metric['target'] for metric in metrics.values()]
-
-
-def construct_render_url(widget_config):
-    """
-    Constructs the graphite render url based
-    on the client's request uri
-    """
-    params = {
-        'target': get_widget_targets(widget_config),
-        'from': '-%ss' % (widget_config['render_period'],),
-        'format': 'json'
-    }
-    render_url = "%s/render/?%s" % (config['graphite_url'],
-                                    urlencode(params, True))
-    return render_url
 
 
 def format_results_for_graph(results, widget_config):
@@ -189,11 +169,10 @@ def render(request, dashboard_name, widget_name):
     widget_name = widget_name.encode('utf-8')
     dashboard = config['dashboards'][dashboard_name]
     widget_config = dashboard.get_widget_config(widget_name)
+    request_url = '%s/%s' % (config['graphite_url'],
+                             widget_config['request_url'])
 
-    # Construct the url
-    render_url = construct_render_url(widget_config)
-
-    d = getPage(render_url)
+    d = getPage(request_url)
     d.addCallback(get_result_datapoints)
     d.addCallback(purify_results, widget_config)
 

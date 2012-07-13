@@ -1,24 +1,42 @@
 """Dashboard functionality for the diamondash web app"""
 
 import re
-
 import json
+from urllib import urlencode
+
 import yaml
 from unidecode import unidecode
 from pkg_resources import resource_stream
 from twisted.web.template import Element, renderer, XMLFile
+
 from exceptions import ConfigError
 
-# dashboard defaults
-DEFAULT_REQUEST_INTERVAL = 2
-DEFAULT_WIDGET_TYPE = 'graph'
-DEFAULT_NULL_FILTER = 'skip'
 
-# graph widget related dashboard defaults
-DEFAULT_RENDER_PERIOD = 3600
-DEFAULT_BUCKET_SIZE = 300
-DEFAULT_DIFF_SIZE = 1800
-DEFAULT_WARNING_COLOR = '#cc3333'
+# graph widget defaults
+GRAPH_DEFAULTS = {
+    'null_filter': 'skip',
+    'time_range': 3600,
+    'bucket_size': 300,
+}
+
+
+# optional graph widget defaults
+OPT_GRAPH_DEFAULTS = {
+    'warning_colour': '#cc3333'
+}
+
+
+# lvalue widget defaults
+LVALUE_DEFAULTS = {
+    'time_range': 3600,
+}
+
+
+# dashboard defaults
+DASHBOARD_DEFAULTS = {
+    'request_interval': 2,
+    'default_widget_type': 'graph',
+}
 
 
 def parse_interval(interval):
@@ -73,15 +91,27 @@ def format_metric_target(target, bucket_size):
     return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
 
 
+def build_request_url(targets, time_range):
+    """
+    Constructs the graphite render url
+    """
+    params = {
+        'target': targets,
+        'from': '-%ss' % time_range,
+        'format': 'json'
+    }
+    return 'render/?%s' % urlencode(params, True)
+
+
 def parse_graph_widget_config(name, config, defaults):
     """
     Parses a graph widget's config, applying changes
     where appropriate and returning the resulting config
     """
-    for field in ['null_filter', 'render_period', 'diff_size', 'bucket_size']:
-        config.setdefault(field, defaults[field])
+    for field, default in defaults.items():
+        config.setdefault(field, default)
 
-    for field in ['render_period', 'diff_size', 'bucket_size']:
+    for field in ['time_range', 'bucket_size']:
         config[field] = parse_interval(config[field])
 
     metric_dict = {}
@@ -103,13 +133,17 @@ def parse_graph_widget_config(name, config, defaults):
             m_config, 'warning_min_treshold')
         if ((warning_max_treshold is not None) or
             (warning_min_treshold is not None)):
-            m_config.setdefault('warning_color', DEFAULT_WARNING_COLOR)
+            m_config.setdefault('warning_color',
+                                OPT_GRAPH_DEFAULTS['warning_color'])
 
         m_config.setdefault('title', m_name)
         m_name = slugify(m_name)
         metric_dict[m_name] = m_config
 
     config['metrics'] = metric_dict
+
+    targets = [metric['target'] for metric in metric_dict.values()]
+    config['request_url'] = build_request_url(targets, config['time_range'])
 
     return config
 
@@ -132,15 +166,13 @@ def parse_config(config):
     config['title'] = config['name']
     config['name'] = slugify(config['name'])
 
-    widget_defaults = {
-        'null_filter': DEFAULT_NULL_FILTER,
-        'render_period': DEFAULT_RENDER_PERIOD,
-        'diff_size': DEFAULT_DIFF_SIZE,
-        'bucket_size': DEFAULT_BUCKET_SIZE,
-        'request_interval': DEFAULT_REQUEST_INTERVAL
-    }
-    for field, default in widget_defaults.items():
-        widget_defaults[field] = config.setdefault(field, default)
+    graph_defaults = config.setdefault('graph_defaults', {})
+    for field, default in GRAPH_DEFAULTS.items():
+        graph_defaults.setdefault(field, default)
+
+    lvalue_defaults = config.setdefault('lvalue_defaults', {})
+    for field, default in LVALUE_DEFAULTS.items():
+        lvalue_defaults.setdefault(field, default)
 
     config['request_interval'] = parse_interval(config['request_interval'])
 
@@ -151,12 +183,14 @@ def parse_config(config):
 
         w_config.setdefault('title', w_name)
         w_name = slugify(w_name)
-        w_config.setdefault('type', DEFAULT_WIDGET_TYPE)
+        w_config.setdefault('type', config['default_widget_type'])
 
         if w_config['type'] == 'graph':
             parse_widget_config = parse_graph_widget_config
+            widget_defaults = graph_defaults
         elif w_config['type'] == 'lvalue':
             parse_widget_config = parse_lvalue_widget_config
+            widget_defaults = lvalue_defaults
 
         widget_dict[w_name] = parse_widget_config(w_name, w_config,
                                                   widget_defaults)
@@ -206,14 +240,28 @@ class Dashboard(Element):
         self.client_config = build_client_config(self.config)
 
     @classmethod
-    def from_config_file(cls, filename):
-        """Loads dashboard information from a config file"""
+    def from_config_file(cls, filename, defaults=None):
+        """Loads dashboard config from a config file"""
         # TODO check and test for invalid config files
 
+        config = DASHBOARD_DEFAULTS
+        if defaults is not None:
+            config.update(defaults)
+
         try:
-            config = yaml.safe_load(open(filename))
+            config.update(yaml.safe_load(open(filename)))
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
+
+        return cls(config)
+
+    @classmethod
+    def from_args(cls, **kwargs):
+        """Loads dashboard config from args"""
+
+        config = DASHBOARD_DEFAULTS
+        if kwargs is not None:
+            config.update(kwargs)
 
         return cls(config)
 

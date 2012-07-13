@@ -5,8 +5,8 @@ from pkg_resources import resource_filename
 from twisted.trial import unittest
 
 from diamondash.dashboard import (
-    parse_interval, slugify, format_metric_target, 
-    Dashboard, DEFAULT_RENDER_PERIOD)
+    parse_interval, slugify, format_metric_target,
+    Dashboard, GRAPH_DEFAULTS)
 from diamondash.exceptions import ConfigError
 
 
@@ -112,18 +112,19 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(test_metrics['random-timer-average']['title'],
                          'this is an explicit title')
 
-    def test_widget_render_period(self):
+    def test_graph_time_range(self):
         """
-        Should use the given render period if one is provided, otherwise the
+        Should use the given time range if one is provided, otherwise the
         default.
         """
         config = Dashboard.from_config_file(resource_filename(
-            __name__, 'widget_render_period.yml')).config
+            __name__, 'graph_time_range.yml')).config
 
-        def assert_render_period(widget_name, render_period):
+        def assert_time_range(widget_name, render_period):
             self.assertEqual(
-                config['widgets'][widget_name]['render_period'], render_period)
+                config['widgets'][widget_name]['time_range'], render_period)
 
-        assert_render_period('default-render-period', DEFAULT_RENDER_PERIOD)
-        assert_render_period('explicit-render-period', 1337)
-        assert_render_period('suffix-render-period', 7200)
+        assert_time_range('default-time-range',
+                             GRAPH_DEFAULTS['time_range'])
+        assert_time_range('explicit-time-range', 1337)
+        assert_time_range('suffix-time-range', 7200)

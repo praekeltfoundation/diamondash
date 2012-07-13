@@ -5,8 +5,8 @@ var graphs = [];
 var requestInterval = config.request_interval || DEFAULT_REQUEST_INTERVAL;
 
 
-// construct the widget objects using the config
-function constructWidgets() {
+// build the widget objects using the config
+function buildWidgets() {
 	var graphWidgets = document.querySelectorAll('.graph-widget'); 
 	var i = 0;
     for (i = 0; i < graphWidgets.length; i++) {
@@ -22,15 +22,15 @@ function constructWidgets() {
 	}
 }
 
-// construct the url to be sent as a request to the server
-function constructUrl(widgetName) {
+// build the url to be sent as a request to the server
+function buildUrl(widgetName) {
 	return '/render/' + config.name + '/' + widgetName;
 }
 
 // called each update interval
 function updateWidgets() {
 	$.each(graphs, function(i, graph) { 
-		var url = constructUrl(graph.name);
+		var url = buildUrl(graph.name);
 		getData(url, 
 		function(results) {
 			graph.update(results);
@@ -61,7 +61,7 @@ function getData(currentUrl, cbDataReceived) {
 		});
 }
 
-constructWidgets();
+buildWidgets();
 updateWidgets();
 
 var updateId = setInterval(updateWidgets, requestInterval);

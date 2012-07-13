@@ -1,7 +1,6 @@
 """Tests for diamondash's server side"""
 
 import json
-from urllib import urlencode
 
 from pkg_resources import resource_stream
 from klein.test_resource import requestMock
@@ -26,7 +25,7 @@ class MockGraphiteServerProtocol(Protocol):
     def get_request_uri(self, data):
         return data.split(' ')[1]
 
-    def construct_response(self, request_uri):
+    def build_response(self, request_uri):
         response_data = self.factory.response_data.get(request_uri)
 
         if response_data is None:
@@ -39,7 +38,7 @@ class MockGraphiteServerProtocol(Protocol):
 
     def handle_request(self, data):
         request_uri = self.get_request_uri(data)
-        response = self.construct_response(request_uri)
+        response = self.build_response(request_uri)
         return response
 
 
@@ -122,7 +121,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
 
         dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
+        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+            **dashboard_config)
 
         test_data_key = 'test_render_for_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -170,7 +170,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             }
         }
         dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard(dashboard_config)
+        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+            **dashboard_config)
 
         test_data_key = 'test_render_for_multimetric_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -193,94 +194,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         result = server.get_result_datapoints(before_str)
         after = self.TEST_DATA[test_data_key]['after']
         self.assertEqual(result, after)
-
-    """
-    Url construction tests
-    ----------------------
-    """
-
-    # TODO url construction tests widget or dashboard not found
-
-    def test_construct_render_url_for_graph(self):
-        """
-        Should construct render request urls acceptable to graphite
-        from a client side graph render request
-        """
-
-        test_graphite_url = 'http://127.0.0.1:8000'
-        test_overrides = {
-            'graphite_url': test_graphite_url,
-        }
-
-        # initialise the server configuration
-        server.config = build_config(test_overrides)
-
-        target = 'summarize(vumi.random.count.sum, "240s", "sum")'
-        test_render_period = 3600
-        widget_config = {
-            'title': 'a graph',
-            'type': 'graph',
-            'bucket_size': 240,
-            'render_period': test_render_period,
-            'metrics': {
-                'random-count-sum': {
-                    'target': target
-                }
-            }
-        }
-
-        params = {
-            'target': target,
-            'from': '-%ss' % (test_render_period,),
-            'format': 'json'
-        }
-        correct_render_url = "%s/render/?%s" % (test_graphite_url,
-                                                urlencode(params))
-
-        constructed_render_url = server.construct_render_url(widget_config)
-        self.assertEqual(constructed_render_url, correct_render_url)
-
-    def test_construct_render_url_for_multimetric_graph(self):
-        """
-        Should construct render request urls acceptable to graphite
-        from a client side graph render request
-        """
-
-        test_graphite_url = 'http://127.0.0.1:8000'
-        test_overrides = {
-            'graphite_url': test_graphite_url,
-        }
-
-        # initialise the server configuration
-        server.config = build_config(test_overrides)
-
-        test_render_period = 3600
-        targets = ['summarize(vumi.random.count.sum, "120s", "sum")',
-                   'summarize(vumi.random.timer.avg, "120s", "avg")']
-        widget_config = {
-            'title': 'a graph',
-            'type': 'graph',
-            'render_period': test_render_period,
-            'bucket_size': 120,
-            'metrics': {
-                'random-count-sum': {
-                    'target': targets[0]
-                },
-                'random-timer-average': {
-                    'target': targets[1]
-                }
-            }
-        }
-
-        params = {
-            'target': targets,
-            'from': '-%ss' % (test_render_period,),
-            'format': 'json'
-        }
-        correct_render_url = "%s/render/?%s" % (test_graphite_url,
-                                                urlencode(params, True))
-        constructed_render_url = server.construct_render_url(widget_config)
-        self.assertEqual(constructed_render_url, correct_render_url)
 
     """
     Purification tests
