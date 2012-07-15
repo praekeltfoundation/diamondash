@@ -1,5 +1,4 @@
 var DEFAULT_REQUEST_INTERVAL = 2000;
-var DEFAULT_GRAPH_COLOUR = '#3333cc';
 
 var graphs = [];
 var requestInterval = config.request_interval || DEFAULT_REQUEST_INTERVAL;

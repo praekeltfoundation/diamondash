@@ -1,12 +1,12 @@
 name: 'Test Dashboard'
 
 graph_defaults:
-    time_period: 86400
+    time_range: 86400
     bucket_size: 400
 
 widgets:
     'Sum of random count (small bucket)':
-        time_period: 300
+        time_range: 300
         bucket_size: 30
         metrics: 
            'Sum of random count': 
@@ -26,7 +26,7 @@ widgets:
                target: vumi.random.timer.avg
 
     'Multiple metrics':
-        time_period: 4600
+        time_range: 4600
         metrics: 
            'Sum of random count': 
                target: vumi.random.count.sum

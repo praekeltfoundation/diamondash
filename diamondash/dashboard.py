@@ -20,12 +20,6 @@ GRAPH_DEFAULTS = {
 }
 
 
-# optional graph widget defaults
-OPT_GRAPH_DEFAULTS = {
-    'warning_color': '#cc3333'
-}
-
-
 # lvalue widget defaults
 LVALUE_DEFAULTS = {
     'time_range': 3600,
@@ -62,20 +56,6 @@ def parse_interval(interval):
         raise ConfigError("%r is not a valid time interval.")
 
 
-def parse_threshold(config, threshold_name):
-    """
-    Returns None if the threshold is not in the config
-    file, wraps the given threshold config value as an int
-    and returns it
-    """
-    if threshold_name not in config:
-        return None
-
-    threshold = int(config[threshold_name])
-    config[threshold_name] = threshold
-    return threshold
-
-
 def format_metric_target(target, bucket_size):
     """
     Formats a metric target to allow aggregation of metric values
@@ -91,19 +71,18 @@ def format_metric_target(target, bucket_size):
     return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
 
 
-def build_request_url(targets, time_range):
+def build_request_url(targets, from_param):
     """
     Constructs the graphite render url
     """
-    params = {
-        'target': targets,
-        'from': '-%ss' % time_range,
+    params = {'target': targets,
+        'from': '-%ss' % from_param,
         'format': 'json'
     }
     return 'render/?%s' % urlencode(params, True)
 
 
-def parse_graph_widget_config(name, config, defaults):
+def parse_graph_config(name, config, defaults):
     """
     Parses a graph widget's config, applying changes
     where appropriate and returning the resulting config
@@ -127,16 +106,9 @@ def parse_graph_widget_config(name, config, defaults):
             m_config['target'], bucket_size)
         m_config.setdefault('null_filter', config['null_filter'])
 
-        warning_max_threshold = parse_threshold(
-            m_config, 'warning_max_threshold')
-        warning_min_threshold = parse_threshold(
-            m_config, 'warning_min_threshold')
-
-        if (warning_max_threshold is not None or
-            warning_min_threshold is not None):
-            m_config.setdefault(
-                'warning_color',
-                OPT_GRAPH_DEFAULTS['warning_color'])
+        for threshold in ['warning_min_threshold', 'warning_max_threshold']:
+            if threshold in m_config:
+                m_config[threshold] = int(m_config[threshold])
 
         m_config.setdefault('title', m_name)
         m_name = slugify(m_name)
@@ -150,11 +122,52 @@ def parse_graph_widget_config(name, config, defaults):
     return config
 
 
-def parse_lvalue_widget_config(name, config, defaults):
+def parse_lvalue_config(name, config, defaults):
     """
     Parses an lvalue widget's config, applying changes
     where appropriate and returning the resulting config
     """
+    for field, default in defaults.items():
+        config.setdefault(field, default)
+
+    config['time_range'] = parse_interval(config['time_range'])
+
+    metric_dict = {}
+    for m_name, m_config in config['metrics'].items():
+        if 'target' not in m_config:
+            raise ConfigError(
+                'Widget "%s" needs a target for metric "%s".'
+                % (name, m_name))
+
+        m_config['original_target'] = m_config['target']
+
+        """
+        Set the bucket size to the passed in time range
+        (for eg, if 1d was the time range, the data for the
+        entire day will be aggregated).
+        """
+        m_config['target'] = format_metric_target(
+            m_config['target'], config['time_range'])
+
+        m_config.setdefault('title', m_name)
+        m_name = slugify(m_name)
+        metric_dict[m_name] = m_config
+
+    config['metrics'] = metric_dict
+
+    targets = [metric['target'] for metric in metric_dict.values()]
+
+    """
+    Set the from param to double the bucket size (as a result, graphite will
+    return two datapoints for each metric: the previous value and the last
+    value. The last and previous values will be used to calculate the
+    percentage increase.
+    """
+    from_param = int(config['time_range']) * 2
+
+    config['request_url'] = build_request_url(targets, from_param)
+
+    return config
 
 
 def parse_config(config):
@@ -162,6 +175,8 @@ def parse_config(config):
     Parses a dashboard config, applying changes
     where appropriate and returning the resulting config
     """
+    config = dict(DASHBOARD_DEFAULTS, **config)
+
     if 'name' not in config:
         raise ConfigError('Dashboard name not specified.')
 
@@ -188,10 +203,10 @@ def parse_config(config):
         w_config.setdefault('type', config['default_widget_type'])
 
         if w_config['type'] == 'graph':
-            parse_widget_config = parse_graph_widget_config
+            parse_widget_config = parse_graph_config
             widget_defaults = graph_defaults
         elif w_config['type'] == 'lvalue':
-            parse_widget_config = parse_lvalue_widget_config
+            parse_widget_config = parse_lvalue_config
             widget_defaults = lvalue_defaults
 
         widget_dict[w_name] = parse_widget_config(w_name, w_config,
@@ -204,7 +219,7 @@ def parse_config(config):
 
 
 # metric attributes needed by client
-CLIENT_METRIC_ATTRS = ['target', 'title', 'color', 'warning_max_threshold',
+CLIENT_GRAPH_METRIC_ATTRS = ['title', 'color', 'warning_max_threshold',
                       'warning_min_threshold', 'warning_color']
 
 
@@ -222,14 +237,18 @@ def build_client_config(server_config):
     w_configs = config.setdefault('widgets', {})
     for w_name, w_server_config in server_config['widgets'].items():
         w_configs[w_name] = {}
-        m_configs = w_configs[w_name].setdefault('metrics', {})
-        for m_name, m_server_config in w_server_config['metrics'].items():
-            attrs = dict((k, m_server_config[k])
-                         for k in CLIENT_METRIC_ATTRS
-                         if k in m_server_config)
-            m_configs[m_name] = attrs
 
-    return config
+        # Add metric attributes for graph widgets
+        if w_server_config['type'] == 'graph':
+            m_configs = w_configs[w_name].setdefault('metrics', {})
+            for m_name, m_server_config in w_server_config['metrics'].items():
+                attrs = dict((k, m_server_config[k])
+                             for k in CLIENT_GRAPH_METRIC_ATTRS
+                             if k in m_server_config)
+                m_configs[m_name] = attrs
+
+    #serialize client vars into a json string ready for javascript
+    return 'var config = %s;' % (json.dumps(config),)
 
 
 class Dashboard(Element):
@@ -246,7 +265,7 @@ class Dashboard(Element):
         """Loads dashboard config from a config file"""
         # TODO check and test for invalid config files
 
-        config = DASHBOARD_DEFAULTS
+        config = {}
         if defaults is not None:
             config.update(defaults)
 
@@ -261,11 +280,11 @@ class Dashboard(Element):
     def from_args(cls, **kwargs):
         """Loads dashboard config from args"""
 
-        config = DASHBOARD_DEFAULTS
+        config = {}
         if kwargs is not None:
             config.update(kwargs)
 
-        return cls(config)
+        return cls(kwargs)
 
     def get_widget_config(self, w_name):
         """Returns a widget using the passed in widget name"""
@@ -293,14 +312,8 @@ class Dashboard(Element):
 
     @renderer
     def config_script(self, request, tag):
-        # TODO fix injection vulnerability
-
-        #serialize client vars into a json string ready for javascript
-        client_config_str = 'var config = %s;' % (
-            json.dumps(self.client_config),)
-
         if self.client_config is not None:
-            tag.fillSlots(client_config=client_config_str)
+            tag.fillSlots(client_config=self.client_config)
             return tag
 
 

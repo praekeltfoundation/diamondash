@@ -1,3 +1,6 @@
+var DEFAULT_GRAPH_COLOUR = '#3333cc';
+var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
+
 /*
  * Class for the diamondash graph widget
  */
@@ -50,6 +53,12 @@ GraphWidget.prototype.initialize = function() {
 				metricConfig.color = DEFAULT_GRAPH_COLOUR;
 			}
 			var metricColor = metricConfig.color;
+
+			if (typeof metricConfig.warning_min_threshold !== 'undefined'
+			&& typeof metricConfig.warning_max_threshold !== 'undefined'
+			&& typeof metricConfig.warning_color === 'undefined') {
+				metricConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+			}
 
 			metric = {
 				data: [{ x:0, y:0 }],

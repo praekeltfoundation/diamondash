@@ -76,8 +76,6 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         if self.graphite_ws:
             self.stop_graphite_ws()
 
-    # TODO render tests for other widget types
-
     def assert_response(self, response_data, expected_response):
         """
         Asserts whether the response obtained matches
@@ -86,12 +84,16 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         response = json.loads(response_data)
         self.assertEqual(response, expected_response)
 
+    """
+    Render tests
+    ------------
+    """
+
     @inlineCallbacks
     def test_render_for_graph(self):
         """
-        Should build a graphite url from the passed in client
-        request, send a request to graphite, apply transformations,
-        and return data useable by the client side
+        Should send a request to graphite, apply transformations,
+        and return data useable by the client side for graph widgets
         """
         yield self.start_graphite_ws()
 
@@ -102,12 +104,12 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
-        test_render_period = 3600
+        test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'render_period': test_render_period,
             'widgets': {
                 'random-count-sum': {
+                    'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -136,9 +138,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     @inlineCallbacks
     def test_render_for_multimetric_graph(self):
         """
-        Should build a graphite url from the passed in client
-        request, send a request to graphite, apply transformations,
-        and return data useable by the client side
+        Should send a request to graphite, apply transformations,
+        and return data useable by the client side for graph widgets
         """
         yield self.start_graphite_ws()
 
@@ -149,12 +150,12 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         # initialise the server configuration
         server.config = build_config(test_overrides)
 
-        test_render_period = 3600
+        test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'render_period': test_render_period,
             'widgets': {
                 'random-count-sum-and-average': {
+                    'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -183,17 +184,98 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         d.addCallback(self.assert_response, output)
         yield d
 
-    def test_get_result_datapoints(self):
+    @inlineCallbacks
+    def test_render_for_lvalue(self):
         """
-        Should obtain a list of datapoint lists, each list
-        corresponding to a metric
+        Should send a request to graphite, apply transformations,
+        and return data useable by the client side for lvalue widgets
         """
-        test_data_key = 'test_get_result_datapoints'
-        before = self.TEST_DATA[test_data_key]['before']
-        before_str = json.dumps(before)
-        result = server.get_result_datapoints(before_str)
-        after = self.TEST_DATA[test_data_key]['after']
-        self.assertEqual(result, after)
+        yield self.start_graphite_ws()
+
+        test_overrides = {
+            'graphite_url': self.graphite_url,
+        }
+
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
+
+        test_time_range = '1d'
+        dashboard_config = {
+            'name': 'test-dashboard',
+            'widgets': {
+                'some-lvalue-widget': {
+                    'time_range': test_time_range,
+                    'type': 'lvalue',
+                    'metrics': {
+                        'drukqs': {
+                            'target': 'vumi.random.count.sum'
+                        }
+                    }
+                }
+            }
+        }
+
+        dashboard_configs = server.config['dashboards']
+        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+            **dashboard_config)
+
+        test_data_key = 'test_render_for_lvalue'
+        input = self.TEST_DATA[test_data_key]['input']
+        request = requestMock(input, host=self.graphite_ws.getHost().host,
+                              port=self.graphite_ws.getHost().port)
+        output = self.TEST_DATA[test_data_key]['output']
+        d = server.render(request, 'test-dashboard', 'some-lvalue-widget')
+        d.addCallback(self.assert_response, output)
+        yield d
+
+    @inlineCallbacks
+    def test_render_for_multimetric_lvalue(self):
+        """
+        Should send a request to graphite, apply transformations,
+        and return data useable by the client side for lvalue widgets
+        """
+        yield self.start_graphite_ws()
+
+        test_overrides = {
+            'graphite_url': self.graphite_url,
+        }
+
+        # initialise the server configuration
+        server.config = build_config(test_overrides)
+
+        test_time_range = '1h'
+        dashboard_config = {
+            'name': 'test-dashboard',
+            'widgets': {
+                'some-multimetric-lvalue-widget': {
+                    'time_range': test_time_range,
+                    'type': 'lvalue',
+                    'metrics': {
+                        'drukqs': {
+                            'target': 'vumi.random.count.sum'
+                        },
+
+                        'flim': {
+                            'target': 'vumi.random.timer.sum'
+                        }
+                    }
+                }
+            }
+        }
+
+        dashboard_configs = server.config['dashboards']
+        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+            **dashboard_config)
+
+        test_data_key = 'test_render_for_multimetric_lvalue'
+        input = self.TEST_DATA[test_data_key]['input']
+        request = requestMock(input, host=self.graphite_ws.getHost().host,
+                              port=self.graphite_ws.getHost().port)
+        output = self.TEST_DATA[test_data_key]['output']
+        d = server.render(request, 'test-dashboard',
+                          'some-multimetric-lvalue-widget')
+        d.addCallback(self.assert_response, output)
+        yield d
 
     """
     Purification tests
@@ -273,3 +355,62 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         formatted = server.format_results_for_graph(before, widget_config)
         formatted_str = json.loads(formatted)
         self.assertEqual(formatted_str, after)
+
+    def test_format_results_for_lvalue(self):
+        """
+        Should format datapoints in graphite's format to
+        datapoints in a format useable for lvalue widgets
+        """
+        prev, last, time = (3.034992, 2.0, 1341318035)
+        expected = ('{"lvalue": 2.0, "percentage": "-34", "prev": 3.034992, '
+                    '"diff": -1.034992, "time": "2012-07-03 12:20:35"}')
+
+        result = server.format_results_for_lvalue((prev, last, time))
+
+        self.assertEqual(result, expected)
+
+    """
+    Other tests
+    ------------
+    """
+
+    def test_aggregate_results_for_lvalue(self):
+        """
+        Should obtain a tuple consisting of three aggregates accross
+        multiple datapoint lists:
+            - the summed previous y value
+            - the summed last y value
+            - the maximum last x value (latest time)
+        """
+        def assert_aggregation(data, expected):
+            result = server.aggregate_results_for_lvalue(data)
+            self.assertEqual(result, expected)
+
+        data = [[[4, 200],
+                 [-5, 300]],
+                [[3, -1],
+                 [2, 301]]]
+        expected = (7, -3, 301)
+        assert_aggregation(data, expected)
+
+        data = [[[1.0, 1341318015],
+                 [3.0, 1341318020],
+                 [3.0, 1341318025],
+                 [2.0, 1341318030]],
+                [[0.060949, 1341318025],
+                 [0.045992, 1341318030],
+                 [None, 1341318035]]]
+        expected = (3.045992, 2.0, 1341318035)
+        assert_aggregation(data, expected)
+
+    def test_get_result_datapoints(self):
+        """
+        Should obtain a list of datapoint lists, each list
+        corresponding to a metric
+        """
+        test_data_key = 'test_get_result_datapoints'
+        before = self.TEST_DATA[test_data_key]['before']
+        before_str = json.dumps(before)
+        result = server.get_result_datapoints(before_str)
+        after = self.TEST_DATA[test_data_key]['after']
+        self.assertEqual(result, after)

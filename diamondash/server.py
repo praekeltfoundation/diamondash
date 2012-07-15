@@ -1,6 +1,7 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 from os import path, listdir
+from datetime import datetime
 import json
 
 import yaml
@@ -105,11 +106,25 @@ def format_results_for_graph(results, widget_config):
     return json.dumps(formatted_data)
 
 
-def format_results_for_lvalue(results, widget_config):
+def format_results_for_lvalue(data):
     """
     Formats the json output received from graphite into
     something usable for lvalue widgets
     """
+    prev, last, time = data
+    time = str(datetime.utcfromtimestamp(time))
+    diff = last - prev
+    percentage = "{0:.0f}".format((diff / prev) * 100)
+
+    formatted = json.dumps({
+        'lvalue': last,
+        'prev': prev,
+        'time': time,
+        'diff': diff,
+        'percentage': percentage
+    })
+
+    return formatted
 
 
 def zeroize_nulls(results):
@@ -134,10 +149,11 @@ def get_widget_null_filters(widget_config):
     return [metric['null_filter'] for metric in metrics.values()]
 
 
-def purify_results(results, widget_config):
+def purify_results_for_graph(results, widget_config):
     """
     Fixes problems with the results obtained from
-    graphite (eg. null values)
+    graphite (eg. null values) for graph render
+    requests
     """
     null_filter_strs = get_widget_null_filters(widget_config)
 
@@ -153,12 +169,49 @@ def purify_results(results, widget_config):
     return purified
 
 
+def aggregate_results_for_lvalue(data):
+    """
+    Takes in a list of datapoint lists and aggregates a tuple consisting
+    of the following:
+        - sum of previous y value
+        - sum of last y value
+        - maximum of last x value (latest time)
+    """
+
+    prev = sum((datapoints[-2][0] for datapoints in data
+                if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
+    last = sum((datapoints[-1][0] for datapoints in data
+                if (len(datapoints) > 0 and datapoints[-1][0] is not None)))
+    time = max((datapoints[-1][1] for datapoints in data
+                if (len(datapoints) > 0 and datapoints[-1][1] is not None)))
+
+    return prev, last, time
+
+
 def get_result_datapoints(data):
     """
-    Obtaints the datapoints from the result returned from
+    Obtains the datapoints from the result returned from
     graphite from a render request
     """
     return [metric['datapoints'] for metric in json.loads(data)]
+
+
+def render_graph(data, widget_config):
+    """
+    Parses the passed in data into output useable for
+    a graph widget
+    """
+    purified = purify_results_for_graph(data, widget_config)
+    return format_results_for_graph(purified, widget_config)
+
+
+def render_lvalue(data):
+    """
+    Parses the passed in data into output useable for
+    an lvalue widget
+    """
+    aggregated = aggregate_results_for_lvalue(data)
+    return format_results_for_lvalue(aggregated)
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
@@ -174,12 +227,10 @@ def render(request, dashboard_name, widget_name):
 
     d = getPage(request_url)
     d.addCallback(get_result_datapoints)
-    d.addCallback(purify_results, widget_config)
 
     if widget_config['type'] == 'graph':
-        format_results = format_results_for_graph
+        d.addCallback(render_graph, widget_config)
     elif widget_config['type'] == 'lvalue':
-        format_results = format_results_for_lvalue
-    d.addCallback(format_results, widget_config)
+        d.addCallback(render_lvalue)
 
     return d
