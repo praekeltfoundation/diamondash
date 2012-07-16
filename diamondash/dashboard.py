@@ -158,7 +158,7 @@ def parse_lvalue_config(name, config, defaults):
     targets = [metric['target'] for metric in metric_dict.values()]
 
     """
-    Set the from param to double the bucket size (as a result, graphite will
+    Set the from param to double the bucket size. As a result, graphite will
     return two datapoints for each metric: the previous value and the last
     value. The last and previous values will be used to calculate the
     percentage increase.
