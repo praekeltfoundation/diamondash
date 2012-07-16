@@ -141,11 +141,9 @@ def parse_lvalue_config(name, config, defaults):
 
         m_config['original_target'] = m_config['target']
 
-        """
-        Set the bucket size to the passed in time range
-        (for eg, if 1d was the time range, the data for the
-        entire day will be aggregated).
-        """
+        # Set the bucket size to the passed in time range
+        # (for eg, if 1d was the time range, the data for the
+        # entire day will be aggregated).
         m_config['target'] = format_metric_target(
             m_config['target'], config['time_range'])
 
@@ -157,12 +155,10 @@ def parse_lvalue_config(name, config, defaults):
 
     targets = [metric['target'] for metric in metric_dict.values()]
 
-    """
-    Set the from param to double the bucket size. As a result, graphite will
-    return two datapoints for each metric: the previous value and the last
-    value. The last and previous values will be used to calculate the
-    percentage increase.
-    """
+    # Set the from param to double the bucket size. As a result, graphite will
+    # return two datapoints for each metric: the previous value and the last
+    # value. The last and previous values will be used to calculate the
+    # percentage increase.
     from_param = int(config['time_range']) * 2
 
     config['request_url'] = build_request_url(targets, from_param)
