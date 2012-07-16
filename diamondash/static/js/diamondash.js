@@ -1,6 +1,6 @@
 var DEFAULT_REQUEST_INTERVAL = 2000;
 
-var graphs = [];
+var widgets = [];
 var requestInterval = config.request_interval || DEFAULT_REQUEST_INTERVAL;
 
 
@@ -9,16 +9,24 @@ function buildWidgets() {
 	var graphWidgets = document.querySelectorAll('.graph-widget'); 
 	var i = 0;
     for (i = 0; i < graphWidgets.length; i++) {
-		var widgetElement = graphWidgets[i];
-		var widgetName = $.trim(widgetElement.id);
-		var widgetConfig = config.widgets[widgetName];
-
-		graphs[i] = new GraphWidget({
-			name: widgetName,
-			config: widgetConfig,
-			element: widgetElement
-		});
+		buildWidget(graphWidgets[i], GraphWidget);
 	}
+
+	var lvalueWidgets = document.querySelectorAll('.lvalue-widget'); 
+    for (i = 0; i < lvalueWidgets.length; i++) {
+		buildWidget(lvalueWidgets[i], LValueWidget);
+	}
+}
+
+function buildWidget(widgetElement, WidgetType) {
+	var widgetName = $.trim(widgetElement.id);
+	var widgetConfig = config.widgets[widgetName];
+
+	widgets.push(new WidgetType({
+		name: widgetName,
+		config: widgetConfig,
+		element: widgetElement
+	}));
 }
 
 // build the url to be sent as a request to the server
@@ -28,12 +36,12 @@ function buildUrl(widgetName) {
 
 // called each update interval
 function updateWidgets() {
-	$.each(graphs, function(i, graph) { 
-		var url = buildUrl(graph.name);
+	$.each(widgets, function(i, widget) { 
+		var url = buildUrl(widget.name);
 		getData(url, 
-		function(results) {
-			graph.update(results);
-		});
+			function(results) {
+				widget.update(results);
+			});
 	});
 }
 
@@ -50,14 +58,14 @@ function getData(currentUrl, cbDataReceived) {
 		  },*/
 
 		dataType: 'json',
-		error: function(xhr, textStatus, errorThrown) {
-			console.log("Error: " + xhr + " " + textStatus + " " + errorThrown);
-		},
-		url: currentUrl
+	error: function(xhr, textStatus, errorThrown) {
+		console.log("Error: " + xhr + " " + textStatus + " " + errorThrown);
+	},
+	url: currentUrl
 	}).done(function(responseData) {
-			// callback fired when the response data is received
-			cbDataReceived(responseData);
-		});
+		// callback fired when the response data is received
+		cbDataReceived(responseData);
+	});
 }
 
 buildWidgets();

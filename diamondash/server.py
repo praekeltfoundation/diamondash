@@ -177,7 +177,6 @@ def aggregate_results_for_lvalue(data):
         - sum of last y value
         - maximum of last x value (latest time)
     """
-
     prev = sum((datapoints[-2][0] for datapoints in data
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
     last = sum((datapoints[-1][0] for datapoints in data

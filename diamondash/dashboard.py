@@ -301,8 +301,11 @@ class Dashboard(Element):
             # to not break the template with invalid types
             widget_element = ''
 
-            if w_config['type'] == 'graph':
-                widget_element = GraphWidget()
+            Widget = {
+                'graph': GraphWidget,
+                'lvalue': LValueWidget,
+            }.get(w_config['type'], GraphWidget)
+            widget_element = Widget()
 
             new_tag.fillSlots(widget_title_slot=w_config['title'],
                               widget_class_slot=class_attr,
@@ -318,9 +321,15 @@ class Dashboard(Element):
 
 
 class GraphWidget(Element):
-    """GraphElement element that resides in a Dashboard element"""
+    """Graph element that resides in a Dashboard element"""
 
     loader = XMLFile(resource_stream(__name__, 'templates/graph_widget.xml'))
+
+
+class LValueWidget(Element):
+    """LValue element that resides in a Dashboard element"""
+
+    loader = XMLFile(resource_stream(__name__, 'templates/lvalue_widget.xml'))
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')

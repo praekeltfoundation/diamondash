@@ -33,3 +33,9 @@ widgets:
                color: '#33cc33'
            'Average of random timer': 
                target: vumi.random.timer.avg
+
+    'An lvalue widget':
+        type: lvalue
+        metrics: 
+           'Sum of random count': 
+               target: vumi.random.count.sum

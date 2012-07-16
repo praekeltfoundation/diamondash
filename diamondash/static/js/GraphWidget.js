@@ -6,13 +6,11 @@ var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
  */
 
 function GraphWidget(args) {
+	Widget.call(this, args);
 	this.seriesLookup = {};
-	this.name = args.name;
-	this.config = args.config;
-	this.element = args.element;
-
 	this.initialize();
 }
+GraphWidget.subclass(Widget);
 
 GraphWidget.prototype.getMetricData = function(metricName) {
 	return this.seriesLookup[metricName].data;
