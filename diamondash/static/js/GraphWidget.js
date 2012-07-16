@@ -134,10 +134,11 @@ GraphWidget.prototype.updateGraphDetails = function() {
 			var hoverSwatch = this.hoverLegend.querySelector(
 				'#metric-key-swatch-' + metricName);
 			var metricData = this.getMetricData(metricName);
-			var lastValue = yFormatter(lastCoord.y);
+			var lastCoord = metricData[metricData.length-1];
 			if (lastCoord.x > lastX) {
 				lastX = lastCoord.x;
 			}
+			var lastValue = yFormatter(lastCoord.y);
 			valueLabel.innerHTML = lastValue;
 			valueLabel.className = 'metric-key-value-label inactive';
 
