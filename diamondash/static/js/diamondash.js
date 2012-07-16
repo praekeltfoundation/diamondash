@@ -1,40 +1,47 @@
 var DEFAULT_REQUEST_INTERVAL = 2000;
-var DEFAULT_GRAPH_COLOUR = '#3333cc';
 
-var graphs = [];
-var requestInterval = config.requestInterval || DEFAULT_REQUEST_INTERVAL;
+var widgets = [];
+var requestInterval = config.request_interval || DEFAULT_REQUEST_INTERVAL;
 
 
-// construct the widget objects using the config
-function constructWidgets() {
+// build the widget objects using the config
+function buildWidgets() {
 	var graphWidgets = document.querySelectorAll('.graph-widget'); 
 	var i = 0;
     for (i = 0; i < graphWidgets.length; i++) {
-		var widgetElement = graphWidgets[i];
-		var widgetName = $.trim(widgetElement.id);
-		var widgetConfig = config.widgets[widgetName];
+		buildWidget(graphWidgets[i], GraphWidget);
+	}
 
-		graphs[i] = new GraphWidget({
-			name: widgetName,
-			config: widgetConfig,
-			element: widgetElement
-		});
+	var lvalueWidgets = document.querySelectorAll('.lvalue-widget'); 
+    for (i = 0; i < lvalueWidgets.length; i++) {
+		buildWidget(lvalueWidgets[i], LValueWidget);
 	}
 }
 
-// construct the url to be sent as a request to the server
-function constructUrl(widgetName) {
-	return '/render/' + config.dashboardName + '/' + widgetName;
+function buildWidget(widgetElement, WidgetType) {
+	var widgetName = $.trim(widgetElement.id);
+	var widgetConfig = config.widgets[widgetName];
+
+	widgets.push(new WidgetType({
+		name: widgetName,
+		config: widgetConfig,
+		element: widgetElement
+	}));
+}
+
+// build the url to be sent as a request to the server
+function buildUrl(widgetName) {
+	return '/render/' + config.name + '/' + widgetName;
 }
 
 // called each update interval
 function updateWidgets() {
-	$.each(graphs, function(i, graph) { 
-		var url = constructUrl(graph.name);
+	$.each(widgets, function(i, widget) { 
+		var url = buildUrl(widget.name);
 		getData(url, 
-		function(results) {
-			graph.update(results);
-		});
+			function(results) {
+				widget.update(results);
+			});
 	});
 }
 
@@ -51,17 +58,17 @@ function getData(currentUrl, cbDataReceived) {
 		  },*/
 
 		dataType: 'json',
-		error: function(xhr, textStatus, errorThrown) {
-			console.log("Error: " + xhr + " " + textStatus + " " + errorThrown);
-		},
-		url: currentUrl
+	error: function(xhr, textStatus, errorThrown) {
+		console.log("Error: " + xhr + " " + textStatus + " " + errorThrown);
+	},
+	url: currentUrl
 	}).done(function(responseData) {
-			// callback fired when the response data is received
-			cbDataReceived(responseData);
-		});
+		// callback fired when the response data is received
+		cbDataReceived(responseData);
+	});
 }
 
-constructWidgets();
+buildWidgets();
 updateWidgets();
 
 var updateId = setInterval(updateWidgets, requestInterval);

@@ -1,15 +1,16 @@
+var DEFAULT_GRAPH_COLOR = '#3333cc';
+var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
+
 /*
  * Class for the diamondash graph widget
  */
 
 function GraphWidget(args) {
+	Widget.call(this, args);
 	this.seriesLookup = {};
-	this.name = args.name;
-	this.config = args.config;
-	this.element = args.element;
-
 	this.initialize();
 }
+GraphWidget.subclass(Widget);
 
 GraphWidget.prototype.getMetricData = function(metricName) {
 	return this.seriesLookup[metricName].data;
@@ -47,9 +48,15 @@ GraphWidget.prototype.initialize = function() {
 			var metricConfig = this.config.metrics[metricName];
 
 			if (typeof metricConfig.color === 'undefined') {
-				metricConfig.color = DEFAULT_GRAPH_COLOUR;
+				metricConfig.color = DEFAULT_GRAPH_COLOR;
 			}
 			var metricColor = metricConfig.color;
+
+			if (typeof metricConfig.warning_min_threshold !== 'undefined'
+			&& typeof metricConfig.warning_max_threshold !== 'undefined'
+			&& typeof metricConfig.warning_color === 'undefined') {
+				metricConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+			}
 
 			metric = {
 				data: [{ x:0, y:0 }],
@@ -59,8 +66,8 @@ GraphWidget.prototype.initialize = function() {
 
 			this.seriesLookup[metricName] = metric;
 			series.push(metric);
-			constructMetricKey(this.legend, metricName, metricConfig.title, metricColor);
-			constructMetricKey(this.hoverLegend, metricName, metricConfig.title, metricColor);
+			buildMetricKey(this.legend, metricName, metricConfig.title, metricColor);
+			buildMetricKey(this.hoverLegend, metricName, metricConfig.title, metricColor);
 		}
 	}
 
@@ -128,10 +135,10 @@ GraphWidget.prototype.updateGraphDetails = function() {
 				'#metric-key-swatch-' + metricName);
 			var metricData = this.getMetricData(metricName);
 			var lastCoord = metricData[metricData.length-1];
-			var lastValue = yFormatter(lastCoord.y);
 			if (lastCoord.x > lastX) {
 				lastX = lastCoord.x;
 			}
+			var lastValue = yFormatter(lastCoord.y);
 			valueLabel.innerHTML = lastValue;
 			valueLabel.className = 'metric-key-value-label inactive';
 
@@ -154,8 +161,8 @@ GraphWidget.prototype.updateGraphDetails = function() {
 	this.timeLabel.innerHTML = xFormatter(lastX);
 };
 
-// Construct the passed in metric's key in the legend
-function constructMetricKey(legend, metricName, metricTitle, metricColor) {
+// Build the passed in metric's key in the legend
+function buildMetricKey(legend, metricName, metricTitle, metricColor) {
 	var metricKey = document.createElement('div');
 	metricKey.id = 'metric-key-container-' + metricName;
 	metricKey.className = 'metric-key-container';

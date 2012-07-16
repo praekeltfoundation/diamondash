@@ -1,16 +1,16 @@
 name: 'test dashboard'
 widgets:
-    default-render-period:
+    default-time-range:
         metrics:
             metric-a:
                 target: vumi.random.count.sum
-    explicit-render-period:
-        render_period: 1337
+    explicit-time-range:
+        time_range: 1337
         metrics:
             metric-b:
                 target: vumi.random.count.sum
-    suffix-render-period:
-        render_period: 2h
+    suffix-time-range:
+        time_range: 2h
         metrics:
             metric-c:
                 target: vumi.random.count.sum

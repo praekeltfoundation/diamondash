@@ -1,10 +1,11 @@
 name: 'Test Dashboard'
-render_period: 86400
-bucket_size: 400
+
+graph_defaults:
+    time_range: '1d'
+    bucket_size: '1h'
+
 widgets:
     'Sum of random count (small bucket)':
-        render_period: 300
-        bucket_size: 30
         metrics: 
            'Sum of random count': 
                target: vumi.random.count.sum
@@ -23,10 +24,15 @@ widgets:
                target: vumi.random.timer.avg
 
     'Multiple metrics':
-        render_period: 4600
         metrics: 
            'Sum of random count': 
                target: vumi.random.count.sum
                color: '#33cc33'
            'Average of random timer': 
                target: vumi.random.timer.avg
+
+    'An lvalue widget':
+        type: lvalue
+        metrics: 
+           'Sum of random count': 
+               target: vumi.random.count.sum
