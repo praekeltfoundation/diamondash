@@ -114,7 +114,9 @@ def format_results_for_lvalue(data):
     prev, last, time = data
     time = str(datetime.utcfromtimestamp(time))
     diff = last - prev
-    percentage = "{0:.0f}".format((diff / prev) * 100)
+
+    percentage = (diff / prev) * 100 if prev != 0 else 0
+    percentage = "{0:.0f}%".format(percentage)
 
     formatted = json.dumps({
         'lvalue': last,

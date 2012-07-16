@@ -42,7 +42,7 @@
 		"input": "/render/test-dashboard/some-lvalue-widget",
 		"output": {
 			"lvalue": 5052.0, 
-			"percentage": "53",
+			"percentage": "53%",
 			"prev": 3303.0,
 			"time": "2012-07-15 00:00:00", 
 			"diff": 1749.0
@@ -53,7 +53,7 @@
 		"input": "/render/test-dashboard/some-multimetric-lvalue-widget",
 		"output": {
 			"lvalue": 285.0505208487395, 
-			"percentage": "-78", 
+			"percentage": "-78%", 
 			"prev": 1281.0492495984406, 
 			"time": "2012-07-15 22:00:00", 
 			"diff": -995.9987287497011

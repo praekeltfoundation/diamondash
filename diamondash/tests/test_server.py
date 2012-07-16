@@ -361,13 +361,19 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should format datapoints in graphite's format to
         datapoints in a format useable for lvalue widgets
         """
-        prev, last, time = (3.034992, 2.0, 1341318035)
-        expected = ('{"lvalue": 2.0, "percentage": "-34", "prev": 3.034992, '
+        def assert_format(input, expected):
+            result = server.format_results_for_lvalue(input)
+            self.assertEqual(result, expected)
+
+        input = (3.034992, 2.0, 1341318035)
+        expected = ('{"lvalue": 2.0, "percentage": "-34%", "prev": 3.034992, '
                     '"diff": -1.034992, "time": "2012-07-03 12:20:35"}')
+        assert_format(input, expected)
 
-        result = server.format_results_for_lvalue((prev, last, time))
-
-        self.assertEqual(result, expected)
+        input = (0, 0, 1341318035)
+        expected = ('{"lvalue": 0, "percentage": "0%", "prev": 0, '
+                    '"diff": 0, "time": "2012-07-03 12:20:35"}')
+        assert_format(input, expected)
 
     """
     Other tests

@@ -36,6 +36,7 @@ widgets:
 
     'An lvalue widget':
         type: lvalue
+        time_range: 1d
         metrics: 
            'Sum of random count': 
                target: vumi.random.count.sum

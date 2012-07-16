@@ -1,4 +1,4 @@
-var DEFAULT_GRAPH_COLOUR = '#3333cc';
+var DEFAULT_GRAPH_COLOR = '#3333cc';
 var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
 
 /*
@@ -48,7 +48,7 @@ GraphWidget.prototype.initialize = function() {
 			var metricConfig = this.config.metrics[metricName];
 
 			if (typeof metricConfig.color === 'undefined') {
-				metricConfig.color = DEFAULT_GRAPH_COLOUR;
+				metricConfig.color = DEFAULT_GRAPH_COLOR;
 			}
 			var metricColor = metricConfig.color;
 
