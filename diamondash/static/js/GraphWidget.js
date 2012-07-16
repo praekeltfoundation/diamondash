@@ -136,7 +136,7 @@ GraphWidget.prototype.updateGraphDetails = function() {
 			var metricData = this.getMetricData(metricName);
 
 			var lastCoord = metricData[metricData.length-1];
-			if (typeof lastCoord !== 'undefined') {
+			if (typeof lastCoord === 'undefined') {
 				lastCoord = { x:0, y:0 };
 			}
 
