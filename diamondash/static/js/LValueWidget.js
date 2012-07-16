@@ -1,5 +1,5 @@
-var GOOD_COLOR = '#cc3333';
-var BAD_COLOR = '#33cc33';
+var GOOD_COLOR = '#33cc33';
+var BAD_COLOR = '#cc3333';
 
 /*
  * Class for the diamondash lvalue widget
