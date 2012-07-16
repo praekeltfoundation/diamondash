@@ -134,8 +134,14 @@ GraphWidget.prototype.updateGraphDetails = function() {
 			var hoverSwatch = this.hoverLegend.querySelector(
 				'#metric-key-swatch-' + metricName);
 			var metricData = this.getMetricData(metricName);
+
 			var lastCoord = metricData[metricData.length-1];
+			if (typeof lastCoord !== 'undefined') {
+				lastCoord = { x:0, y:0 };
+			}
+
 			var lastValue = yFormatter(lastCoord.y);
+
 			if (lastCoord.x > lastX) {
 				lastX = lastCoord.x;
 			}
