@@ -20,6 +20,14 @@ body{
 	margin-bottom: 5px;
 }
 
+.graph-widget {
+	width: 800px;
+}
+
+.lvalue-widget {
+	width: 200px;
+}
+
 .graph {
 	float: left;
 	width: 800px;
