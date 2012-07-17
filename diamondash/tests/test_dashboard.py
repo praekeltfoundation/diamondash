@@ -116,39 +116,27 @@ class DashboardConfigTestCase(unittest.TestCase):
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': '30m',
-        'metrics': {
-            'sum-of-nothing': {
-                'title': 'Sum of nothing',
-                'target': 'foo.sum',
-            },
-
-            'sum-of-a-salesman': {
-                'title': 'parlez',
-                'target': 'bar.sum',
-            }
-        }
+        'metrics': ['foo.sum', 'bar.sum']
     }
     TEST_LVALUE_CONFIG_PARSED = dict(
         dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': 1800,
-        'metrics': {
-            'sum-of-nothing': {
-                'title': 'Sum of nothing',
+        'metrics': [
+            {
                 'original_target': 'foo.sum',
                 'target': 'summarize(foo.sum, "1800s", "sum")',
             },
 
-            'sum-of-a-salesman': {
-                'title': 'parlez',
+            {
                 'original_target': 'bar.sum',
                 'target': 'summarize(bar.sum, "1800s", "sum")',
             }
-        },
-        'request_url': 'render/?from=-3600s&target=summarize%28bar.sum%2C+'
-                       '%221800s%22%2C+%22sum%22%29&target=summarize%28foo.sum'
-                       '%2C+%221800s%22%2C+%22sum%22%29&format=json'
+        ],
+        'request_url': 'render/?from=-3600s&target=summarize%28foo.sum%2C'
+                       '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
+                       'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'
     })
 
     TEST_CONFIG = {

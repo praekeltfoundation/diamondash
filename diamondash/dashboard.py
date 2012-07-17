@@ -132,28 +132,22 @@ def parse_lvalue_config(name, config, defaults):
 
     config['time_range'] = parse_interval(config['time_range'])
 
-    metric_dict = {}
-    for m_name, m_config in config['metrics'].items():
-        if 'target' not in m_config:
-            raise ConfigError(
-                'Widget "%s" needs a target for metric "%s".'
-                % (name, m_name))
-
-        m_config['original_target'] = m_config['target']
+    metric_list = []
+    for target in config['metrics']:
+        m_config = {}
+        m_config['original_target'] = target
 
         # Set the bucket size to the passed in time range
         # (for eg, if 1d was the time range, the data for the
         # entire day will be aggregated).
         m_config['target'] = format_metric_target(
-            m_config['target'], config['time_range'])
+            target, config['time_range'])
 
-        m_config.setdefault('title', m_name)
-        m_name = slugify(m_name)
-        metric_dict[m_name] = m_config
+        metric_list.append(m_config)
 
-    config['metrics'] = metric_dict
+    config['metrics'] = metric_list
 
-    targets = [metric['target'] for metric in metric_dict.values()]
+    targets = [metric['target'] for metric in metric_list]
 
     # Set the from param to double the bucket size. As a result, graphite will
     # return two datapoints for each metric: the previous value and the last

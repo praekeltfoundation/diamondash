@@ -44,29 +44,24 @@ widgets:
     'An lvalue widget':
         type: lvalue
         metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
+            - vumi.random.count.sum
  
     'Another lvalue widget':
         type: lvalue
         metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
+            - vumi.random.count.sum
  
     'Yet another lvalue widget':
         type: lvalue
         metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
+            - vumi.random.count.sum
  
     'And another lvalue widget':
         type: lvalue
         metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
-
+            - vumi.random.count.sum
+     
     'And yet another lvalue widget':
         type: lvalue
         metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
+            - vumi.random.count.sum

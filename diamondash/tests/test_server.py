@@ -206,11 +206,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'some-lvalue-widget': {
                     'time_range': test_time_range,
                     'type': 'lvalue',
-                    'metrics': {
-                        'drukqs': {
-                            'target': 'vumi.random.count.sum'
-                        }
-                    }
+                    'metrics': ['vumi.random.count.sum']
                 }
             }
         }
@@ -250,15 +246,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'some-multimetric-lvalue-widget': {
                     'time_range': test_time_range,
                     'type': 'lvalue',
-                    'metrics': {
-                        'drukqs': {
-                            'target': 'vumi.random.count.sum'
-                        },
-
-                        'flim': {
-                            'target': 'vumi.random.timer.sum'
-                        }
-                    }
+                    'metrics': ['vumi.random.count.sum',
+                                'vumi.random.timer.sum']
                 }
             }
         }
