@@ -361,19 +361,26 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should format datapoints in graphite's format to
         datapoints in a format useable for lvalue widgets
         """
-        def assert_format(input, expected):
-            result = server.format_results_for_lvalue(input)
+        def assert_format(data, config, expected):
+            result = server.format_results_for_lvalue(data, config)
             self.assertEqual(result, expected)
 
-        input = (3.034992, 2.0, 1341318035)
-        expected = ('{"lvalue": 2.0, "percentage": "-34%", "prev": 3.034992, '
-                    '"diff": -1.034992, "time": "2012-07-03 12:20:35"}')
-        assert_format(input, expected)
+        data = (3.034992, 2.0, 1341318035)
+        config = {'time_range': 86400}
+        expected = ('{"lvalue": 2.000, "percentage": "-34%", '
+                    '"from": "2012-07-03 12:20:35, "diff": -1.035, '
+                    '"to": "2012-07-03 12:20:34"}')
+        expected = ('{"lvalue": "2.000", "percentage": "-34%", '
+                    '"from": "2012-07-03 12:20:35", "diff": "-1.035", '
+                    '"to": "2012-07-04 12:20:34"}')
+        assert_format(data, config, expected)
 
-        input = (0, 0, 1341318035)
-        expected = ('{"lvalue": 0, "percentage": "0%", "prev": 0, '
-                    '"diff": 0, "time": "2012-07-03 12:20:35"}')
-        assert_format(input, expected)
+        data = (0, 0, 1341318035)
+        config = {'time_range': 86400}
+        expected = ('{"lvalue": "0.000", "percentage": "0%", '
+                    '"from": "2012-07-03 12:20:35", "diff": "0.000", '
+                    '"to": "2012-07-04 12:20:34"}')
+        assert_format(data, config, expected)
 
     """
     Other tests
@@ -420,3 +427,14 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         result = server.get_result_datapoints(before_str)
         after = self.TEST_DATA[test_data_key]['after']
         self.assertEqual(result, after)
+
+    def test_format_value(self):
+        def assert_format(input, expected):
+            result = server.format_value(input)
+            self.assertEqual(result, expected)
+
+        assert_format(999999, '999.999K')
+        assert_format(1999999, '2.000M')
+        assert_format(1234123456789, '1.234T')
+        assert_format(123456123456789, '123.456T')
+        assert_format(3.034992, '3.035')

@@ -106,22 +106,40 @@ def format_results_for_graph(results, widget_config):
     return json.dumps(formatted_data)
 
 
-def format_results_for_lvalue(data):
+_number_suffixes = ['', 'K', 'M', 'B', 'T']
+
+
+def format_value(n):
+    mag = 0
+    if abs(n) < 1000:
+        return '%.3f' % (n,)
+    while abs(n) >= 1000 and mag < len(_number_suffixes) - 1:
+        mag += 1
+        n /= 1000.0
+    return '%.3f%s' % (n, _number_suffixes[mag])
+
+
+def format_results_for_lvalue(data, widget_config):
     """
     Formats the json output received from graphite into
     something usable for lvalue widgets
     """
-    prev, last, time = data
-    time = str(datetime.utcfromtimestamp(time))
-    diff = last - prev
+    time_range = widget_config['time_range']
+    prev, lvalue, time = data
+    from_time = str(datetime.utcfromtimestamp(time))
+    to_time = str(datetime.utcfromtimestamp(time + time_range - 1))
+    diff = lvalue - prev
 
     percentage = (diff / prev) * 100 if prev != 0 else 0
     percentage = "{0:.0f}%".format(percentage)
 
+    lvalue = format_value(lvalue)
+    diff = '%s%s' % ('+' if diff > 0 else '', format_value(diff),)
+
     formatted = json.dumps({
-        'lvalue': last,
-        'prev': prev,
-        'time': time,
+        'lvalue': lvalue,
+        'from': from_time,
+        'to': to_time,
         'diff': diff,
         'percentage': percentage
     })
@@ -181,12 +199,12 @@ def aggregate_results_for_lvalue(data):
     """
     prev = sum((datapoints[-2][0] for datapoints in data
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
-    last = sum((datapoints[-1][0] for datapoints in data
+    lvalue = sum((datapoints[-1][0] for datapoints in data
                 if (len(datapoints) > 0 and datapoints[-1][0] is not None)))
     time = max((datapoints[-1][1] for datapoints in data
                 if (len(datapoints) > 0 and datapoints[-1][1] is not None)))
 
-    return prev, last, time
+    return prev, lvalue, time
 
 
 def get_result_datapoints(data):
@@ -206,13 +224,13 @@ def render_graph(data, widget_config):
     return format_results_for_graph(purified, widget_config)
 
 
-def render_lvalue(data):
+def render_lvalue(data, widget_config):
     """
     Parses the passed in data into output useable for
     an lvalue widget
     """
     aggregated = aggregate_results_for_lvalue(data)
-    return format_results_for_lvalue(aggregated)
+    return format_results_for_lvalue(aggregated, widget_config)
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
@@ -229,9 +247,10 @@ def render(request, dashboard_name, widget_name):
     d = getPage(request_url)
     d.addCallback(get_result_datapoints)
 
-    if widget_config['type'] == 'graph':
-        d.addCallback(render_graph, widget_config)
-    elif widget_config['type'] == 'lvalue':
-        d.addCallback(render_lvalue)
+    render_widget = {
+        'graph': render_graph,
+        'lvalue': render_lvalue,
+    }.get(widget_config['type'], render_graph)
+    d.addCallback(render_widget, widget_config)
 
     return d

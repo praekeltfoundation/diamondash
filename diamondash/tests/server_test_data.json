@@ -41,22 +41,22 @@
 	"test_render_for_lvalue": { 
 		"input": "/render/test-dashboard/some-lvalue-widget",
 		"output": {
-			"lvalue": 5052.0, 
+			"from": "2012-07-15 00:00:00", 
+			"lvalue": "5.052K", 
 			"percentage": "53%",
-			"prev": 3303.0,
-			"time": "2012-07-15 00:00:00", 
-			"diff": 1749.0
+			"diff": "+1.749K",
+			"to": "2012-07-15 23:59:59"
 		}
 	},
 
 	"test_render_for_multimetric_lvalue": {
 		"input": "/render/test-dashboard/some-multimetric-lvalue-widget",
 		"output": {
-			"lvalue": 285.0505208487395, 
+			"from": "2012-07-15 22:00:00", 
+			"lvalue": "285.051", 
 			"percentage": "-78%", 
-			"prev": 1281.0492495984406, 
-			"time": "2012-07-15 22:00:00", 
-			"diff": -995.9987287497011
+			"diff": "-995.999",
+			"to": "2012-07-15 22:59:59"
 		}
 	}
 }

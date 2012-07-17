@@ -1,37 +1,41 @@
-body{
-    font: medium/1.75 'Gill Sans','Gill Sans MT',Corbel,Helvetica,'Nimbus Sans L',sans-serif;
-    word-spacing: 0.1em;
-}
-
-#dashboard-container {
-	width: 960px;
-	margin: 0 auto;
-}
-
 .widget {
-	float: left;
-	padding: 10px;
-	margin: 2px 10px;
-	position: relative;
+	margin-bottom: 15px;
 }
 
 .widget-title {
+	background-color: #333;
+	color: #eee;
 	text-align: center;
-	margin-bottom: 5px;
+	/*-webkit-border-radius: 3px;
+	 -moz-border-radius: 3px;
+		  border-radius: 3px;*/
+	min-height: 30px;
+	line-height: 30px;
 }
 
 .graph-widget {
-	width: 860px;
+	min-width: 370px;
 }
 
-.lvalue-widget {
-	width: 240px;
+.graph-widget-container {
+	margin-top: 10px;
 }
 
 .graph {
 	float: left;
-	width: 800px;
-	height: 150px;
+    height: 240px;
+}
+
+.span4 .graph {
+	min-width: 280px;
+}
+
+.span8 .graph {
+	min-width: 680px;
+}
+
+.span12 .graph {
+	min-width: 1080px;
 }
 
 .y-axis {
@@ -44,13 +48,13 @@ body{
 .legend-container {
 	float: left;
 	height: 20px;
-	width: 800px;
+	margin-top: -20px;
+	width: 100%;
 }
 
 .legend, .hover-legend {
 	height: 20px;
 	text-align: center;
-	font-size: 0.8em;
 
 	transition: opacity 0.25s linear;
 	-moz-transition: opacity 0.25s linear;
@@ -63,20 +67,27 @@ body{
 }
 
 .hover-legend {
-	position: relative;
 	top: -20px;
 	font-weight: bold;
+	position: relative;
 }
 
 .graph-time-label {
 	display: inline-block;
-	font-size: 12px;
 	color: #808080;
 }
 
 .metric-key-container {
 	display: inline-block;
 	margin: 0 0 0 15px;
+}
+
+.swatch {
+    border-radius: 3px 3px 3px 3px;
+    display: inline-block;
+    height: 20px;
+    margin: -6px 0;
+    width: 30px;
 }
 
 .metric-key-swatch {
@@ -99,25 +110,28 @@ body{
 	background: none repeat scroll 0 0 rgba(0, 0, 0, 0.3);
 }
 
+.lvalue-widget {
+	width: 370px;
+}
+
 .lvalue-widget-container {
-	text-align: center;
+	font-size: 11px;
+	margin-top: 2px;
 	line-height: 1.5em;
-	width: 240px
 }
 
 .lvalue-lvalue {
-	font-size: 2.2em;
-	font-weight: bold
+	float: left;
+	font-size: 40px;
+	width: 172px;
 }
 
 .lvalue-time {
-	font-size: 1em;
+	text-align: right;
 	color: #808080;
 }
 
-.lvalue-diff {
+.lvalue-change {
+	float: left;
+	text-align: center;
 }
-
-.lvalue-percentage {
-}
-

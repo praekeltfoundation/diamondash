@@ -291,7 +291,8 @@ class Dashboard(Element):
         for w_name, w_config in self.config['widgets'].items():
             new_tag = tag.clone()
 
-            class_attr_list = ['widget', '%s-widget' % (w_config['type'],)]
+            class_attr_list = ['span4', 'widget', '%s-widget'
+                               % (w_config['type'],)]
             class_attr = ' '.join('%s' % attr for attr in class_attr_list)
 
             # to not break the template with invalid types
