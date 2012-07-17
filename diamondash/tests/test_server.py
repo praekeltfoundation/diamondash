@@ -107,8 +107,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum': {
+            'widgets': [
+                {
+                    'name': 'random-count-sum',
                     'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
@@ -119,7 +120,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         }
                     }
                 }
-            }
+            ]
         }
 
         dashboard_configs = server.config['dashboards']
@@ -153,8 +154,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum-and-average': {
+            'widgets': [
+                {
+                    'name': 'random-count-sum-and-average',
                     'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
@@ -168,7 +170,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         }
                     }
                 }
-            }
+            ]
         }
         dashboard_configs = server.config['dashboards']
         dashboard_configs['test-dashboard'] = Dashboard.from_args(
@@ -202,13 +204,14 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = '1d'
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'some-lvalue-widget': {
+            'widgets': [
+                {
+                    'name': 'some-lvalue-widget',
                     'time_range': test_time_range,
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum']
                 }
-            }
+            ]
         }
 
         dashboard_configs = server.config['dashboards']
@@ -242,14 +245,15 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = '1h'
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'some-multimetric-lvalue-widget': {
+            'widgets': [
+                {
+                    'name': 'some-multimetric-lvalue-widget',
                     'time_range': test_time_range,
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum',
                                 'vumi.random.timer.sum']
                 }
-            }
+            ]
         }
 
         dashboard_configs = server.config['dashboards']

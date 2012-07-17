@@ -22,7 +22,7 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
 
     def test_from_config_file_not_found(self):
         """
-        Should assert an error if the dashboard in the config file has no name
+        Should assert an error if the dashboard config file is not found
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/non_existent_file.yml')
@@ -34,8 +34,16 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/no_dashboard_name.yml')
 
-    def test_no_widget_metrics(self):
+    def test_no_widget_name(self):
         """Should assert an error if a widget in the config file has no name"""
+        self.assertRaises(ConfigError, Dashboard.from_config_file,
+                          'tests/no_widget_name.yml')
+
+    def test_no_widget_metrics(self):
+        """
+        Should assert an error if a widget in the config file
+        has no metrics
+        """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/no_widget_metrics.yml')
 
@@ -66,6 +74,7 @@ class DashboardConfigTestCase(unittest.TestCase):
     TEST_GRAPH_NAME = 'Some graph widget'
     TEST_GRAPH_NAME_SLUGIFIED = 'some-graph-widget'
     TEST_GRAPH_CONFIG = {
+        'name': TEST_GRAPH_NAME_SLUGIFIED,
         'title': TEST_GRAPH_NAME,
         'type': 'graph',
         'time_range': '2d',
@@ -85,6 +94,7 @@ class DashboardConfigTestCase(unittest.TestCase):
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
         dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
+        'name': TEST_GRAPH_NAME_SLUGIFIED,
         'title': TEST_GRAPH_NAME,
         'type': 'graph',
         'time_range': 172800,
@@ -113,6 +123,7 @@ class DashboardConfigTestCase(unittest.TestCase):
     TEST_LVALUE_NAME = 'Some lvalue widget'
     TEST_LVALUE_NAME_SLUGIFIED = 'some-lvalue-widget'
     TEST_LVALUE_CONFIG = {
+        'name': TEST_LVALUE_NAME_SLUGIFIED,
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': '30m',
@@ -120,6 +131,7 @@ class DashboardConfigTestCase(unittest.TestCase):
     }
     TEST_LVALUE_CONFIG_PARSED = dict(
         dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
+        'name': TEST_LVALUE_NAME_SLUGIFIED,
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': 1800,
@@ -143,16 +155,14 @@ class DashboardConfigTestCase(unittest.TestCase):
         'name': 'A dashboard',
         'graph_defaults': TEST_GRAPH_DEFAULTS,
         'lvalue_defaults': TEST_LVALUE_DEFAULTS,
-        'widgets': {
-            TEST_GRAPH_NAME: TEST_GRAPH_CONFIG,
-            TEST_LVALUE_NAME: TEST_LVALUE_CONFIG,
-        }
+        'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG]
     }
     TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
         'name': 'a-dashboard',
         'title': 'A dashboard',
         'graph_defaults': dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS),
         'lvalue_defaults': dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS),
+        'widget_list': [TEST_GRAPH_CONFIG_PARSED, TEST_LVALUE_CONFIG_PARSED],
         'widgets': {
             TEST_GRAPH_NAME_SLUGIFIED: TEST_GRAPH_CONFIG_PARSED,
             TEST_LVALUE_NAME_SLUGIFIED: TEST_LVALUE_CONFIG_PARSED,
@@ -196,8 +206,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         applying changes where appropriate
         """
         config = deepcopy(self.TEST_GRAPH_CONFIG)
-        result = parse_graph_config(self.TEST_GRAPH_NAME_SLUGIFIED,
-                                    config, self.TEST_GRAPH_DEFAULTS)
+        result = parse_graph_config(config, self.TEST_GRAPH_DEFAULTS)
 
         self.assertEqual(result, self.TEST_GRAPH_CONFIG_PARSED)
 
@@ -207,8 +216,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         applying changes where appropriate
         """
         config = deepcopy(self.TEST_LVALUE_CONFIG)
-        result = parse_lvalue_config(self.TEST_LVALUE_NAME_SLUGIFIED,
-                                     config, self.TEST_LVALUE_DEFAULTS)
+        result = parse_lvalue_config(config, self.TEST_LVALUE_DEFAULTS)
 
         self.assertEqual(result, self.TEST_LVALUE_CONFIG_PARSED)
 

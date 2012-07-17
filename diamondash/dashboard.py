@@ -82,7 +82,7 @@ def build_request_url(targets, from_param):
     return 'render/?%s' % urlencode(params, True)
 
 
-def parse_graph_config(name, config, defaults):
+def parse_graph_config(config, defaults):
     """
     Parses a graph widget's config, applying changes
     where appropriate and returning the resulting config
@@ -99,7 +99,7 @@ def parse_graph_config(name, config, defaults):
         if 'target' not in m_config:
             raise ConfigError(
                 'Widget "%s" needs a target for metric "%s".'
-                % (name, m_name))
+                % (config['name'], m_name))
 
         m_config['original_target'] = m_config['target']
         m_config['target'] = format_metric_target(
@@ -122,7 +122,7 @@ def parse_graph_config(name, config, defaults):
     return config
 
 
-def parse_lvalue_config(name, config, defaults):
+def parse_lvalue_config(config, defaults):
     """
     Parses an lvalue widget's config, applying changes
     where appropriate and returning the resulting config
@@ -184,12 +184,19 @@ def parse_config(config):
     config['request_interval'] = parse_interval(config['request_interval'])
 
     widget_dict = {}
-    for w_name, w_config in config['widgets'].items():
+    widget_list = []
+    for w_config in config['widgets']:
+        if 'name' not in w_config:
+            raise ConfigError('All widgets need a name')
+        w_name = w_config['name']
+
         if 'metrics' not in w_config:
             raise ConfigError('Widget "%s" needs metric(s).' % (w_name,))
 
         w_config.setdefault('title', w_name)
         w_name = slugify(w_name)
+        w_config['name'] = w_name
+
         w_config.setdefault('type', config['default_widget_type'])
 
         if w_config['type'] == 'graph':
@@ -199,10 +206,12 @@ def parse_config(config):
             parse_widget_config = parse_lvalue_config
             widget_defaults = lvalue_defaults
 
-        widget_dict[w_name] = parse_widget_config(w_name, w_config,
-                                                  widget_defaults)
+        w_config = parse_widget_config(w_config, widget_defaults)
+        widget_dict[w_name] = w_config
+        widget_list.append(w_config)
 
     # update widget dict
+    config['widget_list'] = widget_list
     config['widgets'] = widget_dict
 
     return config
@@ -282,7 +291,7 @@ class Dashboard(Element):
 
     @renderer
     def widget_renderer(self, request, tag):
-        for w_name, w_config in self.config['widgets'].items():
+        for w_config in self.config['widget_list']:
             new_tag = tag.clone()
 
             class_attr_list = ['span4', 'widget', '%s-widget'
@@ -300,7 +309,7 @@ class Dashboard(Element):
 
             new_tag.fillSlots(widget_title_slot=w_config['title'],
                               widget_class_slot=class_attr,
-                              widget_id_slot=w_name,
+                              widget_id_slot=w_config['name'],
                               widget_element_slot=widget_element)
             yield new_tag
 

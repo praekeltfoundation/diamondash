@@ -8,60 +8,60 @@ lvalue_defaults:
     time_range: '1d'
 
 widgets:
-    'Sum of random count (small bucket)':
-        metrics: 
-           'Sum of random count': 
+    - name: 'Sum of random count (small bucket)'
+      metrics: 
+          'Sum of random count': 
                target: vumi.random.count.sum
                warning_max_threshold: 12
                warning_min_threshold: 5
  
-    'Sum of random count (big bucket)':
-        bucket_size: 900
-        metrics: 
-           'Sum of random count': 
+    - name: 'Sum of random count (big bucket)'
+      bucket_size: 900
+      metrics: 
+         'Sum of random count': 
                target: vumi.random.count.sum
  
-    'Average of random timer':
-        metrics: 
-           'Average of random timer': 
-               target: vumi.random.timer.avg
+    - name: 'Average of random timer'
+      metrics: 
+          'Average of random timer': 
+              target: vumi.random.timer.avg
  
-    'Multiple metrics':
-        metrics: 
-           'Sum of random count': 
-               target: vumi.random.count.sum
-               color: '#33cc33'
-           'Average of random timer': 
-               target: vumi.random.timer.avg
-           '8um of random count': 
-               target: vumi.random.count.sum
-               color: '#33cc33'
-           '7verage of random timer': 
-               target: vumi.random.timer.avg
-           '9verage of random timer': 
-               target: vumi.random.timer.avg
+    - name: 'Multiple metrics'
+      metrics: 
+          'Sum of random count': 
+              target: vumi.random.count.sum
+              color: '#33cc33'
+          'Average of random timer': 
+              target: vumi.random.timer.avg
+          '8um of random count': 
+              target: vumi.random.count.sum
+              color: '#33cc33'
+          '7verage of random timer': 
+              target: vumi.random.timer.avg
+          '9verage of random timer': 
+              target: vumi.random.timer.avg
  
-    'An lvalue widget':
-        type: lvalue
-        metrics: 
-            - vumi.random.count.sum
+    - name: 'An lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
  
-    'Another lvalue widget':
-        type: lvalue
-        metrics: 
-            - vumi.random.count.sum
+    - name: 'Another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
  
-    'Yet another lvalue widget':
-        type: lvalue
-        metrics: 
-            - vumi.random.count.sum
+    - name: 'Yet another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
  
-    'And another lvalue widget':
-        type: lvalue
-        metrics: 
-            - vumi.random.count.sum
+    - name: 'And another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
      
-    'And yet another lvalue widget':
-        type: lvalue
-        metrics: 
-            - vumi.random.count.sum
+    - name: 'And yet another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
