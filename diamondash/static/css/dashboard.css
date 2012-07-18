@@ -1,3 +1,6 @@
+.row {
+}
+
 .widget {
 	margin-bottom: 15px;
 }
@@ -46,14 +49,13 @@
 }
 
 .legend-container {
+	margin-top: -11px;
+	font-size: 11px;
 	float: left;
-	height: 20px;
-	margin-top: -20px;
 	width: 100%;
 }
 
 .legend, .hover-legend {
-	height: 20px;
 	text-align: center;
 
 	transition: opacity 0.25s linear;
@@ -67,9 +69,8 @@
 }
 
 .hover-legend {
-	top: -20px;
-	font-weight: bold;
 	position: relative;
+	font-weight: bold;
 }
 
 .graph-time-label {

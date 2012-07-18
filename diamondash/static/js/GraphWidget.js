@@ -71,6 +71,9 @@ GraphWidget.prototype.initialize = function() {
 		}
 	}
 
+	//place hover legend over static legend
+	this.hoverLegend.style.marginTop = -this.legend.offsetHeight + "px";
+
 	this.object = new Rickshaw.Graph({
 		element: graphElement,
 		renderer: 'line',

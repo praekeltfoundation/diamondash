@@ -8,24 +8,11 @@ lvalue_defaults:
     time_range: '1d'
 
 widgets:
-    - name: 'Sum of random count (small bucket)'
-      metrics: 
-          'Sum of random count': 
-               target: vumi.random.count.sum
-               warning_max_threshold: 12
-               warning_min_threshold: 5
  
-    - name: 'Sum of random count (big bucket)'
-      bucket_size: 900
-      metrics: 
-         'Sum of random count': 
-               target: vumi.random.count.sum
- 
-    - name: 'Average of random timer'
-      metrics: 
-          'Average of random timer': 
-              target: vumi.random.timer.avg
- 
+#   - name: 'Average of random timer'
+#     metrics: 
+#         'Average of random timer': 
+#             target: vumi.random.timer.avg
     - name: 'Multiple metrics'
       metrics: 
           'Sum of random count': 
@@ -40,28 +27,41 @@ widgets:
               target: vumi.random.timer.avg
           '9verage of random timer': 
               target: vumi.random.timer.avg
- 
-    - name: 'An lvalue widget'
-      type: lvalue
+
+    - name: 'Sum of random count (small bucket)'
       metrics: 
-          - vumi.random.count.sum
+          'Sum of random count': 
+               target: vumi.random.count.sum
+               warning_max_threshold: 12
+               warning_min_threshold: 5
  
-    - name: 'Another lvalue widget'
-      type: lvalue
+    - name: 'Sum of random count (big bucket)'
+      bucket_size: 900
       metrics: 
-          - vumi.random.count.sum
+         'Sum of random count': 
+               target: vumi.random.count.sum
  
-    - name: 'Yet another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
- 
-    - name: 'And another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
-     
     - name: 'And yet another lvalue widget'
       type: lvalue
       metrics: 
           - vumi.random.count.sum
+
+#    - name: 'An lvalue widget'
+#      type: lvalue
+#      metrics: 
+#          - vumi.random.count.sum
+# 
+#    - name: 'Another lvalue widget'
+#      type: lvalue
+#      metrics: 
+#          - vumi.random.count.sum
+# 
+#    - name: 'Yet another lvalue widget'
+#      type: lvalue
+#      metrics: 
+#          - vumi.random.count.sum
+# 
+#    - name: 'And another lvalue widget'
+#      type: lvalue
+#      metrics: 
+#          - vumi.random.count.sum

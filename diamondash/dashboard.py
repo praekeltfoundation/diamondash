@@ -290,13 +290,42 @@ class Dashboard(Element):
         return self.config['widgets'][w_name]
 
     @renderer
+    def widget_row_renderer(self, request, tag):
+        widget_list = self.config['widget_list']
+        row_widgets = []
+        for i in range(0, len(widget_list)):
+            row_widgets.append(widget_list[i])
+
+            #if (i - 2) % 3 == 0 or i == len(widget_list) - 1:
+            if (i - 2) % 3 == 0 or i == len(widget_list) - 1:
+                yield WidgetRow(row_widgets)
+                row_widgets = []
+
+    @renderer
+    def config_script(self, request, tag):
+        if self.client_config is not None:
+            tag.fillSlots(client_config=self.client_config)
+            return tag
+
+
+class WidgetRow(Element):
+    """Graph element that resides in a Dashboard element"""
+
+    loader = XMLFile(resource_stream(__name__,
+                                     'templates/widget_row.xml'))
+
+    def __init__(self, widget_configs):
+        self.widget_configs = widget_configs
+
+    @renderer
     def widget_renderer(self, request, tag):
-        for w_config in self.config['widget_list']:
+        for w_config in self.widget_configs:
             new_tag = tag.clone()
 
             class_attr_list = ['span4', 'widget', '%s-widget'
                                % (w_config['type'],)]
-            class_attr = ' '.join('%s' % attr for attr in class_attr_list)
+            class_attr = ' '.join('%s' % attr
+                                  for attr in class_attr_list)
 
             # to not break the template with invalid types
             widget_element = ''
@@ -313,23 +342,19 @@ class Dashboard(Element):
                               widget_element_slot=widget_element)
             yield new_tag
 
-    @renderer
-    def config_script(self, request, tag):
-        if self.client_config is not None:
-            tag.fillSlots(client_config=self.client_config)
-            return tag
-
 
 class GraphWidget(Element):
     """Graph element that resides in a Dashboard element"""
 
-    loader = XMLFile(resource_stream(__name__, 'templates/graph_widget.xml'))
+    loader = XMLFile(resource_stream(__name__,
+                                     'templates/graph_widget.xml'))
 
 
 class LValueWidget(Element):
     """LValue element that resides in a Dashboard element"""
 
-    loader = XMLFile(resource_stream(__name__, 'templates/lvalue_widget.xml'))
+    loader = XMLFile(resource_stream(__name__,
+                                     'templates/lvalue_widget.xml'))
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
