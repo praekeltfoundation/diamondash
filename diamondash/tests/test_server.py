@@ -360,10 +360,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         data = (3.034992, 2.0, 1341318035)
         config = {'time_range': 86400}
-        expected = ('{"lvalue": 2.000, "percentage": "-34%", '
+        expected = ('{"lvalue": "2", "percentage": "-34%", '
                     '"from": "2012-07-03 12:20:35, "diff": -1.035, '
                     '"to": "2012-07-03 12:20:34"}')
-        expected = ('{"lvalue": "2.000", "percentage": "-34%", '
+        expected = ('{"lvalue": "2", "percentage": "-34%", '
                     '"from": "2012-07-03 12:20:35", "diff": "-1.035", '
                     '"to": "2012-07-04 12:20:34"}')
         assert_format(data, config, expected)
@@ -432,3 +432,4 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         assert_format(123456123456789, '123.456T')
         assert_format(3.034992, '3.035')
         assert_format(2, '2')
+        assert_format(2.0, '2')

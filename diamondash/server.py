@@ -109,10 +109,23 @@ def format_results_for_graph(results, widget_config):
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
 
 
+EPS = 0.0001
+
+
+def isint(n):
+    """
+    Checks if a number is equivalent to an integer value
+    """
+    if isinstance(n, int):
+        return True
+
+    return abs(n - int(n)) <= EPS
+
+
 def format_value(n):
     mag = 0
     if abs(n) < 1000:
-        return (str(n) if isinstance(n, int)
+        return (str(int(n)) if isint(n)
                 else '%.3f' % (n,))
     while abs(n) >= 1000 and mag < len(_number_suffixes) - 1:
         mag += 1
