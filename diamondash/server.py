@@ -7,7 +7,8 @@ import json
 import yaml
 from twisted.web.client import getPage
 from twisted.web.static import File
-from pkg_resources import resource_filename
+from twisted.web.template import Element, renderer, XMLFile
+from pkg_resources import resource_filename, resource_stream
 from klein import route, resource
 
 from dashboard import Dashboard, DASHBOARD_DEFAULTS
@@ -55,6 +56,11 @@ def build_config(args=None):
 
     config = add_dashboards(config, dashboard_defaults)
 
+    dashboard_ids = [{'name': d.config['name'],
+                      'title': d.config['title']}
+                     for d in config['dashboards'].values()]
+    config['index'] = Index(dashboard_ids)
+
     return config
 
 
@@ -71,21 +77,6 @@ def add_dashboards(config, dashboard_defaults):
             config['dashboards'][dashboard_name] = dashboard
 
     return config
-
-
-@route('/static/')
-def static(request):
-    """Routing for all static files (css, js)"""
-    return File(resource_filename(__name__, 'static'))
-
-
-@route('/')
-def show_index(request):
-    """Routing for homepage"""
-    # TODO dashboard routing
-    # TODO handle multiple dashboards
-    # NOTE the not so nice looking line below is temporary
-    return config['dashboards'].values()[0]
 
 
 def format_results_for_graph(results, widget_config):
@@ -253,6 +244,23 @@ def render_lvalue(data, widget_config):
     return format_results_for_lvalue(aggregated, widget_config)
 
 
+@route('/')
+def show_index(request):
+    return config['index']
+
+
+@route('/static/')
+def static(request):
+    """Routing for all static files (css, js)"""
+    return File(resource_filename(__name__, 'static'))
+
+
+@route('/<string:dashboard_name>')
+def show_dashboard(request, dashboard_name):
+    dashboard_name = dashboard_name.encode('utf-8')
+    return config['dashboards'][dashboard_name]
+
+
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
@@ -274,3 +282,23 @@ def render(request, dashboard_name, widget_name):
     d.addCallback(render_widget, widget_config)
 
     return d
+
+
+class Index(Element):
+    """Index element with links to dashboards"""
+
+    loader = XMLFile(resource_stream(__name__,
+                                     'templates/index.xml'))
+
+    def __init__(self, dashboard_ids):
+        self.dashboard_ids = dashboard_ids
+
+    @renderer
+    def dashboard_link_renderer(self, request, tag):
+        for id in self.dashboard_ids:
+            new_tag = tag.clone()
+
+            href = '/%s' % (id['name'],)
+            new_tag.fillSlots(dashboard_href_slot=href,
+                              dashboard_title_slot=id['title'])
+            yield new_tag
