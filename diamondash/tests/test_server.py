@@ -361,18 +361,18 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         data = (3.034992, 2.0, 1341318035)
         config = {'time_range': 86400}
         expected = ('{"lvalue": "2", "percentage": "-34%", '
-                    '"from": "2012-07-03 12:20:35, "diff": -1.035, '
-                    '"to": "2012-07-03 12:20:34"}')
+                    '"from": "2012-07-03 12:20, "diff": -1.035, '
+                    '"to": "2012-07-03 12:20"}')
         expected = ('{"lvalue": "2", "percentage": "-34%", '
-                    '"from": "2012-07-03 12:20:35", "diff": "-1.035", '
-                    '"to": "2012-07-04 12:20:34"}')
+                    '"from": "2012-07-03 12:20", "diff": "-1.035", '
+                    '"to": "2012-07-04 12:20"}')
         assert_format(data, config, expected)
 
         data = (0, 0, 1341318035)
         config = {'time_range': 86400}
         expected = ('{"lvalue": "0", "percentage": "0%", '
-                    '"from": "2012-07-03 12:20:35", "diff": "0", '
-                    '"to": "2012-07-04 12:20:34"}')
+                    '"from": "2012-07-03 12:20", "diff": "0", '
+                    '"to": "2012-07-04 12:20"}')
         assert_format(data, config, expected)
 
     """
@@ -433,3 +433,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         assert_format(3.034992, '3.035')
         assert_format(2, '2')
         assert_format(2.0, '2')
+
+    def test_format_time(self):
+        def assert_format(input, expected):
+            result = server.format_time(input)
+            self.assertEqual(result, expected)
+
+        assert_format(1341318035, '2012-07-03 12:20')
+        assert_format(1841318020, '2028-05-07 13:13')

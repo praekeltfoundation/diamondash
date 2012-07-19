@@ -133,6 +133,12 @@ def format_value(n):
     return '%.3f%s' % (n, _number_suffixes[mag])
 
 
+def format_time(time):
+    # convert and cut of seconds
+    time = str(datetime.utcfromtimestamp(time))[:-3]
+    return time
+
+
 def format_results_for_lvalue(data, widget_config):
     """
     Formats the json output received from graphite into
@@ -140,8 +146,8 @@ def format_results_for_lvalue(data, widget_config):
     """
     time_range = widget_config['time_range']
     prev, lvalue, time = data
-    from_time = str(datetime.utcfromtimestamp(time))
-    to_time = str(datetime.utcfromtimestamp(time + time_range - 1))
+    from_time = format_time(time)
+    to_time = format_time(time + time_range - 1)
     diff = lvalue - prev
 
     percentage = (diff / prev) * 100 if prev != 0 else 0

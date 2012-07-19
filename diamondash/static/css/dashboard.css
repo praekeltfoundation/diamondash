@@ -51,8 +51,8 @@
 }
 
 .legend-container {
-	margin-top: -11.4px;
-	font-size: 11.4px;
+	margin-top: -11px;
+	font-size: 11px;
 	float: left;
 	width: 100%;
 }
@@ -123,7 +123,8 @@
 }
 
 .lvalue-widget-container {
-	font-size: 11.4px;
+	width: 100%;
+	font-size: 12px;
 	margin-top: 2px;
 	line-height: 1.5em;
 }
@@ -141,7 +142,7 @@
 
 .lvalue-change {
 	float: left;
-	text-align: center;
+	text-align: left;
 }
 
 .block-filler {
