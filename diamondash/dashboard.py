@@ -339,6 +339,10 @@ def generate_widgets_by_row(configs):
     # lvalue queue is not empty
     if len(ns['lvqueue']) > 0:
         flush_lvalue_group()
+
+    # Yield the last row (in the case that
+    # it wasn't completely filled)
+    if len(ns['row']) > 0:
         yield ns['row']
 
 

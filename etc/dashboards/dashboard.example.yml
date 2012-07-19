@@ -18,12 +18,6 @@ widgets:
           'Average of random timer': 
               target: vumi.random.timer.avg
  
-    - name: 'Average of random timer'
-      width: 2
-      metrics: 
-          'Average of random timer': 
-              target: vumi.random.timer.avg
-
     - name: 'An lvalue widget'
       type: lvalue
       metrics: 
