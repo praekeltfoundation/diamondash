@@ -112,7 +112,8 @@ _number_suffixes = ['', 'K', 'M', 'B', 'T']
 def format_value(n):
     mag = 0
     if abs(n) < 1000:
-        return '%.3f' % (n,)
+        return (str(n) if isinstance(n, int)
+                else '%.3f' % (n,))
     while abs(n) >= 1000 and mag < len(_number_suffixes) - 1:
         mag += 1
         n /= 1000.0

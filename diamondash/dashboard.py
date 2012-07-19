@@ -34,7 +34,7 @@ DASHBOARD_DEFAULTS = {
 }
 
 
-LVALUE_GROUP_CAPACITY = 2
+LVALUE_GROUP_CAPACITY = 3
 
 
 MIN_COLUMN_SPAN = 1
@@ -334,6 +334,12 @@ def generate_widgets_by_row(configs):
             yield ns['row']
             ns['row'] = []
             ns['columns'] = 0
+
+    # flush an lvalue group if the
+    # lvalue queue is not empty
+    if len(ns['lvqueue']) > 0:
+        flush_lvalue_group()
+        yield ns['row']
 
 
 class Dashboard(Element):

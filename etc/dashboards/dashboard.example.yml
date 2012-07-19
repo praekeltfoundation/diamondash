@@ -33,3 +33,8 @@ widgets:
       type: lvalue
       metrics: 
           - vumi.random.count.sum
+
+    - name: 'And another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
