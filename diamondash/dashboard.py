@@ -382,6 +382,10 @@ class Dashboard(Element):
         return self.config['widgets'][w_name]
 
     @renderer
+    def dashboard_name_renderer(self, request, tag):
+        return tag(self.config['title'])
+
+    @renderer
     def widget_row_renderer(self, request, tag):
         widget_list = self.config['widget_list']
         for row_widgets in generate_widgets_by_row(widget_list):

@@ -14,23 +14,27 @@
     <![endif]-->
   </head>
   <body>
-    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
-          <a class="brand" href="#">diamondash</a>
-          <div class="nav-collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">dashboard name</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+	  <div class="navbar navbar-fixed-top">
+		  <div class="navbar-inner">
+			  <div class="container">
+				  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+					  <span class="icon-bar"></span>
+					  <span class="icon-bar"></span>
+					  <span class="icon-bar"></span>
+				  </a>
+				  <a class="brand" href="#"></a>
+				  <div class="nav-collapse">
+					  <ul class="nav">
+						  <li class="active">
+							  <a href="#">
+								  <t:transparent t:render="dashboard_name_renderer" />
+							  </a>
+						  </li>
+					  </ul>
+				  </div>
+			  </div>
+		  </div>
+	  </div>
 
 	<div class="container" id="dashboard-container">
 		<t:transparent t:render="widget_row_renderer" />
