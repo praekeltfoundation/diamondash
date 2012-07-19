@@ -17,6 +17,7 @@ GRAPH_DEFAULTS = {
     'null_filter': 'skip',
     'time_range': 3600,
     'bucket_size': 300,
+    'width': 1
 }
 
 
@@ -31,6 +32,13 @@ DASHBOARD_DEFAULTS = {
     'request_interval': 2,
     'default_widget_type': 'graph',
 }
+
+
+LVALUE_GROUP_CAPACITY = 2
+
+
+MIN_COLUMN_SPAN = 1
+MAX_COLUMN_SPAN = 3
 
 
 def parse_interval(interval):
@@ -54,6 +62,17 @@ def parse_interval(interval):
         return int(interval)
     except ValueError:
         raise ConfigError("%r is not a valid time interval.")
+
+
+def parse_graph_width(width):
+    """
+    Wraps the passed in width as an int and
+    clamps the value to the width range
+    """
+    width = int(width)
+    width = max(MIN_COLUMN_SPAN,
+                min(width, MAX_COLUMN_SPAN))
+    return width
 
 
 def format_metric_target(target, bucket_size):
@@ -92,6 +111,8 @@ def parse_graph_config(config, defaults):
 
     for field in ['time_range', 'bucket_size']:
         config[field] = parse_interval(config[field])
+
+    config['width'] = parse_graph_width(config['width'])
 
     metric_dict = {}
     bucket_size = config['bucket_size']
@@ -250,6 +271,71 @@ def build_client_config(server_config):
     return 'var config = %s;' % (json.dumps(config),)
 
 
+def generate_widgets_by_row(configs):
+    """
+    Generates the widgets on each row. Each iteration,
+    a row of widgets is yielded. Lvalue widgets are
+    grouped together in a top to bottom fashion.
+    """
+
+    # a dict is used as a workaround, python 2 does not allow
+    # assignment to the outer scope's variables
+    ns = {
+        # the current row
+        'row': [],
+
+        # the current row's column count
+        'columns': 0,
+
+        # queue of lvalue widgets for the current lvalue grouping
+        'lvqueue': []
+    }
+
+    def append_to_row(element, span):
+        """
+        Adds an element to the current row.
+
+        Returns True if the row is now full,
+        otherwise returns False
+        """
+        ns['row'].append(element)
+        ns['columns'] += span
+        return ns['columns'] >= MAX_COLUMN_SPAN
+
+    def flush_lvalue_group():
+        row_is_full = append_to_row(LValueGroup(ns['lvqueue']), 1)
+        ns['lvqueue'] = []
+        return row_is_full
+
+    def add_lvalue(config):
+        ns['lvqueue'].append(LValueWidget(config))
+        row_is_full = False
+        if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
+            row_is_full = flush_lvalue_group()
+        return row_is_full
+
+    def add_graph(config):
+        element = GraphWidget(config)
+        return append_to_row(element, config['width'])
+
+    # iterate through the widget configs,
+    # yielding when a row has been filled
+    for config in configs:
+        add_widget = {
+            'graph': add_graph,
+            'lvalue': add_lvalue,
+        }.get(config['type'], None)
+
+        if add_widget is None:
+            continue
+
+        row_is_full = add_widget(config)
+        if row_is_full:
+            yield ns['row']
+            ns['row'] = []
+            ns['columns'] = 0
+
+
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
@@ -292,14 +378,8 @@ class Dashboard(Element):
     @renderer
     def widget_row_renderer(self, request, tag):
         widget_list = self.config['widget_list']
-        row_widgets = []
-        for i in range(0, len(widget_list)):
-            row_widgets.append(widget_list[i])
-
-            #if (i - 2) % 3 == 0 or i == len(widget_list) - 1:
-            if (i - 2) % 3 == 0 or i == len(widget_list) - 1:
-                yield WidgetRow(row_widgets)
-                row_widgets = []
+        for row_widgets in generate_widgets_by_row(widget_list):
+            yield WidgetRow(row_widgets)
 
     @renderer
     def config_script(self, request, tag):
@@ -314,47 +394,91 @@ class WidgetRow(Element):
     loader = XMLFile(resource_stream(__name__,
                                      'templates/widget_row.xml'))
 
-    def __init__(self, widget_configs):
-        self.widget_configs = widget_configs
+    def __init__(self, widgets):
+        self.widgets = widgets
 
     @renderer
     def widget_renderer(self, request, tag):
-        for w_config in self.widget_configs:
-            new_tag = tag.clone()
-
-            class_attr_list = ['span4', 'widget', '%s-widget'
-                               % (w_config['type'],)]
-            class_attr = ' '.join('%s' % attr
-                                  for attr in class_attr_list)
-
-            # to not break the template with invalid types
-            widget_element = ''
-
-            Widget = {
-                'graph': GraphWidget,
-                'lvalue': LValueWidget,
-            }.get(w_config['type'], GraphWidget)
-            widget_element = Widget()
-
-            new_tag.fillSlots(widget_title_slot=w_config['title'],
-                              widget_class_slot=class_attr,
-                              widget_id_slot=w_config['name'],
-                              widget_element_slot=widget_element)
-            yield new_tag
+        for widget in self.widgets:
+            yield widget
 
 
-class GraphWidget(Element):
-    """Graph element that resides in a Dashboard element"""
+class Widget(Element):
+    """
+    Abstract widget element that resides on a Dashboard.
+    Subclasses need to assign an element to widget_element
+    """
 
     loader = XMLFile(resource_stream(__name__,
-                                     'templates/graph_widget.xml'))
+                                     'templates/widget.xml'))
+
+    def __init__(self, config):
+        self.config = config
+        self.class_attrs = []
+        self.widget_element = None
+
+    @renderer
+    def widget_renderer(self, request, tag):
+        new_tag = tag.clone()
+
+        self.class_attrs.extend(['widget', '%s-widget'
+                                 % (self.config['type'],)])
+        class_attr_str = ' '.join('%s' % attr
+                                  for attr in self.class_attrs)
+
+        new_tag.fillSlots(widget_title_slot=self.config['title'],
+                          widget_class_slot=class_attr_str,
+                          widget_id_slot=self.config['name'],
+                          widget_element_slot=self.widget_element)
+        return new_tag
 
 
-class LValueWidget(Element):
-    """LValue element that resides in a Dashboard element"""
+class GraphWidget(Widget):
+    """
+    Graph subclass of Widget, providing a graph
+    widget element from a template file
+    """
+
+    def __init__(self, config):
+        Widget.__init__(self, config)
+        widget_element_loader = XMLFile(
+            resource_stream(__name__, 'templates/graph_widget.xml'))
+        self.widget_element = Element(loader=widget_element_loader)
+
+        span = {
+            1: 'span4',
+            2: 'span8',
+            3: 'span12',
+        }.get(config['width'], 1)
+        self.class_attrs.append(span)
+
+
+class LValueWidget(Widget):
+    """
+    LValue subclass of Widget, providing a graph
+    widget element from a template file
+    """
+
+    def __init__(self, config):
+        Widget.__init__(self, config)
+        widget_element_loader = XMLFile(
+            resource_stream(__name__, 'templates/lvalue_widget.xml'))
+        self.widget_element = Element(loader=widget_element_loader)
+
+
+class LValueGroup(Element):
+    """A group of lvalue widgets displayed from top to bottom"""
 
     loader = XMLFile(resource_stream(__name__,
-                                     'templates/lvalue_widget.xml'))
+                                     'templates/lvalue_group.xml'))
+
+    def __init__(self, lvalue_widgets):
+        self.lvalue_widgets = lvalue_widgets
+
+    @renderer
+    def lvalue_widget_renderer(self, request, tag):
+        for lvalue_widget in self.lvalue_widgets:
+            yield lvalue_widget
 
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')

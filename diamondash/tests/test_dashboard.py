@@ -8,10 +8,12 @@ from pkg_resources import resource_filename
 from twisted.trial import unittest
 
 from diamondash.dashboard import (
-    parse_interval, slugify, format_metric_target,
+    slugify, format_metric_target,
+    parse_interval, parse_graph_width,
     parse_config, parse_graph_config, parse_lvalue_config,
     build_client_config, Dashboard, DASHBOARD_DEFAULTS,
-    LVALUE_DEFAULTS, GRAPH_DEFAULTS)
+    LVALUE_DEFAULTS, GRAPH_DEFAULTS,
+    MIN_COLUMN_SPAN, MAX_COLUMN_SPAN)
 from diamondash.exceptions import ConfigError
 
 
@@ -90,7 +92,8 @@ class DashboardConfigTestCase(unittest.TestCase):
                 'title': 'parlez',
                 'target': 'foo.avg',
             }
-        }
+        },
+        'width': 2
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
         dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
@@ -117,7 +120,8 @@ class DashboardConfigTestCase(unittest.TestCase):
         },
         'request_url': 'render/?from=-172800s&target=summarize%28foo.sum%2C'
                        '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
-                       'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json'
+                       'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json',
+        'width': 2
     })
 
     TEST_LVALUE_NAME = 'Some lvalue widget'
@@ -302,6 +306,17 @@ class DashboardConfigTestCase(unittest.TestCase):
         self.assertEqual(120, parse_interval("2m"))
         self.assertEqual(7200, parse_interval("2h"))
         self.assertEqual(86400 * 2, parse_interval("2d"))
+
+    def test_parse_graph_width(self):
+        """
+        Multiplier-suffixed intervals should be turned into integers correctly.
+        """
+        min = MIN_COLUMN_SPAN
+        max = MAX_COLUMN_SPAN
+        self.assertEqual(min, parse_graph_width(min - 1))
+        self.assertEqual(max, parse_graph_width(max + 1))
+        self.assertEqual(min + 1, parse_graph_width(min + 1))
+        self.assertEqual(max - 1, parse_graph_width(max - 1))
 
     def test_graph_time_range(self):
         """
