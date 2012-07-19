@@ -132,7 +132,6 @@
 .lvalue-lvalue {
 	float: left;
 	font-size: 37px;
-	width: 172px;
 }
 
 .lvalue-time {
@@ -141,6 +140,7 @@
 }
 
 .lvalue-change {
+	margin-left: 5px;
 	float: left;
 	text-align: left;
 }
