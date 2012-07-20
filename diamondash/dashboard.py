@@ -303,6 +303,8 @@ def generate_widgets_by_row(configs):
         return ns['columns'] >= MAX_COLUMN_SPAN
 
     def flush_lvalue_group():
+        if len(ns['lvqueue']) == 0:
+            return
         row_is_full = append_to_row(LValueGroup(ns['lvqueue']), 1)
         ns['lvqueue'] = []
         return row_is_full
@@ -312,11 +314,15 @@ def generate_widgets_by_row(configs):
         row_is_full = False
         if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
             row_is_full = flush_lvalue_group()
-        return row_is_full
+        yield row_is_full
 
     def add_graph(config):
+        # if the lvqueue is not empty, this needs to
+        # be added to the row before the graph is added
+        yield flush_lvalue_group()
+
         element = GraphWidget(config)
-        return append_to_row(element, config['width'])
+        yield append_to_row(element, config['width'])
 
     # iterate through the widget configs,
     # yielding when a row has been filled
@@ -329,16 +335,17 @@ def generate_widgets_by_row(configs):
         if add_widget is None:
             continue
 
-        row_is_full = add_widget(config)
-        if row_is_full:
-            yield ns['row']
-            ns['row'] = []
-            ns['columns'] = 0
+        # cater for widget additions that append multiple
+        # elements to row, as is the case when adding a graph
+        for row_is_full in add_widget(config):
+            if row_is_full:
+                yield ns['row']
+                ns['row'] = []
+                ns['columns'] = 0
 
     # flush an lvalue group if the
     # lvalue queue is not empty
-    if len(ns['lvqueue']) > 0:
-        flush_lvalue_group()
+    flush_lvalue_group()
 
     # Yield the last row (in the case that
     # it wasn't completely filled)
