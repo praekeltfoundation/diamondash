@@ -34,7 +34,27 @@ widgets:
       metrics: 
           - vumi.random.count.sum
 
+    - 'newrow'
+
+    - name: 'Sum of random count'
+      width: 1
+      metrics: 
+          'Average of random timer': 
+              target: vumi.random.count.sum
+
     - name: 'And another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
+
+    - name: 'Yet another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
+
+    - 'newcol'
+
+    - name: 'And yet another lvalue widget'
       type: lvalue
       metrics: 
           - vumi.random.count.sum

@@ -41,6 +41,9 @@ MIN_COLUMN_SPAN = 1
 MAX_COLUMN_SPAN = 3
 
 
+LAYOUT_RESERVED_WORDS = 'newrow, newcol'
+
+
 def parse_interval(interval):
     """
     Recognise 's', 'm', 'h', 'd' suffixes as seconds, minutes, hours and days.
@@ -163,7 +166,6 @@ def parse_lvalue_config(config, defaults):
         # entire day will be aggregated).
         m_config['target'] = format_metric_target(
             target, config['time_range'])
-
         metric_list.append(m_config)
 
     config['metrics'] = metric_list
@@ -207,6 +209,11 @@ def parse_config(config):
     widget_dict = {}
     widget_list = []
     for w_config in config['widgets']:
+        if (isinstance(w_config, str)
+            and w_config in LAYOUT_RESERVED_WORDS):
+            widget_list.append({'type': w_config})
+            continue
+
         if 'name' not in w_config:
             raise ConfigError('All widgets need a name')
         w_name = w_config['name']
@@ -303,42 +310,67 @@ def generate_widgets_by_row(configs):
         return ns['columns'] >= MAX_COLUMN_SPAN
 
     def flush_lvalue_group():
+        if len(ns['lvqueue']) == 0:
+            return
         row_is_full = append_to_row(LValueGroup(ns['lvqueue']), 1)
         ns['lvqueue'] = []
         return row_is_full
 
-    def add_lvalue(config):
+    def add_lvalue():
         ns['lvqueue'].append(LValueWidget(config))
         row_is_full = False
         if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
             row_is_full = flush_lvalue_group()
-        return row_is_full
+        yield row_is_full
 
-    def add_graph(config):
+    def add_graph():
+        # if the lvqueue is not empty, this needs to
+        # be added to the row before the graph is added
+        yield flush_lvalue_group()
+
         element = GraphWidget(config)
-        return append_to_row(element, config['width'])
+        yield append_to_row(element, config['width'])
+
+    def add_newrow():
+        """'fakes' the row being full"""
+        # flush an lvalue group if the lvalue queue is not empty
+        flush_lvalue_group()
+        yield True
+
+    def add_newcol():
+        """'Adds' a column"""
+        # Graphs are added in a new column by default,
+        # Flush any lvalue groups so new lvalus are
+        # added in a new column
+        yield flush_lvalue_group()
 
     # iterate through the widget configs,
     # yielding when a row has been filled
     for config in configs:
         add_widget = {
+            'newcol': add_newcol,
+            'newrow': add_newrow,
             'graph': add_graph,
             'lvalue': add_lvalue,
-        }.get(config['type'], None)
+        }.get(config['type'], lambda x: x)
 
         if add_widget is None:
             continue
 
-        row_is_full = add_widget(config)
-        if row_is_full:
-            yield ns['row']
-            ns['row'] = []
-            ns['columns'] = 0
+        # cater for widget additions that append multiple
+        # elements to row, as is the case when adding a graph
+        for row_is_full in add_widget():
+            if row_is_full:
+                yield ns['row']
+                ns['row'] = []
+                ns['columns'] = 0
 
-    # flush an lvalue group if the
-    # lvalue queue is not empty
-    if len(ns['lvqueue']) > 0:
-        flush_lvalue_group()
+    # flush an lvalue group if the lvalue queue is not empty
+    flush_lvalue_group()
+
+    # Yield the last row (in the case that
+    # it wasn't completely filled)
+    if len(ns['row']) > 0:
         yield ns['row']
 
 
