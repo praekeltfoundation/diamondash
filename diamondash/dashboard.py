@@ -41,7 +41,7 @@ MIN_COLUMN_SPAN = 1
 MAX_COLUMN_SPAN = 3
 
 
-LAYOUT_RESERVED_WORDS = 'newrow, newcol'
+LAYOUT_RESERVED_WORDS = ['newrow', 'newcol']
 
 
 def parse_interval(interval):
