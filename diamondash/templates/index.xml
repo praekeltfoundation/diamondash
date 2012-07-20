@@ -23,13 +23,13 @@
 		  </div>
 	  </div>
 	  <div class="container" id="dashboard-container">
-		  <ul>
-			  <li t:render="dashboard_link_renderer">
+		  <ul class='dashboard-list'>
+			  <li t:render="dashboard_link_renderer" class="dashboard-list-item">
 				  <a>
 					  <t:attr name="href">
 						  <t:slot name="dashboard_href_slot" />
 					  </t:attr>
-					  <t:slot name="dashboard_title_slot" />
+					  <h1><t:slot name="dashboard_title_slot" /></h1>
 				  </a>
 			  </li>
 		  </ul>
