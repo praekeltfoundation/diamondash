@@ -278,7 +278,7 @@ def build_client_config(server_config):
     return 'var config = %s;' % (json.dumps(config),)
 
 
-def generate_widgets_by_row(configs):
+def build_widget_rows(configs):
     """
     Generates the widgets on each row. Each iteration,
     a row of widgets is yielded. Lvalue widgets are
@@ -371,8 +371,7 @@ def generate_widgets_by_row(configs):
     if len(ns['row']) > 0:
         ns['rows'].append(ns['row'])
 
-    for row in ns['rows']:
-        yield row
+    return ns['rows']
 
 
 class Dashboard(Element):
@@ -383,7 +382,7 @@ class Dashboard(Element):
     def __init__(self, config):
         self.config = parse_config(config)
         self.client_config = build_client_config(self.config)
-        self.rows = generate_widgets_by_row(self.config['widget_list'])
+        self.rows = build_widget_rows(self.config['widget_list'])
 
     @classmethod
     def from_config_file(cls, filename, defaults=None):
