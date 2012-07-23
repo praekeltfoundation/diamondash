@@ -301,19 +301,25 @@ def generate_widgets_by_row(configs):
         'lvqueue': [],
     }
 
+    def start_new_row():
+        ns['rows'].append(ns['row'])
+        ns['row'] = []
+        ns['columns'] = 0
+
     def append_to_row(element, span):
         """
-        Adds an element to the current row.
-
-        Returns True if the row is now full,
-        otherwise returns False
+        Adds an element to the current row, or a new row if the element
+        does not fit on the current row. A new row is then started
+        if the current row is filled after the widget is added.
         """
+        columns = ns['columns'] + span
+        if (columns > MAX_COLUMN_SPAN):
+            start_new_row()
+
         ns['row'].append(element)
-        ns['columns'] += span
+        ns['columns'] = columns
         if (ns['columns'] >= MAX_COLUMN_SPAN):
-            ns['rows'].append(ns['row'])
-            ns['row'] = []
-            ns['columns'] = 0
+            start_new_row()
 
     def flush_lvalue_group():
         if len(ns['lvqueue']) == 0:
