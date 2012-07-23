@@ -327,24 +327,24 @@ def generate_widgets_by_row(configs):
         append_to_row(LValueGroup(ns['lvqueue']), 1)
         ns['lvqueue'] = []
 
-    def add_lvalue():
+    def add_lvalue(config):
         ns['lvqueue'].append(LValueWidget(config))
         if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
             flush_lvalue_group()
 
-    def add_graph():
+    def add_graph(config):
         # if the lvqueue is not empty, this needs to
         # be added to the row before the graph is added
         flush_lvalue_group()
         element = GraphWidget(config)
         append_to_row(element, config['width'])
 
-    def add_newrow():
+    def add_newrow(config):
         """'fakes' the row being full"""
         # flush an lvalue group if the lvalue queue is not empty
         flush_lvalue_group()
 
-    def add_newcol():
+    def add_newcol(config):
         """'Adds' a column"""
         # Graphs are added in a new column by default,
         # Flush any lvalue groups so new lvalues are
@@ -361,7 +361,7 @@ def generate_widgets_by_row(configs):
     # yielding when a row has been filled
     for config in configs:
         add_widget = fn_lookup.get(config['type'], lambda x: x)
-        add_widget()
+        add_widget(config)
 
     # flush an lvalue group if the lvalue queue is not empty
     flush_lvalue_group()
