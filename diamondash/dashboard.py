@@ -351,16 +351,16 @@ def generate_widgets_by_row(configs):
         # added in a new column
         flush_lvalue_group()
 
-    # iterate through the widget configs,
-    # yielding when a row has been filled
-    method_lookup = {
+    fn_lookup = {
         'newcol': add_newcol,
         'newrow': add_newrow,
         'graph': add_graph,
         'lvalue': add_lvalue,
     }
+    # iterate through the widget configs,
+    # yielding when a row has been filled
     for config in configs:
-        add_widget = method_lookup.get(config['type'], lambda x: x)
+        add_widget = fn_lookup.get(config['type'], lambda x: x)
         add_widget()
 
     # flush an lvalue group if the lvalue queue is not empty
