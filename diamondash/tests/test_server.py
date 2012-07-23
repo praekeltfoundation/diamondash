@@ -118,7 +118,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         'luke the metric': {
                             'target': 'vumi.random.count.sum'
                         }
-                    }
+                    },
                 }
             ]
         }
@@ -168,7 +168,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         'random-timer-average': {
                             'target': 'vumi.random.timer.avg'
                         }
-                    }
+                    },
                 }
             ]
         }
@@ -209,9 +209,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'name': 'some-lvalue-widget',
                     'time_range': test_time_range,
                     'type': 'lvalue',
-                    'metrics': ['vumi.random.count.sum']
+                    'metrics': ['vumi.random.count.sum'],
                 }
-            ]
+            ],
         }
 
         dashboard_configs = server.config['dashboards']
@@ -251,8 +251,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'time_range': test_time_range,
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum',
-                                'vumi.random.timer.sum']
-                }
+                                'vumi.random.timer.sum'],
+                },
             ]
         }
 
@@ -314,7 +314,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'arnold-the-metric': {
                     'target': 'vumi.random.count.sum'
                 }
-            }
+            },
         }
 
         test_data_key = 'test_format_results_for_graph'
@@ -339,7 +339,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-timer-average': {
                     'target': 'vumi.random.timer.avg'
                 }
-            }
+            },
         }
 
         test_data_key = 'test_format_results_for_multimetric_graph'

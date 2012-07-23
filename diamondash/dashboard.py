@@ -17,7 +17,7 @@ GRAPH_DEFAULTS = {
     'null_filter': 'skip',
     'time_range': 3600,
     'bucket_size': 300,
-    'width': 1
+    'width': 1,
 }
 
 
@@ -41,7 +41,7 @@ MIN_COLUMN_SPAN = 1
 MAX_COLUMN_SPAN = 3
 
 
-LAYOUT_RESERVED_WORDS = 'newrow, newcol'
+LAYOUT_RESERVED_WORDS = ['newrow', 'newcol']
 
 
 def parse_interval(interval):
@@ -99,7 +99,7 @@ def build_request_url(targets, from_param):
     """
     params = {'target': targets,
         'from': '-%ss' % from_param,
-        'format': 'json'
+        'format': 'json',
     }
     return 'render/?%s' % urlencode(params, True)
 
@@ -291,87 +291,88 @@ def generate_widgets_by_row(configs):
         # the current row
         'row': [],
 
+        # rows already generated
+        'rows': [],
+
         # the current row's column count
         'columns': 0,
 
         # queue of lvalue widgets for the current lvalue grouping
-        'lvqueue': []
+        'lvqueue': [],
     }
+
+    def start_new_row():
+        ns['rows'].append(ns['row'])
+        ns['row'] = []
+        ns['columns'] = 0
 
     def append_to_row(element, span):
         """
-        Adds an element to the current row.
-
-        Returns True if the row is now full,
-        otherwise returns False
+        Adds an element to the current row, or a new row if the element
+        does not fit on the current row. A new row is then started
+        if the current row is filled after the widget is added.
         """
+        columns = ns['columns'] + span
+        if (columns > MAX_COLUMN_SPAN):
+            start_new_row()
+
         ns['row'].append(element)
-        ns['columns'] += span
-        return ns['columns'] >= MAX_COLUMN_SPAN
+        ns['columns'] = columns
+        if (columns >= MAX_COLUMN_SPAN):
+            start_new_row()
 
     def flush_lvalue_group():
         if len(ns['lvqueue']) == 0:
             return
-        row_is_full = append_to_row(LValueGroup(ns['lvqueue']), 1)
+        append_to_row(LValueGroup(ns['lvqueue']), 1)
         ns['lvqueue'] = []
-        return row_is_full
 
-    def add_lvalue():
+    def add_lvalue(config):
         ns['lvqueue'].append(LValueWidget(config))
-        row_is_full = False
         if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
-            row_is_full = flush_lvalue_group()
-        yield row_is_full
+            flush_lvalue_group()
 
-    def add_graph():
+    def add_graph(config):
         # if the lvqueue is not empty, this needs to
         # be added to the row before the graph is added
-        yield flush_lvalue_group()
-
+        flush_lvalue_group()
         element = GraphWidget(config)
-        yield append_to_row(element, config['width'])
+        append_to_row(element, config['width'])
 
-    def add_newrow():
+    def add_newrow(config):
         """'fakes' the row being full"""
         # flush an lvalue group if the lvalue queue is not empty
         flush_lvalue_group()
-        yield True
 
-    def add_newcol():
+    def add_newcol(config):
         """'Adds' a column"""
         # Graphs are added in a new column by default,
-        # Flush any lvalue groups so new lvalus are
+        # Flush any lvalue groups so new lvalues are
         # added in a new column
-        yield flush_lvalue_group()
+        flush_lvalue_group()
 
-    # iterate through the widget configs,
-    # yielding when a row has been filled
+    fn_lookup = {
+        'newcol': add_newcol,
+        'newrow': add_newrow,
+        'graph': add_graph,
+        'lvalue': add_lvalue,
+    }
+
+    # iterate through the widget configs to create a list of rows
     for config in configs:
-        add_widget = {
-            'newcol': add_newcol,
-            'newrow': add_newrow,
-            'graph': add_graph,
-            'lvalue': add_lvalue,
-        }.get(config['type'], lambda x: x)
-
-        if add_widget is None:
-            continue
-
-        # cater for widget additions that append multiple
-        # elements to row, as is the case when adding a graph
-        for row_is_full in add_widget():
-            if row_is_full:
-                yield ns['row']
-                ns['row'] = []
-                ns['columns'] = 0
+        add_widget = fn_lookup.get(config['type'], lambda x: x)
+        add_widget(config)
 
     # flush an lvalue group if the lvalue queue is not empty
     flush_lvalue_group()
 
-    # Yield the last row (in the case that
+    # Append the last row (in the case that
     # it wasn't completely filled)
     if len(ns['row']) > 0:
-        yield ns['row']
+        ns['rows'].append(ns['row'])
+
+    for row in ns['rows']:
+        yield row
 
 
 class Dashboard(Element):
@@ -382,6 +383,7 @@ class Dashboard(Element):
     def __init__(self, config):
         self.config = parse_config(config)
         self.client_config = build_client_config(self.config)
+        self.rows = generate_widgets_by_row(self.config['widget_list'])
 
     @classmethod
     def from_config_file(cls, filename, defaults=None):
@@ -419,9 +421,8 @@ class Dashboard(Element):
 
     @renderer
     def widget_row_renderer(self, request, tag):
-        widget_list = self.config['widget_list']
-        for row_widgets in generate_widgets_by_row(widget_list):
-            yield WidgetRow(row_widgets)
+        for row in self.rows:
+            yield WidgetRow(row)
 
     @renderer
     def config_script(self, request, tag):

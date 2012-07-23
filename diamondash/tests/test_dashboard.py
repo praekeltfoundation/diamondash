@@ -93,7 +93,7 @@ class DashboardConfigTestCase(unittest.TestCase):
                 'target': 'foo.avg',
             }
         },
-        'width': 2
+        'width': 2,
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
         dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
@@ -121,7 +121,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         'request_url': 'render/?from=-172800s&target=summarize%28foo.sum%2C'
                        '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
                        'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json',
-        'width': 2
+        'width': 2,
     })
 
     TEST_LVALUE_NAME = 'Some lvalue widget'
@@ -131,7 +131,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': '30m',
-        'metrics': ['foo.sum', 'bar.sum']
+        'metrics': ['foo.sum', 'bar.sum'],
     }
     TEST_LVALUE_CONFIG_PARSED = dict(
         dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
@@ -152,14 +152,14 @@ class DashboardConfigTestCase(unittest.TestCase):
         ],
         'request_url': 'render/?from=-3600s&target=summarize%28foo.sum%2C'
                        '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
-                       'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'
+                       'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json',
     })
 
     TEST_CONFIG = {
         'name': 'A dashboard',
         'graph_defaults': TEST_GRAPH_DEFAULTS,
         'lvalue_defaults': TEST_LVALUE_DEFAULTS,
-        'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG]
+        'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG],
     }
     TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
         'name': 'a-dashboard',
@@ -170,7 +170,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         'widgets': {
             TEST_GRAPH_NAME_SLUGIFIED: TEST_GRAPH_CONFIG_PARSED,
             TEST_LVALUE_NAME_SLUGIFIED: TEST_LVALUE_CONFIG_PARSED,
-        }
+        },
     })
 
     TEST_CLIENT_CONFIG_BUILT = 'var config = %s;' % (json.dumps({
@@ -186,13 +186,13 @@ class DashboardConfigTestCase(unittest.TestCase):
                     },
 
                     'average-of-a-salesman': {
-                        'title': 'parlez'
+                        'title': 'parlez',
                     }
                 }
             },
 
             'some-lvalue-widget': {},
-        }
+        },
     }))
 
     def test_parse_config(self):
