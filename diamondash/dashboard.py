@@ -318,7 +318,7 @@ def generate_widgets_by_row(configs):
 
         ns['row'].append(element)
         ns['columns'] = columns
-        if (ns['columns'] >= MAX_COLUMN_SPAN):
+        if (columns >= MAX_COLUMN_SPAN):
             start_new_row()
 
     def flush_lvalue_group():
