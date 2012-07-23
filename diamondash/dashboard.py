@@ -353,13 +353,14 @@ def generate_widgets_by_row(configs):
 
     # iterate through the widget configs,
     # yielding when a row has been filled
+    method_lookup = {
+        'newcol': add_newcol,
+        'newrow': add_newrow,
+        'graph': add_graph,
+        'lvalue': add_lvalue,
+    }
     for config in configs:
-        add_widget = {
-            'newcol': add_newcol,
-            'newrow': add_newrow,
-            'graph': add_graph,
-            'lvalue': add_lvalue,
-        }.get(config['type'], lambda x: x)
+        add_widget = method_lookup.get(config['type'], lambda x: x)
         add_widget()
 
     # flush an lvalue group if the lvalue queue is not empty
