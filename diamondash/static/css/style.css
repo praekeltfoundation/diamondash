@@ -1,0 +1,6 @@
+@import url(/static/lib/bootstrap/css/bootstrap.css);
+@import url(/static/lib/bootstrap/css/bootstrap-responsive.css);
+
+body {
+	padding-top: 60px;
+}

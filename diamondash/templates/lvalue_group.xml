@@ -1,0 +1,3 @@
+<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class='span4 lvalue-group'>
+	<t:transparent t:render="lvalue_widget_renderer" />
+</div>

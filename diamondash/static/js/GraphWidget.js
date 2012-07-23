@@ -71,6 +71,9 @@ GraphWidget.prototype.initialize = function() {
 		}
 	}
 
+	//place hover legend over static legend
+	this.hoverLegend.style.marginTop = -this.legend.offsetHeight + "px";
+
 	this.object = new Rickshaw.Graph({
 		element: graphElement,
 		renderer: 'line',
@@ -114,11 +117,11 @@ function warningThresholdReached(minThreshold, maxThreshold, value) {
 }
 
 // formats an time value on the x axis into a UTC string
-function xFormatter(x) { 
+function formatX(x) { 
 	return new Date(x * 1000).toUTCString(); 
 }
 
-var yFormatter = Rickshaw.Fixtures.Number.formatKMBT;
+var formatY = Rickshaw.Fixtures.Number.formatKMBT;
 GraphWidget.prototype.updateGraphDetails = function() {
 	// for each metric, update legend values and color, as well as graph color
 	var lastX = -1;
@@ -138,7 +141,7 @@ GraphWidget.prototype.updateGraphDetails = function() {
 			if (lastCoord.x > lastX) {
 				lastX = lastCoord.x;
 			}
-			var lastValue = yFormatter(lastCoord.y);
+			var lastValue = formatY(lastCoord.y);
 			valueLabel.innerHTML = lastValue;
 			valueLabel.className = 'metric-key-value-label inactive';
 
@@ -158,7 +161,7 @@ GraphWidget.prototype.updateGraphDetails = function() {
 		}
 	}
 
-	this.timeLabel.innerHTML = xFormatter(lastX);
+	this.timeLabel.innerHTML = formatX(lastX);
 };
 
 // Build the passed in metric's key in the legend
@@ -168,7 +171,7 @@ function buildMetricKey(legend, metricName, metricTitle, metricColor) {
 	metricKey.className = 'metric-key-container';
 
 	var swatch = document.createElement('div');
-	swatch.className = 'metric-key-swatch';
+	swatch.className = 'swatch metric-key-swatch';
 	swatch.id = 'metric-key-swatch-' + metricName;
 	swatch.style.backgroundColor = metricColor;
 
