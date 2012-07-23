@@ -235,6 +235,9 @@ GraphWidget.prototype = {
 			hoverTimeLabel: this.hoverTimeLabel
 		});
 
+		//place hover legend over static legend
+		this.hoverLegend.style.marginTop = -this.legend.offsetHeight + "px";
+
 		this.object.render();
 	},
 
