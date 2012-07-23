@@ -8,29 +8,31 @@ var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
 Metric = function(args) {
 	this.name = args.name;
 	this.mConfig = args.mConfig;
-	this.warningSwitch = args.warningSwitch;
+	this.minThreshold = this.mConfig.warning_min_threshold;
+	this.maxThreshold = this.mConfig.warning_max_threshold;
+	this.graphWidget = args.graphWidget;
 	this.graphAttrs = {};
 	this.mLegend = {};
 	this.mHoverLegend = {};
-	this.warningTimestamp = -1;
+	this.prevWarning = null;
 
 	this.init(args);
 };
 
 Metric.prototype = {
 	init: function(args) {
-		var legend = args.legend;
-		var hoverLegend = args.hoverLegend;
+		var legend = this.graphWidget.legend;
+		var hoverLegend = this.graphWidget.hoverLegend;
 
 		if (typeof this.mConfig.color === 'undefined') {
 			this.mConfig.color = DEFAULT_GRAPH_COLOR;
 		}
 
-		if (typeof this.mConfig.warning_min_threshold !== 'undefined'
-				&& typeof this.mConfig.warning_max_threshold !== 'undefined'
-				&& typeof this.mConfig.warning_color === 'undefined') {
-					this.mConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
-				}
+		if ((typeof this.minThreshold !== 'undefined' 
+				|| typeof this.maxThreshold !== 'undefined')
+			&& typeof this.mConfig.warning_color === 'undefined') {
+				this.mConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+			}
 
 		this.graphAttrs = {
 			data: [{ x:0, y:0 }],
@@ -58,8 +60,27 @@ Metric.prototype = {
 
 	disableWarning: function() {
 		this.setColor(this.mConfig.color);
-		this.mLegend.valueLabel.style.color = '#000000';
-		this.mHoverLegend.valueLabel.style.color = '#000000';
+		this.mLegend.valueLabel.style.color = '#000';
+		this.mHoverLegend.valueLabel.style.color = '#000';
+	},
+
+	warningThresholdReached: function(coord) {
+		if (this.prevWarning !== null
+			&& coord.x === this.prevWarning.x 
+			&& coord.y === this.prevWarning.y) {
+			return false;
+		}
+
+		reached = ((typeof this.minThreshold !== 'undefined' 
+					&& coord.y < this.minThreshold) 
+				|| (typeof this.maxThreshold !== 'undefined' 
+					&& coord.y > this.maxThreshold));
+
+		if (reached) {
+			this.prevWarning = coord;
+		}
+
+		return reached;
 	},
 
 	setData: function(data) {
@@ -70,13 +91,9 @@ Metric.prototype = {
 		this.mLegend.valueLabel.innerHTML = lastValue;
 		this.mLegend.valueLabel.className = 'metric-key-value-label inactive';
 
-		if (warningThresholdReached(
-			this.mConfig.warning_min_threshold, 
-			this.mConfig.warning_max_threshold, lastCoord.y)
-			&& lastCoord.x > this.warningTimestamp) {
-				this.warningTimestamp = lastCoord.x;
-				this.warningSwitch.flagMetric(this);
-			}
+		if (this.warningThresholdReached(lastCoord)) {
+			this.graphWidget.warningSwitch.flagMetric(this);
+		}
 	},
 
 	pushData: function(data) {
@@ -128,7 +145,8 @@ Metric.prototype = {
 };
 
 
-function WarningSwitch() {
+function WarningSwitch(args) {
+	this.graphWidget = args.graphWidget;
 	this.flaggedMetrics = [];
 }
 
@@ -139,19 +157,24 @@ WarningSwitch.prototype = {
 	},
 
 	disable: function() {
-		var metric = null;
-		for (metric in this.flaggedMetrics) {
-			if (this.flaggedMetrics.hasOwnProperty(metric)) {
+		var i = null;
+		for (i in this.flaggedMetrics) {
+			if (this.flaggedMetrics.hasOwnProperty(i)) {
+				var metric = this.flaggedMetrics[i];
 				metric.disableWarning();
 			}
 		}
+
+		this.graphWidget.object.update();
 	}
 };
 
 function GraphWidget(args) {
 	Widget.call(this, args);
 	this.metrics = [];
-	this.warningSwitch = new WarningSwitch();
+	this.warningSwitch = new WarningSwitch({
+		graphWidget: this
+	});
 
 	this.init(args);
 }
@@ -161,12 +184,13 @@ GraphWidget.prototype = {
 	init: function(args) {
 		var graphElement = this.element.querySelector('.graph');
 		this.legend = this.element.querySelector('.legend');
+		this.timeLabel = this.legend.querySelector('.graph-time-label');
 		this.hoverLegend = this.element.querySelector('.hover-legend');
 		this.hoverTimeLabel = this.hoverLegend.querySelector('.graph-time-label');
-		this.timeLabel = this.legend.querySelector('.graph-time-label');
+
 
 		// disable the warning color switch when a graph is clicked on
-		$('.graph').click($.proxy(this.warningSwitch.disable(), this));
+		graphElement.onclick = $.proxy(this.warningSwitch.disable, this.warningSwitch);
 
 		// build metrics
 		var metricName = null;
@@ -178,9 +202,7 @@ GraphWidget.prototype = {
 				metric = new Metric({
 					name: metricName,
 					mConfig: mConfig,
-					legend: this.legend,
-					hoverLegend: this.hoverLegend,
-					warningSwitch: this.warningSwitch
+					graphWidget: this
 				});
 
 				this.metrics[metricName] = metric;
@@ -240,13 +262,6 @@ GraphWidget.prototype = {
 	Metric: Metric,
 };
 
-function warningThresholdReached(minThreshold, maxThreshold, value) {
-	return ((typeof minThreshold !== 'undefined'
-				&& value < minThreshold)
-			|| (typeof maxThreshold !== 'undefined'
-				&& value > maxThreshold));
-}
-
 // formats an time value on the x axis into a UTC string
 function xFormatter(x) { 
 	return new Date(x * 1000).toUTCString(); 
@@ -292,27 +307,27 @@ function Hover(args) {
 						}, this);
 			},
 
-				hide: function() {
-					this.visible = false;
-					this.element.classList.add('inactive');
-					legend.classList.remove('inactive');
-					hoverLegend.classList.add('inactive');
+			hide: function() {
+				this.visible = false;
+				this.element.classList.add('inactive');
+				legend.classList.remove('inactive');
+				hoverLegend.classList.add('inactive');
 
-					if (typeof this.onHide === 'function') {
-						this.onHide();
-					}
-				},
-
-				show: function() {
-					this.visible = true;
-					this.element.classList.remove('inactive');
-					legend.classList.add('inactive');
-					hoverLegend.classList.remove('inactive');
-
-					if (typeof this.onShow === 'function') {
-						this.onShow();
-					}
+				if (typeof this.onHide === 'function') {
+					this.onHide();
 				}
+			},
+
+			show: function() {
+				this.visible = true;
+				this.element.classList.remove('inactive');
+				legend.classList.add('inactive');
+				hoverLegend.classList.remove('inactive');
+
+				if (typeof this.onShow === 'function') {
+					this.onShow();
+				}
+			}
 		});
 	}(legend, graphObject, mConfigs, 
 	  hoverLegend, hoverTimeLabel));
