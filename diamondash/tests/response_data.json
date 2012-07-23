@@ -14,7 +14,7 @@
 		"body": [{"target": "summarize(vumi.random.count.sum, \"86400s\", \"sum\")", "datapoints": [[3303.0, 1342224000], [5052.0, 1342310400]]}]
 	},
 
-	"/render/?from=-7200s&target=summarize%28vumi.random.timer.sum%2C+%223600s%22%2C+%22sum%22%29&target=summarize%28vumi.random.count.sum%2C+%223600s%22%2C+%22sum%22%29&format=json" : {
+	"/render/?from=-7200s&target=summarize%28vumi.random.count.sum%2C+%223600s%22%2C+%22sum%22%29&target=summarize%28vumi.random.timer.sum%2C+%223600s%22%2C+%22sum%22%29&format=json" : {
 		"code": "200 OK",
 		"body": [{"target": "summarize(vumi.random.timer.sum, \"3600s\", \"sum\")", "datapoints": [[null, 1342382400], [0.04924959844054583, 1342386000], [0.05052084873949578, 1342389600]]}, {"target": "summarize(vumi.random.count.sum, \"3600s\", \"sum\")", "datapoints": [[null, 1342382400], [1281.0, 1342386000], [285.0, 1342389600]]}]
 	}
