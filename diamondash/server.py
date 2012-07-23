@@ -116,7 +116,7 @@ def isint(n):
     """
     Checks if a number is equivalent to an integer value
     """
-    if isinstance(n, int):
+    if isinstance(n, (int, long)):
         return True
 
     return abs(n - int(n)) <= EPS
@@ -161,7 +161,7 @@ def format_results_for_lvalue(data, widget_config):
         'from': from_time,
         'to': to_time,
         'diff': diff,
-        'percentage': percentage
+        'percentage': percentage,
     })
 
     return formatted

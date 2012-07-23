@@ -17,7 +17,7 @@ GRAPH_DEFAULTS = {
     'null_filter': 'skip',
     'time_range': 3600,
     'bucket_size': 300,
-    'width': 1
+    'width': 1,
 }
 
 
@@ -99,7 +99,7 @@ def build_request_url(targets, from_param):
     """
     params = {'target': targets,
         'from': '-%ss' % from_param,
-        'format': 'json'
+        'format': 'json',
     }
     return 'render/?%s' % urlencode(params, True)
 
@@ -298,7 +298,7 @@ def generate_widgets_by_row(configs):
         'columns': 0,
 
         # queue of lvalue widgets for the current lvalue grouping
-        'lvqueue': []
+        'lvqueue': [],
     }
 
     def append_to_row(element, span):
@@ -354,7 +354,6 @@ def generate_widgets_by_row(configs):
             'graph': add_graph,
             'lvalue': add_lvalue,
         }.get(config['type'], lambda x: x)
-
         add_widget()
 
     # flush an lvalue group if the lvalue queue is not empty
@@ -377,6 +376,7 @@ class Dashboard(Element):
     def __init__(self, config):
         self.config = parse_config(config)
         self.client_config = build_client_config(self.config)
+        self.rows = generate_widgets_by_row(self.config['widget_list'])
 
     @classmethod
     def from_config_file(cls, filename, defaults=None):
@@ -414,9 +414,8 @@ class Dashboard(Element):
 
     @renderer
     def widget_row_renderer(self, request, tag):
-        widget_list = self.config['widget_list']
-        for row_widgets in generate_widgets_by_row(widget_list):
-            yield WidgetRow(row_widgets)
+        for row in self.rows:
+            yield WidgetRow(row)
 
     @renderer
     def config_script(self, request, tag):
