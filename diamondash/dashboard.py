@@ -357,8 +357,8 @@ def generate_widgets_by_row(configs):
         'graph': add_graph,
         'lvalue': add_lvalue,
     }
-    # iterate through the widget configs,
-    # yielding when a row has been filled
+
+    # iterate through the widget configs to create a list of rows
     for config in configs:
         add_widget = fn_lookup.get(config['type'], lambda x: x)
         add_widget(config)
