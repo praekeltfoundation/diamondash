@@ -8,10 +8,12 @@ from pkg_resources import resource_filename
 from twisted.trial import unittest
 
 from diamondash.dashboard import (
-    parse_interval, slugify, format_metric_target,
+    slugify, format_metric_target,
+    parse_interval, parse_graph_width,
     parse_config, parse_graph_config, parse_lvalue_config,
     build_client_config, Dashboard, DASHBOARD_DEFAULTS,
-    LVALUE_DEFAULTS, GRAPH_DEFAULTS)
+    LVALUE_DEFAULTS, GRAPH_DEFAULTS,
+    MIN_COLUMN_SPAN, MAX_COLUMN_SPAN)
 from diamondash.exceptions import ConfigError
 
 
@@ -22,7 +24,7 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
 
     def test_from_config_file_not_found(self):
         """
-        Should assert an error if the dashboard in the config file has no name
+        Should assert an error if the dashboard config file is not found
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/non_existent_file.yml')
@@ -34,8 +36,16 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/no_dashboard_name.yml')
 
-    def test_no_widget_metrics(self):
+    def test_no_widget_name(self):
         """Should assert an error if a widget in the config file has no name"""
+        self.assertRaises(ConfigError, Dashboard.from_config_file,
+                          'tests/no_widget_name.yml')
+
+    def test_no_widget_metrics(self):
+        """
+        Should assert an error if a widget in the config file
+        has no metrics
+        """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/no_widget_metrics.yml')
 
@@ -66,6 +76,7 @@ class DashboardConfigTestCase(unittest.TestCase):
     TEST_GRAPH_NAME = 'Some graph widget'
     TEST_GRAPH_NAME_SLUGIFIED = 'some-graph-widget'
     TEST_GRAPH_CONFIG = {
+        'name': TEST_GRAPH_NAME_SLUGIFIED,
         'title': TEST_GRAPH_NAME,
         'type': 'graph',
         'time_range': '2d',
@@ -81,10 +92,12 @@ class DashboardConfigTestCase(unittest.TestCase):
                 'title': 'parlez',
                 'target': 'foo.avg',
             }
-        }
+        },
+        'width': 2,
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
         dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
+        'name': TEST_GRAPH_NAME_SLUGIFIED,
         'title': TEST_GRAPH_NAME,
         'type': 'graph',
         'time_range': 172800,
@@ -107,68 +120,57 @@ class DashboardConfigTestCase(unittest.TestCase):
         },
         'request_url': 'render/?from=-172800s&target=summarize%28foo.sum%2C'
                        '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
-                       'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json'
+                       'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json',
+        'width': 2,
     })
 
     TEST_LVALUE_NAME = 'Some lvalue widget'
     TEST_LVALUE_NAME_SLUGIFIED = 'some-lvalue-widget'
     TEST_LVALUE_CONFIG = {
+        'name': TEST_LVALUE_NAME_SLUGIFIED,
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': '30m',
-        'metrics': {
-            'sum-of-nothing': {
-                'title': 'Sum of nothing',
-                'target': 'foo.sum',
-            },
-
-            'sum-of-a-salesman': {
-                'title': 'parlez',
-                'target': 'bar.sum',
-            }
-        }
+        'metrics': ['foo.sum', 'bar.sum'],
     }
     TEST_LVALUE_CONFIG_PARSED = dict(
         dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
+        'name': TEST_LVALUE_NAME_SLUGIFIED,
         'title': TEST_LVALUE_NAME,
         'type': 'lvalue',
         'time_range': 1800,
-        'metrics': {
-            'sum-of-nothing': {
-                'title': 'Sum of nothing',
+        'metrics': [
+            {
                 'original_target': 'foo.sum',
                 'target': 'summarize(foo.sum, "1800s", "sum")',
             },
 
-            'sum-of-a-salesman': {
-                'title': 'parlez',
+            {
                 'original_target': 'bar.sum',
                 'target': 'summarize(bar.sum, "1800s", "sum")',
             }
-        },
-        'request_url': 'render/?from=-3600s&target=summarize%28bar.sum%2C+'
-                       '%221800s%22%2C+%22sum%22%29&target=summarize%28foo.sum'
-                       '%2C+%221800s%22%2C+%22sum%22%29&format=json'
+        ],
+        'request_url': 'render/?from=-3600s&target=summarize%28foo.sum%2C'
+                       '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
+                       'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json',
     })
 
     TEST_CONFIG = {
         'name': 'A dashboard',
         'graph_defaults': TEST_GRAPH_DEFAULTS,
         'lvalue_defaults': TEST_LVALUE_DEFAULTS,
-        'widgets': {
-            TEST_GRAPH_NAME: TEST_GRAPH_CONFIG,
-            TEST_LVALUE_NAME: TEST_LVALUE_CONFIG,
-        }
+        'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG],
     }
     TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
         'name': 'a-dashboard',
         'title': 'A dashboard',
         'graph_defaults': dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS),
         'lvalue_defaults': dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS),
+        'widget_list': [TEST_GRAPH_CONFIG_PARSED, TEST_LVALUE_CONFIG_PARSED],
         'widgets': {
             TEST_GRAPH_NAME_SLUGIFIED: TEST_GRAPH_CONFIG_PARSED,
             TEST_LVALUE_NAME_SLUGIFIED: TEST_LVALUE_CONFIG_PARSED,
-        }
+        },
     })
 
     TEST_CLIENT_CONFIG_BUILT = 'var config = %s;' % (json.dumps({
@@ -184,13 +186,13 @@ class DashboardConfigTestCase(unittest.TestCase):
                     },
 
                     'average-of-a-salesman': {
-                        'title': 'parlez'
+                        'title': 'parlez',
                     }
                 }
             },
 
             'some-lvalue-widget': {},
-        }
+        },
     }))
 
     def test_parse_config(self):
@@ -208,8 +210,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         applying changes where appropriate
         """
         config = deepcopy(self.TEST_GRAPH_CONFIG)
-        result = parse_graph_config(self.TEST_GRAPH_NAME_SLUGIFIED,
-                                    config, self.TEST_GRAPH_DEFAULTS)
+        result = parse_graph_config(config, self.TEST_GRAPH_DEFAULTS)
 
         self.assertEqual(result, self.TEST_GRAPH_CONFIG_PARSED)
 
@@ -219,8 +220,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         applying changes where appropriate
         """
         config = deepcopy(self.TEST_LVALUE_CONFIG)
-        result = parse_lvalue_config(self.TEST_LVALUE_NAME_SLUGIFIED,
-                                     config, self.TEST_LVALUE_DEFAULTS)
+        result = parse_lvalue_config(config, self.TEST_LVALUE_DEFAULTS)
 
         self.assertEqual(result, self.TEST_LVALUE_CONFIG_PARSED)
 
@@ -306,6 +306,17 @@ class DashboardConfigTestCase(unittest.TestCase):
         self.assertEqual(120, parse_interval("2m"))
         self.assertEqual(7200, parse_interval("2h"))
         self.assertEqual(86400 * 2, parse_interval("2d"))
+
+    def test_parse_graph_width(self):
+        """
+        Multiplier-suffixed intervals should be turned into integers correctly.
+        """
+        min = MIN_COLUMN_SPAN
+        max = MAX_COLUMN_SPAN
+        self.assertEqual(min, parse_graph_width(min - 1))
+        self.assertEqual(max, parse_graph_width(max + 1))
+        self.assertEqual(min + 1, parse_graph_width(min + 1))
+        self.assertEqual(max - 1, parse_graph_width(max - 1))
 
     def test_graph_time_range(self):
         """

@@ -1,16 +1,16 @@
 name: 'test dashboard'
 widgets:
-    default-time-range:
-        metrics:
-            metric-a:
-                target: vumi.random.count.sum
-    explicit-time-range:
-        time_range: 1337
-        metrics:
-            metric-b:
-                target: vumi.random.count.sum
-    suffix-time-range:
-        time_range: 2h
-        metrics:
-            metric-c:
-                target: vumi.random.count.sum
+    - name: default-time-range
+      metrics:
+          metric-a:
+              target: vumi.random.count.sum
+    - name: explicit-time-range
+      time_range: 1337
+      metrics:
+          metric-b:
+              target: vumi.random.count.sum
+    - name: suffix-time-range
+      time_range: 2h
+      metrics:
+          metric-c:
+              target: vumi.random.count.sum

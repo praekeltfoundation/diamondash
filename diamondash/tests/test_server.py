@@ -107,8 +107,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum': {
+            'widgets': [
+                {
+                    'name': 'random-count-sum',
                     'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
@@ -117,9 +118,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         'luke the metric': {
                             'target': 'vumi.random.count.sum'
                         }
-                    }
+                    },
                 }
-            }
+            ]
         }
 
         dashboard_configs = server.config['dashboards']
@@ -153,8 +154,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = 3600
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'random-count-sum-and-average': {
+            'widgets': [
+                {
+                    'name': 'random-count-sum-and-average',
                     'time_range': test_time_range,
                     'title': 'a graph',
                     'type': 'graph',
@@ -166,9 +168,9 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         'random-timer-average': {
                             'target': 'vumi.random.timer.avg'
                         }
-                    }
+                    },
                 }
-            }
+            ]
         }
         dashboard_configs = server.config['dashboards']
         dashboard_configs['test-dashboard'] = Dashboard.from_args(
@@ -202,17 +204,14 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = '1d'
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'some-lvalue-widget': {
+            'widgets': [
+                {
+                    'name': 'some-lvalue-widget',
                     'time_range': test_time_range,
                     'type': 'lvalue',
-                    'metrics': {
-                        'drukqs': {
-                            'target': 'vumi.random.count.sum'
-                        }
-                    }
+                    'metrics': ['vumi.random.count.sum'],
                 }
-            }
+            ],
         }
 
         dashboard_configs = server.config['dashboards']
@@ -246,21 +245,15 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         test_time_range = '1h'
         dashboard_config = {
             'name': 'test-dashboard',
-            'widgets': {
-                'some-multimetric-lvalue-widget': {
+            'widgets': [
+                {
+                    'name': 'some-multimetric-lvalue-widget',
                     'time_range': test_time_range,
                     'type': 'lvalue',
-                    'metrics': {
-                        'drukqs': {
-                            'target': 'vumi.random.count.sum'
-                        },
-
-                        'flim': {
-                            'target': 'vumi.random.timer.sum'
-                        }
-                    }
-                }
-            }
+                    'metrics': ['vumi.random.count.sum',
+                                'vumi.random.timer.sum'],
+                },
+            ]
         }
 
         dashboard_configs = server.config['dashboards']
@@ -321,7 +314,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'arnold-the-metric': {
                     'target': 'vumi.random.count.sum'
                 }
-            }
+            },
         }
 
         test_data_key = 'test_format_results_for_graph'
@@ -346,7 +339,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'random-timer-average': {
                     'target': 'vumi.random.timer.avg'
                 }
-            }
+            },
         }
 
         test_data_key = 'test_format_results_for_multimetric_graph'
@@ -361,19 +354,26 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should format datapoints in graphite's format to
         datapoints in a format useable for lvalue widgets
         """
-        def assert_format(input, expected):
-            result = server.format_results_for_lvalue(input)
+        def assert_format(data, config, expected):
+            result = server.format_results_for_lvalue(data, config)
             self.assertEqual(result, expected)
 
-        input = (3.034992, 2.0, 1341318035)
-        expected = ('{"lvalue": 2.0, "percentage": "-34%", "prev": 3.034992, '
-                    '"diff": -1.034992, "time": "2012-07-03 12:20:35"}')
-        assert_format(input, expected)
+        data = (3.034992, 2.0, 1341318035)
+        config = {'time_range': 86400}
+        expected = ('{"lvalue": "2", "percentage": "-34%", '
+                    '"from": "2012-07-03 12:20, "diff": -1.035, '
+                    '"to": "2012-07-03 12:20"}')
+        expected = ('{"lvalue": "2", "percentage": "-34%", '
+                    '"from": "2012-07-03 12:20", "diff": "-1.035", '
+                    '"to": "2012-07-04 12:20"}')
+        assert_format(data, config, expected)
 
-        input = (0, 0, 1341318035)
-        expected = ('{"lvalue": 0, "percentage": "0%", "prev": 0, '
-                    '"diff": 0, "time": "2012-07-03 12:20:35"}')
-        assert_format(input, expected)
+        data = (0, 0, 1341318035)
+        config = {'time_range': 86400}
+        expected = ('{"lvalue": "0", "percentage": "0%", '
+                    '"from": "2012-07-03 12:20", "diff": "0", '
+                    '"to": "2012-07-04 12:20"}')
+        assert_format(data, config, expected)
 
     """
     Other tests
@@ -420,3 +420,24 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         result = server.get_result_datapoints(before_str)
         after = self.TEST_DATA[test_data_key]['after']
         self.assertEqual(result, after)
+
+    def test_format_value(self):
+        def assert_format(input, expected):
+            result = server.format_value(input)
+            self.assertEqual(result, expected)
+
+        assert_format(999999, '999.999K')
+        assert_format(1999999, '2.000M')
+        assert_format(1234123456789, '1.234T')
+        assert_format(123456123456789, '123.456T')
+        assert_format(3.034992, '3.035')
+        assert_format(2, '2')
+        assert_format(2.0, '2')
+
+    def test_format_time(self):
+        def assert_format(input, expected):
+            result = server.format_time(input)
+            self.assertEqual(result, expected)
+
+        assert_format(1341318035, '2012-07-03 12:20')
+        assert_format(1841318020, '2028-05-07 13:13')
