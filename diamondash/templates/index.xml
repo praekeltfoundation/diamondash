@@ -29,7 +29,7 @@
 					  <t:attr name="href">
 						  <t:slot name="dashboard_href_slot" />
 					  </t:attr>
-					  <h1><t:slot name="dashboard_title_slot" /></h1>
+					  <h2><t:slot name="dashboard_title_slot" /></h2>
 				  </a>
 			  </li>
 		  </ul>
