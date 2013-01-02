@@ -4,3 +4,11 @@
 body {
 	padding-top: 60px;
 }
+
+a {
+	color: #555;
+}
+
+a:hover {
+	color: #333;
+}
