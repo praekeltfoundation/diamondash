@@ -11,7 +11,7 @@ from twisted.web.template import Element, renderer, XMLString
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
-from dashboard import Dashboard, DASHBOARD_DEFAULTS
+from dashboard import DashboardPage, Dashboard, DASHBOARD_DEFAULTS
 
 
 # We need resource imported for klein magic. This makes pyflakes happy.
@@ -258,7 +258,7 @@ def static(request):
 @route('/<string:dashboard_name>')
 def show_dashboard(request, dashboard_name):
     dashboard_name = dashboard_name.encode('utf-8')
-    return config['dashboards'][dashboard_name]
+    return DashboardPage(config['dashboards'][dashboard_name], False)
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
