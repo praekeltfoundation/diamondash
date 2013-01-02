@@ -1,0 +1,31 @@
+name: 'Test Dashboard 2'
+
+graph_defaults:
+    time_range: '1d'
+    bucket_size: '1h'
+
+lvalue_defaults:
+    time_range: '1d'
+
+widgets:
+
+    - name: 'Average of random timer'
+      width: 3
+      metrics: 
+          'Average of random timer': 
+              target: vumi.random.timer.avg
+
+    - name: 'An lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
+
+    - name: 'Another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
+
+    - name: 'And another lvalue widget'
+      type: lvalue
+      metrics: 
+          - vumi.random.count.sum
