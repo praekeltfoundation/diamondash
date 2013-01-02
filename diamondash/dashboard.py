@@ -6,8 +6,8 @@ from urllib import urlencode
 
 import yaml
 from unidecode import unidecode
-from pkg_resources import resource_stream
-from twisted.web.template import Element, renderer, XMLFile
+from pkg_resources import resource_string
+from twisted.web.template import Element, renderer, XMLString
 
 from exceptions import ConfigError
 
@@ -97,7 +97,8 @@ def build_request_url(targets, from_param):
     """
     Constructs the graphite render url
     """
-    params = {'target': targets,
+    params = {
+        'target': targets,
         'from': '-%ss' % from_param,
         'format': 'json',
     }
@@ -209,8 +210,7 @@ def parse_config(config):
     widget_dict = {}
     widget_list = []
     for w_config in config['widgets']:
-        if (isinstance(w_config, str)
-            and w_config in LAYOUT_RESERVED_WORDS):
+        if (isinstance(w_config, str) and w_config in LAYOUT_RESERVED_WORDS):
             widget_list.append({'type': w_config})
             continue
 
@@ -377,7 +377,7 @@ def build_widget_rows(configs):
 class Dashboard(Element):
     """Dashboard element for the diamondash web app"""
 
-    loader = XMLFile(resource_stream(__name__, 'templates/dashboard.xml'))
+    loader = XMLString(resource_string(__name__, 'templates/dashboard.xml'))
 
     def __init__(self, config):
         self.config = parse_config(config)
@@ -433,8 +433,7 @@ class Dashboard(Element):
 class WidgetRow(Element):
     """Graph element that resides in a Dashboard element"""
 
-    loader = XMLFile(resource_stream(__name__,
-                                     'templates/widget_row.xml'))
+    loader = XMLString(resource_string(__name__, 'templates/widget_row.xml'))
 
     def __init__(self, widgets):
         self.widgets = widgets
@@ -451,8 +450,7 @@ class Widget(Element):
     Subclasses need to assign an element to widget_element
     """
 
-    loader = XMLFile(resource_stream(__name__,
-                                     'templates/widget.xml'))
+    loader = XMLString(resource_string(__name__, 'templates/widget.xml'))
 
     def __init__(self, config):
         self.config = config
@@ -483,8 +481,8 @@ class GraphWidget(Widget):
 
     def __init__(self, config):
         Widget.__init__(self, config)
-        widget_element_loader = XMLFile(
-            resource_stream(__name__, 'templates/graph_widget.xml'))
+        widget_element_loader = XMLString(
+            resource_string(__name__, 'templates/graph_widget.xml'))
         self.widget_element = Element(loader=widget_element_loader)
 
         span = {
@@ -503,16 +501,15 @@ class LValueWidget(Widget):
 
     def __init__(self, config):
         Widget.__init__(self, config)
-        widget_element_loader = XMLFile(
-            resource_stream(__name__, 'templates/lvalue_widget.xml'))
+        widget_element_loader = XMLString(
+            resource_string(__name__, 'templates/lvalue_widget.xml'))
         self.widget_element = Element(loader=widget_element_loader)
 
 
 class LValueGroup(Element):
     """A group of lvalue widgets displayed from top to bottom"""
 
-    loader = XMLFile(resource_stream(__name__,
-                                     'templates/lvalue_group.xml'))
+    loader = XMLString(resource_string(__name__, 'templates/lvalue_group.xml'))
 
     def __init__(self, lvalue_widgets):
         self.lvalue_widgets = lvalue_widgets

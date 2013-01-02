@@ -7,8 +7,8 @@ import json
 import yaml
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.web.template import Element, renderer, XMLFile
-from pkg_resources import resource_filename, resource_stream
+from twisted.web.template import Element, renderer, XMLString
+from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
 from dashboard import Dashboard, DASHBOARD_DEFAULTS
@@ -287,8 +287,7 @@ def render(request, dashboard_name, widget_name):
 class Index(Element):
     """Index element with links to dashboards"""
 
-    loader = XMLFile(resource_stream(__name__,
-                                     'templates/index.xml'))
+    loader = XMLString(resource_string(__name__, 'templates/index.xml'))
 
     def __init__(self, dashboard_ids):
         self.dashboard_ids = dashboard_ids
