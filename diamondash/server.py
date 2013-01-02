@@ -7,7 +7,7 @@ import json
 import yaml
 from twisted.web.client import getPage
 from twisted.web.static import File
-from twisted.web.template import Element, renderer, XMLString
+from twisted.web.template import Element, renderer, XMLString, tags
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
@@ -22,6 +22,7 @@ CONFIG_FILENAME = 'diamondash.yml'
 DEFAULT_PORT = '8080'
 DEFAULT_CONFIG_DIR = 'etc/diamondash'
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
+SHARED_URL_PREFIX = 'shared'
 
 
 config = {
@@ -269,7 +270,7 @@ def show_dashboard(request, name):
     return DashboardPage(dashboards_by_name[name], False)
 
 
-@route('/shared/<string:share_id>')
+@route('/%s/<string:share_id>' % SHARED_URL_PREFIX)
 def show_shared_dashboard(request, share_id):
     """Show a shared dashboard page"""
     # TODO handle invalid share id references
@@ -315,6 +316,15 @@ class Index(Element):
             new_tag = tag.clone()
 
             href = '/%s' % (dashboard_config['name'],)
+
+            share_id = dashboard_config.get('share_id', None)
+            if share_id is not None:
+                shared_url = '/%s/%s' % (SHARED_URL_PREFIX, share_id)
+                shared_url_tag = tags.a(shared_url, href=shared_url)
+            else:
+                shared_url_tag = ''
+
             new_tag.fillSlots(dashboard_href_slot=href,
-                              dashboard_title_slot=dashboard_config['title'])
+                              dashboard_title_slot=dashboard_config['title'],
+                              dashboard_shared_url_slot=shared_url_tag)
             yield new_tag
