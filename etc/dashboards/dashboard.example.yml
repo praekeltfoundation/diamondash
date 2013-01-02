@@ -37,10 +37,10 @@ widgets:
     - 'newrow'
 
     - name: 'Sum of random count'
-      width: 1
       metrics: 
-          'Average of random timer': 
+          'Sum of random count': 
               target: vumi.random.count.sum
+              warning_max_threshold: 340 
 
     - name: 'And another lvalue widget'
       type: lvalue
