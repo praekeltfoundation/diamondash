@@ -78,7 +78,7 @@ def add_dashboards(config):
             name = dashboard.config['name']
             dashboards_by_name[name] = dashboard
 
-            share_id = dashboard.get('share_id', None)
+            share_id = dashboard.config.get('share_id', None)
             if share_id is not None:
                 dashboards_by_share_id[share_id] = dashboard
 

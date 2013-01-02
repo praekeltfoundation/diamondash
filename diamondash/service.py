@@ -18,7 +18,7 @@ def makeService(options):
     webserver.configure(options)
 
     s = service.MultiService()
-    site = server.Site(webserver.root)
+    site = server.Site(webserver.resource())
     strports.service(options['port'], site).setServiceParent(s)
 
     return s
