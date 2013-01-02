@@ -1,2 +1,2 @@
 graphite_url: http://127.0.0.1:8000
-request_interval: 2 # in seconds
+request_interval: 10 # in seconds

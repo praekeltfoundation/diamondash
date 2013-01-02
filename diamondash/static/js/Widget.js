@@ -15,10 +15,6 @@ function Widget(args) {
 	this.element = args.element;
 }
 
-Widget.prototype.initialize = function() {
-	throw "initialize() cannot be called from abstract class Widget";
-};
-
 Widget.prototype.update = function(results) {
 	throw "update() cannot be called from abstract class Widget";
 };

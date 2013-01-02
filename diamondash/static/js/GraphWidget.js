@@ -1,249 +1,339 @@
-var DEFAULT_GRAPH_COLOR = '#3333cc';
-var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
-
 /*
  * Class for the diamondash graph widget
  */
 
+var DEFAULT_GRAPH_COLOR = '#3333cc';
+var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
+
+Metric = function(args) {
+	this.name = args.name;
+	this.mConfig = args.mConfig;
+	this.minThreshold = this.mConfig.warning_min_threshold;
+	this.maxThreshold = this.mConfig.warning_max_threshold;
+	this.graphWidget = args.graphWidget;
+	this.graphAttrs = {};
+	this.mLegend = {};
+	this.mHoverLegend = {};
+	this.prevWarning = null;
+
+	this.init(args);
+};
+
+Metric.prototype = {
+	init: function(args) {
+		var legend = this.graphWidget.legend;
+		var hoverLegend = this.graphWidget.hoverLegend;
+
+		if (typeof this.mConfig.color === 'undefined') {
+			this.mConfig.color = DEFAULT_GRAPH_COLOR;
+		}
+
+		if ((typeof this.minThreshold !== 'undefined' 
+				|| typeof this.maxThreshold !== 'undefined')
+			&& typeof this.mConfig.warning_color === 'undefined') {
+				this.mConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+			}
+
+		this.graphAttrs = {
+			data: [{ x:0, y:0 }],
+			color: this.mConfig.color,
+			name: this.name
+		};
+
+		this.mLegend = this.buildMetricKey(legend);
+		this.mHoverLegend = this.buildMetricKey(hoverLegend);
+	},
+
+	getGraphAttrs: function() {
+		return this.graphAttrs;
+	},
+
+	getData: function() {
+		return this.graphAttrs.data;
+	},
+
+	enableWarning: function() {
+		this.setColor(this.mConfig.warning_color);
+		this.mLegend.valueLabel.style.color = this.mConfig.warning_color;
+		this.mHoverLegend.valueLabel.style.color = this.mConfig.warning_color;
+	},
+
+	disableWarning: function() {
+		this.setColor(this.mConfig.color);
+		this.mLegend.valueLabel.style.color = '#000';
+		this.mHoverLegend.valueLabel.style.color = '#000';
+	},
+
+	warningThresholdReached: function(coord) {
+		if (this.prevWarning !== null
+			&& coord.x === this.prevWarning.x 
+			&& coord.y === this.prevWarning.y) {
+			return false;
+		}
+
+		reached = ((typeof this.minThreshold !== 'undefined' 
+					&& coord.y < this.minThreshold) 
+				|| (typeof this.maxThreshold !== 'undefined' 
+					&& coord.y > this.maxThreshold));
+
+		if (reached) {
+			this.prevWarning = coord;
+		}
+
+		return reached;
+	},
+
+	setData: function(data) {
+		this.graphAttrs.data = data;
+
+		var lastCoord = data[data.length-1];
+		var lastValue = yFormatter(lastCoord.y);
+		this.mLegend.valueLabel.innerHTML = lastValue;
+		this.mLegend.valueLabel.className = 'metric-key-value-label inactive';
+
+		if (this.warningThresholdReached(lastCoord)) {
+			this.graphWidget.warningSwitch.flagMetric(this);
+		}
+	},
+
+	pushData: function(data) {
+		this.graphAttrs.push(data);
+	},
+
+	getColor: function() {
+		return this.graphAttrs.color;
+	},
+
+	setColor: function(color) {
+		this.graphAttrs.color = color;
+		this.mLegend.swatch.style.backgroundColor = color;
+		this.mHoverLegend.swatch.style.backgroundColor = color;
+	},
+
+	// Build metric's key in the legend
+	buildMetricKey: function(legend) {
+		var metricKey = document.createElement('div');
+		metricKey.id = 'metric-key-container-' + this.name;
+		metricKey.className = 'metric-key-container';
+
+		var swatch = document.createElement('div');
+		swatch.className = 'metric-key-swatch';
+		swatch.id = 'metric-key-swatch-' + this.name;
+		swatch.style.backgroundColor = this.mConfig.color;
+
+		var label = document.createElement('div');
+		label.className = 'metric-key-label';
+		label.id = 'metric-key-label-' + this.name;
+		label.innerHTML = this.mConfig.title + ': ';
+
+		var valueLabel = document.createElement('span');
+		valueLabel.className = 'metric-key-value-label';
+
+		valueLabel.id = 'metric-key-value-label-' + this.name;
+		valueLabel.innerHTML = ' ';
+
+		metricKey.appendChild(swatch);
+		metricKey.appendChild(label);
+		metricKey.appendChild(valueLabel);
+		legend.appendChild(metricKey);
+
+		return { 
+			valueLabel: valueLabel,
+				swatch: swatch
+		};
+	}
+};
+
+
+function WarningSwitch(args) {
+	this.graphWidget = args.graphWidget;
+	this.flaggedMetrics = [];
+}
+
+WarningSwitch.prototype = {
+	flagMetric: function(metric) {
+		this.flaggedMetrics.push(metric);
+		metric.enableWarning();
+	},
+
+	disable: function() {
+		var i = null;
+		for (i in this.flaggedMetrics) {
+			if (this.flaggedMetrics.hasOwnProperty(i)) {
+				var metric = this.flaggedMetrics[i];
+				metric.disableWarning();
+			}
+		}
+
+		this.graphWidget.object.update();
+	}
+};
+
 function GraphWidget(args) {
 	Widget.call(this, args);
-	this.seriesLookup = {};
-	this.initialize();
+	this.metrics = [];
+	this.warningSwitch = new WarningSwitch({
+		graphWidget: this
+	});
+
+	this.init(args);
 }
 GraphWidget.subclass(Widget);
 
-GraphWidget.prototype.getMetricData = function(metricName) {
-	return this.seriesLookup[metricName].data;
-};
+GraphWidget.prototype = {
+	init: function(args) {
+		var graphElement = this.element.querySelector('.graph');
+		this.legend = this.element.querySelector('.legend');
+		this.timeLabel = this.legend.querySelector('.graph-time-label');
+		this.hoverLegend = this.element.querySelector('.hover-legend');
+		this.hoverTimeLabel = this.hoverLegend.querySelector('.graph-time-label');
 
-GraphWidget.prototype.setMetricData = function(metricName, data) {
-	this.seriesLookup[metricName].data = data;
-};
 
-GraphWidget.prototype.pushMetricData = function(metricName, data) {
-	this.seriesLookup[metricName].push(data);
-};
+		// disable the warning color switch when a graph is clicked on
+		graphElement.onclick = $.proxy(this.warningSwitch.disable, this.warningSwitch);
 
-GraphWidget.prototype.getMetricColor = function(metricName) {
-	return this.seriesLookup[metricName].color;
-};
+		// build metrics
+		var metricName = null;
+		var series = [];
+		for (metricName in this.config.metrics) {
+			if (this.config.metrics.hasOwnProperty(metricName)) {
+				var mConfig = this.config.metrics[metricName];
 
-GraphWidget.prototype.setMetricColor = function(metricName, color) {
-	this.seriesLookup[metricName].color = color;
-};
+				metric = new Metric({
+					name: metricName,
+					mConfig: mConfig,
+					graphWidget: this
+				});
 
-GraphWidget.prototype.initialize = function() {
-	var graphElement = this.element.querySelector('.graph');
-	this.legend = this.element.querySelector('.legend');
-	this.hoverLegend = this.element.querySelector('.hover-legend');
-	this.timeLabel = this.legend.querySelector('.graph-time-label');
-	this.hoverTimeLabel = this.hoverLegend.querySelector('.graph-time-label');
-
-	series = [];
-
-	// build metrics
-	var metricName = null;
-	for (metricName in this.config.metrics) {
-		if (this.config.metrics.hasOwnProperty(metricName)) {
-			var metricConfig = this.config.metrics[metricName];
-
-			if (typeof metricConfig.color === 'undefined') {
-				metricConfig.color = DEFAULT_GRAPH_COLOR;
+				this.metrics[metricName] = metric;
+				series.push(metric.getGraphAttrs());
 			}
-			var metricColor = metricConfig.color;
+		}
 
-			if (typeof metricConfig.warning_min_threshold !== 'undefined'
-			&& typeof metricConfig.warning_max_threshold !== 'undefined'
-			&& typeof metricConfig.warning_color === 'undefined') {
-				metricConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+		this.object = new Rickshaw.Graph({
+			element: graphElement,
+			renderer: 'line',
+			series: series
+		});
+
+		var xAxis = new Rickshaw.Graph.Axis.Time({
+			graph: this.object 
+		});
+
+		var yAxis = new Rickshaw.Graph.Axis.Y({
+			element: this.element.querySelector('.y-axis'),
+			orientation: 'left',
+			graph: this.object,
+			tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+		});
+
+		var hover = new Hover({
+			graphObject: this.object, 
+			mConfigs: this.config.metrics, 
+			legend: this.legend,
+			hoverLegend: this.hoverLegend, 
+			hoverTimeLabel: this.hoverTimeLabel
+		});
+
+		//place hover legend over static legend
+		this.hoverLegend.style.marginTop = -this.legend.offsetHeight + "px";
+
+		this.object.render();
+	},
+
+	update: function(results) {
+		var lastX = -1;
+		var metricName = null;
+		for (metricName in results) {
+			if (results.hasOwnProperty(metricName)) {
+				data = results[metricName];
+				this.metrics[metricName].setData(data);
+
+				lastCoords = data[data.length-1];
+				if (lastCoords.x > lastX) {
+					lastX = lastCoords.x;
+				}
 			}
-
-			metric = {
-				data: [{ x:0, y:0 }],
-				color: metricConfig.color,
-				name: metricName
-			};
-
-			this.seriesLookup[metricName] = metric;
-			series.push(metric);
-			buildMetricKey(this.legend, metricName, metricConfig.title, metricColor);
-			buildMetricKey(this.hoverLegend, metricName, metricConfig.title, metricColor);
 		}
-	}
 
-	//place hover legend over static legend
-	this.hoverLegend.style.marginTop = -this.legend.offsetHeight + "px";
+		this.timeLabel.innerHTML = xFormatter(lastX);
 
-	this.object = new Rickshaw.Graph({
-		element: graphElement,
-		renderer: 'line',
-		series: series
-	});
+		this.object.update();
+	},
 
-	var xAxis = new Rickshaw.Graph.Axis.Time({
-		graph: this.object 
-	});
 
-	var yAxis = new Rickshaw.Graph.Axis.Y({
-		element: this.element.querySelector('.y-axis'),
-		orientation: 'left',
-		graph: this.object,
-		tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-	});
-
-	var hover = new Hover(this.object, this.config.metrics, this.legend,
-			              this.hoverLegend, this.hoverTimeLabel);
-
-	this.object.render();
+	Metric: Metric,
 };
-
-GraphWidget.prototype.update = function(results) {
-	var metricName = null;
-	for (metricName in results) {
-		if (results.hasOwnProperty(metricName)) {
-			this.setMetricData(metricName, results[metricName]);
-		}
-	}
-
-	this.updateGraphDetails();
-	this.object.update();
-};
-
-function warningThresholdReached(minThreshold, maxThreshold, value) {
-	return ((typeof minThreshold !== 'undefined'
-			&& value < minThreshold)
-		|| (typeof maxThreshold !== 'undefined'
-			&& value > maxThreshold));
-}
 
 // formats an time value on the x axis into a UTC string
-function formatX(x) { 
+function xFormatter(x) { 
 	return new Date(x * 1000).toUTCString(); 
 }
 
-var formatY = Rickshaw.Fixtures.Number.formatKMBT;
-GraphWidget.prototype.updateGraphDetails = function() {
-	// for each metric, update legend values and color, as well as graph color
-	var lastX = -1;
-	var metrics = this.config.metrics;
-	var metricName = null;
-	for (metricName in metrics) {
-		if (metrics.hasOwnProperty(metricName)) {
-			var metric = metrics[metricName];
-			var valueLabel = this.legend.querySelector(
-				'#metric-key-value-label-' + metricName);
-			var swatch = this.legend.querySelector(
-				'#metric-key-swatch-' + metricName);
-			var hoverSwatch = this.hoverLegend.querySelector(
-				'#metric-key-swatch-' + metricName);
-			var metricData = this.getMetricData(metricName);
-			var lastCoord = metricData[metricData.length-1];
-			if (lastCoord.x > lastX) {
-				lastX = lastCoord.x;
+var yFormatter = Rickshaw.Fixtures.Number.formatKMBT;
+
+function Hover(args) {
+	legend = args.legend; 
+	graphObject = args.graphObject; 
+	mConfigs = args.mConfigs; 
+	hoverLegend = args.hoverLegend; 
+	hoverTimeLabel = args.hoverTimeLabel;
+
+	var HoverDetail = (function(legend, graphObject, mConfigs, 
+				                hoverLegend, hoverTimeLabel) {
+		return Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
+			render: function(args) {
+				hoverTimeLabel.innerHTML = args.formattedXValue;
+
+				// for each metric
+				args.detail.sort(
+					function(a, b) { 
+						return a.order - b.order;
+					}).forEach(
+						function(d) {
+							var title = mConfigs[d.name].title;
+							var key = hoverLegend.querySelector('#metric-key-container-' + d.name);
+							var label = key.querySelector('#metric-key-label-' + d.name);
+							var valueLabel = key.querySelector('#metric-key-value-label-' + d.name);
+
+							label.innerHTML = title + ": ";
+							valueLabel.innerHTML = d.formattedYValue;
+
+							var dot = document.createElement('div');
+							dot.className = 'dot';
+							dot.style.top = graphObject.y(d.value.y0 + d.value.y) + 'px';
+							dot.style.borderColor = d.series.color;
+							this.element.appendChild(dot);
+							dot.className = 'dot active';
+
+							this.show();
+						}, this);
+			},
+
+			hide: function() {
+				this.visible = false;
+				this.element.classList.add('inactive');
+				legend.classList.remove('inactive');
+				hoverLegend.classList.add('inactive');
+
+				if (typeof this.onHide === 'function') {
+					this.onHide();
+				}
+			},
+
+			show: function() {
+				this.visible = true;
+				this.element.classList.remove('inactive');
+				legend.classList.add('inactive');
+				hoverLegend.classList.remove('inactive');
+
+				if (typeof this.onShow === 'function') {
+					this.onShow();
+				}
 			}
-			var lastValue = formatY(lastCoord.y);
-			valueLabel.innerHTML = lastValue;
-			valueLabel.className = 'metric-key-value-label inactive';
-
-			if (warningThresholdReached(metric.warning_min_threshold, 
-				metric.warning_max_threshold, lastCoord.y)) {
-				var warning_color = metric.warning_color;
-				this.setMetricColor(metricName, warning_color);
-				valueLabel.style.color = warning_color;
-				swatch.style.backgroundColor = warning_color;
-				hoverSwatch.style.backgroundColor = warning_color;
-			} else {
-				this.setMetricColor(metricName, metric.color);
-				valueLabel.style.color = '';
-				swatch.style.backgroundColor = metric.color;
-				hoverSwatch.style.backgroundColor = metric.color;
-			}
-		}
-	}
-
-	this.timeLabel.innerHTML = formatX(lastX);
-};
-
-// Build the passed in metric's key in the legend
-function buildMetricKey(legend, metricName, metricTitle, metricColor) {
-	var metricKey = document.createElement('div');
-	metricKey.id = 'metric-key-container-' + metricName;
-	metricKey.className = 'metric-key-container';
-
-	var swatch = document.createElement('div');
-	swatch.className = 'swatch metric-key-swatch';
-	swatch.id = 'metric-key-swatch-' + metricName;
-	swatch.style.backgroundColor = metricColor;
-
-	var label = document.createElement('div');
-	label.className = 'metric-key-label';
-	label.id = 'metric-key-label-'+metricName;
-	label.innerHTML = metricTitle + ': ';
-
-	var valueLabel = document.createElement('span');
-	valueLabel.className = 'metric-key-value-label';
-	valueLabel.id = 'metric-key-value-label-' + metricName;
-	valueLabel.innerHTML = ' ';
-
-	metricKey.appendChild(swatch);
-	metricKey.appendChild(label);
-	metricKey.appendChild(valueLabel);
-	legend.appendChild(metricKey);
-}
-
-function Hover(graphObject, widgetMetricsConfig, legend, 
-		       hoverLegend, hoverTimeLabel) {
-	var HoverDetail = Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
-		render: function(args) {
-			hoverTimeLabel.innerHTML = args.formattedXValue;
-
-			// for each metric
-			args.detail.sort(
-				function(a, b) { 
-					return a.order - b.order;
-				}).forEach(
-					function(d) {
-						var title = widgetMetricsConfig[d.name].title;
-						var key = hoverLegend.querySelector('#metric-key-container-' + d.name);
-						var label = key.querySelector('#metric-key-label-' + d.name);
-						var valueLabel = key.querySelector('#metric-key-value-label-' + d.name);
-
-						label.innerHTML = title + ": ";
-						valueLabel.innerHTML = d.formattedYValue;
-
-						var dot = document.createElement('div');
-						dot.className = 'dot';
-						dot.style.top = graphObject.y(d.value.y0 + d.value.y) + 'px';
-						dot.style.borderColor = d.series.color;
-						this.element.appendChild(dot);
-						dot.className = 'dot active';
-
-						this.show();
-					}, this);
-		},
-
-		hide: function() {
-			this.visible = false;
-			this.element.classList.add('inactive');
-			legend.classList.remove('inactive');
-			hoverLegend.classList.add('inactive');
-
-			if (typeof this.onHide === 'function') {
-				this.onHide();
-			}
-		},
-
-		show: function() {
-			this.visible = true;
-			this.element.classList.remove('inactive');
-			legend.classList.add('inactive');
-			hoverLegend.classList.remove('inactive');
-
-			if (typeof this.onShow === 'function') {
-				this.onShow();
-			}
-		}
-	});
+		});
+	}(legend, graphObject, mConfigs, 
+	  hoverLegend, hoverTimeLabel));
 
 	return new HoverDetail({graph: graphObject});
 }
