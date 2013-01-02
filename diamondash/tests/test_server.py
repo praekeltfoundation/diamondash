@@ -11,7 +11,6 @@ from twisted.internet.protocol import Protocol, Factory
 
 from diamondash import server
 from diamondash.dashboard import Dashboard
-from diamondash.server import build_config
 
 
 class MockGraphiteServerProtocol(Protocol):
@@ -102,7 +101,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
 
         # initialise the server configuration
-        server.config = build_config(test_overrides)
+        server.configure(test_overrides)
 
         test_time_range = 3600
         dashboard_config = {
@@ -123,8 +122,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ]
         }
 
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
             **dashboard_config)
 
         test_data_key = 'test_render_for_graph'
@@ -149,7 +147,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
 
         # initialise the server configuration
-        server.config = build_config(test_overrides)
+        server.configure(test_overrides)
 
         test_time_range = 3600
         dashboard_config = {
@@ -172,8 +170,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ]
         }
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+
+        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
             **dashboard_config)
 
         test_data_key = 'test_render_for_multimetric_graph'
@@ -199,7 +197,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
 
         # initialise the server configuration
-        server.config = build_config(test_overrides)
+        server.configure(test_overrides)
 
         test_time_range = '1d'
         dashboard_config = {
@@ -214,8 +212,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ],
         }
 
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
             **dashboard_config)
 
         test_data_key = 'test_render_for_lvalue'
@@ -240,7 +237,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         }
 
         # initialise the server configuration
-        server.config = build_config(test_overrides)
+        server.configure(test_overrides)
 
         test_time_range = '1h'
         dashboard_config = {
@@ -256,8 +253,7 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ]
         }
 
-        dashboard_configs = server.config['dashboards']
-        dashboard_configs['test-dashboard'] = Dashboard.from_args(
+        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
             **dashboard_config)
 
         test_data_key = 'test_render_for_multimetric_lvalue'

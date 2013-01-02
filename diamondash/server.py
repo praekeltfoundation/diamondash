@@ -22,21 +22,24 @@ CONFIG_FILENAME = 'diamondash.yml'
 DEFAULT_PORT = '8080'
 DEFAULT_CONFIG_DIR = 'etc/diamondash'
 DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
-config = {}
 
 
-def build_config(args=None):
+config = {
+    'port': DEFAULT_PORT,
+    'config_dir': DEFAULT_CONFIG_DIR,
+    'graphite_url': DEFAULT_GRAPHITE_URL,
+}
+dashboards_by_name = {}
+dashboards_by_share_id = {}
+index = None
+
+
+def configure(args=None):
     """
-    Builds the config, initialised to defaults,
-    updated with a config file and finally args
+    Does the following:
+      - Updates the config from a config file, then from args
+      - Creates the dashboards from their configs
     """
-    config = {
-        'port': DEFAULT_PORT,
-        'config_dir': DEFAULT_CONFIG_DIR,
-        'graphite_url': DEFAULT_GRAPHITE_URL,
-        'dashboards': {},
-    }
-
     if args:
         config['config_dir'] = args.get('config_dir', DEFAULT_CONFIG_DIR)
 
@@ -50,22 +53,20 @@ def build_config(args=None):
     if args:
         config.update(args)
 
-    dashboard_defaults = dict((k, config[k])
-                              for k in DASHBOARD_DEFAULTS
-                              if k in config)
+    add_dashboards(config)
 
-    config = add_dashboards(config, dashboard_defaults)
-
-    dashboard_ids = [{'name': d.config['name'],
-                      'title': d.config['title']}
-                     for d in config['dashboards'].values()]
-    config['index'] = Index(dashboard_ids)
+    global index
+    index = Index(dashboards_by_name.values())
 
     return config
 
 
-def add_dashboards(config, dashboard_defaults):
+def add_dashboards(config):
     """Adds the dashboards to the web server"""
+    dashboard_defaults = dict((k, config[k])
+                              for k in DASHBOARD_DEFAULTS
+                              if k in config)
+
     dashboards_path = '%s/dashboards' % (config['config_dir'],)
 
     if path.exists(dashboards_path):
@@ -73,8 +74,13 @@ def add_dashboards(config, dashboard_defaults):
             filepath = '%s/%s' % (dashboards_path, filename)
             dashboard = Dashboard.from_config_file(filepath,
                                                    dashboard_defaults)
-            dashboard_name = dashboard.config['name']
-            config['dashboards'][dashboard_name] = dashboard
+
+            name = dashboard.config['name']
+            dashboards_by_name[name] = dashboard
+
+            share_id = dashboard.get('share_id', None)
+            if share_id is not None:
+                dashboards_by_share_id[share_id] = dashboard
 
     return config
 
@@ -246,7 +252,7 @@ def render_lvalue(data, widget_config):
 
 @route('/')
 def show_index(request):
-    return config['index']
+    return index
 
 
 @route('/static/')
@@ -255,19 +261,29 @@ def static(request):
     return File(resource_filename(__name__, 'static'))
 
 
-@route('/<string:dashboard_name>')
-def show_dashboard(request, dashboard_name):
-    dashboard_name = dashboard_name.encode('utf-8')
-    return DashboardPage(config['dashboards'][dashboard_name], False)
+@route('/<string:name>')
+def show_dashboard(request, name):
+    """Show a non-shared dashboard page"""
+    # TODO handle invalid name references
+    name = name.encode('utf-8')
+    return DashboardPage(dashboards_by_name[name], False)
+
+
+@route('/shared/<string:share_id>')
+def show_shared_dashboard(request, share_id):
+    """Show a shared dashboard page"""
+    # TODO handle invalid share id references
+    share_id = share_id.encode('utf-8')
+    return DashboardPage(dashboards_by_share_id[share_id], True)
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
-    # TODO check for invalid dashboards and widgets
+    # TODO check for invalid dashboard and widget requests
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
-    dashboard = config['dashboards'][dashboard_name]
+    dashboard = dashboards_by_name[dashboard_name]
     widget_config = dashboard.get_widget_config(widget_name)
     request_url = '%s/%s' % (config['graphite_url'],
                              widget_config['request_url'])
@@ -289,15 +305,16 @@ class Index(Element):
 
     loader = XMLString(resource_string(__name__, 'templates/index.xml'))
 
-    def __init__(self, dashboard_ids):
-        self.dashboard_ids = dashboard_ids
+    def __init__(self, dashboards):
+        self.dashboards = dashboards
 
     @renderer
     def dashboard_link_renderer(self, request, tag):
-        for id in self.dashboard_ids:
+        for dashboard in self.dashboards:
+            dashboard_config = dashboard.config
             new_tag = tag.clone()
 
-            href = '/%s' % (id['name'],)
+            href = '/%s' % (dashboard_config['name'],)
             new_tag.fillSlots(dashboard_href_slot=href,
-                              dashboard_title_slot=id['title'])
+                              dashboard_title_slot=dashboard_config['title'])
             yield new_tag
