@@ -97,32 +97,33 @@ class DashboardConfigTestCase(unittest.TestCase):
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
         dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
-        'name': TEST_GRAPH_NAME_SLUGIFIED,
-        'title': TEST_GRAPH_NAME,
-        'type': 'graph',
-        'time_range': 172800,
-        'bucket_size': 3600,
-        'metrics': {
-            'sum-of-a-salesman': {
-                'title': 'Sum of a salesman',
-                'null_filter': 'zeroize',
-                'original_target': 'foo.sum',
-                'target': 'summarize(foo.sum, "3600s", "sum")',
-                'warning_max_threshold': 8,
-                'warning_min_threshold': 7,
+            'name': TEST_GRAPH_NAME_SLUGIFIED,
+            'title': TEST_GRAPH_NAME,
+            'type': 'graph',
+            'time_range': 172800,
+            'bucket_size': 3600,
+            'metrics': {
+                'sum-of-a-salesman': {
+                    'title': 'Sum of a salesman',
+                    'null_filter': 'zeroize',
+                    'original_target': 'foo.sum',
+                    'target': 'summarize(foo.sum, "3600s", "sum")',
+                    'warning_max_threshold': 8,
+                    'warning_min_threshold': 7,
+                },
+                'average-of-a-salesman': {
+                    'title': 'parlez',
+                    'null_filter': 'zeroize',
+                    'original_target': 'foo.avg',
+                    'target': 'summarize(foo.avg, "3600s", "avg")',
+                },
             },
-            'average-of-a-salesman': {
-                'title': 'parlez',
-                'null_filter': 'zeroize',
-                'original_target': 'foo.avg',
-                'target': 'summarize(foo.avg, "3600s", "avg")',
-            }
-        },
-        'request_url': 'render/?from=-172800s&target=summarize%28foo.sum%2C'
-                       '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
-                       'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json',
-        'width': 2,
-    })
+            'request_url': (
+                'render/?from=-172800s&target=summarize%28foo.sum%2C'
+                '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
+                'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json'),
+            'width': 2,
+        })
 
     TEST_LVALUE_NAME = 'Some lvalue widget'
     TEST_LVALUE_NAME_SLUGIFIED = 'some-lvalue-widget'
@@ -135,25 +136,26 @@ class DashboardConfigTestCase(unittest.TestCase):
     }
     TEST_LVALUE_CONFIG_PARSED = dict(
         dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
-        'name': TEST_LVALUE_NAME_SLUGIFIED,
-        'title': TEST_LVALUE_NAME,
-        'type': 'lvalue',
-        'time_range': 1800,
-        'metrics': [
-            {
-                'original_target': 'foo.sum',
-                'target': 'summarize(foo.sum, "1800s", "sum")',
-            },
+            'name': TEST_LVALUE_NAME_SLUGIFIED,
+            'title': TEST_LVALUE_NAME,
+            'type': 'lvalue',
+            'time_range': 1800,
+            'metrics': [
+                {
+                    'original_target': 'foo.sum',
+                    'target': 'summarize(foo.sum, "1800s", "sum")',
+                },
 
-            {
-                'original_target': 'bar.sum',
-                'target': 'summarize(bar.sum, "1800s", "sum")',
-            }
-        ],
-        'request_url': 'render/?from=-3600s&target=summarize%28foo.sum%2C'
-                       '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
-                       'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json',
-    })
+                {
+                    'original_target': 'bar.sum',
+                    'target': 'summarize(bar.sum, "1800s", "sum")',
+                },
+            ],
+            'request_url': (
+                'render/?from=-3600s&target=summarize%28foo.sum%2C'
+                '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
+                'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'),
+        })
 
     TEST_CONFIG = {
         'name': 'A dashboard',

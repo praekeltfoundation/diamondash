@@ -97,7 +97,8 @@ def build_request_url(targets, from_param):
     """
     Constructs the graphite render url
     """
-    params = {'target': targets,
+    params = {
+        'target': targets,
         'from': '-%ss' % from_param,
         'format': 'json',
     }
@@ -209,8 +210,7 @@ def parse_config(config):
     widget_dict = {}
     widget_list = []
     for w_config in config['widgets']:
-        if (isinstance(w_config, str)
-            and w_config in LAYOUT_RESERVED_WORDS):
+        if (isinstance(w_config, str) and w_config in LAYOUT_RESERVED_WORDS):
             widget_list.append({'type': w_config})
             continue
 
