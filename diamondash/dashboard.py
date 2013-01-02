@@ -389,6 +389,12 @@ class DashboardPage(Element):
         self.is_shared = is_shared
 
     @renderer
+    def brand_renderer(self, request, tag):
+        href = '' if self.is_shared else '/'
+        tag.fillSlots(brand_href_slot=href)
+        return tag
+
+    @renderer
     def dashboard_name_renderer(self, request, tag):
         return tag(self.dashboard.config['title'])
 
