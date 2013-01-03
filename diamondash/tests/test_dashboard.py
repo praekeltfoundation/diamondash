@@ -27,19 +27,19 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         Should assert an error if the dashboard config file is not found
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/non_existent_file.yml')
+                          'tests/test_dashboard_data/non_existent_file.yml')
 
     def test_no_dashboard_name(self):
         """
         Should assert an error if the dashboard in the config file has no name
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_dashboard_name.yml')
+                          'tests/test_dashboard_data/no_dashboard_name.yml')
 
     def test_no_widget_name(self):
         """Should assert an error if a widget in the config file has no name"""
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_widget_name.yml')
+                          'tests/test_dashboard_data/no_widget_name.yml')
 
     def test_no_widget_metrics(self):
         """
@@ -47,14 +47,14 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         has no metrics
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_widget_metrics.yml')
+                          'tests/test_dashboard_data/no_widget_metrics.yml')
 
     def test_no_metric_target(self):
         """
         Should assert an error if a metric in the config file has no target
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_metrics_target.yml')
+                          'tests/test_dashboard_data/no_metrics_target.yml')
 
 
 class DashboardConfigTestCase(unittest.TestCase):
@@ -282,8 +282,9 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
+        filename = 'test_dashboard_data/widget_title.yml'
         dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, 'widget_title.yml'),
+            resource_filename(__name__, filename),
             DASHBOARD_DEFAULTS)
         config = dashboard.config
 
@@ -298,8 +299,9 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
+        filename = 'test_dashboard_data/metric_title.yml'
         dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, 'metric_title.yml'),
+            resource_filename(__name__, filename),
             DASHBOARD_DEFAULTS)
         config = dashboard.config
 
@@ -336,8 +338,9 @@ class DashboardConfigTestCase(unittest.TestCase):
         Should use the given time range if one is provided, otherwise the
         default.
         """
+        filename = 'test_dashboard_data/graph_time_range.yml'
         dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, 'graph_time_range.yml'),
+            resource_filename(__name__, filename),
             DASHBOARD_DEFAULTS)
         config = dashboard.config
 

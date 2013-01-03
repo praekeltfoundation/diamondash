@@ -66,9 +66,25 @@ class MockGraphiteServerMixin(object):
         return self.graphite_ws.loseConnection()
 
 
+class DiamondashServerTestCase(unittest.TestCase):
+
+    def test_from_config_dir(self):
+        """
+        Should correctly create a diamondash server instance from a config
+        directory
+        """
+
+    def test_add_dashboard(self):
+        """
+        Should add a dashboard to the server's dashboard list, as well as the
+        server's name-dashboard and share_id-dashboard lookups.
+        """
+
+
 class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
-    TEST_DATA = json.load(resource_stream(__name__, 'server_test_data.json'))
+    TEST_DATA = json.load(
+        resource_stream(__name__, 'test_server_data/server_test_data.json'))
 
     def setUp(self):
         self.graphite_ws = None

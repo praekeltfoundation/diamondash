@@ -56,7 +56,7 @@ class DiamondashServer(object):
         dashboard_defaults = dict(DASHBOARD_DEFAULTS,
                                   **file_dashboard_defaults)
 
-        dashboards_dir = "%s/dashboards/" % dir
+        dashboards_dir = "%s/dashboards/" % config_dir
         dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
                                                    dashboard_defaults)
         return cls(dashboards, graphite_url)
