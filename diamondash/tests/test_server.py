@@ -1,8 +1,8 @@
 """Tests for diamondash's server side"""
 
 import json
-
 from pkg_resources import resource_stream
+
 from klein.test_resource import requestMock
 from twisted.trial import unittest
 from twisted.internet import reactor
@@ -66,19 +66,33 @@ class MockGraphiteServerMixin(object):
         return self.graphite_ws.loseConnection()
 
 
-class DiamondashServerTestCase(unittest.TestCase):
+class MockDashboard:
+    """A mock for the Dashboard class"""
 
-    def test_from_config_dir(self):
-        """
-        Should correctly create a diamondash server instance from a config
-        directory
-        """
+    def __init__(self, config):
+        self.is_mock = True
+        self.config = config
+
+
+class DiamondashServerTestCase(unittest.TestCase):
 
     def test_add_dashboard(self):
         """
         Should add a dashboard to the server's dashboard list, as well as the
         server's name-dashboard and share_id-dashboard lookups.
         """
+        dashboard_config = {
+            'name': 'lorem',
+            'share_id': 'ipsum'
+        }
+        mock_dashboard = MockDashboard(dashboard_config)
+
+        dd_server = DiamondashServer('', [])
+        dd_server.add_dashboard(mock_dashboard)
+
+        self.assertTrue(dd_server.dashboards[0].is_mock)
+        self.assertTrue(dd_server.dashboards_by_name['lorem'].is_mock)
+        self.assertTrue(dd_server.dashboards_by_share_id['ipsum'].is_mock)
 
 
 class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
@@ -134,7 +148,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
 
         dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer([dashboard], self.graphite_url)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -176,7 +190,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
 
         dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer([dashboard], self.graphite_url)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_multimetric_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -210,7 +224,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
 
         dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer([dashboard], self.graphite_url)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
@@ -244,7 +258,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
 
         dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer([dashboard], self.graphite_url)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_multimetric_lvalue'
         input = self.TEST_DATA[test_data_key]['input']

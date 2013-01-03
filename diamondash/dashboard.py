@@ -2,7 +2,7 @@
 
 import re
 import json
-from os import listdir
+from os import listdir, path
 from urllib import urlencode
 
 import yaml
@@ -415,7 +415,7 @@ class Dashboard(Element):
         dashboards = []
 
         for filename in listdir(dir):
-            filepath = '%s/%s' % (dir, filename)
+            filepath = path.join(dir, filename)
             dashboard = Dashboard.from_config_file(filepath, defaults)
             dashboards.append(dashboard)
 

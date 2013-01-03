@@ -1,7 +1,8 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
-from datetime import datetime
 import json
+from os import path
+from datetime import datetime
 
 import yaml
 from twisted.web.client import getPage
@@ -30,7 +31,7 @@ DASHBOARD_DEFAULTS = {
 class DiamondashServer(object):
     """Contains the server's configuration options and dashboards"""
 
-    def __init__(self, dashboards, graphite_url):
+    def __init__(self, graphite_url, dashboards):
         self.graphite_url = graphite_url
 
         self.dashboards = []
@@ -45,21 +46,22 @@ class DiamondashServer(object):
     @classmethod
     def from_config_dir(cls, config_dir):
         """Creates diamondash server from config file"""
-        config_file = "%s/%s" % (config_dir, CONFIG_FILENAME,)
+        # TODO test
+
+        config_file = path.join(config_dir, CONFIG_FILENAME,)
         config = yaml.safe_load(open(config_file))
 
         graphite_url = config.get('graphite_url', DEFAULT_GRAPHITE_URL)
 
-        file_dashboard_defaults = dict((k, config[k])
-                              for k in DASHBOARD_DEFAULTS
-                              if k in config)
+        file_dashboard_defaults = dict(
+            (k, config[k]) for k in DASHBOARD_DEFAULTS if k in config)
         dashboard_defaults = dict(DASHBOARD_DEFAULTS,
                                   **file_dashboard_defaults)
 
-        dashboards_dir = "%s/dashboards/" % config_dir
+        dashboards_dir = path.join(config_dir, "dashboards/")
         dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
                                                    dashboard_defaults)
-        return cls(dashboards, graphite_url)
+        return cls(graphite_url, dashboards)
 
     def add_dashboard(self, dashboard):
         """Adds a dashboard to diamondash"""
