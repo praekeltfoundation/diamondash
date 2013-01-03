@@ -374,10 +374,44 @@ def build_widget_rows(configs):
     return ns['rows']
 
 
-class Dashboard(Element):
-    """Dashboard element for the diamondash web app"""
+class DashboardPage(Element):
+    """
+    An element for displaying an actual dashboard page.
 
-    loader = XMLString(resource_string(__name__, 'templates/dashboard.xml'))
+    DashboardPage instances are created on page request.
+    """
+
+    loader = XMLString(resource_string(__name__,
+                                       'templates/dashboard_page.xml'))
+
+    def __init__(self, dashboard, is_shared):
+        self.dashboard = dashboard
+        self.is_shared = is_shared
+
+    @renderer
+    def brand_renderer(self, request, tag):
+        href = '' if self.is_shared else '/'
+        tag.fillSlots(brand_href_slot=href)
+        return tag
+
+    @renderer
+    def dashboard_name_renderer(self, request, tag):
+        return tag(self.dashboard.config['title'])
+
+    @renderer
+    def dashboard_container_renderer(self, request, tag):
+        return self.dashboard
+
+
+class Dashboard(Element):
+    """
+    Holds a dashboard's configuration data and widget elements.
+
+    Dashboard instances are created when diamondash starts.
+    """
+
+    loader = XMLString(resource_string(__name__,
+                                       'templates/dashboard_container.xml'))
 
     def __init__(self, config):
         self.config = parse_config(config)
@@ -413,10 +447,6 @@ class Dashboard(Element):
     def get_widget_config(self, w_name):
         """Returns a widget using the passed in widget name"""
         return self.config['widgets'][w_name]
-
-    @renderer
-    def dashboard_name_renderer(self, request, tag):
-        return tag(self.config['title'])
 
     @renderer
     def widget_row_renderer(self, request, tag):
