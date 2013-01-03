@@ -2,9 +2,7 @@ from twisted.web import server
 from twisted.python import usage
 from twisted.application import service, strports
 
-import diamondash.server
-
-webserver = diamondash.server
+import diamondash.server as webserver
 
 
 class Options(usage.Options):
@@ -17,11 +15,10 @@ class Options(usage.Options):
 
 
 def makeService(options):
-    webserver.config = webserver.build_config(options)
+    webserver.configure(options)
 
     s = service.MultiService()
-    root = webserver.resource()
-    site = server.Site(root)
+    site = server.Site(webserver.resource())
     strports.service(options['port'], site).setServiceParent(s)
 
     return s

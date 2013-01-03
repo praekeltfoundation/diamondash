@@ -3,6 +3,7 @@
 }
 
 .dashboard-list-item {
+	margin: 8px 2px;
 }
 
 .dashboard-list-item a:hover {
