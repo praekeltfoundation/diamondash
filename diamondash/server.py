@@ -1,6 +1,5 @@
 """Web server for displaying dashboard components sourced from Graphite data"""
 
-from os import path, listdir
 from datetime import datetime
 import json
 
@@ -11,77 +10,76 @@ from twisted.web.template import Element, renderer, XMLString, tags
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
-from dashboard import DashboardPage, Dashboard, DASHBOARD_DEFAULTS
+from dashboard import Dashboard, DashboardPage
 
 
 # We need resource imported for klein magic. This makes pyflakes happy.
 resource = resource
 
-
-CONFIG_FILENAME = 'diamondash.yml'
-DEFAULT_PORT = '8080'
-DEFAULT_CONFIG_DIR = 'etc/diamondash'
-DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 SHARED_URL_PREFIX = 'shared'
+CONFIG_FILENAME = 'diamondash.yml'
 
+DEFAULT_GRAPHITE_URL = 'http://127.0.0.1:8000'
 
-config = {
-    'port': DEFAULT_PORT,
-    'config_dir': DEFAULT_CONFIG_DIR,
-    'graphite_url': DEFAULT_GRAPHITE_URL,
+DASHBOARD_DEFAULTS = {
+    'request_interval': 2,
+    'default_widget_type': 'graph',
 }
-dashboards_by_name = {}
-dashboards_by_share_id = {}
-index = None
 
 
-def configure(args=None):
-    """
-    Does the following:
-      - Updates the config from a config file, then from args
-      - Creates the dashboards from their configs
-    """
-    if args:
-        config['config_dir'] = args.get('config_dir', DEFAULT_CONFIG_DIR)
+class DiamondashServer(object):
+    """Contains the server's configuration options and dashboards"""
 
-    # load config file if it exists and update config
-    if path.exists(config['config_dir']):
-        filepath = '%s/%s' % (config['config_dir'], CONFIG_FILENAME)
-        file_config = yaml.safe_load(open(filepath))
-        config.update(file_config)
+    def __init__(self, dashboards, graphite_url):
+        self.graphite_url = graphite_url
 
-    # update config using args
-    if args:
-        config.update(args)
+        self.dashboards = []
+        self.dashboards_by_name = {}
+        self.dashboards_by_share_id = {}
 
-    add_dashboards(config)
+        for dashboard in dashboards:
+            self.add_dashboard(dashboard)
 
-    global index
-    index = Index(dashboards_by_name.values())
+        self.index = Index(self.dashboards)
 
-    return config
+    @classmethod
+    def from_config_dir(cls, config_dir):
+        """Creates diamondash server from config file"""
+        config_file = "%s/%s" % (config_dir, CONFIG_FILENAME,)
+        config = yaml.safe_load(open(config_file))
 
+        graphite_url = config.get('graphite_url', DEFAULT_GRAPHITE_URL)
 
-def add_dashboards(config):
-    """Adds the dashboards to diamondash"""
-    dashboard_defaults = dict((k, config[k])
+        file_dashboard_defaults = dict((k, config[k])
                               for k in DASHBOARD_DEFAULTS
                               if k in config)
+        dashboard_defaults = dict(DASHBOARD_DEFAULTS,
+                                  **file_dashboard_defaults)
 
-    dashboards_path = '%s/dashboards' % (config['config_dir'],)
-
-    if path.exists(dashboards_path):
-        for filename in listdir(dashboards_path):
-            filepath = '%s/%s' % (dashboards_path, filename)
-            dashboard = Dashboard.from_config_file(filepath,
+        dashboards_dir = "%s/dashboards/" % dir
+        dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
                                                    dashboard_defaults)
+        return cls(dashboards, graphite_url)
 
-            name = dashboard.config['name']
-            dashboards_by_name[name] = dashboard
+    def add_dashboard(self, dashboard):
+        """Adds a dashboard to diamondash"""
+        self.dashboards.append(dashboard)
 
-            share_id = dashboard.config.get('share_id', None)
-            if share_id is not None:
-                dashboards_by_share_id[share_id] = dashboard
+        name = dashboard.config['name']
+        self.dashboards_by_name[name] = dashboard
+
+        share_id = dashboard.config.get('share_id', None)
+        if share_id is not None:
+            self.dashboards_by_share_id[share_id] = dashboard
+
+
+# singleton instance for the server
+server = None
+
+
+def configure(dir):
+    global server
+    server = DiamondashServer.from_config_dir(dir)
 
 
 def format_results_for_graph(results, widget_config):
@@ -251,7 +249,7 @@ def render_lvalue(data, widget_config):
 
 @route('/')
 def show_index(request):
-    return index
+    return server.index
 
 
 @route('/static/')
@@ -265,7 +263,7 @@ def show_dashboard(request, name):
     """Show a non-shared dashboard page"""
     # TODO handle invalid name references
     name = name.encode('utf-8')
-    return DashboardPage(dashboards_by_name[name], False)
+    return DashboardPage(server.dashboards_by_name[name], False)
 
 
 @route('/%s/<string:share_id>' % SHARED_URL_PREFIX)
@@ -273,7 +271,7 @@ def show_shared_dashboard(request, share_id):
     """Show a shared dashboard page"""
     # TODO handle invalid share id references
     share_id = share_id.encode('utf-8')
-    return DashboardPage(dashboards_by_share_id[share_id], True)
+    return DashboardPage(server.dashboards_by_share_id[share_id], True)
 
 
 @route('/render/<string:dashboard_name>/<string:widget_name>')
@@ -282,9 +280,9 @@ def render(request, dashboard_name, widget_name):
     # TODO check for invalid dashboard and widget requests
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
-    dashboard = dashboards_by_name[dashboard_name]
+    dashboard = server.dashboards_by_name[dashboard_name]
     widget_config = dashboard.get_widget_config(widget_name)
-    request_url = '%s/%s' % (config['graphite_url'],
+    request_url = '%s/%s' % (server.graphite_url,
                              widget_config['request_url'])
 
     d = getPage(request_url)

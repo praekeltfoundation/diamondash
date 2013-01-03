@@ -4,21 +4,23 @@ from twisted.application import service, strports
 
 import diamondash.server as webserver
 
+DEFAULT_PORT = '8080'
+DEFAULT_CONFIG_DIR = 'etc/diamondash'
+
 
 class Options(usage.Options):
     """Command line args when run as a twistd plugin"""
     # TODO other args
-    optParameters = [["port", "p", webserver.DEFAULT_PORT,
+    optParameters = [["port", "p", DEFAULT_PORT,
                       "Port number for diamondash to listen on"],
-                     ["config_dir", "c", webserver.DEFAULT_CONFIG_DIR,
+                     ["config_dir", "c", DEFAULT_CONFIG_DIR,
                       "Config dir"]]
 
 
 def makeService(options):
-    webserver.configure(options)
-
-    s = service.MultiService()
+    webserver.configure(options['config_dir'])
+    diamondash_service = service.MultiService()
     site = server.Site(webserver.resource())
-    strports.service(options['port'], site).setServiceParent(s)
-
-    return s
+    strports_service = strports.service(options['port'], site)
+    strports_service.setServiceParent(diamondash_service)
+    return diamondash_service

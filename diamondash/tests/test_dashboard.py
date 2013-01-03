@@ -11,9 +11,9 @@ from diamondash.dashboard import (
     slugify, format_metric_target,
     parse_interval, parse_graph_width,
     parse_config, parse_graph_config, parse_lvalue_config,
-    build_client_config, Dashboard, DASHBOARD_DEFAULTS,
-    LVALUE_DEFAULTS, GRAPH_DEFAULTS,
+    build_client_config, Dashboard, LVALUE_DEFAULTS, GRAPH_DEFAULTS,
     MIN_COLUMN_SPAN, MAX_COLUMN_SPAN)
+from diamondash.server import DASHBOARD_DEFAULTS
 from diamondash.exceptions import ConfigError
 
 
@@ -63,6 +63,10 @@ class DashboardConfigTestCase(unittest.TestCase):
     data and add, parse, modify and replace the input
     where applicable
     """
+    DASHBOARD_DEFAULTS = {
+        'request_interval': 2,
+        'default_widget_type': 'graph',
+    }
 
     TEST_GRAPH_DEFAULTS = {
         'null_filter': 'zeroize',
@@ -157,12 +161,12 @@ class DashboardConfigTestCase(unittest.TestCase):
                 'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'),
         })
 
-    TEST_CONFIG = {
+    TEST_CONFIG = dict(DASHBOARD_DEFAULTS, **{
         'name': 'A dashboard',
         'graph_defaults': TEST_GRAPH_DEFAULTS,
         'lvalue_defaults': TEST_LVALUE_DEFAULTS,
         'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG],
-    }
+    })
     TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
         'name': 'a-dashboard',
         'title': 'A dashboard',
@@ -177,7 +181,8 @@ class DashboardConfigTestCase(unittest.TestCase):
 
     TEST_CLIENT_CONFIG_BUILT = 'var config = %s;' % (json.dumps({
         'name': 'a-dashboard',
-        'request_interval': int(DASHBOARD_DEFAULTS['request_interval']) * 1000,
+        'request_interval': int(
+            DASHBOARD_DEFAULTS['request_interval']) * 1000,
         'widgets': {
             'some-graph-widget': {
                 'metrics': {
@@ -277,8 +282,11 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'widget_title.yml')).config
+        dashboard = Dashboard.from_config_file(
+            resource_filename(__name__, 'widget_title.yml'),
+            DASHBOARD_DEFAULTS)
+        config = dashboard.config
+
         self.assertEqual(
             config['widgets']['random-count-sum']['title'], 'random count sum')
         self.assertEqual(config['widgets']['random-timer-average']['title'],
@@ -290,8 +298,11 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'metric_title.yml')).config
+        dashboard = Dashboard.from_config_file(
+            resource_filename(__name__, 'metric_title.yml'),
+            DASHBOARD_DEFAULTS)
+        config = dashboard.config
+
         test_metrics = config['widgets']['test-widget']['metrics']
         self.assertEqual(test_metrics['random-count-sum']['title'],
                          'random count sum')
@@ -325,8 +336,10 @@ class DashboardConfigTestCase(unittest.TestCase):
         Should use the given time range if one is provided, otherwise the
         default.
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'graph_time_range.yml')).config
+        dashboard = Dashboard.from_config_file(
+            resource_filename(__name__, 'graph_time_range.yml'),
+            DASHBOARD_DEFAULTS)
+        config = dashboard.config
 
         def assert_time_range(widget_name, time_range):
             self.assertEqual(

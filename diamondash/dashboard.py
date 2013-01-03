@@ -2,6 +2,7 @@
 
 import re
 import json
+from os import listdir
 from urllib import urlencode
 
 import yaml
@@ -10,7 +11,6 @@ from pkg_resources import resource_string
 from twisted.web.template import Element, renderer, XMLString
 
 from exceptions import ConfigError
-
 
 # graph widget defaults
 GRAPH_DEFAULTS = {
@@ -24,13 +24,6 @@ GRAPH_DEFAULTS = {
 # lvalue widget defaults
 LVALUE_DEFAULTS = {
     'time_range': 3600,
-}
-
-
-# dashboard defaults
-DASHBOARD_DEFAULTS = {
-    'request_interval': 2,
-    'default_widget_type': 'graph',
 }
 
 
@@ -189,8 +182,6 @@ def parse_config(config):
     Parses a dashboard config, applying changes
     where appropriate and returning the resulting config
     """
-    config = dict(DASHBOARD_DEFAULTS, **config)
-
     if 'name' not in config:
         raise ConfigError('Dashboard name not specified.')
 
@@ -417,6 +408,18 @@ class Dashboard(Element):
         self.config = parse_config(config)
         self.client_config = build_client_config(self.config)
         self.rows = build_widget_rows(self.config['widget_list'])
+
+    @classmethod
+    def dashboards_from_dir(cls, dir, defaults=None):
+        """Gets a list of dashboard configs from a config dir"""
+        dashboards = []
+
+        for filename in listdir(dir):
+            filepath = '%s/%s' % (dir, filename)
+            dashboard = Dashboard.from_config_file(filepath, defaults)
+            dashboards.append(dashboard)
+
+        return dashboards
 
     @classmethod
     def from_config_file(cls, filename, defaults=None):

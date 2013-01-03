@@ -10,6 +10,8 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
 
 from diamondash import server
+from diamondash.server import DASHBOARD_DEFAULTS, DiamondashServer
+
 from diamondash.dashboard import Dashboard
 
 
@@ -64,7 +66,7 @@ class MockGraphiteServerMixin(object):
         return self.graphite_ws.loseConnection()
 
 
-class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
+class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     TEST_DATA = json.load(resource_stream(__name__, 'server_test_data.json'))
 
@@ -96,15 +98,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = 3600
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -119,11 +114,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         }
                     },
                 }
-            ]
-        }
+            ],
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer([dashboard], self.graphite_url)
 
         test_data_key = 'test_render_for_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -142,15 +137,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = 3600
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -169,10 +157,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     },
                 }
             ]
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer([dashboard], self.graphite_url)
 
         test_data_key = 'test_render_for_multimetric_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -192,15 +180,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = '1d'
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -210,10 +191,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'metrics': ['vumi.random.count.sum'],
                 }
             ],
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer([dashboard], self.graphite_url)
 
         test_data_key = 'test_render_for_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
@@ -232,15 +213,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = '1h'
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -251,10 +225,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                                 'vumi.random.timer.sum'],
                 },
             ]
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer([dashboard], self.graphite_url)
 
         test_data_key = 'test_render_for_multimetric_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
