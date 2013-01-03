@@ -63,7 +63,7 @@ def configure(args=None):
 
 
 def add_dashboards(config):
-    """Adds the dashboards to the web server"""
+    """Adds the dashboards to diamondash"""
     dashboard_defaults = dict((k, config[k])
                               for k in DASHBOARD_DEFAULTS
                               if k in config)
@@ -82,8 +82,6 @@ def add_dashboards(config):
             share_id = dashboard.config.get('share_id', None)
             if share_id is not None:
                 dashboards_by_share_id[share_id] = dashboard
-
-    return config
 
 
 def format_results_for_graph(results, widget_config):
