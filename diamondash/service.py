@@ -5,7 +5,7 @@ from twisted.application import service, strports
 import diamondash.server as webserver
 
 DEFAULT_PORT = '8080'
-DEFAULT_CONFIG_DIR = 'etc/diamondash'
+DEFAULT_CONFIG_DIR = 'etc'
 
 
 class Options(usage.Options):
