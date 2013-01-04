@@ -58,7 +58,11 @@ class DiamondashServer(object):
         dashboard_defaults = dict(DASHBOARD_DEFAULTS,
                                   **file_dashboard_defaults)
 
-        dashboards_dir = path.join(config_dir, "dashboards/")
+        dashboard_defaults = {}
+        for key, default_value in DASHBOARD_DEFAULTS.iteritems():
+            dashboard_defaults[key] = config.get(key, default_value)
+
+        dashboards_dir = path.join(config_dir, "dashboards")
         dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
                                                    dashboard_defaults)
         return cls(graphite_url, dashboards)

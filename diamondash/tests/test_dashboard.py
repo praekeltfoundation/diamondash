@@ -2,6 +2,7 @@
 """Tests for diamondash's dashboard"""
 
 import json
+from os import path
 from copy import deepcopy
 
 from pkg_resources import resource_filename
@@ -55,6 +56,14 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
                           'tests/test_dashboard_data/no_metrics_target.yml')
+
+
+def dashboard_config_from_file(filename):
+    filename = path.join('test_dashboard_data', filename)
+    dashboard = Dashboard.from_config_file(
+        resource_filename(__name__, filename),
+        DASHBOARD_DEFAULTS)
+    return dashboard.config
 
 
 class DashboardConfigTestCase(unittest.TestCase):
@@ -282,11 +291,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        filename = 'test_dashboard_data/widget_title.yml'
-        dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, filename),
-            DASHBOARD_DEFAULTS)
-        config = dashboard.config
+        config = dashboard_config_from_file('widget_title.yml')
 
         self.assertEqual(
             config['widgets']['random-count-sum']['title'], 'random count sum')
@@ -299,11 +304,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        filename = 'test_dashboard_data/metric_title.yml'
-        dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, filename),
-            DASHBOARD_DEFAULTS)
-        config = dashboard.config
+        config = dashboard_config_from_file('metric_title.yml')
 
         test_metrics = config['widgets']['test-widget']['metrics']
         self.assertEqual(test_metrics['random-count-sum']['title'],
@@ -338,11 +339,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         Should use the given time range if one is provided, otherwise the
         default.
         """
-        filename = 'test_dashboard_data/graph_time_range.yml'
-        dashboard = Dashboard.from_config_file(
-            resource_filename(__name__, filename),
-            DASHBOARD_DEFAULTS)
-        config = dashboard.config
+        config = dashboard_config_from_file('graph_time_range.yml')
 
         def assert_time_range(widget_name, time_range):
             self.assertEqual(
