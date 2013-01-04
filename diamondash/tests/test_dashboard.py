@@ -2,6 +2,7 @@
 """Tests for diamondash's dashboard"""
 
 import json
+from os import path
 from copy import deepcopy
 
 from pkg_resources import resource_filename
@@ -11,9 +12,9 @@ from diamondash.dashboard import (
     slugify, format_metric_target,
     parse_interval, parse_graph_width,
     parse_config, parse_graph_config, parse_lvalue_config,
-    build_client_config, Dashboard, DASHBOARD_DEFAULTS,
-    LVALUE_DEFAULTS, GRAPH_DEFAULTS,
+    build_client_config, Dashboard, LVALUE_DEFAULTS, GRAPH_DEFAULTS,
     MIN_COLUMN_SPAN, MAX_COLUMN_SPAN)
+from diamondash.server import DASHBOARD_DEFAULTS
 from diamondash.exceptions import ConfigError
 
 
@@ -27,19 +28,19 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         Should assert an error if the dashboard config file is not found
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/non_existent_file.yml')
+                          'tests/test_dashboard_data/non_existent_file.yml')
 
     def test_no_dashboard_name(self):
         """
         Should assert an error if the dashboard in the config file has no name
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_dashboard_name.yml')
+                          'tests/test_dashboard_data/no_dashboard_name.yml')
 
     def test_no_widget_name(self):
         """Should assert an error if a widget in the config file has no name"""
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_widget_name.yml')
+                          'tests/test_dashboard_data/no_widget_name.yml')
 
     def test_no_widget_metrics(self):
         """
@@ -47,14 +48,22 @@ class DashboardConfigExceptionsTestCase(unittest.TestCase):
         has no metrics
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_widget_metrics.yml')
+                          'tests/test_dashboard_data/no_widget_metrics.yml')
 
     def test_no_metric_target(self):
         """
         Should assert an error if a metric in the config file has no target
         """
         self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/no_metrics_target.yml')
+                          'tests/test_dashboard_data/no_metrics_target.yml')
+
+
+def dashboard_config_from_file(filename):
+    filename = path.join('test_dashboard_data', filename)
+    dashboard = Dashboard.from_config_file(
+        resource_filename(__name__, filename),
+        DASHBOARD_DEFAULTS)
+    return dashboard.config
 
 
 class DashboardConfigTestCase(unittest.TestCase):
@@ -63,6 +72,10 @@ class DashboardConfigTestCase(unittest.TestCase):
     data and add, parse, modify and replace the input
     where applicable
     """
+    DASHBOARD_DEFAULTS = {
+        'request_interval': 2,
+        'default_widget_type': 'graph',
+    }
 
     TEST_GRAPH_DEFAULTS = {
         'null_filter': 'zeroize',
@@ -157,12 +170,12 @@ class DashboardConfigTestCase(unittest.TestCase):
                 'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'),
         })
 
-    TEST_CONFIG = {
+    TEST_CONFIG = dict(DASHBOARD_DEFAULTS, **{
         'name': 'A dashboard',
         'graph_defaults': TEST_GRAPH_DEFAULTS,
         'lvalue_defaults': TEST_LVALUE_DEFAULTS,
         'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG],
-    }
+    })
     TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
         'name': 'a-dashboard',
         'title': 'A dashboard',
@@ -177,7 +190,8 @@ class DashboardConfigTestCase(unittest.TestCase):
 
     TEST_CLIENT_CONFIG_BUILT = 'var config = %s;' % (json.dumps({
         'name': 'a-dashboard',
-        'request_interval': int(DASHBOARD_DEFAULTS['request_interval']) * 1000,
+        'request_interval': int(
+            DASHBOARD_DEFAULTS['request_interval']) * 1000,
         'widgets': {
             'some-graph-widget': {
                 'metrics': {
@@ -277,8 +291,8 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'widget_title.yml')).config
+        config = dashboard_config_from_file('widget_title.yml')
+
         self.assertEqual(
             config['widgets']['random-count-sum']['title'], 'random count sum')
         self.assertEqual(config['widgets']['random-timer-average']['title'],
@@ -290,8 +304,8 @@ class DashboardConfigTestCase(unittest.TestCase):
         title using a title key if it is explicitly specified, even when the
         two different conventions are mixed in a config file
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'metric_title.yml')).config
+        config = dashboard_config_from_file('metric_title.yml')
+
         test_metrics = config['widgets']['test-widget']['metrics']
         self.assertEqual(test_metrics['random-count-sum']['title'],
                          'random count sum')
@@ -325,8 +339,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         Should use the given time range if one is provided, otherwise the
         default.
         """
-        config = Dashboard.from_config_file(resource_filename(
-            __name__, 'graph_time_range.yml')).config
+        config = dashboard_config_from_file('graph_time_range.yml')
 
         def assert_time_range(widget_name, time_range):
             self.assertEqual(
