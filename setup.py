@@ -1,8 +1,21 @@
 from setuptools import setup, find_packages
 
+from os import walk, path
+
 
 def listify(filename):
     return filter(None, open(filename, 'r').read().split('\n'))
+
+
+def files_in_dir(package, dir):
+    """Lists the files in `package/dir` recursively"""
+    list = []
+    rootdir = path.join(package, dir)
+    for root, subdirs, files in walk(rootdir):
+        for file in files:
+            filepath = path.relpath(path.join(root, file), package)
+            list.append(filepath)
+    return list
 
 
 def parse_requirements(filename):
@@ -17,6 +30,7 @@ def parse_requirements(filename):
             install_requires.append(requirement)
     return install_requires, dependency_links
 
+
 install_requires, dependency_links = parse_requirements(
     "requirements.pip")
 
@@ -29,16 +43,13 @@ setup(
     long_description=open('README.md', 'r').read(),
     author='Praekelt Foundation',
     author_email='dev@praekeltfoundation.org',
-    packages=find_packages() + [
-        # NOTE:2012-01-18: This is commented out for now, pending a fix for
-        # https://github.com/pypa/pip/issues/355
-        #'twisted.plugins',
-    ],
+    packages=find_packages() + ['twisted.plugins'],
     package_data={
-        'diamondash': ['etc/*'],
-        'twisted.plugins': ['twisted/plugins/*.py']
-        },
-    include_package_data=True,
+        'diamondash': [
+            'templates/*.xml',
+        ] + files_in_dir('diamondash', 'static'),
+        'twisted.plugins': ['twisted/plugins/*.py'],
+    },
     install_requires=install_requires,
     #dependency_links=dependency_links,
     classifiers=[
