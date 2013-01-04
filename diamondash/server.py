@@ -53,11 +53,6 @@ class DiamondashServer(object):
 
         graphite_url = config.get('graphite_url', DEFAULT_GRAPHITE_URL)
 
-        file_dashboard_defaults = dict(
-            (k, config[k]) for k in DASHBOARD_DEFAULTS if k in config)
-        dashboard_defaults = dict(DASHBOARD_DEFAULTS,
-                                  **file_dashboard_defaults)
-
         dashboard_defaults = {}
         for key, default_value in DASHBOARD_DEFAULTS.iteritems():
             dashboard_defaults[key] = config.get(key, default_value)
