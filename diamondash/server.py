@@ -281,13 +281,15 @@ def render(request, dashboard_name, widget_name):
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
 
+    # get dashboard or return empty json object if it does not exist
     dashboard = server.dashboards_by_name.get(dashboard_name, None)
     if dashboard is None:
-        return "{}"  # return empty json object if dashboard does not exist
+        return "{}"
 
+    # get widget config or return empty json object if it does not exist
     widget_config = dashboard.get_widget_config(widget_name)
     if widget_config is None:
-        return "{}"  # return empty json object if widget does not exist
+        return "{}"
 
     request_url = '/'.join(s.strip('/') for s in (
         server.graphite_url, widget_config['request_url']))
