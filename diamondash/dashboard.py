@@ -449,7 +449,7 @@ class Dashboard(Element):
 
     def get_widget_config(self, w_name):
         """Returns a widget using the passed in widget name"""
-        return self.config['widgets'][w_name]
+        return self.config['widgets'].get(w_name, None)
 
     @renderer
     def widget_row_renderer(self, request, tag):

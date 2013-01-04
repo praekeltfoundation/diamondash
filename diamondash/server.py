@@ -278,15 +278,21 @@ def show_shared_dashboard(request, share_id):
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
-    # TODO check for invalid dashboard and widget requests
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
-    dashboard = server.dashboards_by_name[dashboard_name]
-    widget_config = dashboard.get_widget_config(widget_name)
-    request_url = '%s/%s' % (server.graphite_url,
-                             widget_config['request_url'])
 
+    dashboard = server.dashboards_by_name.get(dashboard_name, None)
+    if dashboard is None:
+        return "{}"  # return empty json object if dashboard does not exist
+
+    widget_config = dashboard.get_widget_config(widget_name)
+    if widget_config is None:
+        return "{}"  # return empty json object if widget does not exist
+
+    request_url = '/'.join(s.strip('/') for s in (
+        server.graphite_url, widget_config['request_url']))
     d = getPage(request_url)
+
     d.addCallback(get_result_datapoints)
 
     render_widget = {

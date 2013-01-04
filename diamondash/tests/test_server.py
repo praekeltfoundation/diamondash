@@ -73,6 +73,9 @@ class MockDashboard:
         self.is_mock = True
         self.config = config
 
+    def get_widget_config(self, widget_name):
+        return None
+
 
 class DiamondashServerTestCase(unittest.TestCase):
 
@@ -107,6 +110,17 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         if self.graphite_ws:
             self.stop_graphite_ws()
 
+    def configure_server(self, dashboard_configs):
+        """
+        Configures the diamondash server with a single dashboard
+        """
+        dashboards = [Dashboard(d_config) for d_config in dashboard_configs]
+        server.server = DiamondashServer(self.graphite_url, dashboards)
+
+    def mock_request(self, input):
+        host = self.graphite_ws.getHost()
+        return requestMock(input, host=host.host, port=host.port)
+
     def assert_response(self, response_data, expected_response):
         """
         Asserts whether the response obtained matches
@@ -119,6 +133,24 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
     Render tests
     ------------
     """
+    def test_render_for_nonexistent_dashboard(self):
+        """
+        Should return an empty json object as a response if the dashboard does
+        not exist
+        """
+        server.server = DiamondashServer('http://someurl.com/', [])
+        response = server.render(None, 'test-dashboard', 'some_metric')
+        self.assertEqual(response, "{}")
+
+    def test_render_for_nonexistent_widget(self):
+        """
+        Should return an empty json object as a response if the dashboard does
+        not exist
+        """
+        dashboard = MockDashboard({'name': 'test-dashboard'})
+        server.server = DiamondashServer('http://someurl.com/', [dashboard])
+        response = server.render(None, 'test-dashboard', 'some_metric')
+        self.assertEqual(response, "{}")
 
     @inlineCallbacks
     def test_render_for_graph(self):
@@ -128,13 +160,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_time_range = 3600
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'random-count-sum',
-                    'time_range': test_time_range,
+                    'time_range': 3600,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -146,15 +177,13 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ],
         })
-
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
+        self.configure_server([dashboard_config])
 
         test_data_key = 'test_render_for_graph'
         input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
         output = self.TEST_DATA[test_data_key]['output']
+
+        request = self.mock_request(input)
         d = server.render(request, 'test-dashboard', 'random-count-sum')
         d.addCallback(self.assert_response, output)
         yield d
@@ -167,13 +196,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_time_range = 3600
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'random-count-sum-and-average',
-                    'time_range': test_time_range,
+                    'time_range': 3600,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -188,15 +216,13 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ]
         })
-
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
+        self.configure_server([dashboard_config])
 
         test_data_key = 'test_render_for_multimetric_graph'
         input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
         output = self.TEST_DATA[test_data_key]['output']
+
+        request = self.mock_request(input)
         d = server.render(request, 'test-dashboard',
                           'random-count-sum-and-average')
         d.addCallback(self.assert_response, output)
@@ -210,27 +236,24 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_time_range = '1d'
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'some-lvalue-widget',
-                    'time_range': test_time_range,
+                    'time_range': '1d',
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum'],
                 }
             ],
         })
-
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
+        self.configure_server([dashboard_config])
 
         test_data_key = 'test_render_for_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
         output = self.TEST_DATA[test_data_key]['output']
+
+        request = self.mock_request(input)
         d = server.render(request, 'test-dashboard', 'some-lvalue-widget')
         d.addCallback(self.assert_response, output)
         yield d
@@ -243,13 +266,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_time_range = '1h'
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'some-multimetric-lvalue-widget',
-                    'time_range': test_time_range,
+                    'time_range': '1h',
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum',
                                 'vumi.random.timer.sum'],
@@ -257,14 +279,13 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ]
         })
 
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
+        self.configure_server([dashboard_config])
 
         test_data_key = 'test_render_for_multimetric_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
         output = self.TEST_DATA[test_data_key]['output']
+
+        request = self.mock_request(input)
         d = server.render(request, 'test-dashboard',
                           'some-multimetric-lvalue-widget')
         d.addCallback(self.assert_response, output)
