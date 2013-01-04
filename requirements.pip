@@ -1,4 +1,4 @@
-git+https://github.com/twisted/klein.git#egg=klein
+https://github.com/twisted/klein.git#egg=klein
 PyYAML
 Twisted
 Unidecode
