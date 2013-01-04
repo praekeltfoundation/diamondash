@@ -1,8 +1,8 @@
 """Tests for diamondash's server side"""
 
 import json
-
 from pkg_resources import resource_stream
+
 from klein.test_resource import requestMock
 from twisted.trial import unittest
 from twisted.internet import reactor
@@ -10,6 +10,8 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import Protocol, Factory
 
 from diamondash import server
+from diamondash.server import DASHBOARD_DEFAULTS, DiamondashServer
+
 from diamondash.dashboard import Dashboard
 
 
@@ -64,9 +66,39 @@ class MockGraphiteServerMixin(object):
         return self.graphite_ws.loseConnection()
 
 
-class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
+class MockDashboard:
+    """A mock for the Dashboard class"""
 
-    TEST_DATA = json.load(resource_stream(__name__, 'server_test_data.json'))
+    def __init__(self, config):
+        self.is_mock = True
+        self.config = config
+
+
+class DiamondashServerTestCase(unittest.TestCase):
+
+    def test_add_dashboard(self):
+        """
+        Should add a dashboard to the server's dashboard list, as well as the
+        server's name-dashboard and share_id-dashboard lookups.
+        """
+        dashboard_config = {
+            'name': 'lorem',
+            'share_id': 'ipsum'
+        }
+        mock_dashboard = MockDashboard(dashboard_config)
+
+        dd_server = DiamondashServer('', [])
+        dd_server.add_dashboard(mock_dashboard)
+
+        self.assertTrue(dd_server.dashboards[0].is_mock)
+        self.assertTrue(dd_server.dashboards_by_name['lorem'].is_mock)
+        self.assertTrue(dd_server.dashboards_by_share_id['ipsum'].is_mock)
+
+
+class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
+
+    TEST_DATA = json.load(
+        resource_stream(__name__, 'test_server_data/server_test_data.json'))
 
     def setUp(self):
         self.graphite_ws = None
@@ -96,15 +128,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = 3600
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -119,11 +144,11 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                         }
                     },
                 }
-            ]
-        }
+            ],
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -142,15 +167,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = 3600
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -169,10 +187,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     },
                 }
             ]
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_multimetric_graph'
         input = self.TEST_DATA[test_data_key]['input']
@@ -192,15 +210,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = '1d'
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -210,10 +221,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'metrics': ['vumi.random.count.sum'],
                 }
             ],
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
@@ -232,15 +243,8 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         """
         yield self.start_graphite_ws()
 
-        test_overrides = {
-            'graphite_url': self.graphite_url,
-        }
-
-        # initialise the server configuration
-        server.configure(test_overrides)
-
         test_time_range = '1h'
-        dashboard_config = {
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
@@ -251,10 +255,10 @@ class DiamondashServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                                 'vumi.random.timer.sum'],
                 },
             ]
-        }
+        })
 
-        server.dashboards_by_name['test-dashboard'] = Dashboard.from_args(
-            **dashboard_config)
+        dashboard = Dashboard(dashboard_config)
+        server.server = DiamondashServer(self.graphite_url, [dashboard])
 
         test_data_key = 'test_render_for_multimetric_lvalue'
         input = self.TEST_DATA[test_data_key]['input']
