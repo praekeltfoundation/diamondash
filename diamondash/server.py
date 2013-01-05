@@ -213,12 +213,6 @@ def aggregate_results_for_lvalue(data):
         - maximum of last x value (latest time)
     """
 
-    # pad datapoint lists who's length is too small
-    for datapoints in data:
-        datapoints_len = len(datapoints)
-        if datapoints_len < 2:
-            datapoints.extend([[0, 0] for i in 2 - datapoints_len])
-
     prev = sum((datapoints[-2][0] for datapoints in data
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
     lvalue = sum((datapoints[-1][0] for datapoints in data
