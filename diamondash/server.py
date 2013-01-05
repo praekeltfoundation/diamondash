@@ -217,8 +217,11 @@ def aggregate_results_for_lvalue(data):
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
     lvalue = sum((datapoints[-1][0] for datapoints in data
                 if (len(datapoints) > 0 and datapoints[-1][0] is not None)))
-    time = max((datapoints[-1][1] for datapoints in data
-                if (len(datapoints) > 0 and datapoints[-1][1] is not None)))
+
+    # set time to 0 if all metric results are empty
+    times = [datapoints[-1][1] for datapoints in data
+                if (len(datapoints) > 0 and datapoints[-1][1] is not None)]
+    time = 0 if not times else max(times)
 
     return prev, lvalue, time
 

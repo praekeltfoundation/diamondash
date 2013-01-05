@@ -49,7 +49,8 @@ class MockGraphiteServerMixin(object):
     Graphite response data
     """
 
-    RESPONSE_DATA = json.load(resource_stream(__name__, 'response_data.json'))
+    RESPONSE_DATA = json.load(
+        resource_stream(__name__, 'test_server_data/response_data.json'))
 
     graphite_ws = None
 
@@ -191,8 +192,43 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ],
         })
-        yield self.assert_render(dashboard_config, 'test_render_for_graph',
-                           'test-dashboard', 'random-count-sum')
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_graph',
+                                 'test-dashboard',
+                                 'random-count-sum')
+
+    @inlineCallbacks
+    def test_render_for_partial_graph_results(self):
+        """
+        Should send a request to graphite, get results for only some of the
+        widget's metrics, set the non-existent metric's datapoints to [], apply
+        transformations, and return data useable by the client side for graph
+        widgets
+        """
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
+            'name': 'test-dashboard',
+            'widgets': [
+                {
+                    'name': 'random-count-sum',
+                    'time_range': 3600,
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'bucket_size': 300,
+                    'metrics': {
+                        'luke the metric': {
+                            'target': 'vumi.random.count.sum'
+                        },
+                        'non-existent metric': {
+                            'target': 'non.existent'
+                        }
+                    },
+                }
+            ],
+        })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_partial_graph_results',
+                                 'test-dashboard',
+                                 'random-count-sum')
 
     @inlineCallbacks
     def test_render_for_multimetric_graph(self):
@@ -246,6 +282,33 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                            'test_render_for_lvalue',
                            'test-dashboard',
                            'some-lvalue-widget')
+
+    @inlineCallbacks
+    def test_render_for_partial_lvalue_results(self):
+        """
+        Should send a request to graphite, get results for only some of the
+        widget's metrics, set the non-existent metric's datapoints to [], apply
+        transformations, and return data useable by the client side for lvalue
+        widgets
+        """
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
+            'name': 'test-dashboard',
+            'widgets': [
+                {
+                    'name': 'some-lvalue-widget',
+                    'time_range': '1d',
+                    'type': 'lvalue',
+                    'metrics': [
+                        'vumi.random.count.sum',
+                        'non.existent'
+                    ],
+                }
+            ],
+        })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_partial_lvalue_results',
+                                 'test-dashboard',
+                                 'some-lvalue-widget')
 
     @inlineCallbacks
     def test_render_for_multimetric_lvalue(self):
