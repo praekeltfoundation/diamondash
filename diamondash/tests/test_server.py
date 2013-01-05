@@ -158,13 +158,22 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         self.assertEqual(response, "{}")
 
     @inlineCallbacks
+    def assert_render(self, dashboard_config, key, dashboard_name,
+                      widget_name):
+        yield self.start_graphite_ws()
+        self.configure_server([dashboard_config])
+        input, output = self.get_test_data_io(key)
+        request = self.mock_request(input)
+        d = server.render(request, dashboard_name, widget_name)
+        d.addCallback(self.assert_response, output)
+        yield d
+
+    @inlineCallbacks
     def test_render_for_graph(self):
         """
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for graph widgets
         """
-        yield self.start_graphite_ws()
-
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
@@ -182,13 +191,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ],
         })
-        self.configure_server([dashboard_config])
-
-        input, output = self.get_test_data_io('test_render_for_graph')
-        request = self.mock_request(input)
-        d = server.render(request, 'test-dashboard', 'random-count-sum')
-        d.addCallback(self.assert_response, output)
-        yield d
+        yield self.assert_render(dashboard_config, 'test_render_for_graph',
+                           'test-dashboard', 'random-count-sum')
 
     @inlineCallbacks
     def test_render_for_multimetric_graph(self):
@@ -196,8 +200,6 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for graph widgets
         """
-        yield self.start_graphite_ws()
-
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
@@ -218,15 +220,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ]
         })
-        self.configure_server([dashboard_config])
-
-        input, output = self.get_test_data_io(
-            'test_render_for_multimetric_graph')
-        request = self.mock_request(input)
-        d = server.render(request, 'test-dashboard',
-                          'random-count-sum-and-average')
-        d.addCallback(self.assert_response, output)
-        yield d
+        yield self.assert_render(dashboard_config,
+                           'test_render_for_multimetric_graph',
+                           'test-dashboard',
+                           'random-count-sum-and-average')
 
     @inlineCallbacks
     def test_render_for_lvalue(self):
@@ -234,8 +231,6 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for lvalue widgets
         """
-        yield self.start_graphite_ws()
-
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
@@ -247,13 +242,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ],
         })
-        self.configure_server([dashboard_config])
-
-        input, output = self.get_test_data_io('test_render_for_lvalue')
-        request = self.mock_request(input)
-        d = server.render(request, 'test-dashboard', 'some-lvalue-widget')
-        d.addCallback(self.assert_response, output)
-        yield d
+        yield self.assert_render(dashboard_config,
+                           'test_render_for_lvalue',
+                           'test-dashboard',
+                           'some-lvalue-widget')
 
     @inlineCallbacks
     def test_render_for_multimetric_lvalue(self):
@@ -261,8 +253,6 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for lvalue widgets
         """
-        yield self.start_graphite_ws()
-
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
@@ -275,16 +265,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 },
             ]
         })
-
-        self.configure_server([dashboard_config])
-
-        input, output = self.get_test_data_io(
-            'test_render_for_multimetric_lvalue')
-        request = self.mock_request(input)
-        d = server.render(request, 'test-dashboard',
-                          'some-multimetric-lvalue-widget')
-        d.addCallback(self.assert_response, output)
-        yield d
+        yield self.assert_render(dashboard_config,
+                           'test_render_for_multimetric_lvalue',
+                           'test-dashboard',
+                           'some-multimetric-lvalue-widget')
 
     # Purification tests
     # ------------------
