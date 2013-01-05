@@ -212,6 +212,13 @@ def aggregate_results_for_lvalue(data):
         - sum of last y value
         - maximum of last x value (latest time)
     """
+
+    # pad datapoint lists who's length is too small
+    for datapoints in data:
+        datapoints_len = len(datapoints)
+        if datapoints_len < 2:
+            datapoints.extend([[0, 0] for i in 2 - datapoints_len])
+
     prev = sum((datapoints[-2][0] for datapoints in data
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
     lvalue = sum((datapoints[-1][0] for datapoints in data
@@ -222,12 +229,14 @@ def aggregate_results_for_lvalue(data):
     return prev, lvalue, time
 
 
-def get_result_datapoints(data):
+def get_result_datapoints(data, widget_config):
     """
     Obtains the datapoints from the result returned from
     graphite from a render request
     """
-    return [metric['datapoints'] for metric in json.loads(data)]
+    data = json.loads(data)
+    datapoints_by_target = dict((m['target'], m['datapoints']) for m in data)
+    return [datapoints_by_target.get(t, []) for t in widget_config['targets']]
 
 
 def render_graph(data, widget_config):
@@ -295,7 +304,7 @@ def render(request, dashboard_name, widget_name):
         server.graphite_url, widget_config['request_url']))
     d = getPage(request_url)
 
-    d.addCallback(get_result_datapoints)
+    d.addCallback(get_result_datapoints, widget_config)
 
     render_widget = {
         'graph': render_graph,

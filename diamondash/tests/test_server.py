@@ -121,6 +121,11 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         host = self.graphite_ws.getHost()
         return requestMock(input, host=host.host, port=host.port)
 
+    def get_test_data_io(self, key):
+        input = self.TEST_DATA[key]['input']
+        output = self.TEST_DATA[key]['output']
+        return input, output
+
     def assert_response(self, response_data, expected_response):
         """
         Asserts whether the response obtained matches
@@ -179,10 +184,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
         self.configure_server([dashboard_config])
 
-        test_data_key = 'test_render_for_graph'
-        input = self.TEST_DATA[test_data_key]['input']
-        output = self.TEST_DATA[test_data_key]['output']
-
+        input, output = self.get_test_data_io('test_render_for_graph')
         request = self.mock_request(input)
         d = server.render(request, 'test-dashboard', 'random-count-sum')
         d.addCallback(self.assert_response, output)
@@ -218,10 +220,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
         self.configure_server([dashboard_config])
 
-        test_data_key = 'test_render_for_multimetric_graph'
-        input = self.TEST_DATA[test_data_key]['input']
-        output = self.TEST_DATA[test_data_key]['output']
-
+        input, output = self.get_test_data_io(
+            'test_render_for_multimetric_graph')
         request = self.mock_request(input)
         d = server.render(request, 'test-dashboard',
                           'random-count-sum-and-average')
@@ -249,10 +249,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         })
         self.configure_server([dashboard_config])
 
-        test_data_key = 'test_render_for_lvalue'
-        input = self.TEST_DATA[test_data_key]['input']
-        output = self.TEST_DATA[test_data_key]['output']
-
+        input, output = self.get_test_data_io('test_render_for_lvalue')
         request = self.mock_request(input)
         d = server.render(request, 'test-dashboard', 'some-lvalue-widget')
         d.addCallback(self.assert_response, output)
@@ -281,46 +278,36 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
         self.configure_server([dashboard_config])
 
-        test_data_key = 'test_render_for_multimetric_lvalue'
-        input = self.TEST_DATA[test_data_key]['input']
-        output = self.TEST_DATA[test_data_key]['output']
-
+        input, output = self.get_test_data_io(
+            'test_render_for_multimetric_lvalue')
         request = self.mock_request(input)
         d = server.render(request, 'test-dashboard',
                           'some-multimetric-lvalue-widget')
         d.addCallback(self.assert_response, output)
         yield d
 
-    """
-    Purification tests
-    ------------------
-    """
+    # Purification tests
+    # ------------------
     def test_skip_nulls(self):
         """
         Should return datapoints without null values by
         skipping coordinates withh null x or y values
         """
-        test_data_key = 'test_skip_nulls'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        purified = server.skip_nulls(before)
-        self.assertEqual(purified, after)
+        input, output = self.get_test_data_io('test_skip_nulls')
+        purified = server.skip_nulls(input)
+        self.assertEqual(purified, output)
 
     def test_zeroize_nulls(self):
         """
         Should return datapoints without null values by
         skipping coordinates with null x or y values
         """
-        test_data_key = 'test_zeroize_nulls'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        purified = server.zeroize_nulls(before)
-        self.assertEqual(purified, after)
+        input, output = self.get_test_data_io('test_zeroize_nulls')
+        purified = server.zeroize_nulls(input)
+        self.assertEqual(purified, output)
 
-    """
-    Formatting tests
-    ----------------
-    """
+    # Formatting tests
+    # ----------------
 
     def test_format_results_for_graph(self):
         """
@@ -338,12 +325,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             },
         }
 
-        test_data_key = 'test_format_results_for_graph'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_results_for_graph(before, widget_config)
+        input, output = self.get_test_data_io('test_format_results_for_graph')
+        formatted = server.format_results_for_graph(input, widget_config)
         formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, after)
+        self.assertEqual(formatted_str, output)
 
     def test_format_results_for_multimetric_graph(self):
         """
@@ -363,12 +348,11 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             },
         }
 
-        test_data_key = 'test_format_results_for_multimetric_graph'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_results_for_graph(before, widget_config)
+        input, output = self.get_test_data_io(
+            'test_format_results_for_multimetric_graph')
+        formatted = server.format_results_for_graph(input, widget_config)
         formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, after)
+        self.assertEqual(formatted_str, output)
 
     def test_format_results_for_lvalue(self):
         """
@@ -396,10 +380,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     '"to": "2012-07-04 12:20"}')
         assert_format(data, config, expected)
 
-    """
-    Other tests
-    ------------
-    """
+    # Other tests
+    # ------------
 
     def test_aggregate_results_for_lvalue(self):
         """
@@ -430,17 +412,42 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         expected = (3.045992, 2.0, 1341318035)
         assert_aggregation(data, expected)
 
+    def assert_get_result_datapoints(self, key, widget_config):
+        input, output = self.get_test_data_io(key)
+        input_str = json.dumps(input)
+        result = server.get_result_datapoints(input_str, widget_config)
+        self.assertEqual(result, output)
+
     def test_get_result_datapoints(self):
         """
         Should obtain a list of datapoint lists, each list
         corresponding to a metric
         """
-        test_data_key = 'test_get_result_datapoints'
-        before = self.TEST_DATA[test_data_key]['before']
-        before_str = json.dumps(before)
-        result = server.get_result_datapoints(before_str)
-        after = self.TEST_DATA[test_data_key]['after']
-        self.assertEqual(result, after)
+        widget_config = {
+            'targets': [
+                'vumi.random.count.sum',
+                'vumi.random.timer.avg',
+            ]
+        }
+        self.assert_get_result_datapoints(
+            'test_get_result_datapoints', widget_config)
+
+    def test_get_result_datapoints_for_partial_results(self):
+        """
+        Should obtain a list of datapoint lists corresponding to metrics,
+        but set a datapoint list to [] if graphite did not return results
+        for that particular metric.
+        """
+        widget_config = {
+            'targets': [
+                'some-metric-target',
+                'vumi.random.count.sum',
+                'vumi.random.timer.avg',
+                'another-metric-target',
+            ]
+        }
+        self.assert_get_result_datapoints(
+            'test_get_result_datapoints_for_partial_results', widget_config)
 
     def test_format_value(self):
         def assert_format(input, expected):
