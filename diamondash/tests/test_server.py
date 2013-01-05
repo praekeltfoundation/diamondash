@@ -412,32 +412,25 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         expected = (3.045992, 2.0, 1341318035)
         assert_aggregation(data, expected)
 
-    def assert_get_result_datapoints(self, key, widget_config):
-        input, output = self.get_test_data_io(key)
-        input_str = json.dumps(input)
-        result = server.get_result_datapoints(input_str, widget_config)
-        self.assertEqual(result, output)
-
     def test_get_result_datapoints(self):
         """
         Should obtain a list of datapoint lists, each list
         corresponding to a metric
         """
+        def assert_datapoints(key, widget_config):
+            input, output = self.get_test_data_io(key)
+            input_str = json.dumps(input)
+            result = server.get_result_datapoints(input_str, widget_config)
+            self.assertEqual(result, output)
+
         widget_config = {
             'targets': [
                 'vumi.random.count.sum',
                 'vumi.random.timer.avg',
             ]
         }
-        self.assert_get_result_datapoints(
-            'test_get_result_datapoints', widget_config)
+        assert_datapoints('test_get_result_datapoints', widget_config)
 
-    def test_get_result_datapoints_for_partial_results(self):
-        """
-        Should obtain a list of datapoint lists corresponding to metrics,
-        but set a datapoint list to [] if graphite did not return results
-        for that particular metric.
-        """
         widget_config = {
             'targets': [
                 'some-metric-target',
@@ -446,8 +439,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'another-metric-target',
             ]
         }
-        self.assert_get_result_datapoints(
-            'test_get_result_datapoints_for_partial_results', widget_config)
+        assert_datapoints('test_get_result_datapoints_for_partial_results',
+                          widget_config)
 
     def test_format_value(self):
         def assert_format(input, expected):
