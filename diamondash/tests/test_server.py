@@ -30,10 +30,11 @@ class MockGraphiteServerProtocol(Protocol):
         response_data = self.factory.response_data.get(request_uri)
 
         if response_data is None:
-            response = ['HTTP/1.1 404', '', '']
-        else:
-            response = ['HTTP/1.1 %s' % (response_data['code'],)]
-            response.extend(['', json.dumps(response_data['body'])])
+            raise ValueError("No content stored for URL: %s" % (request_uri,))
+
+        response = [
+            'HTTP/1.1 %s' % (response_data['code'],), '',
+            json.dumps(response_data['body'])]
 
         return '\r\n'.join(response)
 

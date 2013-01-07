@@ -1,3 +1,5 @@
+# -*- test-case-name: diamondash.tests.test_server -*-
+
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 import json
