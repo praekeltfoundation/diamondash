@@ -131,9 +131,9 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'target': 'summarize(foo.avg, "3600s", "avg")',
                 },
             },
-            'targets': [
-                'summarize(foo.sum, "3600s", "sum")',
-                'summarize(foo.avg, "3600s", "avg")',
+            'target_keys': [
+                'summarize(foo.sum, "3600s")',
+                'summarize(foo.avg, "3600s")',
             ],
             'request_url': (
                 'render/?from=-172800s&target=summarize%28foo.sum%2C'
@@ -168,9 +168,9 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'target': 'summarize(bar.sum, "1800s", "sum")',
                 },
             ],
-            'targets': [
-                'summarize(foo.sum, "1800s", "sum")',
-                'summarize(bar.sum, "1800s", "sum")',
+            'target_keys': [
+                'summarize(foo.sum, "1800s")',
+                'summarize(bar.sum, "1800s")',
             ],
             'request_url': (
                 'render/?from=-3600s&target=summarize%28foo.sum%2C'
@@ -271,22 +271,30 @@ class DashboardConfigTestCase(unittest.TestCase):
 
         target = 'vumi.random.count.sum'
         bucket_size = 120
-        expected = 'summarize(vumi.random.count.sum, "120s", "sum")'
+        expected = (
+            'summarize(vumi.random.count.sum, "120s")',
+            'summarize(vumi.random.count.sum, "120s", "sum")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'vumi.random.count.avg'
         bucket_size = 620
-        expected = 'summarize(vumi.random.count.avg, "620s", "avg")'
+        expected = (
+            'summarize(vumi.random.count.avg, "620s")',
+            'summarize(vumi.random.count.avg, "620s", "avg")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'vumi.random.count.max'
         bucket_size = 120
-        expected = 'summarize(vumi.random.count.max, "120s", "max")'
+        expected = (
+            'summarize(vumi.random.count.max, "120s")',
+            'summarize(vumi.random.count.max, "120s", "max")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'integral(vumi.random.count.sum)'
         bucket_size = 120
-        expected = 'summarize(integral(vumi.random.count.sum), "120s", "max")'
+        expected = (
+            'summarize(integral(vumi.random.count.sum), "120s")',
+            'summarize(integral(vumi.random.count.sum), "120s", "max")')
         assert_metric_target(target, bucket_size, expected)
 
     def test_slugify(self):

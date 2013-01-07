@@ -83,7 +83,10 @@ def format_metric_target(target, bucket_size):
         agg_method = 'max'
     elif metric_fn in ('max', 'min', 'sum'):
         agg_method = metric_fn
-    return 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
+
+    key = 'summarize(%s, "%s")' % (target, bucket_size)
+    target = 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
+    return key, target
 
 
 def build_request_url(targets, from_param):
@@ -111,6 +114,7 @@ def parse_graph_config(config, defaults):
 
     config['width'] = parse_graph_width(config['width'])
 
+    target_keys = []
     metric_dict = {}
     bucket_size = config['bucket_size']
     for m_name, m_config in config['metrics'].items():
@@ -119,9 +123,12 @@ def parse_graph_config(config, defaults):
                 'Widget "%s" needs a target for metric "%s".'
                 % (config['name'], m_name))
 
-        m_config['original_target'] = m_config['target']
-        m_config['target'] = format_metric_target(
-            m_config['target'], bucket_size)
+        original_target = m_config['target']
+        m_config['original_target'] = original_target
+        target_key, target = format_metric_target(original_target, bucket_size)
+        target_keys.append(target_key)
+        m_config['target'] = target
+
         m_config.setdefault('null_filter', config['null_filter'])
 
         for threshold in ['warning_min_threshold', 'warning_max_threshold']:
@@ -133,9 +140,8 @@ def parse_graph_config(config, defaults):
         metric_dict[m_name] = m_config
 
     config['metrics'] = metric_dict
-
+    config['target_keys'] = target_keys
     targets = [metric['target'] for metric in metric_dict.values()]
-    config['targets'] = targets
     config['request_url'] = build_request_url(targets, config['time_range'])
 
     return config
@@ -151,6 +157,7 @@ def parse_lvalue_config(config, defaults):
 
     config['time_range'] = parse_interval(config['time_range'])
 
+    target_keys = []
     metric_list = []
     for target in config['metrics']:
         m_config = {}
@@ -159,14 +166,16 @@ def parse_lvalue_config(config, defaults):
         # Set the bucket size to the passed in time range
         # (for eg, if 1d was the time range, the data for the
         # entire day will be aggregated).
-        m_config['target'] = format_metric_target(
-            target, config['time_range'])
+        bucket_size = config['time_range']
+
+        target_key, target = format_metric_target(target, bucket_size)
+        m_config['target'] = target
+        target_keys.append(target_key)
         metric_list.append(m_config)
 
     config['metrics'] = metric_list
-
     targets = [metric['target'] for metric in metric_list]
-    config['targets'] = targets
+    config['target_keys'] = target_keys
 
     # Set the from param to double the bucket size. As a result, graphite will
     # return two datapoints for each metric: the previous value and the last

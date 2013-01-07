@@ -471,7 +471,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         corresponding to a metric
         """
         widget_config = {
-            'targets': [
+            'target_keys': [
                 'vumi.random.count.sum',
                 'vumi.random.timer.avg',
             ]
@@ -480,7 +480,7 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
 
     def test_get_result_datapoints_for_partial_results(self):
         widget_config = {
-            'targets': [
+            'target_keys': [
                 'some-metric-target',
                 'vumi.random.count.sum',
                 'vumi.random.timer.avg',

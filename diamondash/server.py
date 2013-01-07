@@ -233,7 +233,8 @@ def get_result_datapoints(data, widget_config):
     """
     data = json.loads(data)
     datapoints_by_target = dict((m['target'], m['datapoints']) for m in data)
-    return [datapoints_by_target.get(t, []) for t in widget_config['targets']]
+    return [datapoints_by_target.get(t, [])
+            for t in widget_config['target_keys']]
 
 
 def render_graph(data, widget_config):
