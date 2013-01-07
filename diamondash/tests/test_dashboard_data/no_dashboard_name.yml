@@ -2,10 +2,12 @@ widgets:
     - name: random-count-sum
       title: Sum of random count
       metrics: 
-          'random count sum': vumi.random.count.sum
+          - name: 'random count sum'
+            target: vumi.random.count.sum
       type: graph
     - name: random-timer-average
       title: Average of random timer
       type: graph
       metric: 
-          'random timer average': vumi.random.timer.avg
+          - name: 'random timer average'
+            target: vumi.random.timer.avg

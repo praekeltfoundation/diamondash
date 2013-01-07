@@ -190,11 +190,13 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
-                    'metrics': {
-                        'luke the metric': {
+                    'metrics': [
+                        {
+                            'name': 'luke-the-metric',
+                            'title': 'luke the metric',
                             'target': 'vumi.random.count.sum'
                         }
-                    },
+                    ],
                 }
             ],
         })
@@ -220,14 +222,18 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
-                    'metrics': {
-                        'luke the metric': {
+                    'metrics': [
+                        {
+                            'name': 'luke-the-metric',
+                            'title': 'luke the metric',
                             'target': 'vumi.random.count.sum'
                         },
-                        'non-existent metric': {
+                        {
+                            'name': 'non-existent-metric',
+                            'title': 'non-existent metric',
                             'target': 'non.existent'
                         }
-                    },
+                    ],
                 }
             ],
         })
@@ -251,14 +257,18 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
-                    'metrics': {
-                        'random-count-sum': {
+                    'metrics': [
+                        {
+                            'name': 'random-count-sum',
+                            'title': 'random-count-sum',
                             'target': 'vumi.random.count.sum'
                         },
-                        'random-timer-average': {
+                        {
+                            'name': 'random-timer-average',
+                            'title': 'random-timer-average',
                             'target': 'vumi.random.timer.avg'
                         }
-                    },
+                    ],
                 }
             ]
         })
@@ -372,11 +382,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         widget_config = {
             'title': 'a graph',
             'type': 'graph',
-            'metrics': {
-                'arnold-the-metric': {
-                    'target': 'vumi.random.count.sum'
+            'metrics': [
+                {
+                    'name': 'arnold-the-metric',
+                    'target': 'vumi.random.count.sum',
                 }
-            },
+            ],
         }
 
         input, output = self.get_test_data_io('test_format_results_for_graph')
@@ -392,14 +403,18 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         widget_config = {
             'title': 'a graph',
             'type': 'graph',
-            'metrics': {
-                'random-count-sum': {
-                    'target': 'vumi.random.count.sum'
+            'metrics': [
+                {
+                    'name': 'random-count-sum',
+                    'title': 'random-count-sum',
+                    'target': 'vumi.random.count.sum',
                 },
-                'random-timer-average': {
-                    'target': 'vumi.random.timer.avg'
+                {
+                    'name': 'random-timer-average',
+                    'title': 'random-timer-average',
+                    'target': 'vumi.random.timer.avg',
                 }
-            },
+            ],
         }
 
         input, output = self.get_test_data_io(

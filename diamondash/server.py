@@ -10,6 +10,7 @@ import yaml
 from twisted.web.client import getPage
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
+from twisted.python import log
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
@@ -96,10 +97,10 @@ def format_results_for_graph(results, widget_config):
     length = min([len(datapoints) for datapoints in results])
 
     formatted_data = {}
-    for metric_name, datapoints in zip(metrics.keys(), results):
-        metric_formatted_data = [{'x': x, 'y': y}
-                                 for y, x in datapoints[:length]]
-        formatted_data[metric_name] = metric_formatted_data
+    for metric, datapoints in zip(metrics, results):
+        m_name = metric['name']
+        m_formatted_data = [{'x': x, 'y': y} for y, x in datapoints[:length]]
+        formatted_data[m_name] = m_formatted_data
     return json.dumps(formatted_data)
 
 
@@ -183,7 +184,7 @@ def get_widget_null_filters(widget_config):
     """Returns the targets found in the passed in widget config"""
     # TODO optimise?
     metrics = widget_config['metrics']
-    return [metric['null_filter'] for metric in metrics.values()]
+    return [metric['null_filter'] for metric in metrics]
 
 
 def purify_results_for_graph(results, widget_config):

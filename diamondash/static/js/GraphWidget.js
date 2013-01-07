@@ -7,9 +7,9 @@ var DEFAULT_GRAPH_WARNING_COLOR = '#cc3333';
 
 Metric = function(args) {
 	this.name = args.name;
-	this.mConfig = args.mConfig;
-	this.minThreshold = this.mConfig.warning_min_threshold;
-	this.maxThreshold = this.mConfig.warning_max_threshold;
+	this.config = args.config;
+	this.minThreshold = this.config.warning_min_threshold;
+	this.maxThreshold = this.config.warning_max_threshold;
 	this.graphWidget = args.graphWidget;
 	this.graphAttrs = {};
 	this.mLegend = {};
@@ -24,19 +24,19 @@ Metric.prototype = {
 		var legend = this.graphWidget.legend;
 		var hoverLegend = this.graphWidget.hoverLegend;
 
-		if (typeof this.mConfig.color === 'undefined') {
-			this.mConfig.color = DEFAULT_GRAPH_COLOR;
+		if (typeof this.config.color === 'undefined') {
+			this.config.color = DEFAULT_GRAPH_COLOR;
 		}
 
 		if ((typeof this.minThreshold !== 'undefined' 
 				|| typeof this.maxThreshold !== 'undefined')
-			&& typeof this.mConfig.warning_color === 'undefined') {
-				this.mConfig.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
+			&& typeof this.config.warning_color === 'undefined') {
+				this.config.warning_color = DEFAULT_GRAPH_WARNING_COLOR;
 			}
 
 		this.graphAttrs = {
 			data: [{ x:0, y:0 }],
-			color: this.mConfig.color,
+			color: this.config.color,
 			name: this.name
 		};
 
@@ -53,13 +53,13 @@ Metric.prototype = {
 	},
 
 	enableWarning: function() {
-		this.setColor(this.mConfig.warning_color);
-		this.mLegend.valueLabel.style.color = this.mConfig.warning_color;
-		this.mHoverLegend.valueLabel.style.color = this.mConfig.warning_color;
+		this.setColor(this.config.warning_color);
+		this.mLegend.valueLabel.style.color = this.config.warning_color;
+		this.mHoverLegend.valueLabel.style.color = this.config.warning_color;
 	},
 
 	disableWarning: function() {
-		this.setColor(this.mConfig.color);
+		this.setColor(this.config.color);
 		this.mLegend.valueLabel.style.color = '#000';
 		this.mHoverLegend.valueLabel.style.color = '#000';
 	},
@@ -119,12 +119,12 @@ Metric.prototype = {
 		var swatch = document.createElement('div');
 		swatch.className = 'metric-key-swatch';
 		swatch.id = 'metric-key-swatch-' + this.name;
-		swatch.style.backgroundColor = this.mConfig.color;
+		swatch.style.backgroundColor = this.config.color;
 
 		var label = document.createElement('div');
 		label.className = 'metric-key-label';
 		label.id = 'metric-key-label-' + this.name;
-		label.innerHTML = this.mConfig.title + ': ';
+		label.innerHTML = this.config.title + ': ';
 
 		var valueLabel = document.createElement('span');
 		valueLabel.className = 'metric-key-value-label';
@@ -169,9 +169,10 @@ WarningSwitch.prototype = {
 	}
 };
 
+
 function GraphWidget(args) {
 	Widget.call(this, args);
-	this.metrics = [];
+	this.metrics = {};
 	this.warningSwitch = new WarningSwitch({
 		graphWidget: this
 	});
@@ -193,21 +194,22 @@ GraphWidget.prototype = {
 		graphElement.onclick = $.proxy(this.warningSwitch.disable, this.warningSwitch);
 
 		// build metrics
-		var metricName = null;
-		var series = [];
-		for (metricName in this.config.metrics) {
-			if (this.config.metrics.hasOwnProperty(metricName)) {
-				var mConfig = this.config.metrics[metricName];
+		var metricConfigs = this.config.metrics,
+            series = [],
+            i = -1;
 
-				metric = new Metric({
-					name: metricName,
-					mConfig: mConfig,
-					graphWidget: this
-				});
+		while (++i < metricConfigs.length) {
+			var metricConfig = metricConfigs[i],
+                metricName = metricConfig.name;
 
-				this.metrics[metricName] = metric;
-				series.push(metric.getGraphAttrs());
-			}
+			var metric = new Metric({
+				name: metricName,
+				config: metricConfig,
+				graphWidget: this
+			});
+
+			this.metrics[metricName] = metric;
+			series.push(metric.getGraphAttrs());
 		}
 
 		this.object = new Rickshaw.Graph({
@@ -224,12 +226,12 @@ GraphWidget.prototype = {
 			element: this.element.querySelector('.y-axis'),
 			orientation: 'left',
 			graph: this.object,
-			tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+			tickFormat: Rickshaw.Fixtures.Number.formatKMBT
 		});
 
 		var hover = new Hover({
 			graphObject: this.object, 
-			mConfigs: this.config.metrics, 
+			metrics: this.metrics, 
 			legend: this.legend,
 			hoverLegend: this.hoverLegend, 
 			hoverTimeLabel: this.hoverTimeLabel
@@ -275,11 +277,11 @@ var yFormatter = Rickshaw.Fixtures.Number.formatKMBT;
 function Hover(args) {
 	legend = args.legend; 
 	graphObject = args.graphObject; 
-	mConfigs = args.mConfigs; 
+	metrics = args.metrics; 
 	hoverLegend = args.hoverLegend; 
 	hoverTimeLabel = args.hoverTimeLabel;
 
-	var HoverDetail = (function(legend, graphObject, mConfigs, 
+	var HoverDetail = (function(legend, graphObject, metrics, 
 				                hoverLegend, hoverTimeLabel) {
 		return Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, {
 			render: function(args) {
@@ -291,7 +293,7 @@ function Hover(args) {
 						return a.order - b.order;
 					}).forEach(
 						function(d) {
-							var title = mConfigs[d.name].title;
+							var title = metrics[d.name].config.title;
 							var key = hoverLegend.querySelector('#metric-key-container-' + d.name);
 							var label = key.querySelector('#metric-key-label-' + d.name);
 							var valueLabel = key.querySelector('#metric-key-value-label-' + d.name);
@@ -332,7 +334,7 @@ function Hover(args) {
 				}
 			}
 		});
-	}(legend, graphObject, mConfigs, 
+	}(legend, graphObject, metrics, 
 	  hoverLegend, hoverTimeLabel));
 
 	return new HoverDetail({graph: graphObject});

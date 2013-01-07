@@ -7,5 +7,5 @@ widgets:
       title: Average of random timer
       type: graph
       metrics: 
-          'random timer average': 
-              target: vumi.random.timer.avg
+          - name: 'random timer average'
+            target: vumi.random.timer.avg

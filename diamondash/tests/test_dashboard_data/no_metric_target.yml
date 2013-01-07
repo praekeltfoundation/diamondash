@@ -4,5 +4,5 @@ widgets:
       title: Average of random timer
       type: graph
       metrics: 
-          'random timer average': 
-              color: '#444444'
+          - name: 'random timer average'
+            color: '#444444'
