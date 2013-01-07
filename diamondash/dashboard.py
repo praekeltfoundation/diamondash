@@ -84,9 +84,9 @@ def format_metric_target(target, bucket_size):
     elif metric_fn in ('max', 'min', 'sum'):
         agg_method = metric_fn
 
-    key = 'summarize(%s, "%s")' % (target, bucket_size)
-    target = 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
-    return key, target
+    graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
+        target, bucket_size, agg_method, target)
+    return target, graphite_target
 
 
 def build_request_url(targets, from_param):
