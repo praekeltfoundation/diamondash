@@ -9,7 +9,7 @@ from pkg_resources import resource_filename
 from twisted.trial import unittest
 
 from diamondash.dashboard import (
-    slugify, format_metric_target,
+    slugify, format_metric_target, guess_aggregation_method,
     parse_interval, parse_graph_width,
     parse_config, parse_graph_config, parse_lvalue_config,
     build_client_config, Dashboard, LVALUE_DEFAULTS, GRAPH_DEFAULTS,
@@ -262,6 +262,26 @@ class DashboardConfigTestCase(unittest.TestCase):
         result = build_client_config(self.TEST_CONFIG_PARSED)
 
         self.assertEqual(result, self.TEST_CLIENT_CONFIG_BUILT)
+
+    def test_guess_aggregation_method(self):
+        """
+        Metric targets should be formatted to be enclosed in a 'summarize()'
+        function with the bucket size and aggregation method as arguments.
+
+        The aggregation method should be determined from the
+        end of the metric target (avg, max, min, sum).
+        """
+        def assert_agg_method(target, expected):
+            result = guess_aggregation_method(target)
+            self.assertEqual(result, expected)
+
+        assert_agg_method("foo.max", "max")
+        assert_agg_method("foo.min", "min")
+        assert_agg_method("integral(foo.sum)", "max")
+        assert_agg_method("sum(foo.min)", "min")
+        assert_agg_method('somefunc("foo.max", foo.min)', "min")
+        assert_agg_method('foo(bar(baz.min), baz.max)', "min")
+        assert_agg_method('foo(bar("baz.min"), baz.max)', "max")
 
     def test_format_metric_target(self):
         """
