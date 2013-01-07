@@ -14,17 +14,17 @@ widgets:
     - name: 'Multiple metrics'
       width: 3
       metrics: 
-          'Sum of random count': 
-              target: vumi.random.count.sum
-              color: '#33cc33'
-          'Average of random timer': 
-              target: vumi.random.timer.avg
+          - name: 'Sum of random count'
+            target: vumi.random.count.sum
+            color: '#33cc33'
+          - name: 'Average of random timer'
+            target: vumi.random.timer.avg
  
     - name: 'Average of random timer'
       width: 2
       metrics: 
-          'Average of random timer': 
-              target: vumi.random.timer.avg
+          - name: 'Average of random timer': 
+            target: vumi.random.timer.avg
 
     - name: 'An lvalue widget'
       type: lvalue
@@ -40,9 +40,9 @@ widgets:
 
     - name: 'Sum of random count'
       metrics: 
-          'Sum of random count': 
-              target: vumi.random.count.sum
-              warning_max_threshold: 340 
+          - name: 'Sum of random count': 
+            target: vumi.random.count.sum
+            warning_max_threshold: 340 
 
     - name: 'And another lvalue widget'
       type: lvalue

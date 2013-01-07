@@ -2,10 +2,10 @@ name: 'test dashboard'
 widgets:
     - name: 'random count sum'
       metrics: 
-        'random count sum': 
+          - name: 'random count sum'
             target: vumi.random.count.sum
     - name: random-timer-average
       title: 'this is an explicit title'
       metrics: 
-          'random timer average': 
-              target: vumi.random.timer.avg
+          - name: 'random timer average'
+            target: vumi.random.timer.avg

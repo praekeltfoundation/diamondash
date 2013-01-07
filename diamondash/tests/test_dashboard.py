@@ -94,18 +94,20 @@ class DashboardConfigTestCase(unittest.TestCase):
         'type': 'graph',
         'time_range': '2d',
         'bucket_size': '1h',
-        'metrics': {
-            'sum-of-a-salesman': {
+        'metrics': [
+            {
+                'name': 'sum-of-a-salesman',
                 'title': 'Sum of a salesman',
                 'target': 'foo.sum',
                 'warning_max_threshold': 8,
                 'warning_min_threshold': 7,
             },
-            'average-of-a-salesman': {
+            {
+                'name': 'average-of-a-salesman',
                 'title': 'parlez',
                 'target': 'foo.avg',
             }
-        },
+        ],
         'width': 2,
     }
     TEST_GRAPH_CONFIG_PARSED = dict(
@@ -115,8 +117,9 @@ class DashboardConfigTestCase(unittest.TestCase):
             'type': 'graph',
             'time_range': 172800,
             'bucket_size': 3600,
-            'metrics': {
-                'sum-of-a-salesman': {
+            'metrics': [
+                {
+                    'name': 'sum-of-a-salesman',
                     'title': 'Sum of a salesman',
                     'null_filter': 'zeroize',
                     'original_target': 'foo.sum',
@@ -124,13 +127,15 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'warning_max_threshold': 8,
                     'warning_min_threshold': 7,
                 },
-                'average-of-a-salesman': {
+                {
+                    'name':
+                    'average-of-a-salesman',
                     'title': 'parlez',
                     'null_filter': 'zeroize',
                     'original_target': 'foo.avg',
                     'target': 'summarize(foo.avg, "3600s", "avg")',
                 },
-            },
+            ],
             'target_keys': [
                 'summarize(foo.sum, "3600s")',
                 'summarize(foo.avg, "3600s")',
@@ -202,17 +207,18 @@ class DashboardConfigTestCase(unittest.TestCase):
             DASHBOARD_DEFAULTS['request_interval']) * 1000,
         'widgets': {
             'some-graph-widget': {
-                'metrics': {
-                    'sum-of-a-salesman': {
+                'metrics': [
+                    {
+                        'name': 'sum-of-a-salesman',
                         'title': 'Sum of a salesman',
                         'warning_max_threshold': 8,
                         'warning_min_threshold': 7,
                     },
-
-                    'average-of-a-salesman': {
+                    {
+                        'name': 'average-of-a-salesman',
                         'title': 'parlez',
                     }
-                }
+                ]
             },
 
             'some-lvalue-widget': {},
@@ -323,9 +329,9 @@ class DashboardConfigTestCase(unittest.TestCase):
         config = dashboard_config_from_file('metric_title.yml')
 
         test_metrics = config['widgets']['test-widget']['metrics']
-        self.assertEqual(test_metrics['random-count-sum']['title'],
+        self.assertEqual(test_metrics[0]['title'],
                          'random count sum')
-        self.assertEqual(test_metrics['random-timer-average']['title'],
+        self.assertEqual(test_metrics[1]['title'],
                          'this is an explicit title')
 
     def test_parse_interval(self):

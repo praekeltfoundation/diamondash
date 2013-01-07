@@ -66,8 +66,7 @@ def parse_graph_width(width):
     clamps the value to the width range
     """
     width = int(width)
-    width = max(MIN_COLUMN_SPAN,
-                min(width, MAX_COLUMN_SPAN))
+    width = max(MIN_COLUMN_SPAN, min(width, MAX_COLUMN_SPAN))
     return width
 
 
@@ -106,6 +105,8 @@ def parse_graph_config(config, defaults):
     Parses a graph widget's config, applying changes
     where appropriate and returning the resulting config
     """
+    w_name = config['name']
+
     for field, default in defaults.items():
         config.setdefault(field, default)
 
@@ -115,13 +116,18 @@ def parse_graph_config(config, defaults):
     config['width'] = parse_graph_width(config['width'])
 
     target_keys = []
-    metric_dict = {}
+    metric_list = []
     bucket_size = config['bucket_size']
-    for m_name, m_config in config['metrics'].items():
-        if 'target' not in m_config:
-            raise ConfigError(
-                'Widget "%s" needs a target for metric "%s".'
-                % (config['name'], m_name))
+    for m_config in config['metrics']:
+        m_name = m_config.get('name', None)
+        if m_name is None:
+            raise ConfigError('Widget "%s" needs a name for all its metrics.'
+                              % w_name)
+
+        original_target = m_config.get('target', None)
+        if original_target is None:
+            raise ConfigError('Widget "%s" needs a target for metric "%s".'
+                              % (w_name, m_name))
 
         original_target = m_config['target']
         m_config['original_target'] = original_target
@@ -137,11 +143,11 @@ def parse_graph_config(config, defaults):
 
         m_config.setdefault('title', m_name)
         m_name = slugify(m_name)
-        metric_dict[m_name] = m_config
+        metric_list.append(m_config)
 
-    config['metrics'] = metric_dict
+    config['metrics'] = metric_list
     config['target_keys'] = target_keys
-    targets = [metric['target'] for metric in metric_dict.values()]
+    targets = [metric['target'] for metric in metric_list]
     config['request_url'] = build_request_url(targets, config['time_range'])
 
     return config
@@ -248,8 +254,8 @@ def parse_config(config):
 
 
 # metric attributes needed by client
-CLIENT_GRAPH_METRIC_ATTRS = ['title', 'color', 'warning_max_threshold',
-                      'warning_min_threshold', 'warning_color']
+CLIENT_GRAPH_METRIC_ATTRS = ['name', 'title', 'color', 'warning_max_threshold',
+                             'warning_min_threshold', 'warning_color']
 
 
 def build_client_config(server_config):
@@ -269,12 +275,12 @@ def build_client_config(server_config):
 
         # Add metric attributes for graph widgets
         if w_server_config['type'] == 'graph':
-            m_configs = w_configs[w_name].setdefault('metrics', {})
-            for m_name, m_server_config in w_server_config['metrics'].items():
+            m_configs = w_configs[w_name].setdefault('metrics', [])
+            for m_server_config in w_server_config['metrics']:
                 attrs = dict((k, m_server_config[k])
                              for k in CLIENT_GRAPH_METRIC_ATTRS
                              if k in m_server_config)
-                m_configs[m_name] = attrs
+                m_configs.append(attrs)
 
     #serialize client vars into a json string ready for javascript
     return 'var config = %s;' % (json.dumps(config),)
