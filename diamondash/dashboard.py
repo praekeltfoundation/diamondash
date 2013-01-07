@@ -1,3 +1,5 @@
+# -*- test-case-name: diamondash.tests.test_dashboard -*-
+
 """Dashboard functionality for the diamondash web app"""
 
 import re
@@ -84,9 +86,9 @@ def format_metric_target(target, bucket_size):
     elif metric_fn in ('max', 'min', 'sum'):
         agg_method = metric_fn
 
-    key = 'summarize(%s, "%s")' % (target, bucket_size)
-    target = 'summarize(%s, "%s", "%s")' % (target, bucket_size, agg_method)
-    return key, target
+    graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
+        target, bucket_size, agg_method, target)
+    return graphite_target
 
 
 def build_request_url(targets, from_param):
@@ -114,8 +116,8 @@ def parse_graph_config(config, defaults):
 
     config['width'] = parse_graph_width(config['width'])
 
-    target_keys = []
     metric_dict = {}
+    target_keys = []
     bucket_size = config['bucket_size']
     for m_name, m_config in config['metrics'].items():
         if 'target' not in m_config:
@@ -123,11 +125,8 @@ def parse_graph_config(config, defaults):
                 'Widget "%s" needs a target for metric "%s".'
                 % (config['name'], m_name))
 
-        original_target = m_config['target']
-        m_config['original_target'] = original_target
-        target_key, target = format_metric_target(original_target, bucket_size)
-        target_keys.append(target_key)
-        m_config['target'] = target
+        wrapped_target = format_metric_target(m_config['target'], bucket_size)
+        m_config['wrapped_target'] = wrapped_target
 
         m_config.setdefault('null_filter', config['null_filter'])
 
@@ -138,10 +137,11 @@ def parse_graph_config(config, defaults):
         m_config.setdefault('title', m_name)
         m_name = slugify(m_name)
         metric_dict[m_name] = m_config
+        target_keys.append(m_config['target'])
 
     config['metrics'] = metric_dict
     config['target_keys'] = target_keys
-    targets = [metric['target'] for metric in metric_dict.values()]
+    targets = [metric['wrapped_target'] for metric in metric_dict.values()]
     config['request_url'] = build_request_url(targets, config['time_range'])
 
     return config
@@ -157,25 +157,24 @@ def parse_lvalue_config(config, defaults):
 
     config['time_range'] = parse_interval(config['time_range'])
 
-    target_keys = []
     metric_list = []
+    target_keys = []
     for target in config['metrics']:
         m_config = {}
-        m_config['original_target'] = target
 
         # Set the bucket size to the passed in time range
         # (for eg, if 1d was the time range, the data for the
         # entire day will be aggregated).
         bucket_size = config['time_range']
 
-        target_key, target = format_metric_target(target, bucket_size)
         m_config['target'] = target
-        target_keys.append(target_key)
+        m_config['wrapped_target'] = format_metric_target(target, bucket_size)
         metric_list.append(m_config)
+        target_keys.append(target)
 
     config['metrics'] = metric_list
-    targets = [metric['target'] for metric in metric_list]
     config['target_keys'] = target_keys
+    targets = [metric['wrapped_target'] for metric in metric_list]
 
     # Set the from param to double the bucket size. As a result, graphite will
     # return two datapoints for each metric: the previous value and the last
