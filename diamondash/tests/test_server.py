@@ -49,7 +49,8 @@ class MockGraphiteServerMixin(object):
     Graphite response data
     """
 
-    RESPONSE_DATA = json.load(resource_stream(__name__, 'response_data.json'))
+    RESPONSE_DATA = json.load(
+        resource_stream(__name__, 'test_server_data/response_data.json'))
 
     graphite_ws = None
 
@@ -72,6 +73,9 @@ class MockDashboard:
     def __init__(self, config):
         self.is_mock = True
         self.config = config
+
+    def get_widget_config(self, widget_name):
+        return None
 
 
 class DiamondashServerTestCase(unittest.TestCase):
@@ -107,6 +111,22 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         if self.graphite_ws:
             self.stop_graphite_ws()
 
+    def configure_server(self, dashboard_configs):
+        """
+        Configures the diamondash server with a single dashboard
+        """
+        dashboards = [Dashboard(d_config) for d_config in dashboard_configs]
+        server.server = DiamondashServer(self.graphite_url, dashboards)
+
+    def mock_request(self, input):
+        host = self.graphite_ws.getHost()
+        return requestMock(input, host=host.host, port=host.port)
+
+    def get_test_data_io(self, key):
+        input = self.TEST_DATA[key]['input']
+        output = self.TEST_DATA[key]['output']
+        return input, output
+
     def assert_response(self, response_data, expected_response):
         """
         Asserts whether the response obtained matches
@@ -115,10 +135,44 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         response = json.loads(response_data)
         self.assertEqual(response, expected_response)
 
-    """
-    Render tests
-    ------------
-    """
+    def assert_datapoints(self, key, widget_config):
+        input, output = self.get_test_data_io(key)
+        input_str = json.dumps(input)
+        result = server.get_result_datapoints(input_str, widget_config)
+        self.assertEqual(result, output)
+
+    # Render tests
+    # ------------
+
+    def test_render_for_nonexistent_dashboard(self):
+        """
+        Should return an empty json object as a response if the dashboard does
+        not exist
+        """
+        server.server = DiamondashServer('http://someurl.com/', [])
+        response = server.render(None, 'test-dashboard', 'some_metric')
+        self.assertEqual(response, "{}")
+
+    def test_render_for_nonexistent_widget(self):
+        """
+        Should return an empty json object as a response if the dashboard does
+        not exist
+        """
+        dashboard = MockDashboard({'name': 'test-dashboard'})
+        server.server = DiamondashServer('http://someurl.com/', [dashboard])
+        response = server.render(None, 'test-dashboard', 'some_metric')
+        self.assertEqual(response, "{}")
+
+    @inlineCallbacks
+    def assert_render(self, dashboard_config, key, dashboard_name,
+                      widget_name):
+        yield self.start_graphite_ws()
+        self.configure_server([dashboard_config])
+        input, output = self.get_test_data_io(key)
+        request = self.mock_request(input)
+        d = server.render(request, dashboard_name, widget_name)
+        d.addCallback(self.assert_response, output)
+        yield d
 
     @inlineCallbacks
     def test_render_for_graph(self):
@@ -126,15 +180,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for graph widgets
         """
-        yield self.start_graphite_ws()
-
-        test_time_range = 3600
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'random-count-sum',
-                    'time_range': test_time_range,
+                    'time_range': 3600,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -146,18 +197,43 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ],
         })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_graph',
+                                 'test-dashboard',
+                                 'random-count-sum')
 
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
-
-        test_data_key = 'test_render_for_graph'
-        input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
-        output = self.TEST_DATA[test_data_key]['output']
-        d = server.render(request, 'test-dashboard', 'random-count-sum')
-        d.addCallback(self.assert_response, output)
-        yield d
+    @inlineCallbacks
+    def test_render_for_partial_graph_results(self):
+        """
+        Should send a request to graphite, get results for only some of the
+        widget's metrics, set the non-existent metric's datapoints to [], apply
+        transformations, and return data useable by the client side for graph
+        widgets
+        """
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
+            'name': 'test-dashboard',
+            'widgets': [
+                {
+                    'name': 'random-count-sum',
+                    'time_range': 3600,
+                    'title': 'a graph',
+                    'type': 'graph',
+                    'bucket_size': 300,
+                    'metrics': {
+                        'luke the metric': {
+                            'target': 'vumi.random.count.sum'
+                        },
+                        'non-existent metric': {
+                            'target': 'non.existent'
+                        }
+                    },
+                }
+            ],
+        })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_partial_graph_results',
+                                 'test-dashboard',
+                                 'random-count-sum')
 
     @inlineCallbacks
     def test_render_for_multimetric_graph(self):
@@ -165,15 +241,12 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for graph widgets
         """
-        yield self.start_graphite_ws()
-
-        test_time_range = 3600
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'random-count-sum-and-average',
-                    'time_range': test_time_range,
+                    'time_range': 3600,
                     'title': 'a graph',
                     'type': 'graph',
                     'bucket_size': 300,
@@ -188,19 +261,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 }
             ]
         })
-
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
-
-        test_data_key = 'test_render_for_multimetric_graph'
-        input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
-        output = self.TEST_DATA[test_data_key]['output']
-        d = server.render(request, 'test-dashboard',
-                          'random-count-sum-and-average')
-        d.addCallback(self.assert_response, output)
-        yield d
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_multimetric_graph',
+                                 'test-dashboard',
+                                 'random-count-sum-and-average')
 
     @inlineCallbacks
     def test_render_for_lvalue(self):
@@ -208,32 +272,48 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for lvalue widgets
         """
-        yield self.start_graphite_ws()
-
-        test_time_range = '1d'
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'some-lvalue-widget',
-                    'time_range': test_time_range,
+                    'time_range': '1d',
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum'],
                 }
             ],
         })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_lvalue',
+                                 'test-dashboard',
+                                 'some-lvalue-widget')
 
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
-
-        test_data_key = 'test_render_for_lvalue'
-        input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
-        output = self.TEST_DATA[test_data_key]['output']
-        d = server.render(request, 'test-dashboard', 'some-lvalue-widget')
-        d.addCallback(self.assert_response, output)
-        yield d
+    @inlineCallbacks
+    def test_render_for_partial_lvalue_results(self):
+        """
+        Should send a request to graphite, get results for only some of the
+        widget's metrics, set the non-existent metric's datapoints to [], apply
+        transformations, and return data useable by the client side for lvalue
+        widgets
+        """
+        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
+            'name': 'test-dashboard',
+            'widgets': [
+                {
+                    'name': 'some-lvalue-widget',
+                    'time_range': '1d',
+                    'type': 'lvalue',
+                    'metrics': [
+                        'vumi.random.count.sum',
+                        'non.existent'
+                    ],
+                }
+            ],
+        })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_partial_lvalue_results',
+                                 'test-dashboard',
+                                 'some-lvalue-widget')
 
     @inlineCallbacks
     def test_render_for_multimetric_lvalue(self):
@@ -241,65 +321,46 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should send a request to graphite, apply transformations,
         and return data useable by the client side for lvalue widgets
         """
-        yield self.start_graphite_ws()
-
-        test_time_range = '1h'
         dashboard_config = dict(DASHBOARD_DEFAULTS, **{
             'name': 'test-dashboard',
             'widgets': [
                 {
                     'name': 'some-multimetric-lvalue-widget',
-                    'time_range': test_time_range,
+                    'time_range': '1h',
                     'type': 'lvalue',
                     'metrics': ['vumi.random.count.sum',
                                 'vumi.random.timer.sum'],
                 },
             ]
         })
+        yield self.assert_render(dashboard_config,
+                                 'test_render_for_multimetric_lvalue',
+                                 'test-dashboard',
+                                 'some-multimetric-lvalue-widget')
 
-        dashboard = Dashboard(dashboard_config)
-        server.server = DiamondashServer(self.graphite_url, [dashboard])
+    # Purification tests
+    # ------------------
 
-        test_data_key = 'test_render_for_multimetric_lvalue'
-        input = self.TEST_DATA[test_data_key]['input']
-        request = requestMock(input, host=self.graphite_ws.getHost().host,
-                              port=self.graphite_ws.getHost().port)
-        output = self.TEST_DATA[test_data_key]['output']
-        d = server.render(request, 'test-dashboard',
-                          'some-multimetric-lvalue-widget')
-        d.addCallback(self.assert_response, output)
-        yield d
-
-    """
-    Purification tests
-    ------------------
-    """
     def test_skip_nulls(self):
         """
         Should return datapoints without null values by
         skipping coordinates withh null x or y values
         """
-        test_data_key = 'test_skip_nulls'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        purified = server.skip_nulls(before)
-        self.assertEqual(purified, after)
+        input, output = self.get_test_data_io('test_skip_nulls')
+        purified = server.skip_nulls(input)
+        self.assertEqual(purified, output)
 
     def test_zeroize_nulls(self):
         """
         Should return datapoints without null values by
         skipping coordinates with null x or y values
         """
-        test_data_key = 'test_zeroize_nulls'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        purified = server.zeroize_nulls(before)
-        self.assertEqual(purified, after)
+        input, output = self.get_test_data_io('test_zeroize_nulls')
+        purified = server.zeroize_nulls(input)
+        self.assertEqual(purified, output)
 
-    """
-    Formatting tests
-    ----------------
-    """
+    # Formatting tests
+    # ----------------
 
     def test_format_results_for_graph(self):
         """
@@ -317,12 +378,10 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             },
         }
 
-        test_data_key = 'test_format_results_for_graph'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_results_for_graph(before, widget_config)
+        input, output = self.get_test_data_io('test_format_results_for_graph')
+        formatted = server.format_results_for_graph(input, widget_config)
         formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, after)
+        self.assertEqual(formatted_str, output)
 
     def test_format_results_for_multimetric_graph(self):
         """
@@ -342,12 +401,11 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             },
         }
 
-        test_data_key = 'test_format_results_for_multimetric_graph'
-        before = self.TEST_DATA[test_data_key]['before']
-        after = self.TEST_DATA[test_data_key]['after']
-        formatted = server.format_results_for_graph(before, widget_config)
+        input, output = self.get_test_data_io(
+            'test_format_results_for_multimetric_graph')
+        formatted = server.format_results_for_graph(input, widget_config)
         formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, after)
+        self.assertEqual(formatted_str, output)
 
     def test_format_results_for_lvalue(self):
         """
@@ -375,10 +433,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                     '"to": "2012-07-04 12:20"}')
         assert_format(data, config, expected)
 
-    """
-    Other tests
-    ------------
-    """
+    # Other tests
+    # ------------
 
     def test_aggregate_results_for_lvalue(self):
         """
@@ -414,12 +470,25 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should obtain a list of datapoint lists, each list
         corresponding to a metric
         """
-        test_data_key = 'test_get_result_datapoints'
-        before = self.TEST_DATA[test_data_key]['before']
-        before_str = json.dumps(before)
-        result = server.get_result_datapoints(before_str)
-        after = self.TEST_DATA[test_data_key]['after']
-        self.assertEqual(result, after)
+        widget_config = {
+            'targets': [
+                'vumi.random.count.sum',
+                'vumi.random.timer.avg',
+            ]
+        }
+        self.assert_datapoints('test_get_result_datapoints', widget_config)
+
+    def test_get_result_datapoints_for_partial_results(self):
+        widget_config = {
+            'targets': [
+                'some-metric-target',
+                'vumi.random.count.sum',
+                'vumi.random.timer.avg',
+                'another-metric-target',
+            ]
+        }
+        self.assert_datapoints(
+            'test_get_result_datapoints_for_partial_results', widget_config)
 
     def test_format_value(self):
         def assert_format(input, expected):

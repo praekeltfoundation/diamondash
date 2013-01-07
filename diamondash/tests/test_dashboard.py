@@ -131,6 +131,10 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'target': 'summarize(foo.avg, "3600s", "avg")',
                 },
             },
+            'targets': [
+                'summarize(foo.sum, "3600s", "sum")',
+                'summarize(foo.avg, "3600s", "avg")',
+            ],
             'request_url': (
                 'render/?from=-172800s&target=summarize%28foo.sum%2C'
                 '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
@@ -163,6 +167,10 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'original_target': 'bar.sum',
                     'target': 'summarize(bar.sum, "1800s", "sum")',
                 },
+            ],
+            'targets': [
+                'summarize(foo.sum, "1800s", "sum")',
+                'summarize(bar.sum, "1800s", "sum")',
             ],
             'request_url': (
                 'render/?from=-3600s&target=summarize%28foo.sum%2C'

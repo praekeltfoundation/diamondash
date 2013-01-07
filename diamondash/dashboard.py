@@ -135,6 +135,7 @@ def parse_graph_config(config, defaults):
     config['metrics'] = metric_dict
 
     targets = [metric['target'] for metric in metric_dict.values()]
+    config['targets'] = targets
     config['request_url'] = build_request_url(targets, config['time_range'])
 
     return config
@@ -165,6 +166,7 @@ def parse_lvalue_config(config, defaults):
     config['metrics'] = metric_list
 
     targets = [metric['target'] for metric in metric_list]
+    config['targets'] = targets
 
     # Set the from param to double the bucket size. As a result, graphite will
     # return two datapoints for each metric: the previous value and the last
@@ -449,7 +451,7 @@ class Dashboard(Element):
 
     def get_widget_config(self, w_name):
         """Returns a widget using the passed in widget name"""
-        return self.config['widgets'][w_name]
+        return self.config['widgets'].get(w_name, None)
 
     @renderer
     def widget_row_renderer(self, request, tag):

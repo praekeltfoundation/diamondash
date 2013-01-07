@@ -212,22 +212,28 @@ def aggregate_results_for_lvalue(data):
         - sum of last y value
         - maximum of last x value (latest time)
     """
+
     prev = sum((datapoints[-2][0] for datapoints in data
                 if (len(datapoints) > 1 and datapoints[-2][0] is not None)))
     lvalue = sum((datapoints[-1][0] for datapoints in data
-                if (len(datapoints) > 0 and datapoints[-1][0] is not None)))
-    time = max((datapoints[-1][1] for datapoints in data
-                if (len(datapoints) > 0 and datapoints[-1][1] is not None)))
+                  if (len(datapoints) > 0 and datapoints[-1][0] is not None)))
+
+    # set time to 0 if all metric results are empty
+    times = [datapoints[-1][1] for datapoints in data
+             if (len(datapoints) > 0 and datapoints[-1][1] is not None)]
+    time = 0 if not times else max(times)
 
     return prev, lvalue, time
 
 
-def get_result_datapoints(data):
+def get_result_datapoints(data, widget_config):
     """
     Obtains the datapoints from the result returned from
     graphite from a render request
     """
-    return [metric['datapoints'] for metric in json.loads(data)]
+    data = json.loads(data)
+    datapoints_by_target = dict((m['target'], m['datapoints']) for m in data)
+    return [datapoints_by_target.get(t, []) for t in widget_config['targets']]
 
 
 def render_graph(data, widget_config):
@@ -278,16 +284,24 @@ def show_shared_dashboard(request, share_id):
 @route('/render/<string:dashboard_name>/<string:widget_name>')
 def render(request, dashboard_name, widget_name):
     """Routing for client render request"""
-    # TODO check for invalid dashboard and widget requests
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
-    dashboard = server.dashboards_by_name[dashboard_name]
-    widget_config = dashboard.get_widget_config(widget_name)
-    request_url = '%s/%s' % (server.graphite_url,
-                             widget_config['request_url'])
 
+    # get dashboard or return empty json object if it does not exist
+    dashboard = server.dashboards_by_name.get(dashboard_name, None)
+    if dashboard is None:
+        return "{}"
+
+    # get widget config or return empty json object if it does not exist
+    widget_config = dashboard.get_widget_config(widget_name)
+    if widget_config is None:
+        return "{}"
+
+    request_url = '/'.join(s.strip('/') for s in (
+        server.graphite_url, widget_config['request_url']))
     d = getPage(request_url)
-    d.addCallback(get_result_datapoints)
+
+    d.addCallback(get_result_datapoints, widget_config)
 
     render_widget = {
         'graph': render_graph,
