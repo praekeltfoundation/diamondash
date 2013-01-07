@@ -8,6 +8,7 @@ import yaml
 from twisted.web.client import getPage
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
+from twisted.python import log
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 

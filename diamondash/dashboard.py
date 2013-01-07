@@ -142,7 +142,7 @@ def parse_graph_config(config, defaults):
                 m_config[threshold] = int(m_config[threshold])
 
         m_config.setdefault('title', m_name)
-        m_name = slugify(m_name)
+        m_config['name'] = slugify(m_name)
         metric_list.append(m_config)
 
     config['metrics'] = metric_list
