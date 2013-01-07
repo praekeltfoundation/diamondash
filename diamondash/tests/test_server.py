@@ -31,6 +31,7 @@ class MockGraphiteServerProtocol(Protocol):
 
         if response_data is None:
             response = ['HTTP/1.1 404', '', '']
+            print request_uri
         else:
             response = ['HTTP/1.1 %s' % (response_data['code'],)]
             response.extend(['', json.dumps(response_data['body'])])
