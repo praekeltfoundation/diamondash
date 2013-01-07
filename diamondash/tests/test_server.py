@@ -135,10 +135,15 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         response = json.loads(response_data)
         self.assertEqual(response, expected_response)
 
-    """
-    Render tests
-    ------------
-    """
+    def assert_datapoints(self, key, widget_config):
+        input, output = self.get_test_data_io(key)
+        input_str = json.dumps(input)
+        result = server.get_result_datapoints(input_str, widget_config)
+        self.assertEqual(result, output)
+
+    # Render tests
+    # ------------
+
     def test_render_for_nonexistent_dashboard(self):
         """
         Should return an empty json object as a response if the dashboard does
@@ -257,9 +262,9 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ]
         })
         yield self.assert_render(dashboard_config,
-                           'test_render_for_multimetric_graph',
-                           'test-dashboard',
-                           'random-count-sum-and-average')
+                                 'test_render_for_multimetric_graph',
+                                 'test-dashboard',
+                                 'random-count-sum-and-average')
 
     @inlineCallbacks
     def test_render_for_lvalue(self):
@@ -279,9 +284,9 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ],
         })
         yield self.assert_render(dashboard_config,
-                           'test_render_for_lvalue',
-                           'test-dashboard',
-                           'some-lvalue-widget')
+                                 'test_render_for_lvalue',
+                                 'test-dashboard',
+                                 'some-lvalue-widget')
 
     @inlineCallbacks
     def test_render_for_partial_lvalue_results(self):
@@ -329,12 +334,13 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
             ]
         })
         yield self.assert_render(dashboard_config,
-                           'test_render_for_multimetric_lvalue',
-                           'test-dashboard',
-                           'some-multimetric-lvalue-widget')
+                                 'test_render_for_multimetric_lvalue',
+                                 'test-dashboard',
+                                 'some-multimetric-lvalue-widget')
 
     # Purification tests
     # ------------------
+
     def test_skip_nulls(self):
         """
         Should return datapoints without null values by
@@ -464,20 +470,15 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
         Should obtain a list of datapoint lists, each list
         corresponding to a metric
         """
-        def assert_datapoints(key, widget_config):
-            input, output = self.get_test_data_io(key)
-            input_str = json.dumps(input)
-            result = server.get_result_datapoints(input_str, widget_config)
-            self.assertEqual(result, output)
-
         widget_config = {
             'targets': [
                 'vumi.random.count.sum',
                 'vumi.random.timer.avg',
             ]
         }
-        assert_datapoints('test_get_result_datapoints', widget_config)
+        self.assert_datapoints('test_get_result_datapoints', widget_config)
 
+    def test_get_result_datapoints_for_partial_results(self):
         widget_config = {
             'targets': [
                 'some-metric-target',
@@ -486,8 +487,8 @@ class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
                 'another-metric-target',
             ]
         }
-        assert_datapoints('test_get_result_datapoints_for_partial_results',
-                          widget_config)
+        self.assert_datapoints(
+            'test_get_result_datapoints_for_partial_results', widget_config)
 
     def test_format_value(self):
         def assert_format(input, expected):
