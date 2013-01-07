@@ -1,3 +1,5 @@
+# -*- test-case-name: diamondash.tests.test_server -*-
+
 """Web server for displaying dashboard components sourced from Graphite data"""
 
 import json
@@ -265,6 +267,11 @@ def show_index(request):
 def static(request):
     """Routing for all static files (css, js)"""
     return File(resource_filename(__name__, 'static'))
+
+
+@route('/favicon.ico')
+def favicon(request):
+    return File(resource_filename(__name__, 'static/favicon.png'))
 
 
 @route('/<string:name>')

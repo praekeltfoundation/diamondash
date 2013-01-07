@@ -122,8 +122,9 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'name': 'sum-of-a-salesman',
                     'title': 'Sum of a salesman',
                     'null_filter': 'zeroize',
-                    'original_target': 'foo.sum',
-                    'target': 'summarize(foo.sum, "3600s", "sum")',
+                    'target': 'foo.sum',
+                    'wrapped_target':
+                        'alias(summarize(foo.sum, "3600s", "sum"), "foo.sum")',
                     'warning_max_threshold': 8,
                     'warning_min_threshold': 7,
                 },
@@ -132,18 +133,17 @@ class DashboardConfigTestCase(unittest.TestCase):
                     'average-of-a-salesman',
                     'title': 'parlez',
                     'null_filter': 'zeroize',
-                    'original_target': 'foo.avg',
-                    'target': 'summarize(foo.avg, "3600s", "avg")',
+                    'target': 'foo.avg',
+                    'wrapped_target':
+                        'alias(summarize(foo.avg, "3600s", "avg"), "foo.avg")',
                 },
             ],
-            'target_keys': [
-                'summarize(foo.sum, "3600s")',
-                'summarize(foo.avg, "3600s")',
-            ],
+            'target_keys': ['foo.sum', 'foo.avg'],
             'request_url': (
-                'render/?from=-172800s&target=summarize%28foo.sum%2C'
-                '+%223600s%22%2C+%22sum%22%29&target=summarize%28'
-                'foo.avg%2C+%223600s%22%2C+%22avg%22%29&format=json'),
+                'render/?from=-172800s&target=alias%28summarize%28foo.sum%2C+'
+                '%223600s%22%2C+%22sum%22%29%2C+%22foo.sum%22%29&target=alias'
+                '%28summarize%28foo.avg%2C+%223600s%22%2C+%22avg%22%29%2C+%22'
+                'foo.avg%22%29&format=json'),
             'width': 2,
         })
 
@@ -164,23 +164,23 @@ class DashboardConfigTestCase(unittest.TestCase):
             'time_range': 1800,
             'metrics': [
                 {
-                    'original_target': 'foo.sum',
-                    'target': 'summarize(foo.sum, "1800s", "sum")',
+                    'target': 'foo.sum',
+                    'wrapped_target':
+                        'alias(summarize(foo.sum, "1800s", "sum"), "foo.sum")',
                 },
 
                 {
-                    'original_target': 'bar.sum',
-                    'target': 'summarize(bar.sum, "1800s", "sum")',
+                    'target': 'bar.sum',
+                    'wrapped_target':
+                        'alias(summarize(bar.sum, "1800s", "sum"), "bar.sum")',
                 },
             ],
-            'target_keys': [
-                'summarize(foo.sum, "1800s")',
-                'summarize(bar.sum, "1800s")',
-            ],
+            'target_keys': ['foo.sum', 'bar.sum'],
             'request_url': (
-                'render/?from=-3600s&target=summarize%28foo.sum%2C'
-                '+%221800s%22%2C+%22sum%22%29&target=summarize%28'
-                'bar.sum%2C+%221800s%22%2C+%22sum%22%29&format=json'),
+                'render/?from=-3600s&target=alias%28summarize%28foo.sum%2C+'
+                '%221800s%22%2C+%22sum%22%29%2C+%22foo.sum%22%29&target=alias'
+                '%28summarize%28bar.sum%2C+%221800s%22%2C+%22sum%22%29%2C+%22'
+                'bar.sum%22%29&format=json'),
         })
 
     TEST_CONFIG = dict(DASHBOARD_DEFAULTS, **{
@@ -278,29 +278,29 @@ class DashboardConfigTestCase(unittest.TestCase):
         target = 'vumi.random.count.sum'
         bucket_size = 120
         expected = (
-            'summarize(vumi.random.count.sum, "120s")',
-            'summarize(vumi.random.count.sum, "120s", "sum")')
+            'alias(summarize(vumi.random.count.sum, "120s", "sum"), '
+            '"vumi.random.count.sum")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'vumi.random.count.avg'
         bucket_size = 620
         expected = (
-            'summarize(vumi.random.count.avg, "620s")',
-            'summarize(vumi.random.count.avg, "620s", "avg")')
+            'alias(summarize(vumi.random.count.avg, "620s", "avg"), '
+            '"vumi.random.count.avg")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'vumi.random.count.max'
         bucket_size = 120
         expected = (
-            'summarize(vumi.random.count.max, "120s")',
-            'summarize(vumi.random.count.max, "120s", "max")')
+            'alias(summarize(vumi.random.count.max, "120s", "max"), '
+            '"vumi.random.count.max")')
         assert_metric_target(target, bucket_size, expected)
 
         target = 'integral(vumi.random.count.sum)'
         bucket_size = 120
         expected = (
-            'summarize(integral(vumi.random.count.sum), "120s")',
-            'summarize(integral(vumi.random.count.sum), "120s", "max")')
+            'alias(summarize(integral(vumi.random.count.sum), "120s", "max"), '
+            '"integral(vumi.random.count.sum)")')
         assert_metric_target(target, bucket_size, expected)
 
     def test_slugify(self):
