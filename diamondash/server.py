@@ -266,6 +266,11 @@ def static(request):
     return File(resource_filename(__name__, 'static'))
 
 
+@route('/favicon.ico')
+def favicon(request):
+    return File(resource_filename(__name__, 'static/favicon.png'))
+
+
 @route('/<string:name>')
 def show_dashboard(request, name):
     """Show a non-shared dashboard page"""
