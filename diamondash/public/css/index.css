@@ -1,0 +1,11 @@
+.dashboard-list {
+	list-style-type: none;
+}
+
+.dashboard-list-item {
+	margin: 8px 2px;
+}
+
+.dashboard-list-item a:hover {
+	text-decoration: none;
+}
