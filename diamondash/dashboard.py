@@ -191,12 +191,12 @@ def parse_graph_config(config, defaults):
             raise ConfigError('Widget "%s" needs a name for all its metrics.'
                               % w_name)
 
-        original_target = m_config.get('target', None)
-        if original_target is None:
+        target = m_config.get('target', None)
+        if target is None:
             raise ConfigError('Widget "%s" needs a target for metric "%s".'
                               % (w_name, m_name))
 
-        wrapped_target = format_metric_target(m_config['target'], bucket_size)
+        wrapped_target = format_metric_target(target, bucket_size)
         m_config['wrapped_target'] = wrapped_target
 
         m_config.setdefault('null_filter', config['null_filter'])
@@ -208,7 +208,7 @@ def parse_graph_config(config, defaults):
         m_config.setdefault('title', m_name)
         m_config['name'] = slugify(m_name)
         metric_list.append(m_config)
-        target_keys.append(m_config['target'])
+        target_keys.append(target)
 
     config['metrics'] = metric_list
     config['target_keys'] = target_keys
