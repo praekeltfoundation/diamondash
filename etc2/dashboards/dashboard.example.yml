@@ -1,7 +1,0 @@
-name: 'Test Dashboard'
-
-widgets:
-
-    - name: 'Text Widget'
-      type: diamondash.widgets.text.TextWidget
-      text: 'aaah!'
