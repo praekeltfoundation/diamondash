@@ -1,3 +1,3 @@
-__all__ = ['Widget', 'GraphiteWidget']
+__all__ = ['Widget']
 
-from diamondash.widgets.widget.widget import Widget, GraphiteWidget
+from diamondash.widgets.widget.widget import Widget

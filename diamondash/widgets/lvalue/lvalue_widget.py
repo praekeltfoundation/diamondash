@@ -1,4 +1,4 @@
-from diamondash.widgets.widget import GraphiteWidget
+from diamondash.widgets.lvalue import GraphiteWidget
 
 
 class LValueWidget(GraphiteWidget):

@@ -64,7 +64,3 @@ class Widget(Element):
         request parameters.
         """
         return {}
-
-
-class GraphiteWidget(Widget):
-    """Abstract widget that obtains metric data from graphite."""
