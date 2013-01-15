@@ -40,3 +40,6 @@ tmp/
 logs/
 
 .*.swo
+
+# Node stuff (for js tests)
+node_modules

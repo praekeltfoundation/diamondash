@@ -1,0 +1,20 @@
+def stub_fn(targetobj, targetfn, stubfn):
+    original = getattr(targetobj, targetfn)
+    setattr(targetobj, targetfn, stubfn)
+
+    stubfn.targetobj = targetobj
+    stubfn.targetfn = targetfn
+    stubfn.original = original
+
+
+def restore_fn(stubfn):
+    setattr(stubfn.targetobj, stubfn.targetfn, stubfn.original)
+
+
+def stub_classmethod(targetclass, targetfn, stubfn):
+    original = getattr(targetclass, targetfn)
+    setattr(targetclass, targetfn, classmethod(stubfn))
+
+    stubfn.targetobj = targetclass
+    stubfn.targetfn = targetfn
+    stubfn.original = original

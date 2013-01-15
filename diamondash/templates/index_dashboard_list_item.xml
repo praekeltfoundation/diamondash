@@ -1,0 +1,9 @@
+<li xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" t:render="dashboard_list_item_renderer" class="dashboard-list-item">
+  <a>
+	  <t:attr name="href">
+		  <t:slot name="href_slot" />
+	  </t:attr>
+	  <h2><t:slot name="title_slot" /></h2>
+  </a>
+  <t:slot name="shared_url_slot" />
+</li>

@@ -1,0 +1,5 @@
+dashboard_defaults: 
+   'some_dashboard_default': 'mon mothma'
+
+widget_defaults: 
+   'some_widget_default': 'admiral ackbar'

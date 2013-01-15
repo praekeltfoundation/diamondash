@@ -1,0 +1,4 @@
+<span xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1"
+	t:render="text_renderer"
+	class="text-widget-text">
+</span>
