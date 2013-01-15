@@ -9,7 +9,7 @@ from diamondash.widgets.widget import Widget
 from diamondash.exceptions import ConfigError
 from diamondash.utils import parse_interval, slugify
 
-from diamondash.tests.utils import restore_fn, stub_classmethod
+from diamondash.tests.utils import restore_from_stub, stub_classmethod
 
 
 class StubbedDashboard(Dashboard):
@@ -122,7 +122,7 @@ class DashboardTestCase(unittest.TestCase):
 
         self.assertEqual(dashboards, expected)
 
-        restore_fn(stubbed_from_config_file)
+        restore_from_stub(stubbed_from_config_file)
 
     def test_from_config(self):
         """

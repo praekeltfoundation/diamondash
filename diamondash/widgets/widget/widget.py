@@ -1,5 +1,8 @@
 from twisted.web.template import Element
 
+from diamondash.utils import slugify
+from diamondash.exceptions import ConfigError
+
 
 class Widget(Element):
     """Abstract class for dashboard widgets."""
@@ -8,7 +11,7 @@ class Widget(Element):
     STYLESHEETS = ()
     JAVASCRIPTS = ('widget/widget.js',)
     MODEL = 'WidgetModel'
-    VIEWS = 'WidgetView'
+    VIEW = 'WidgetView'
     MAX_COLUMN_SPAN = 4
 
     def __init__(self, name, title, client_config, width=1):
@@ -20,8 +23,8 @@ class Widget(Element):
     @classmethod
     def parse_width(cls, width):
         """
-        Wraps the passed in width as an int and
-        clamps the value to the width range
+        Wraps the passed in width as an int and clamps the value to the width
+        range.
         """
         width = int(width)
         width = max(1, min(width, cls.MAX_COLUMN_SPAN))
@@ -29,18 +32,29 @@ class Widget(Element):
 
     @classmethod
     def parse_config(cls, config):
-        """
-        Parses a widget config, altering it where necessary
-        """
+        """Parses a widget config, altering it where necessary."""
+
+        name = config.get('name', None)
+        if name is None:
+            raise ConfigError('Widget name not specified.')
+
         name = config['name']
         config.setdefault('title', name)
+        config['name'] = slugify(name)
+
+        width = config.get('width', None)
+        config['width'] = 1 if width is None else cls.parse_width(width)
+
+        config['client_config'] = {
+            'model': cls.MODEL,
+            'view': cls.VIEW,
+        }
+
         return config
 
     @classmethod
     def from_config(cls, config):
-        """
-        Parses a widget config, then returns the constructed widget
-        """
+        """Parses a widget config, then returns the constructed widget."""
         config = cls.parse_config(config)
         return cls(**config)
 
@@ -49,7 +63,7 @@ class Widget(Element):
         Handles a 'render' request from the client, where `params` are the
         request parameters.
         """
-        pass
+        return {}
 
 
 class GraphiteWidget(Widget):

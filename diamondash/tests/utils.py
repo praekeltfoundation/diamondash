@@ -7,7 +7,7 @@ def stub_fn(targetobj, targetfn, stubfn):
     stubfn.original = original
 
 
-def restore_fn(stubfn):
+def restore_from_stub(stubfn):
     setattr(stubfn.targetobj, stubfn.targetfn, stubfn.original)
 
 

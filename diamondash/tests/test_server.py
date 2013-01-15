@@ -12,7 +12,7 @@ from diamondash.widgets.widget import Widget
 from diamondash.dashboard import Dashboard
 from diamondash.server import DiamondashServer, Index, DashboardIndexListItem
 
-from diamondash.tests.utils import stub_fn, restore_fn, stub_classmethod
+from diamondash.tests.utils import stub_fn, restore_from_stub, stub_classmethod
 
 _test_data_dir = resource_filename(__name__, 'test_server_data/')
 
@@ -148,7 +148,7 @@ class DiamondashServerTestCase(unittest.TestCase):
             },
         })
 
-        restore_fn(stubbed_create_resource_from_path)
+        restore_from_stub(stubbed_create_resource_from_path)
 
     def test_get_widget_resource(self):
         """
@@ -206,9 +206,9 @@ class DiamondashServerTestCase(unittest.TestCase):
         self.assertEqual(dd_server.public_resources, 'fake-public-resources')
         self.assertEqual(dd_server.widget_resources, 'fake-widget-resources')
 
-        restore_fn(stubbed_create_public_resources)
-        restore_fn(stubbed_create_widget_resources)
-        restore_fn(stubbed_dashboards_from_dir)
+        restore_from_stub(stubbed_create_public_resources)
+        restore_from_stub(stubbed_create_widget_resources)
+        restore_from_stub(stubbed_dashboards_from_dir)
 
     def test_add_dashboard(self):
         """Should add a dashboard to the server."""
@@ -255,7 +255,7 @@ class IndexTestCase(unittest.TestCase):
         self.assertEqual(index.dashboard_list_items[0],
                          'created from: test-dashboard')
 
-        restore_fn(stubbed_from_dashboard)
+        restore_from_stub(stubbed_from_dashboard)
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):

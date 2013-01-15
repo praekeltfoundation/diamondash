@@ -106,10 +106,11 @@ class Dashboard(Element):
         Parses a dashboard config, applying changes
         where appropriate and returning the resulting config
         """
-        if 'name' not in config:
+
+        name = config.get('name', None)
+        if name is None:
             raise ConfigError('Dashboard name not specified.')
 
-        name = config['name']
         title = config.get('title', name)
         name = slugify(name)
 
