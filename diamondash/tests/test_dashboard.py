@@ -25,7 +25,6 @@ class StubbedDashboard(Dashboard):
 
 class ToyWidget(Widget):
     STYLESHEETS = ('toy/style.css',)
-    JAVASCRIPTS = ('toy/toy-widget.js',)
 
     @classmethod
     def from_config(cls, config, defaults):
@@ -48,10 +47,10 @@ class DashboardTestCase(unittest.TestCase):
         """Should add a widget to the dashboard."""
 
         dashboard = Dashboard('test-dashboard', 'Test Dashboard', [], {})
-        dashboard.WIDGET_JAVASCRIPTS_PATH = "/test/js/"
-        dashboard.WIDGET_STYLESHEETS_PATH = "/test/css/"
+        dashboard.WIDGET_STYLESHEETS_PATH = "/test/css/widgets/"
 
-        widget = ToyWidget('toy', 'Toy', 'toy_client_config', width=2)
+        widget = ToyWidget(name='toy', title='Toy',
+                           client_config='toy_client_config', width=2)
         dashboard.add_widget(widget)
 
         self.assertEqual(dashboard.widgets_by_name['toy'], widget)
@@ -60,10 +59,8 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(dashboard.last_row_width, 2)
         self.assertEqual(dashboard.client_config['widgets'][0],
                          'toy_client_config')
-        self.assertEqual(
-            dashboard.javascripts, set(['/test/js/toy/toy-widget.js']))
-        self.assertEqual(
-            dashboard.stylesheets, set(['/test/css/toy/style.css']))
+        self.assertEqual(dashboard.stylesheets,
+                         set(['/test/css/widgets/toy/style.css']))
 
     def test_add_widget_for_layout_fn(self):
         """
@@ -98,7 +95,8 @@ class DashboardTestCase(unittest.TestCase):
         original_column_span = Widget.MAX_COLUMN_SPAN
         Widget.MAX_COLUMN_SPAN = 4
 
-        widget = ToyWidget('toy', 'Toy', 'toy_client_config', width=2)
+        widget = ToyWidget(name='toy', title='Toy',
+                           client_config='toy_client_config', width=2)
         dashboard.add_widget(widget)
         self.assertTrue(stubbed_new_row.called)
         self.assertEqual(dashboard.last_row_width, 2)

@@ -3,13 +3,8 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 	<link rel="stylesheet" href="/public/css/style.css" type="text/css" />
 	<link rel="stylesheet" href="/public/css/dashboard.css" type="text/css" />
-
-	<script src="/public/vendor/jquery.js" type="text/javascript"></script>
-	<script src="/public/vendor/underscore.js" type="text/javascript"></script>
-	<script src="/public/vendor/backbone.js" type="text/javascript"></script>
-	<script src="/public/vendor/d3.v2.min.js" type="text/javascript"></script>
-
-	<script src="/public/js/main.js" type="text/javascript"></script>
+    <script src="/public/vendor/cajon.js"></script>
+	<script src="/public/js/config.js"></script>
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>

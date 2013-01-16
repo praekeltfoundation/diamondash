@@ -1,3 +1,5 @@
+from os import path
+
 from twisted.web.template import Element
 
 from diamondash.utils import slugify
@@ -8,11 +10,12 @@ class Widget(Element):
     """Abstract class for dashboard widgets."""
 
     loader = None
-    STYLESHEETS = ()
-    JAVASCRIPTS = ('widget/widget.js',)
-    MODEL = 'WidgetModel'
-    VIEW = 'WidgetView'
     MAX_COLUMN_SPAN = 4
+    STYLESHEETS = ()
+
+    # (js_module_path, class_name)
+    MODEL = ('widget/widget', 'WidgetModel')
+    VIEW = ('widget/widget', 'WidgetView')
 
     def __init__(self, **kwargs):
         self.name = kwargs['name']
@@ -38,18 +41,27 @@ class Widget(Element):
         if name is None:
             raise ConfigError('Widget name not specified.')
 
-        config.pop('type')
-
         name = config['name']
         config.setdefault('title', name)
-        config['name'] = slugify(name)
+        name = slugify(name)
+        config['name'] = name
 
         width = config.get('width', None)
         config['width'] = 1 if width is None else cls.parse_width(width)
 
+        model_module, model_class_name = cls.MODEL
+        view_module, view_class_name = cls.VIEW
+
         config['client_config'] = {
-            'model': cls.MODEL,
-            'view': cls.VIEW,
+            'name': name,
+            'model': {
+                'modulePath': path.join('widgets', model_module),
+                'className': model_class_name,
+            },
+            'view': {
+                'modulePath': path.join('widgets', view_module),
+                'className': view_class_name,
+            },
         }
 
         return config

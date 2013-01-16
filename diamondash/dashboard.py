@@ -25,7 +25,6 @@ class Dashboard(Element):
     DEFAULT_REQUEST_INTERVAL = 10000
     LAYOUT_FUNCTIONS = ['newrow']
     DEFAULT_WIDGET_CLASS = GraphWidget
-    WIDGET_JAVASCRIPTS_PATH = "/public/js/widgets/"
     WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
 
     loader = XMLString(
@@ -44,7 +43,6 @@ class Dashboard(Element):
         self.rows = [[]]  # init with an empty first row
         self.last_row_width = 0
 
-        self.javascripts = set()
         self.stylesheets = set()
 
         self.layoutfns = {
@@ -77,9 +75,6 @@ class Dashboard(Element):
             self.rows[-1].append(widget)  # append to the last row
 
             self.client_config['widgets'].append(widget.client_config)
-
-            self.javascripts.update([path.join(self.WIDGET_JAVASCRIPTS_PATH, j)
-                                     for j in widget.JAVASCRIPTS])
 
             self.stylesheets.update([path.join(self.WIDGET_STYLESHEETS_PATH, s)
                                      for s in widget.STYLESHEETS])
@@ -131,7 +126,7 @@ class Dashboard(Element):
             if (widget_config in cls.LAYOUT_FUNCTIONS):
                 widgets.append(widget_config)
             else:
-                type = widget_config.get('type', None)
+                type = widget_config.pop('type', None)
                 widget_class = (cls.DEFAULT_WIDGET_CLASS if type is None
                                 else load_class_by_string(type))
                 widget = widget_class.from_config(widget_config,
@@ -171,11 +166,6 @@ class Dashboard(Element):
     def stylesheets_renderer(self, request, tag):
         for stylesheet in self.stylesheets:
             yield tag.clone().fillSlots(stylesheet_href_slot=stylesheet)
-
-    @renderer
-    def javascripts_renderer(self, request, tag):
-        for javascript in self.javascripts:
-            yield tag.clone().fillSlots(script_src_slot=javascript)
 
     @renderer
     def widget_row_renderer(self, request, tag):

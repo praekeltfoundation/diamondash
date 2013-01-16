@@ -1,10 +1,13 @@
-var WidgetModel = Backbone.Model.extend({
-	idAttribute: "name"
+var Backbone = require('backbone'),
+    exports = module.exports = {};
+
+exports.WidgetModel = Backbone.Model.extend({
+    idAttribute: "name"
 });
 
-var WidgetCollection = Backbone.Collection.extend({
-	model: WidgetModel
+exports.WidgetCollection = Backbone.Collection.extend({
+    model: exports.WidgetModel
 });
 
-var WidgetView = Backbone.View.extend({
+exports.WidgetView = Backbone.View.extend({
 });

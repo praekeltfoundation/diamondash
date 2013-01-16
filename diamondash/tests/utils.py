@@ -11,10 +11,10 @@ def restore_from_stub(stubfn):
     setattr(stubfn.targetobj, stubfn.targetfn, stubfn.original)
 
 
-def stub_classmethod(targetclass, targetfn, stubfn):
-    original = getattr(targetclass, targetfn)
-    setattr(targetclass, targetfn, classmethod(stubfn))
+def stub_classmethod(targetobj, targetfn, stubfn):
+    original = getattr(targetobj, targetfn)
+    setattr(targetobj, targetfn, classmethod(stubfn))
 
-    stubfn.targetobj = targetclass
+    stubfn.targetobj = targetobj
     stubfn.targetfn = targetfn
     stubfn.original = original

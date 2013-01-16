@@ -9,8 +9,8 @@ from diamondash.tests.utils import restore_from_stub, stub_classmethod
 
 class ToyWidget(Widget):
     MAX_COLUMN_SPAN = 4
-    MODEL = 'ToyWidgetModel'
-    VIEW = 'ToyWidgetView'
+    MODEL = ('toy/toy-widget', 'ToyWidgetModel')
+    VIEW = ('toy/toy-widget', 'ToyWidgetView')
 
 
 class WidgetTestCase(unittest.TestCase):
@@ -45,8 +45,15 @@ class WidgetTestCase(unittest.TestCase):
             'title': 'Test Widget',
             'width': '2 -- parsed',
             'client_config':  {
-                'model': 'ToyWidgetModel',
-                'view': 'ToyWidgetView',
+                'name': slugify('Test Widget'),
+                'model': {
+                    'className': 'ToyWidgetModel',
+                    'modulePath': 'widgets/toy/toy-widget',
+                },
+                'view': {
+                    'className': 'ToyWidgetView',
+                    'modulePath': 'widgets/toy/toy-widget',
+                }
             }
         })
         restore_from_stub(stubbed_parse_width)
@@ -76,7 +83,7 @@ class WidgetTestCase(unittest.TestCase):
         stub_classmethod(ToyWidget, 'parse_width', stubbed_parse_width)
         config = ToyWidget.parse_config({
             'name': 'Test Widget',
-            'title': 'Test Widget',
+            'title': 'Test Widget'
         })
 
         self.assertEqual(config['width'], 1)
