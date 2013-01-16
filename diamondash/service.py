@@ -18,7 +18,7 @@ class Options(usage.Options):
 
 
 def makeService(options):
-    #webserver.configure(options['config_dir'])
+    webserver.configure(options['config_dir'])
     diamondash_service = service.MultiService()
     site = server.Site(webserver.resource())
     strports_service = strports.service(options['port'], site)

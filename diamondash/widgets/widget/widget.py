@@ -14,11 +14,11 @@ class Widget(Element):
     VIEW = 'WidgetView'
     MAX_COLUMN_SPAN = 4
 
-    def __init__(self, name, title, client_config, width=1):
-        self.name = name
-        self.title = title
-        self.client_config = client_config
-        self.width = width
+    def __init__(self, **kwargs):
+        self.name = kwargs['name']
+        self.title = kwargs['title']
+        self.client_config = kwargs['client_config']
+        self.width = kwargs['width']
 
     @classmethod
     def parse_width(cls, width):
@@ -38,6 +38,8 @@ class Widget(Element):
         if name is None:
             raise ConfigError('Widget name not specified.')
 
+        config.pop('type')
+
         name = config['name']
         config.setdefault('title', name)
         config['name'] = slugify(name)
@@ -53,7 +55,7 @@ class Widget(Element):
         return config
 
     @classmethod
-    def from_config(cls, config):
+    def from_config(cls, config, defaults):
         """Parses a widget config, then returns the constructed widget."""
         config = cls.parse_config(config)
         return cls(**config)

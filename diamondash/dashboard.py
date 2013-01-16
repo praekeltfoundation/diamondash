@@ -25,8 +25,8 @@ class Dashboard(Element):
     DEFAULT_REQUEST_INTERVAL = 10000
     LAYOUT_FUNCTIONS = ['newrow']
     DEFAULT_WIDGET_CLASS = GraphWidget
-    WIDGET_JAVASCRIPTS_PATH = "/public/js/widgets/%s/"
-    WIDGET_STYLESHEETS_PATH = "/public/css/widgets/%s/"
+    WIDGET_JAVASCRIPTS_PATH = "/public/js/widgets/"
+    WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
 
     loader = XMLString(
         resource_string(__name__, 'templates/dashboard_container.xml'))
@@ -183,9 +183,9 @@ class Dashboard(Element):
             yield WidgetRow(row)
 
     @renderer
-    def config_script_renderer(self, request, tag):
-        config_script = 'var config = %s;' % (json.dumps(self.client_config),)
-        tag.fillSlots(config_script_slot=config_script)
+    def init_script_renderer(self, request, tag):
+        client_config = json.dumps(self.client_config)
+        tag.fillSlots(client_config_slot=client_config)
         return tag
 
 
@@ -252,7 +252,7 @@ class DashboardPage(Element):
 
     @renderer
     def dashboard_name_renderer(self, request, tag):
-        return tag(self.dashboard.config['title'])
+        return tag(self.dashboard.title)
 
     @renderer
     def dashboard_container_renderer(self, request, tag):

@@ -24,7 +24,7 @@
 	  </div>
 	  <div class="container" id="dashboard-container">
 		  <ul class='dashboard-list'>
-			  <t:transparent t:render="dashboard_item_renderer"/>
+			  <t:transparent t:render="dashboard_list_item_renderer"/>
 		  </ul>
 	  </div>
   </body>

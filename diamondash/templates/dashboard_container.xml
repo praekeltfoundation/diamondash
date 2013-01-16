@@ -10,7 +10,9 @@
 			<t:slot name="script_src_slot"/>
 		</t:attr>
 	</script>
-	<script t:render="config_script_renderer">
-		<t:slot name="client_config_slot"/>
+	<script t:render="init_script_renderer">
+        var controller = DashboardController.fromConfig(
+            <t:slot name="client_config_slot"/>);
+        controller.start();
 	</script>
 </div>
