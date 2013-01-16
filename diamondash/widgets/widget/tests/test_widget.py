@@ -8,7 +8,8 @@ from diamondash.tests.utils import restore_from_stub, stub_classmethod
 
 
 class ToyWidget(Widget):
-    MAX_COLUMN_SPAN = 4
+    MIN_COLUMN_SPAN = 4
+    MAX_COLUMN_SPAN = 8
     MODEL = ('toy/toy-widget', 'ToyWidgetModel')
     VIEW = ('toy/toy-widget', 'ToyWidgetView')
 
@@ -19,10 +20,10 @@ class WidgetTestCase(unittest.TestCase):
         Should clamp the passed in width value between 1 and the maximum
         widget column span.
         """
-        self.assertEqual(ToyWidget.parse_width(0), 1)
-        self.assertEqual(ToyWidget.parse_width(1), 1)
-        self.assertEqual(ToyWidget.parse_width(5), 4)
-        self.assertEqual(ToyWidget.parse_width(3), 3)
+        self.assertEqual(ToyWidget.parse_width(0), 4)
+        self.assertEqual(ToyWidget.parse_width(5), 5)
+        self.assertEqual(ToyWidget.parse_width(9), 8)
+        self.assertEqual(ToyWidget.parse_width(8), 8)
         self.assertEqual(ToyWidget.parse_width(4), 4)
 
     def test_parse_config(self):
@@ -75,7 +76,8 @@ class WidgetTestCase(unittest.TestCase):
 
     def test_parse_config_for_no_width(self):
         """
-        Should set the widget width to a value of 1 if no width value is given.
+        Should set the widget width to the minimum column span if no width
+        value is given.
         """
         def stubbed_parse_width(cls, width):
             return None
@@ -86,5 +88,5 @@ class WidgetTestCase(unittest.TestCase):
             'title': 'Test Widget'
         })
 
-        self.assertEqual(config['width'], 1)
+        self.assertEqual(config['width'], ToyWidget.MIN_COLUMN_SPAN)
         restore_from_stub(stubbed_parse_width)

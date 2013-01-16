@@ -10,7 +10,8 @@ class Widget(Element):
     """Abstract class for dashboard widgets."""
 
     loader = None
-    MAX_COLUMN_SPAN = 4
+    MIN_COLUMN_SPAN = 3
+    MAX_COLUMN_SPAN = 12
     STYLESHEETS = ()
 
     # (js_module_path, class_name)
@@ -30,7 +31,7 @@ class Widget(Element):
         range.
         """
         width = int(width)
-        width = max(1, min(width, cls.MAX_COLUMN_SPAN))
+        width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
         return width
 
     @classmethod
@@ -47,7 +48,8 @@ class Widget(Element):
         config['name'] = name
 
         width = config.get('width', None)
-        config['width'] = 1 if width is None else cls.parse_width(width)
+        config['width'] = (cls.MIN_COLUMN_SPAN if width is None
+                           else cls.parse_width(width))
 
         model_module, model_class_name = cls.MODEL
         view_module, view_class_name = cls.VIEW

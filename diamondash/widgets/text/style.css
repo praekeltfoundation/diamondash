@@ -1,1 +1,6 @@
-.text-widget-text { font-size: 40px; }
+.text-widget-text {
+    margin: 0 auto;
+    text-align: center;
+    font-size: 55px; 
+    line-height: 60px;
+}
