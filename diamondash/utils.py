@@ -97,3 +97,13 @@ def parse_interval(interval):
 
 def last_dir_in_path(pathname):
     return path.split(path.dirname(pathname))[1]
+
+
+def insert_defaults_by_key(key, original, defaults):
+    """
+    If `key` exists in `defaults`, returns a dict derived from the key's
+    value, then overidden with `original`. Otherwise, returns `original`.
+    """
+    key_defaults = defaults.get(key, None)
+    return (dict(key_defaults, **original)
+            if key_defaults is not None else original)

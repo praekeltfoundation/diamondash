@@ -2,7 +2,7 @@ from os import path
 
 from twisted.web.template import Element
 
-from diamondash.utils import slugify
+from diamondash import utils
 from diamondash.exceptions import ConfigError
 
 
@@ -25,26 +25,18 @@ class Widget(Element):
         self.width = kwargs['width']
 
     @classmethod
-    def parse_width(cls, width):
-        """
-        Wraps the passed in width as an int and clamps the value to the width
-        range.
-        """
-        width = int(width)
-        width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
-        return width
-
-    @classmethod
-    def parse_config(cls, config):
+    def parse_config(cls, config, defaults={}):
         """Parses a widget config, altering it where necessary."""
 
         name = config.get('name', None)
         if name is None:
             raise ConfigError('Widget name not specified.')
 
+        config = utils.insert_defaults_by_key(__name__, config, defaults)
+
         name = config['name']
         config.setdefault('title', name)
-        name = slugify(name)
+        name = utils.slugify(name)
         config['name'] = name
 
         width = config.get('width', None)
@@ -71,8 +63,18 @@ class Widget(Element):
     @classmethod
     def from_config(cls, config, defaults):
         """Parses a widget config, then returns the constructed widget."""
-        config = cls.parse_config(config)
+        config = cls.parse_config(config, defaults)
         return cls(**config)
+
+    @classmethod
+    def parse_width(cls, width):
+        """
+        Wraps the passed in width as an int and clamps the value to the width
+        range.
+        """
+        width = int(width)
+        width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
+        return width
 
     def handle_render_request(self, **params):
         """

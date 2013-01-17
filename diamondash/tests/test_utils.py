@@ -52,3 +52,40 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(120, utils.parse_interval("2m"))
         self.assertEqual(7200, utils.parse_interval("2h"))
         self.assertEqual(86400 * 2, utils.parse_interval("2d"))
+
+    def test_insert_defaults_by_key(self):
+        """
+        Should return a dict with the appropriate key's defaults, overidden
+        with the original dict.
+        """
+        config = {'some_config_option': 23}
+        defaults = {
+            __name__: {
+                'some_config_option': 42,
+                'some_other_config_option': 182,
+            },
+            'some_other_module': {
+                'some_config_option': 22,
+                'another_config_option': 21,
+            },
+        }
+
+        new_config = utils.insert_defaults_by_key(__name__, config, defaults)
+
+        self.assertEqual(new_config, {
+            'some_config_option': 23,
+            'some_other_config_option': 182,
+        })
+
+        self.assertEqual(config, {'some_config_option': 23})
+
+        self.assertEqual(defaults, {
+            __name__: {
+                'some_config_option': 42,
+                'some_other_config_option': 182,
+            },
+            'some_other_module': {
+                'some_config_option': 22,
+                'another_config_option': 21,
+            },
+        })

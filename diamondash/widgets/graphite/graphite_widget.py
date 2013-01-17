@@ -7,6 +7,12 @@ class GraphiteWidget(Widget):
     """Abstract widget that obtains metric data from graphite."""
 
     @classmethod
+    def parse_config(cls, config, defaults):
+        """Parses the graphite widget config, altering it where necessary."""
+        config = super(GraphiteWidget, cls).parse_config(config)
+        config = cls.insert_config_defaults(__name__, config, defaults)
+
+    @classmethod
     def format_metric_target(cls, target, bucket_size):
         """
         Formats a metric target to allow aggregation of metric values
