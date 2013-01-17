@@ -22,7 +22,7 @@ class Dashboard(Element):
     Dashboard instances are created when diamondash starts.
     """
 
-    DEFAULT_REQUEST_INTERVAL = 10000
+    DEFAULT_REQUEST_INTERVAL = '10s'
     LAYOUT_FUNCTIONS = ['newrow']
     DEFAULT_WIDGET_CLASS = GraphWidget
     WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
@@ -108,18 +108,18 @@ class Dashboard(Element):
 
         title = config.get('title', name)
         name = slugify(name)
-
         share_id = config.get('share_id', None)
 
-        widget_defaults = config.setdefault('widget_defaults', {})
-
         client_config = {}
-        request_interval = config.get('request_interval',
-                                      cls.DEFAULT_REQUEST_INTERVAL)
-        client_config['requestInterval'] = parse_interval(request_interval)
+        request_interval = config.get(
+            'request_interval', cls.DEFAULT_REQUEST_INTERVAL)
+        request_interval = parse_interval(request_interval) * 1000
+        client_config['requestInterval'] = request_interval
 
         if 'widgets' not in config:
             raise ConfigError('Dashboard %s does not have any widgets' % name)
+
+        widget_defaults = config.setdefault('widget_defaults', {})
 
         widgets = []
         for widget_config in config['widgets']:

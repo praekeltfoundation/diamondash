@@ -1,10 +1,75 @@
 from twisted.trial import unittest
 
+from diamondash import utils
 from diamondash.widgets.graphite import (
     GraphiteWidget, guess_aggregation_method)
+from diamondash.exceptions import ConfigError
+
+from diamondash.tests.utils import stub_fn, restore_from_stub
 
 
 class GraphiteWidgetTestCase(unittest.TestCase):
+    def test_parse_config(self):
+        """
+        Should parse the config, altering it accordignly to configure the
+        widget.
+        """
+        def stubbed_insert_defaults_by_key(key, original, defaults):
+            original.update({'defaults_inserted': True})
+            return original
+
+        stub_fn(utils, 'insert_defaults_by_key',
+                stubbed_insert_defaults_by_key)
+
+        config = GraphiteWidget.parse_config({
+            'name': 'test-graphite-widget',
+            'graphite_url': 'fake_graphite_url',
+        })
+
+        self.assertTrue(config['defaults_inserted'])
+        self.assertEqual(config['request_url'], None)
+
+        restore_from_stub(stubbed_insert_defaults_by_key)
+
+    def test_parse_config_for_no_graphite_url(self):
+        self.assertRaises(ConfigError, GraphiteWidget.parse_config,
+                          {'name': 'test-graphite-widget'})
+
+    def test_build_request_url(self):
+        """
+        Should build a render request url that can be used to get metric data
+        from graphite.
+        """
+        def assert_request_url(graphite_url, targets, from_param, expected):
+            request_url = GraphiteWidget.build_request_url(graphite_url,
+                                                           targets, from_param)
+            self.assertEqual(request_url, expected)
+
+        assert_request_url(
+            'http://127.0.0.1/',
+            ['vumi.random.count.max'],
+            1000,
+            ('http://127.0.0.1/render/?from=-1000s'
+            '&target=vumi.random.count.max&format=json'))
+
+        assert_request_url(
+            'http://127.0.0.1',
+            ['vumi.random.count.max', 'vumi.random.count.avg'],
+            2000,
+            ('http://127.0.0.1/render/?from=-2000s'
+             '&target=vumi.random.count.max'
+             '&target=vumi.random.count.avg&format=json'))
+
+        assert_request_url(
+            'http://someurl.com/',
+            ['vumi.random.count.max',
+             'summarize(vumi.random.count.sum, "120s", "sum")'],
+            3000,
+            ('http://someurl.com/render/?from=-3000s'
+             '&target=vumi.random.count.max'
+             '&target=summarize%28vumi.random.count.sum'
+             '%2C+%22120s%22%2C+%22sum%22%29&format=json'))
+
     def test_format_metric_target(self):
         """
         Metric targets should be formatted to be enclosed in a 'summarize()'

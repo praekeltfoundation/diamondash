@@ -1,16 +1,49 @@
 import re
+from urllib import urlencode
 
+from twisted.web.client import getPage
+
+from diamondash import utils
 from diamondash.widgets.widget import Widget
+from diamondash.exceptions import ConfigError
 
 
 class GraphiteWidget(Widget):
     """Abstract widget that obtains metric data from graphite."""
 
+    def __init__(self, **kwargs):
+        super(GraphiteWidget, self).__init__(kwargs)
+        self.request_url = kwargs['request_url']
+
     @classmethod
-    def parse_config(cls, config, defaults):
+    def parse_config(cls, config, defaults={}):
         """Parses the graphite widget config, altering it where necessary."""
-        config = super(GraphiteWidget, cls).parse_config(config)
-        config = cls.insert_config_defaults(__name__, config, defaults)
+        config = super(GraphiteWidget, cls).parse_config(config, defaults)
+        config = utils.insert_defaults_by_key(__name__, config, defaults)
+
+        if 'graphite_url' not in config:
+            raise ConfigError(
+                "Graphite widget %s needs a graphite_url" % config['name'])
+
+        # NOTE: Must be built in subclasses
+        config['request_url'] = None
+
+        return config
+
+    @classmethod
+    def build_request_url(cls, graphite_url, targets, from_param):
+        """
+        Constructs the graphite render url
+        """
+        params = {
+            'target': targets,
+            'from': "-%ss" % from_param,
+            'format': 'json',
+        }
+        render_url = "render/?%s" % urlencode(params, True)
+        graphite_url = graphite_url.strip('/')
+
+        return '/'.join((graphite_url, render_url))
 
     @classmethod
     def format_metric_target(cls, target, bucket_size):
@@ -27,6 +60,13 @@ class GraphiteWidget(Widget):
         graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
             target, bucket_size, agg_method, target)
         return graphite_target
+
+    def handle_render_request(self, request):
+        if self.request_url is None:
+            # TODO: log?
+            return "{}"
+
+        return getPage(self.request_url)
 
 
 # Borrowed from the bit of pyparsing, the graphite expression parser uses.

@@ -76,9 +76,12 @@ class Widget(Element):
         width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
         return width
 
-    def handle_render_request(self, **params):
+    def handle_render_request(self, request):
         """
         Handles a 'render' request from the client, where `params` are the
         request parameters.
         """
+
+        # TODO request stuff from graphite
+
         return {}
