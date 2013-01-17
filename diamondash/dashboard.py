@@ -10,7 +10,7 @@ from pkg_resources import resource_string
 from twisted.web.template import Element, renderer, XMLString
 
 from exceptions import ConfigError
-from utils import (slugify, parse_interval, load_class_by_string)
+from diamondash import utils
 from diamondash.widgets.widget import Widget
 from diamondash.widgets.graph import GraphWidget
 
@@ -107,13 +107,13 @@ class Dashboard(Element):
             raise ConfigError('Dashboard name not specified.')
 
         title = config.get('title', name)
-        name = slugify(name)
+        name = utils.slugify(name)
         share_id = config.get('share_id', None)
 
         client_config = {}
         request_interval = config.get(
             'request_interval', cls.DEFAULT_REQUEST_INTERVAL)
-        request_interval = parse_interval(request_interval) * 1000
+        request_interval = utils.parse_interval(request_interval) * 1000
         client_config['requestInterval'] = request_interval
 
         if 'widgets' not in config:
@@ -128,7 +128,7 @@ class Dashboard(Element):
             else:
                 type = widget_config.pop('type', None)
                 widget_class = (cls.DEFAULT_WIDGET_CLASS if type is None
-                                else load_class_by_string(type))
+                                else utils.load_class_by_string(type))
                 widget = widget_class.from_config(widget_config,
                                                   widget_defaults)
                 widgets.append(widget)

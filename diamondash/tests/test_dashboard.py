@@ -2,14 +2,13 @@
 
 from pkg_resources import resource_filename
 
+from mock import patch, Mock
 from twisted.trial import unittest
 
+from diamondash import utils
 from diamondash.dashboard import Dashboard
 from diamondash.widgets.widget import Widget
 from diamondash.exceptions import ConfigError
-from diamondash.utils import parse_interval, slugify
-
-from diamondash.tests.utils import restore_from_stub, stub_classmethod
 
 
 class StubbedDashboard(Dashboard):
@@ -25,10 +24,6 @@ class StubbedDashboard(Dashboard):
 
 class ToyWidget(Widget):
     STYLESHEETS = ('toy/style.css',)
-
-    @classmethod
-    def from_config(cls, config, defaults):
-        return "%s -- loaded" % config['name']
 
 
 class DashboardTestCase(unittest.TestCase):
@@ -67,65 +62,61 @@ class DashboardTestCase(unittest.TestCase):
         Should call the appropriate layout function if the function's name is
         passed in as a 'widget'.
         """
-        def toy_layoutfn():
-            toy_layoutfn.called = True
-
-        toy_layoutfn.called = False
-
+        mock_layoutfn = Mock()
         dashboard = Dashboard('test-dashboard', 'Test Dashboard', [], {})
         dashboard.LAYOUT_FUNCTIONS = ['toy']
-        dashboard.layoutfns = {'toy': toy_layoutfn}
+        dashboard.layoutfns = {'toy': mock_layoutfn}
         dashboard.add_widget('toy')
-        self.assertTrue(toy_layoutfn.called)
+        self.assertTrue(mock_layoutfn.called)
 
-    def test_add_widget_for_new_row(self):
+    @patch.object(Widget, 'MAX_COLUMN_SPAN')
+    def test_add_widget_for_new_row(self, mock_widget_max_column_span):
         """
         Should add a new row if there is no space for the widget being added on
         the current row.
         """
-        def stubbed_new_row():
-            stubbed_new_row.called = True
-
-        stubbed_new_row.called = False
-
         dashboard = Dashboard('test-dashboard', 'Test Dashboard', [], {})
-        dashboard._new_row = stubbed_new_row
+        dashboard._new_row = Mock()
         dashboard.last_row_width = 3
-
-        original_column_span = Widget.MAX_COLUMN_SPAN
-        Widget.MAX_COLUMN_SPAN = 4
 
         widget = ToyWidget(name='toy', title='Toy',
                            client_config='toy_client_config', width=2)
-        dashboard.add_widget(widget)
-        self.assertTrue(stubbed_new_row.called)
-        self.assertEqual(dashboard.last_row_width, 2)
-        Widget.MAX_COLUMN_SPAN = original_column_span
+        mock_widget_max_column_span.side_effect = 4
 
-    def test_dashboards_from_dir(self):
+        dashboard.add_widget(widget)
+        self.assertTrue(dashboard._new_row.called)
+        self.assertEqual(dashboard.last_row_width, 2)
+
+    @patch.object(Dashboard, 'from_config_file')
+    def test_dashboards_from_dir(self, mock_from_config_file):
         """Should create a list of dashboards from a config dir."""
 
-        def stubbed_from_config_file(cls, filename, defaults=None):
+        def stubbed_from_config_file(filename, defaults=None):
             return "%s -- loaded" % filename
 
-        stub_classmethod(Dashboard, 'from_config_file',
-                         stubbed_from_config_file)
-
-        dir = resource_filename(
-            __name__, 'test_dashboard_data/dashboards/')
+        mock_from_config_file.side_effect = stubbed_from_config_file
+        dir = resource_filename(__name__, 'test_dashboard_data/dashboards/')
         dashboards = Dashboard.dashboards_from_dir(dir, None)
 
         expected = ["%s%s -- loaded" % (dir, file) for file in
                     ('dashboard1.yml', 'dashboard2.yml')]
-
         self.assertEqual(dashboards, expected)
 
-        restore_from_stub(stubbed_from_config_file)
-
-    def test_from_config(self):
+    @patch.object(utils, 'slugify')
+    @patch.object(utils, 'parse_interval')
+    @patch.object(ToyWidget, 'from_config')
+    def test_from_config(self, mock_widget_from_config, mock_parse_interval,
+                         mock_slugify):
         """
         Should create a dashboard from a config dict.
         """
+        def stubbed_widget_from_config(config, defaults):
+            return "%s -- loaded" % config['name']
+
+        mock_widget_from_config.side_effect = stubbed_widget_from_config
+        mock_slugify.return_value = 'test-dashboard'
+        mock_parse_interval.return_value = 2
+
         dashboard = StubbedDashboard.from_config({
             'name': 'test dashboard',
             'title': 'Test Dashboard',
@@ -144,10 +135,11 @@ class DashboardTestCase(unittest.TestCase):
                 },
             ]
         })
-        self.assertEqual(dashboard.name, slugify('test dashboard'))
+
+        mock_slugify.assert_called_with('test dashboard')
+        self.assertEqual(dashboard.name, 'test-dashboard')
         self.assertEqual(dashboard.title, 'Test Dashboard')
-        self.assertEqual(dashboard.client_config['requestInterval'],
-                         parse_interval('2s') * 1000)
+        self.assertEqual(dashboard.client_config['requestInterval'], 2000)
         self.assertEqual(dashboard.share_id, 'this-is-a-share-id')
         self.assertEqual(dashboard.widgets, [
             'layoutfn1',

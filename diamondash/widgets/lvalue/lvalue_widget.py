@@ -21,8 +21,8 @@ class LValueWidget(GraphiteWidget):
         """Parses the lvalue widget config, altering it where necessary."""
         config = super(GraphiteWidget, cls).parse_config(config, defaults)
 
-        defaults = dict(cls.DEFAULTS, **defaults)
         config = utils.insert_defaults_by_key(__name__, config, defaults)
+        config = dict(cls.DEFAULTS, **config)
 
         target = config.get('metric', None)
         if target is None:

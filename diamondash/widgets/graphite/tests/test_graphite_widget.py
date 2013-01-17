@@ -1,3 +1,4 @@
+from mock import patch
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -5,31 +6,27 @@ from diamondash.widgets.graphite import (
     GraphiteWidget, guess_aggregation_method)
 from diamondash.exceptions import ConfigError
 
-from diamondash.tests.utils import stub_fn, restore_from_stub
-
 
 class GraphiteWidgetTestCase(unittest.TestCase):
-    def test_parse_config(self):
+
+    @patch.object(utils, 'slugify')
+    @patch.object(utils, 'insert_defaults_by_key')
+    def test_parse_config(self, mock_insert_defaults_by_key, mock_slugify):
         """
         Should parse the config, altering it accordignly to configure the
         widget.
         """
-        def stubbed_insert_defaults_by_key(key, original, defaults):
-            original.update({'defaults_inserted': True})
-            return original
-
-        stub_fn(utils, 'insert_defaults_by_key',
-                stubbed_insert_defaults_by_key)
-
-        config = GraphiteWidget.parse_config({
+        config = {
             'name': 'test-graphite-widget',
             'graphite_url': 'fake_graphite_url',
-        })
+        }
+        defaults = {'SomeWidgetType': "some widget's defaults"}
+        mock_insert_defaults_by_key.return_value = config
 
-        self.assertTrue(config['defaults_inserted'])
-        self.assertEqual(config['request_url'], None)
-
-        restore_from_stub(stubbed_insert_defaults_by_key)
+        parsed_config = GraphiteWidget.parse_config(config, defaults)
+        mock_insert_defaults_by_key.assert_called_with(
+            'diamondash.widgets.graphite.graphite_widget', config, defaults)
+        self.assertEqual(parsed_config['request_url'], None)
 
     def test_parse_config_for_no_graphite_url(self):
         self.assertRaises(ConfigError, GraphiteWidget.parse_config,

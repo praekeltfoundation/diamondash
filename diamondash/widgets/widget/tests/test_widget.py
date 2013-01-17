@@ -1,11 +1,9 @@
+from mock import patch
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.widgets.widget import Widget
 from diamondash.exceptions import ConfigError
-
-from diamondash.tests.utils import (
-    stub_fn, stub_classmethod, restore_from_stub)
 
 
 class ToyWidget(Widget):
@@ -16,35 +14,34 @@ class ToyWidget(Widget):
 
 
 class WidgetTestCase(unittest.TestCase):
-    def test_parse_config(self):
+    @patch.object(utils, 'slugify')
+    @patch.object(ToyWidget, 'parse_width')
+    @patch.object(utils, 'insert_defaults_by_key')
+    def test_parse_config(self, mock_insert_defaults_by_key, mock_parse_width,
+                          mock_slugify):
         """
         Should parse the config, altering it accordignly to configure the
         widget.
         """
-        def stubbed_insert_defaults_by_key(key, original, defaults):
-            original.update({'defaults_inserted': True})
-            return original
 
-        def stubbed_parse_width(cls, width):
-            return '%s -- parsed' % str(width)
-
-        stub_classmethod(ToyWidget, 'parse_width', stubbed_parse_width)
-        stub_fn(utils, 'insert_defaults_by_key',
-                stubbed_insert_defaults_by_key)
-
-        config = ToyWidget.parse_config({
+        config = {
             'name': 'Test Widget',
             'title': 'Test Widget',
             'width': 2
-        })
+        }
+        defaults = {'SomeWidgetType': "some widget's defaults"}
 
-        self.assertEqual(config, {
-            'name': utils.slugify('Test Widget'),
+        mock_parse_width.return_value = 4
+        mock_slugify.return_value = 'test-widget'
+        mock_insert_defaults_by_key.return_value = config
+
+        parsed_config = ToyWidget.parse_config(config, defaults)
+        self.assertEqual(parsed_config, {
+            'name': 'test-widget',
             'title': 'Test Widget',
-            'defaults_inserted': True,
-            'width': '2 -- parsed',
+            'width': 4,
             'client_config':  {
-                'name': utils.slugify('Test Widget'),
+                'name': 'test-widget',
                 'model': {
                     'className': 'ToyWidgetModel',
                     'modulePath': 'widgets/toy/toy-widget',
@@ -55,9 +52,10 @@ class WidgetTestCase(unittest.TestCase):
                 }
             }
         })
-
-        restore_from_stub(stubbed_parse_width)
-        restore_from_stub(stubbed_insert_defaults_by_key)
+        mock_insert_defaults_by_key.assert_called_with(
+            'diamondash.widgets.widget.widget', config, defaults)
+        mock_slugify.assert_called_with('Test Widget')
+        mock_parse_width.assert_called_with(2)
 
     def test_from_config_for_no_name(self):
         """
@@ -66,46 +64,30 @@ class WidgetTestCase(unittest.TestCase):
         """
         self.assertRaises(ConfigError, Widget.parse_config, {})
 
-    def test_parse_config_for_no_title(self):
+    @patch.object(utils, 'insert_defaults_by_key')
+    def test_parse_config_for_no_title(self, mock_insert_defaults_by_key):
         """
         Should set the widget title to the name passed into the config if no
         title is in the config.
         """
-        def stubbed_insert_defaults_by_key(key, original, defaults):
-            return original
+        config = {'name': 'Test Widget'}
+        mock_insert_defaults_by_key.return_value = config
+        parsed_config = ToyWidget.parse_config(config)
+        self.assertEqual(parsed_config['title'], 'Test Widget')
 
-        stub_fn(utils, 'insert_defaults_by_key',
-                stubbed_insert_defaults_by_key)
-
-        config = ToyWidget.parse_config({'name': 'Test Widget'})
-        self.assertEqual(config['title'], 'Test Widget')
-
-        restore_from_stub(stubbed_insert_defaults_by_key)
-
-    def test_parse_config_for_no_width(self):
+    @patch.object(utils, 'insert_defaults_by_key')
+    def test_parse_config_for_no_width(self, mock_insert_defaults_by_key):
         """
         Should set the widget width to the minimum column span if no width
         value is given.
         """
-        def stubbed_insert_defaults_by_key(key, original, defaults):
-            return original
-
-        def stubbed_parse_width(cls, width):
-            return None
-
-        stub_classmethod(ToyWidget, 'parse_width', stubbed_parse_width)
-        stub_fn(utils, 'insert_defaults_by_key',
-                stubbed_insert_defaults_by_key)
-
-        config = ToyWidget.parse_config({
+        config = {
             'name': 'Test Widget',
             'title': 'Test Widget'
-        })
-
-        self.assertEqual(config['width'], ToyWidget.MIN_COLUMN_SPAN)
-
-        restore_from_stub(stubbed_insert_defaults_by_key)
-        restore_from_stub(stubbed_parse_width)
+        }
+        mock_insert_defaults_by_key.return_value = config
+        parsed_config = ToyWidget.parse_config(config)
+        self.assertEqual(parsed_config['width'], ToyWidget.MIN_COLUMN_SPAN)
 
     def test_parse_width(self):
         """

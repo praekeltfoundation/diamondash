@@ -3,6 +3,7 @@
 from os import path
 from pkg_resources import resource_filename
 
+from mock import patch, Mock
 from twisted.trial import unittest
 from twisted.web.resource import NoResource
 from twisted.python.filepath import FilePath
@@ -11,8 +12,6 @@ from diamondash import server
 from diamondash.widgets.widget import Widget
 from diamondash.dashboard import Dashboard
 from diamondash.server import DiamondashServer, Index, DashboardIndexListItem
-
-from diamondash.tests.utils import stub_fn, restore_from_stub, stub_classmethod
 
 _test_data_dir = resource_filename(__name__, 'test_server_data/')
 
@@ -41,12 +40,9 @@ class ServerTestCase(unittest.TestCase):
         Should route the render request to the appropriate widget on the
         appropropriate dashboard.
         """
-        def stubbed_get_widget(widget_name):
-            return widget
-
         widget = ToyWidget('test-widget')
         dashboard = StubbedDashboard(name='test-dashboard')
-        dashboard.get_widget = stubbed_get_widget
+        dashboard.get_widget = Mock(return_value=widget)
 
         dd_server = DiamondashServer([], None, {})
         dd_server.dashboards_by_name['test-dashboard'] = dashboard
@@ -72,11 +68,8 @@ class ServerTestCase(unittest.TestCase):
         """
         Should return an empty JSON object if the widget does not exist.
         """
-        def stubbed_get_widget(widget_name):
-            return None
-
         dashboard = StubbedDashboard(name='test-dashboard')
-        dashboard.get_widget = stubbed_get_widget
+        dashboard.get_widget = Mock(return_value=None)
 
         dd_server = DiamondashServer([], None, {})
         dd_server.dashboards_by_name['test-dashboard'] = dashboard
@@ -124,7 +117,8 @@ class StubbedDiamondashServer(DiamondashServer):
 
 class DiamondashServerTestCase(unittest.TestCase):
 
-    def test_create_widget_resources(self):
+    @patch.object(server, 'create_resource_from_path')
+    def test_create_widget_resources(self, mock_create_resource_from_path):
         """
         Should create the widget resources (javascripts and stylesheets) from
         files.
@@ -132,8 +126,8 @@ class DiamondashServerTestCase(unittest.TestCase):
         def stubbed_create_resource_from_path(pathname):
             return '%s -- created' % pathname
 
-        stub_fn(server, 'create_resource_from_path',
-                stubbed_create_resource_from_path)
+        mock_create_resource_from_path.side_effect = (
+            stubbed_create_resource_from_path)
 
         widget_resources = StubbedDiamondashServer.create_widget_resources()
         widgets_dir = path.join(_test_data_dir, 'widgets')
@@ -147,8 +141,6 @@ class DiamondashServerTestCase(unittest.TestCase):
                 'b': '%s/b/*.css -- created' % widgets_dir,
             },
         })
-
-        restore_from_stub(stubbed_create_resource_from_path)
 
     def test_get_widget_resource(self):
         """
@@ -168,28 +160,17 @@ class DiamondashServerTestCase(unittest.TestCase):
         result = dd_server.get_widget_resource('resource-a', 'widget-1')
         self.assertTrue(isinstance(result, NoResource))
 
-    def test_from_config_dir(self):
+    @patch.object(StubbedDiamondashServer, 'create_public_resources')
+    @patch.object(StubbedDiamondashServer, 'create_widget_resources')
+    @patch.object(Dashboard, 'dashboards_from_dir')
+    def test_from_config_dir(self, mock_dashboards_from_dir,
+                             mock_create_widget_resources,
+                             mock_create_public_resources):
         """Should create the server from a configuration directory."""
 
-        def stubbed_create_public_resources(cls):
-            return 'fake-public-resources'
-
-        def stubbed_create_widget_resources(cls):
-            return 'fake-widget-resources'
-
-        def stubbed_dashboards_from_dir(cls, dashboards_dir,
-                                        dashboard_defaults):
-            return 'dashboards_from_dir -- called with (%s, %s)' % (
-                dashboards_dir, dashboard_defaults)
-
-        stub_classmethod(StubbedDiamondashServer, 'create_public_resources',
-                         stubbed_create_public_resources)
-
-        stub_classmethod(StubbedDiamondashServer, 'create_widget_resources',
-                         stubbed_create_widget_resources)
-
-        stub_classmethod(Dashboard, 'dashboards_from_dir',
-                         stubbed_dashboards_from_dir)
+        mock_create_public_resources.return_value = 'fake-public-resources'
+        mock_create_widget_resources.return_value = 'fake-widget-resources'
+        mock_dashboards_from_dir.return_value = 'fake-dashboards'
 
         config_dir = path.join(_test_data_dir, 'etc')
         dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
@@ -199,16 +180,12 @@ class DiamondashServerTestCase(unittest.TestCase):
             'some_dashboard_default': 'mon mothma',
             'widget_defaults': {'some_widget_default': 'admiral ackbar'}
         }
-        expected_dashboards = ('dashboards_from_dir -- called with '
-        '(%s, %s)' % (expected_dashboards_dir, expected_dashboard_defaults))
-        self.assertEqual(dd_server.dashboards, expected_dashboards)
+        mock_dashboards_from_dir.assert_called_with(
+            expected_dashboards_dir, expected_dashboard_defaults)
 
+        self.assertEqual(dd_server.dashboards, 'fake-dashboards')
         self.assertEqual(dd_server.public_resources, 'fake-public-resources')
         self.assertEqual(dd_server.widget_resources, 'fake-widget-resources')
-
-        restore_from_stub(stubbed_create_public_resources)
-        restore_from_stub(stubbed_create_widget_resources)
-        restore_from_stub(stubbed_dashboards_from_dir)
 
     def test_add_dashboard(self):
         """Should add a dashboard to the server."""
@@ -239,23 +216,21 @@ class StubbedDashboardIndexListItem(DashboardIndexListItem):
 
 
 class IndexTestCase(unittest.TestCase):
-    def test_add_dashboard(self):
+    @patch.object(DashboardIndexListItem, 'from_dashboard')
+    def test_add_dashboard(self, mock_from_dashboard):
         """
         Should add a dashboard list item to the index's dashboard list.
         """
-        def stubbed_from_dashboard(cls, dashboard):
+        def stubbed_from_dashboard(dashboard):
             return 'created from: %s' % dashboard.name
 
-        stub_classmethod(DashboardIndexListItem, 'from_dashboard',
-                         stubbed_from_dashboard)
+        mock_from_dashboard.side_effect = stubbed_from_dashboard
 
         index = Index()
         dashboard = StubbedDashboard(name='test-dashboard')
         index.add_dashboard(dashboard)
         self.assertEqual(index.dashboard_list_items[0],
                          'created from: test-dashboard')
-
-        restore_from_stub(stubbed_from_dashboard)
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
