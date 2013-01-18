@@ -9,6 +9,7 @@ class TextWidget(Widget):
     """A widget that simply displays static text."""
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
+
     MIN_COLUMN_SPAN = 2
     STYLESHEETS = ('text/style.css',)
 

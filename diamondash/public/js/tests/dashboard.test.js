@@ -3,12 +3,13 @@ var assert = require('assert'),
     dashboard = require('../dashboard'),
     DashboardController = dashboard.DashboardController;
 
-describe('DashboardController', function(){
-    describe('.fromConfig()', function(){
+describe("DashboardController", function(){
+    describe(".fromConfig()", function(){
         var dashboard, config;
 
         beforeEach(function() {
             config = {
+                name: 'tatooine-the-dashboard',
                 requestInterval: 10,
                 widgets: [{
                     name: 'anakin-the-widget',
@@ -27,7 +28,7 @@ describe('DashboardController', function(){
                         className: "ToyWidgetViewB"}}]};
         });
 
-        it('should create the widget model collection correctly', function() {
+        it("should create the widget model collection correctly", function() {
             dashboard = DashboardController.fromConfig(config);
             assert.equal(dashboard.widgets.get('anakin-the-widget').type,
                          'ToyWidgetModelA');
@@ -35,7 +36,7 @@ describe('DashboardController', function(){
                          'ToyWidgetModelB');
         });
 
-        it('should create the widget views correctly', function() {
+        it("should create the widget views correctly", function() {
             dashboard = DashboardController.fromConfig(config);
             assert.equal(dashboard.widgetViews[0].type, 'ToyWidgetViewA');
             assert.equal(dashboard.widgetViews[1].type, 'ToyWidgetViewB');
@@ -47,7 +48,7 @@ describe('DashboardController', function(){
                          dashboard.widgets.at(1));
         });
 
-        it('should set the request interval correctly', function() {
+        it("should set the request interval correctly", function() {
             dashboard = DashboardController.fromConfig(config);
             assert.equal(dashboard.requestInterval, 10);
 
@@ -56,6 +57,11 @@ describe('DashboardController', function(){
             assert.equal(dashboard.requestInterval,
                          DashboardController.DEFAULT_REQUEST_INTERVAL);
             
+        });
+
+        it("should set the dashboard name", function() {
+            dashboard = DashboardController.fromConfig(config);
+            assert.equal(dashboard.name, 'tatooine-the-dashboard');
         });
     });
 });

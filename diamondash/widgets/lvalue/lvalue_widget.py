@@ -1,4 +1,7 @@
 import json
+from pkg_resources import resource_string
+
+from twisted.web.template import XMLString
 
 from diamondash import utils
 from diamondash.exceptions import ConfigError
@@ -6,6 +9,8 @@ from diamondash.widgets.graphite import GraphiteWidget
 
 
 class LValueWidget(GraphiteWidget):
+    loader = XMLString(resource_string(__name__, 'template.xml'))
+
     DEFAULTS = {'time_range': '1h'}
 
     STYLESHEETS = ('lvalue/style.css',)
@@ -16,17 +21,18 @@ class LValueWidget(GraphiteWidget):
     VIEW = ('lvalue/lvalue-widget', 'LValueWidgetView')
 
     def __init__(self, **kwargs):
-        super(LValueWidget, self).__init__(kwargs)
+        super(LValueWidget, self).__init__(**kwargs)
         self.target = kwargs['target']
         self.time_range = kwargs['time_range']
 
     @classmethod
     def parse_config(cls, config, defaults={}):
         """Parses the lvalue widget config, altering it where necessary."""
-        config = super(GraphiteWidget, cls).parse_config(config, defaults)
+        config = super(LValueWidget, cls).parse_config(config, defaults)
 
         config = dict(cls.DEFAULTS, **config)
-        config = utils.insert_defaults_by_key(__name__, config, defaults)
+        config = utils.insert_defaults_by_key(
+            'diamondash.widgets.lvalue.LValueWidget', config, defaults)
 
         target = config.get('target', None)
         if target is None:

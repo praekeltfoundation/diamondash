@@ -32,7 +32,8 @@ class Widget(Element):
         if name is None:
             raise ConfigError('Widget name not specified.')
 
-        config = utils.insert_defaults_by_key(__name__, config, defaults)
+        config = utils.insert_defaults_by_key(
+            'diamondash.widgets.widget.Widget', config, defaults)
 
         name = config['name']
         config.setdefault('title', name)

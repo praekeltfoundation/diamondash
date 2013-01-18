@@ -1,2 +1,2 @@
-// "grr" is all I have to say
 require('backbone').$ = require('jquery');
+global.document = require('jsdom').jsdom();

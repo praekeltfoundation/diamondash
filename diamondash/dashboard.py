@@ -111,6 +111,7 @@ class Dashboard(Element):
         share_id = config.get('share_id', None)
 
         client_config = {}
+        client_config['name'] = name
         request_interval = config.get(
             'request_interval', cls.DEFAULT_REQUEST_INTERVAL)
         request_interval = utils.parse_interval(request_interval) * 1000

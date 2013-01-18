@@ -13,14 +13,16 @@ class GraphiteWidget(Widget):
     """Abstract widget that obtains metric data from graphite."""
 
     def __init__(self, **kwargs):
-        super(GraphiteWidget, self).__init__(kwargs)
+        super(GraphiteWidget, self).__init__(**kwargs)
         self.request_url = kwargs['request_url']
 
     @classmethod
     def parse_config(cls, config, defaults={}):
         """Parses the graphite widget config, altering it where necessary."""
         config = super(GraphiteWidget, cls).parse_config(config, defaults)
-        config = utils.insert_defaults_by_key(__name__, config, defaults)
+        print defaults
+        config = utils.insert_defaults_by_key(
+            'diamondash.widgets.graphite.GraphiteWidget', config, defaults)
 
         if 'graphite_url' not in config:
             raise ConfigError(

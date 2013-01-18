@@ -140,6 +140,7 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(dashboard.name, 'test-dashboard')
         self.assertEqual(dashboard.title, 'Test Dashboard')
         self.assertEqual(dashboard.client_config['requestInterval'], 2000)
+        self.assertEqual(dashboard.client_config['name'], 'test-dashboard')
         self.assertEqual(dashboard.share_id, 'this-is-a-share-id')
         self.assertEqual(dashboard.widgets, [
             'layoutfn1',
