@@ -81,7 +81,4 @@ class Widget(Element):
         Handles a 'render' request from the client, where `params` are the
         request parameters.
         """
-
-        # TODO request stuff from graphite
-
         return {}

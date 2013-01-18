@@ -4,9 +4,9 @@ from os import path
 from datetime import datetime
 from unidecode import unidecode
 
-PUNCT_RE = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
-NUMBER_SUFFIXES = ['', 'K', 'M', 'B', 'T']
-EPS = 0.0001
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+_number_suffixes = ['', 'K', 'M', 'B', 'T']
+_eps = 0.0001
 
 
 def isint(n):
@@ -16,18 +16,18 @@ def isint(n):
     if isinstance(n, (int, long)):
         return True
 
-    return abs(n - int(n)) <= EPS
+    return abs(n - int(n)) <= _eps
 
 
-def format_value(n):
+def format_number(n):
     mag = 0
     if abs(n) < 1000:
         return (str(int(n)) if isint(n)
                 else '%.3f' % (n,))
-    while abs(n) >= 1000 and mag < len(NUMBER_SUFFIXES) - 1:
+    while abs(n) >= 1000 and mag < len(_number_suffixes) - 1:
         mag += 1
         n /= 1000.0
-    return '%.3f%s' % (n, NUMBER_SUFFIXES[mag])
+    return '%.3f%s' % (n, _number_suffixes[mag])
 
 
 def format_time(time):
@@ -39,7 +39,7 @@ def format_time(time):
 def slugify(text):
     """Slugifies the passed in text"""
     result = []
-    for word in PUNCT_RE.split(text.lower()):
+    for word in _punct_re.split(text.lower()):
         result.extend(unidecode(word).split())
     return '-'.join(result)
 
@@ -107,3 +107,11 @@ def insert_defaults_by_key(key, original, defaults):
     key_defaults = defaults.get(key, None)
     return (dict(key_defaults, **original)
             if key_defaults is not None else original)
+
+
+def find_dict_by_item(dict_list, key, value):
+    """
+    Finds the dict in a list of dicts that has a particular key-value pair, or
+    returns None if it does not exist.
+    """
+    return next((d for d in dict_list if d[key] == value), None)

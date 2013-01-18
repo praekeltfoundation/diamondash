@@ -33,7 +33,8 @@ class WidgetTestCase(unittest.TestCase):
 
         mock_parse_width.return_value = 4
         mock_slugify.return_value = 'test-widget'
-        mock_insert_defaults_by_key.return_value = config
+        mock_insert_defaults_by_key.side_effect = (
+            lambda key, original, defaults: original)
 
         parsed_config = ToyWidget.parse_config(config, defaults)
         self.assertEqual(parsed_config, {
@@ -52,8 +53,7 @@ class WidgetTestCase(unittest.TestCase):
                 }
             }
         })
-        mock_insert_defaults_by_key.assert_called_with(
-            'diamondash.widgets.widget.widget', config, defaults)
+        self.assertTrue(mock_insert_defaults_by_key.called)
         mock_slugify.assert_called_with('Test Widget')
         mock_parse_width.assert_called_with(2)
 

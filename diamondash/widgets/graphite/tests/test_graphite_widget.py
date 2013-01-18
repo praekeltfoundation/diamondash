@@ -1,10 +1,20 @@
-from mock import patch
+import json
+from pkg_resources import resource_filename
+
+from mock import Mock, patch
+from twisted.internet.defer import Deferred
+from twisted.web import client
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.widgets.graphite import (
     GraphiteWidget, guess_aggregation_method)
 from diamondash.exceptions import ConfigError
+
+
+class StubbedGraphiteWidget(GraphiteWidget):
+    def __init__(self, request_url=None):
+        self.request_url = request_url
 
 
 class GraphiteWidgetTestCase(unittest.TestCase):
@@ -21,11 +31,11 @@ class GraphiteWidgetTestCase(unittest.TestCase):
             'graphite_url': 'fake_graphite_url',
         }
         defaults = {'SomeWidgetType': "some widget's defaults"}
-        mock_insert_defaults_by_key.return_value = config
+        mock_insert_defaults_by_key.side_effect = (
+            lambda key, original, defaults: original)
 
         parsed_config = GraphiteWidget.parse_config(config, defaults)
-        mock_insert_defaults_by_key.assert_called_with(
-            'diamondash.widgets.graphite.graphite_widget', config, defaults)
+        self.assertTrue(mock_insert_defaults_by_key.called)
         self.assertEqual(parsed_config['request_url'], None)
 
     def test_parse_config_for_no_graphite_url(self):
@@ -106,6 +116,34 @@ class GraphiteWidgetTestCase(unittest.TestCase):
             'alias(summarize(integral(vumi.random.count.sum), "120s", "max"), '
             '"integral(vumi.random.count.sum)")')
         assert_metric_target(target, bucket_size, expected)
+
+    @patch.object(client, 'getPage')
+    def test_handle_render_request(self, mock_getPage):
+        """
+        Should send a render request to graphite, decode the json response,
+        handle the decoded response and return the result.
+        """
+        def assert_handle_render_request(result):
+            mock_getPage.assert_called_with('fake_request_url')
+            widget.handle_graphite_render_response.assert_called_with(
+                json.loads(response_data))
+            self.assertEqual(result, 'fake_handled_graphite_render_response')
+
+        response_data = open(resource_filename(
+            __name__, 'data/graphite_response_data.json')).read()
+
+        d = Deferred()
+        d.addCallback(lambda _: response_data)
+        mock_getPage.return_value = d
+
+        widget = StubbedGraphiteWidget(request_url='fake_request_url')
+        widget.handle_graphite_render_response = Mock(
+            return_value='fake_handled_graphite_render_response')
+
+        deferredResult = widget.handle_render_request(None)
+        deferredResult.addCallback(assert_handle_render_request)
+        deferredResult.callback(None)
+        return deferredResult
 
 
 class GraphiteWidgetUtilsTestCase(unittest.TestCase):

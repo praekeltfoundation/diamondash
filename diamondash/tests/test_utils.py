@@ -14,9 +14,9 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(utils.isint(-213.0))
         self.assertFalse(utils.isint(23123.123123))
 
-    def test_format_value(self):
+    def test_format_number(self):
         def assert_format(input, expected):
-            result = utils.format_value(input)
+            result = utils.format_number(input)
             self.assertEqual(result, expected)
 
         assert_format(999999, '999.999K')
@@ -89,3 +89,22 @@ class UtilsTestCase(unittest.TestCase):
                 'another_config_option': 21,
             },
         })
+
+    def test_find_dict_by_item(self):
+        def assert_dict(dict_list, key, value, expected_dict):
+            self.assertEqual(utils.find_dict_by_item(dict_list, key, value),
+                             expected_dict)
+
+        assert_dict(
+            [{'a': 1, 'b': 2, 'c': 3},
+             {'a': 2, 'b': 4, 'c': 6},
+             {'a': 3, 'b': 6, 'c': 9}],
+            'b', 4,
+             {'a': 2, 'b': 4, 'c': 6})
+
+        assert_dict(
+            [{'a': 1, 'b': 2, 'c': 3},
+             {'a': 2, 'b': 4, 'c': 6},
+             {'a': 3, 'b': 6, 'c': 9}],
+            'b', 8,
+            None)

@@ -1,7 +1,8 @@
 import re
+import json
 from urllib import urlencode
 
-from twisted.web.client import getPage
+from twisted.web import client
 
 from diamondash import utils
 from diamondash.widgets.widget import Widget
@@ -59,14 +60,29 @@ class GraphiteWidget(Widget):
 
         graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
             target, bucket_size, agg_method, target)
+
         return graphite_target
+
+    def handle_graphite_render_response(self, data):
+        """
+        Accepts graphite render response data and performs any necessary
+        data processing/formatting/mangling steps to have the data useable by
+        the client side.
+
+        To be implemented by subclasses.
+        """
+        return data
 
     def handle_render_request(self, request):
         if self.request_url is None:
             # TODO: log?
             return "{}"
 
-        return getPage(self.request_url)
+        d = client.getPage(self.request_url)
+        d.addCallback(lambda data: json.loads(data))
+        d.addCallback(self.handle_graphite_render_response)
+
+        return d
 
 
 # Borrowed from the bit of pyparsing, the graphite expression parser uses.
