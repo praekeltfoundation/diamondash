@@ -1,10 +1,10 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-	<link rel="stylesheet" href="/public/css/style.css" type="text/css" />
-	<link rel="stylesheet" href="/public/css/dashboard.css" type="text/css" />
+    <link rel="stylesheet" href="/public/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/public/css/dashboard.css" type="text/css" />
     <script src="/public/vendor/cajon.js"></script>
-	<script src="/public/js/config.js"></script>
+    <script src="/public/js/config.js"></script>
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -12,35 +12,35 @@
     <![endif]-->
   </head>
   <body>
-	  <div class="navbar navbar-fixed-top">
-		  <div class="navbar-inner">
-			  <div class="container">
-				  <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-					  <span class="icon-bar"></span>
-					  <span class="icon-bar"></span>
-					  <span class="icon-bar"></span>
-				  </a>
-				  <t:transparent t:render="brand_renderer" />
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <t:transparent t:render="brand_renderer" />
 
-				  <a t:render="brand_renderer" class="brand">
-					  <t:attr name="href">
-						  <t:slot name="brand_href_slot" />
-					  </t:attr>
-					  diamondash
-				  </a>
+          <a t:render="brand_renderer" class="brand">
+            <t:attr name="href">
+              <t:slot name="brand_href_slot" />
+            </t:attr>
+            diamondash
+          </a>
 
-				  <div class="nav-collapse">
-					  <ul class="nav">
-						  <li class="active">
-							  <a href="#">
-								  <t:transparent t:render="dashboard_name_renderer" />
-							  </a>
-						  </li>
-					  </ul>
-				  </div>
-			  </div>
-		  </div>
-	  </div>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li class="active">
+                <a href="#">
+                  <t:transparent t:render="dashboard_name_renderer" />
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <t:transparent t:render="dashboard_container_renderer" />
   </body>

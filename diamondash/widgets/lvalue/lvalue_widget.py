@@ -5,33 +5,38 @@ from twisted.web.template import XMLString
 
 from diamondash import utils
 from diamondash.exceptions import ConfigError
-from diamondash.widgets.graphite import GraphiteWidget
+from diamondash.widgets.graphite import (
+    SingleMetricGraphiteWidget, GraphiteWidgetMetric)
 
 
-class LValueWidget(GraphiteWidget):
+class LValueWidget(SingleMetricGraphiteWidget):
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
-    DEFAULTS = {'time_range': '1h'}
+    DEFAULTS = {
+        'time_range': '1d',
+        'metric_defaults': {'null_filter': 'ignore'}
+    }
 
-    STYLESHEETS = ('lvalue/style.css',)
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
+
+    STYLESHEETS = ('lvalue/style.css',)
+    JAVASCRIPTS = ('lvalue/lvalue-widget',)
 
     MODEL = ('lvalue/lvalue-widget', 'LValueWidgetModel')
     VIEW = ('lvalue/lvalue-widget', 'LValueWidgetView')
 
     def __init__(self, **kwargs):
         super(LValueWidget, self).__init__(**kwargs)
-        self.target = kwargs['target']
+        self.metric = kwargs['metric']
         self.time_range = kwargs['time_range']
 
     @classmethod
     def parse_config(cls, config, defaults={}):
-        """Parses the lvalue widget config, altering it where necessary."""
         config = super(LValueWidget, cls).parse_config(config, defaults)
 
         config = dict(cls.DEFAULTS, **config)
-        config = utils.insert_defaults_by_key(
+        config = utils.set_key_defaults(
             'diamondash.widgets.lvalue.LValueWidget', config, defaults)
 
         target = config.get('target', None)
@@ -42,17 +47,18 @@ class LValueWidget(GraphiteWidget):
         # Set the bucket size to the passed in time range (for eg, if 1d was
         # the time range, the data for the entire day would be aggregated).
         time_range = utils.parse_interval(config['time_range'])
-        wrapped_target = cls.format_metric_target(target, time_range)
         config['time_range'] = time_range
+        config['bucket_size'] = time_range
 
         # Set the from param to double the bucket size. As a result, graphite
         # will return two datapoints for each metric: the previous value and
         # the last value. The last and previous values will be used to
         # calculate the percentage increase.
-        from_param = int(time_range) * 2
+        config['from_time'] = int(time_range) * 2
 
-        config['request_url'] = cls.build_request_url(
-            config['graphite_url'], [wrapped_target], from_param)
+        metric_defaults = config.get('metric_defaults', {})
+        config['metric'] = GraphiteWidgetMetric.from_config(
+            {'target': target, 'bucket_size': time_range}, metric_defaults)
 
         return config
 
@@ -83,13 +89,11 @@ class LValueWidget(GraphiteWidget):
 
     def handle_graphite_render_response(self, data):
         """
-        Accepts graphite render response data and performs the data
-        processing and formatting necessary to have the data useable by lvalue
-        widgets on the client side.
+        Accepts graphite render response data and performs the data processing
+        and formatting necessary to have the data useable by lvalue widgets on
+        the client side.
         """
-        target_data = utils.find_dict_by_item(data, 'target', self.target)
-        if target_data is None:
-            # TODO: log?
-            return "{}"
+        datapoints = (
+            super(LValueWidget, self).handle_graphite_render_response(data))
 
-        return self.build_render_response(target_data['datapoints'])
+        return self.build_render_response(datapoints)

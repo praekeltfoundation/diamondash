@@ -99,7 +99,7 @@ def last_dir_in_path(pathname):
     return path.split(path.dirname(pathname))[1]
 
 
-def insert_defaults_by_key(key, original, defaults):
+def set_key_defaults(key, original, defaults):
     """
     If `key` exists in `defaults`, returns a dict derived from the key's
     value, then overidden with `original`. Otherwise, returns `original`.

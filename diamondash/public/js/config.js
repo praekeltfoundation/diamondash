@@ -1,21 +1,21 @@
 var vendorPath = "/public/vendor/";
 
 require.config({
-    baseUrl: '/public/js/',
+  baseUrl: '/public/js/',
 
-    paths: {
-        'jquery': vendorPath + "jquery",
-        'underscore': vendorPath + "underscore",
-        'backbone': vendorPath + "backbone",
-        'd3': vendorPath + "d3.v2"
-    },
+  paths: {
+    'jquery': vendorPath + "jquery",
+    'underscore': vendorPath + "underscore",
+    'backbone': vendorPath + "backbone",
+    'd3': vendorPath + "d3.v2"
+  },
 
-    shim: {
-        'backbone': {
-            deps: ['underscore', 'jquery'],
-            exports: 'Backbone'
-        }
+  shim: {
+    'backbone': {
+      deps: ['underscore', 'jquery'],
+      exports: 'Backbone'
     }
+  }
 });
 
 

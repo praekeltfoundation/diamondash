@@ -1,0 +1,32 @@
+.lvalue-group {
+	float: left;
+	width: 370px;
+}
+
+.lvalue-widget {
+	width: 370px;
+	height: 80px;
+}
+
+.lvalue-widget-container {
+	width: 100%;
+	font-size: 12px;
+	margin-top: 2px;
+	line-height: 1.5em;
+}
+
+.lvalue-lvalue {
+	float: left;
+	font-size: 37px;
+}
+
+.lvalue-time {
+	text-align: right;
+	color: #808080;
+}
+
+.lvalue-change {
+	margin-left: 5px;
+	float: left;
+	text-align: left;
+}

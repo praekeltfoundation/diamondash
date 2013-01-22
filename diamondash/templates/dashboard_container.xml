@@ -1,17 +1,18 @@
 <div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class="container" id="dashboard-container">
-    <t:transparent t:render="widget_row_renderer"/>
-    <link t:render="stylesheets_renderer">
-        <t:attr name="rel">stylesheet</t:attr>
-        <t:attr name="type">text/css</t:attr>
-        <t:attr name="href"><t:slot name="stylesheet_href_slot"/></t:attr>
-    </link>
-    <script t:render="init_script_renderer">
-        require(['dashboard'], function (dashboard) {
-            var dashboard = require('dashboard');
+  <t:transparent t:render="widget_row_renderer"/>
+  <link t:render="stylesheets_renderer">
+    <t:attr name="rel">stylesheet</t:attr>
+    <t:attr name="type">text/css</t:attr>
+    <t:attr name="href"><t:slot name="stylesheet_href_slot"/></t:attr>
+  </link>
+  <script t:render="init_script_renderer">
+    var requires = ['dashboard'];
+    requires.push.apply(requires, <t:slot name="javascripts_slot"/>);
+    require(requires, function(dashboard) {
+      var controller = new dashboard.DashboardController.fromConfig(
+        <t:slot name="client_config_slot"/>);
 
-            var controller = new dashboard.DashboardController.fromConfig(<t:slot name="client_config_slot"/>);
-
-            controller.start();
-        });
-    </script>
+      controller.start();
+    });
+  </script>
 </div>

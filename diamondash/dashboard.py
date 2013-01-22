@@ -23,9 +23,10 @@ class Dashboard(Element):
     """
 
     DEFAULT_REQUEST_INTERVAL = '10s'
-    LAYOUT_FUNCTIONS = ['newrow']
     DEFAULT_WIDGET_CLASS = GraphWidget
+    LAYOUT_FUNCTIONS = ['newrow']
     WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
+    WIDGET_JAVASCRIPTS_PATH = "widgets/"
 
     loader = XMLString(
         resource_string(__name__, 'templates/dashboard_container.xml'))
@@ -44,6 +45,7 @@ class Dashboard(Element):
         self.last_row_width = 0
 
         self.stylesheets = set()
+        self.javascripts = set()
 
         self.layoutfns = {
             'newrow': self._new_row
@@ -51,33 +53,6 @@ class Dashboard(Element):
 
         for widget in widgets:
             self.add_widget(widget)
-
-    def _new_row(self):
-        self.rows.append([])
-        self.last_row_width = 0
-
-    def add_widget(self, widget):
-        """Adds a widget to the dashboard. """
-
-        if (widget in self.LAYOUT_FUNCTIONS):
-            layoutfn = self.layoutfns.get(widget, lambda x: x)
-            layoutfn()
-        else:
-            name = widget.name
-            self.widgets_by_name[name] = widget
-            self.widgets.append(widget)
-
-            self.last_row_width += widget.width
-            if self.last_row_width > Widget.MAX_COLUMN_SPAN:
-                self._new_row()
-                self.last_row_width = widget.width
-
-            self.rows[-1].append(widget)  # append to the last row
-
-            self.client_config['widgets'].append(widget.client_config)
-
-            self.stylesheets.update([path.join(self.WIDGET_STYLESHEETS_PATH, s)
-                                     for s in widget.STYLESHEETS])
 
     def get_widget(self, name):
         """Returns a widget using the passed in widget name"""
@@ -163,6 +138,36 @@ class Dashboard(Element):
         config = cls.parse_config(config)
         return cls.from_config(kwargs)
 
+    def _new_row(self):
+        self.rows.append([])
+        self.last_row_width = 0
+
+    def add_widget(self, widget):
+        """Adds a widget to the dashboard. """
+
+        if (widget in self.LAYOUT_FUNCTIONS):
+            layoutfn = self.layoutfns.get(widget, lambda x: x)
+            layoutfn()
+        else:
+            name = widget.name
+            self.widgets_by_name[name] = widget
+            self.widgets.append(widget)
+
+            self.last_row_width += widget.width
+            if self.last_row_width > Widget.MAX_COLUMN_SPAN:
+                self._new_row()
+                self.last_row_width = widget.width
+
+            self.rows[-1].append(widget)  # append to the last row
+
+            self.client_config['widgets'].append(widget.client_config)
+
+            self.stylesheets.update([path.join(self.WIDGET_STYLESHEETS_PATH, s)
+                                     for s in widget.STYLESHEETS])
+
+            self.javascripts.update([path.join(self.WIDGET_JAVASCRIPTS_PATH, j)
+                                     for j in widget.JAVASCRIPTS])
+
     @renderer
     def stylesheets_renderer(self, request, tag):
         for stylesheet in self.stylesheets:
@@ -176,7 +181,9 @@ class Dashboard(Element):
     @renderer
     def init_script_renderer(self, request, tag):
         client_config = json.dumps(self.client_config)
-        tag.fillSlots(client_config_slot=client_config)
+        tag.fillSlots(
+            javascripts_slot=json.dumps(list(self.javascripts)),
+            client_config_slot=client_config)
         return tag
 
 

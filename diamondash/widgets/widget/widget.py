@@ -12,7 +12,9 @@ class Widget(Element):
     loader = None
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
+
     STYLESHEETS = ()
+    JAVASCRIPTS = ('widget/widget',)
 
     # (js_module_path, class_name)
     MODEL = ('widget/widget', 'WidgetModel')
@@ -32,7 +34,7 @@ class Widget(Element):
         if name is None:
             raise ConfigError('Widget name not specified.')
 
-        config = utils.insert_defaults_by_key(
+        config = utils.set_key_defaults(
             'diamondash.widgets.widget.Widget', config, defaults)
 
         name = config['name']
@@ -62,7 +64,7 @@ class Widget(Element):
         return config
 
     @classmethod
-    def from_config(cls, config, defaults):
+    def from_config(cls, config, defaults={}):
         """Parses a widget config, then returns the constructed widget."""
         config = cls.parse_config(config, defaults)
         return cls(**config)

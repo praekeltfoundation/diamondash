@@ -5,10 +5,14 @@ from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.widgets.lvalue import LValueWidget
+from diamondash.widgets.graphite import (
+    GraphiteWidgetMetric, SingleMetricGraphiteWidget)
 from diamondash.exceptions import ConfigError
 
 
 class StubbedLValueWidget(LValueWidget):
+    DEFAULTS = {'time_range': '3h'}
+
     def __init__(self, target=None, time_range=None):
         self.target = target
         self.time_range = time_range
@@ -16,13 +20,11 @@ class StubbedLValueWidget(LValueWidget):
 
 class LValueWidgetTestCase(unittest.TestCase):
 
-    @patch.object(utils, 'insert_defaults_by_key')
+    @patch.object(utils, 'set_key_defaults')
     @patch.object(utils, 'parse_interval')
-    @patch.object(LValueWidget, 'format_metric_target')
-    @patch.object(LValueWidget, 'build_request_url')
-    def test_parse_config(self, mock_build_request_url,
-                          mock_format_metric_target, mock_parse_interval,
-                          mock_insert_defaults_by_key):
+    @patch.object(GraphiteWidgetMetric, 'from_config')
+    def test_parse_config(self, mock_GraphiteWidgetMetric_from_config,
+                          mock_parse_interval, mock_set_key_defaults):
         """
         Should parse the config, altering it accordignly to configure the
         widget.
@@ -32,24 +34,26 @@ class LValueWidgetTestCase(unittest.TestCase):
             'graphite_url': 'fake_graphite_url',
             'target': 'vumi.random.count.sum',
             'time_range': '1h',
+            'metric_defaults': {'null_filter': 'zeroize'}
         }
         defaults = {'SomeWidgetType': "some widget's defaults"}
 
-        mock_insert_defaults_by_key.side_effect = (
-            lambda key, original, defaults: original)
         mock_parse_interval.return_value = 3600
-        mock_format_metric_target.return_value = (
-            'fake_formatted_metric_target')
-        mock_build_request_url.return_value = 'fake_request_url'
+        mock_GraphiteWidgetMetric_from_config.return_value = 'fake-metric'
+        mock_set_key_defaults.side_effect = lambda k, original, d: original
 
-        parsed_config = LValueWidget.parse_config(config, defaults)
-        self.assertTrue(mock_insert_defaults_by_key.called)
+        parsed_config = StubbedLValueWidget.parse_config(config, defaults)
+        mock_set_key_defaults.assert_called()
         mock_parse_interval.assert_called_with('1h')
-        mock_format_metric_target.assert_called_with(
-            'vumi.random.count.sum', 3600)
-        mock_build_request_url.assert_called_with(
-            'fake_graphite_url', ['fake_formatted_metric_target'], 7200)
-        self.assertEqual(parsed_config['request_url'], 'fake_request_url')
+
+        mock_GraphiteWidgetMetric_from_config.assert_called_with(
+            {'target': config['target'], 'bucket_size': 3600},
+            {'null_filter': 'zeroize'})
+
+        self.assertEqual(parsed_config['time_range'], 3600)
+        self.assertEqual(parsed_config['bucket_size'], 3600)
+        self.assertEqual(parsed_config['from_time'], 7200)
+        self.assertEqual(parsed_config['metric'], 'fake-metric')
 
     def test_parse_config_for_no_metric(self):
         """
@@ -94,29 +98,16 @@ class LValueWidgetTestCase(unittest.TestCase):
         })
         self.assertEqual(results, expected_results)
 
-    @patch.object(utils, 'find_dict_by_item')
-    def test_handle_graphite_render_response(self, mock_find_dict_by_item):
-        widget = StubbedLValueWidget(target='some.target', time_range=3600)
+    @patch.object(
+        SingleMetricGraphiteWidget, 'handle_graphite_render_response')
+    def test_handle_graphite_render_response(self, mock_overriden_method):
 
-        data = [
-            {
-                'target': 'some.target',
-                'datapoints': [[0, 1], [1, 2], [2, 3]]
-            }, {
-                'target': 'some.other.target',
-                'datapoints': [[0, 2], [1, 4], [3, 6]]
-            }
-        ]
+        mock_overriden_method.return_value = ('processed-datapoints')
+        widget = StubbedLValueWidget()
+        widget.build_render_response = Mock(
+            return_value='built-render-response')
 
-        mock_find_dict_by_item.return_value = {
-            'target': 'some.target',
-            'datapoints': [[0, 1], [1, 2], [2, 3]]
-        }
-
-        widget.build_render_response = Mock(return_value='fake_render_results')
-        result = widget.handle_graphite_render_response(data)
-        mock_find_dict_by_item.assert_called_with(
-            data, 'target', 'some.target')
-        widget.build_render_response.assert_called_with(
-            [[0, 1], [1, 2], [2, 3]])
-        self.assertEqual(result, 'fake_render_results')
+        result = widget.handle_graphite_render_response('response-data')
+        mock_overriden_method.assert_called_with('response-data')
+        widget.build_render_response.assert_called_with('processed-datapoints')
+        self.assertEqual(result, 'built-render-response')

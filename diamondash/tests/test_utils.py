@@ -53,24 +53,24 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(7200, utils.parse_interval("2h"))
         self.assertEqual(86400 * 2, utils.parse_interval("2d"))
 
-    def test_insert_defaults_by_key(self):
+    def test_set_key_defaults(self):
         """
         Should return a dict with the appropriate key's defaults, overidden
         with the original dict.
         """
         config = {'some_config_option': 23}
         defaults = {
-            __name__: {
+            'a': {
                 'some_config_option': 42,
                 'some_other_config_option': 182,
             },
-            'some_other_module': {
+            'b': {
                 'some_config_option': 22,
                 'another_config_option': 21,
             },
         }
 
-        new_config = utils.insert_defaults_by_key(__name__, config, defaults)
+        new_config = utils.set_key_defaults('a', config, defaults)
 
         self.assertEqual(new_config, {
             'some_config_option': 23,
@@ -80,11 +80,11 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(config, {'some_config_option': 23})
 
         self.assertEqual(defaults, {
-            __name__: {
+            'a': {
                 'some_config_option': 42,
                 'some_other_config_option': 182,
             },
-            'some_other_module': {
+            'b': {
                 'some_config_option': 22,
                 'another_config_option': 21,
             },
