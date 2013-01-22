@@ -185,19 +185,21 @@ class GraphiteWidgetMetric(object):
         self.set_null_filter(kwargs['null_filter'])
 
     @classmethod
-    def _skip_nulls(cls, datapoints):
-        pass
+    def skip_nulls(cls, datapoints):
+        return [[y, x] for [y, x] in datapoints
+                if (y is not None) and (x is not None)]
 
     @classmethod
-    def _zeroize_nulls(cls, datapoints):
-        pass
+    def zeroize_nulls(cls, datapoints):
+        return [[y, x] if y is not None else [0, x]
+                for [y, x] in datapoints if x is not None]
 
     def set_null_filter(self, filter_name):
         self.filter_nulls = {
-            'skip': self._skip_nulls,
-            'zeroize': self._zeroize_nulls,
-            'ignore': lambda x: x
-        }.get(filter_name, self._skip_nulls)
+            'skip': self.skip_nulls,
+            'zeroize': self.zeroize_nulls,
+            'noop': lambda x: x
+        }.get(filter_name, self.skip_nulls)
 
     @classmethod
     def parse_config(cls, config, defaults={}):

@@ -21,6 +21,34 @@ class StubbedGraphiteWidget(GraphiteWidget):
 
 
 class GraphiteWidgetTestCase(unittest.TestCase):
+    def test_skip_nulls(self):
+        input = [
+            [None, 1340875870], [0.075312, 1340875875],
+            [0.033274, 1340875885], [None, 1340875890],
+            [0.059383, 1340875965], [0.057101, 1340875970],
+            [0.056673, 1340875975], [None, 1340875980], [None, 1340875985]]
+
+        expected = [
+            [0.075312, 1340875875], [0.033274, 1340875885],
+            [0.059383, 1340875965], [0.057101, 1340875970],
+            [0.056673, 1340875975]]
+
+        self.assertEqual(GraphiteWidgetMetric.skip_nulls(input), expected)
+
+    def test_zeroize_nulls(self):
+        input = [
+            [None, 1340875870], [0.075312, 1340875875],
+            [0.033274, 1340875885], [None, 1340875890],
+            [0.059383, 1340875965], [0.057101, 1340875970],
+            [0.056673, 1340875975], [None, 1340875980], [None, 1340875985]]
+
+        expected = [
+            [0, 1340875870], [0.075312, 1340875875],
+            [0.033274, 1340875885], [0, 1340875890],
+            [0.059383, 1340875965], [0.057101, 1340875970],
+            [0.056673, 1340875975], [0, 1340875980], [0, 1340875985]]
+
+        self.assertEqual(GraphiteWidgetMetric.zeroize_nulls(input), expected)
 
     @patch.object(utils, 'slugify')
     @patch.object(utils, 'set_key_defaults')
