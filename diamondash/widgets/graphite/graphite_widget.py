@@ -160,7 +160,18 @@ class MultiMetricGraphiteWidget(GraphiteWidget):
         and formatting on the datapoints based on the widget's metrics'
         configurations.
         """
-        # TODO
+        datapoints_by_target = {}
+        for metric_data in data:
+            target = metric_data['target']
+            metric = self.metrics_by_target.get(target, None)
+            if metric is not None:
+                datapoints_by_target[target] = metric.process_datapoints(
+                    metric_data['datapoints'])
+
+        for k in self.metrics_by_target.keys():
+            datapoints_by_target.setdefault(k, [])
+
+        return datapoints_by_target
 
 
 class GraphiteWidgetMetric(object):

@@ -330,6 +330,48 @@ class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
             [call('fake-metric-1'), call('fake-metric-2')])
         widget._reset_request_url.assert_called()
 
+    def test_handle_graphite_render_response(self):
+        data = [
+            {
+                'target': 'some.target',
+                'datapoints': [[0, None], [1, 2], [2, 3]],
+            }, {
+                'target': 'some.other.target',
+                'datapoints': [[0, 3], [2, 6], [4, 9]],
+            }, {
+                'target': 'yet.another.target',
+                'datapoints': [[4, 5], [8, None], [12, 15]],
+            }]
+
+        metric1 = StubbedGraphiteWidgetMetric(target='some.target')
+        metric1.process_datapoints = Mock(
+            return_value=[[0, 0], [1, 2], [2, 3]])
+
+        metric2 = StubbedGraphiteWidgetMetric(target='yet.another.target')
+        metric2.process_datapoints = Mock(return_value=[[4, 5], [12, 15]])
+
+        metric3 = StubbedGraphiteWidgetMetric(target='and.another.target')
+        metric3.process_datapoints = Mock()
+
+        widget = StubbedMultiMetricGraphiteWidget(
+            metrics=[metric1, metric2, metric3],
+            metrics_by_target={
+                'some.target': metric1,
+                'yet.another.target': metric2,
+                'and.another.target': metric3,
+            })
+
+        result = widget.handle_graphite_render_response(data)
+        metric1.process_datapoints.assert_called_with(
+            [[0, None], [1, 2], [2, 3]])
+        metric2.process_datapoints.assert_called_with(
+            [[4, 5], [8, None], [12, 15]])
+        self.assertEqual(result, {
+            'some.target': [[0, 0], [1, 2], [2, 3]],
+            'yet.another.target': [[4, 5], [12, 15]],
+            'and.another.target': [],
+        })
+
 
 class GraphiteWidgetUtilsTestCase(unittest.TestCase):
     def test_guess_aggregation_method(self):
