@@ -14,7 +14,7 @@ class LValueWidget(SingleMetricGraphiteWidget):
 
     DEFAULTS = {
         'time_range': '1d',
-        'metric_defaults': {'null_filter': 'ignore'}
+        'metric_defaults': {'null_filter': 'noop'}
     }
 
     MIN_COLUMN_SPAN = 2

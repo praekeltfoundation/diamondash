@@ -26,7 +26,7 @@ class LValueWidgetTestCase(unittest.TestCase):
     def test_parse_config(self, mock_GraphiteWidgetMetric_from_config,
                           mock_parse_interval, mock_set_key_defaults):
         """
-        Should parse the config, altering it accordignly to configure the
+        Should parse the config, altering it accordingly to configure the
         widget.
         """
         config = {
@@ -43,9 +43,9 @@ class LValueWidgetTestCase(unittest.TestCase):
         mock_set_key_defaults.side_effect = lambda k, original, d: original
 
         parsed_config = StubbedLValueWidget.parse_config(config, defaults)
+
         mock_set_key_defaults.assert_called()
         mock_parse_interval.assert_called_with('1h')
-
         mock_GraphiteWidgetMetric_from_config.assert_called_with(
             {'target': config['target'], 'bucket_size': 3600},
             {'null_filter': 'zeroize'})
@@ -100,14 +100,14 @@ class LValueWidgetTestCase(unittest.TestCase):
 
     @patch.object(
         SingleMetricGraphiteWidget, 'handle_graphite_render_response')
-    def test_handle_graphite_render_response(self, mock_overriden_method):
+    def test_handle_graphite_render_response(self, mock_super_method):
 
-        mock_overriden_method.return_value = ('processed-datapoints')
+        mock_super_method.return_value = ('processed-datapoints')
         widget = StubbedLValueWidget()
         widget.build_render_response = Mock(
             return_value='built-render-response')
 
         result = widget.handle_graphite_render_response('response-data')
-        mock_overriden_method.assert_called_with('response-data')
+        mock_super_method.assert_called_with('response-data')
         widget.build_render_response.assert_called_with('processed-datapoints')
         self.assertEqual(result, 'built-render-response')
