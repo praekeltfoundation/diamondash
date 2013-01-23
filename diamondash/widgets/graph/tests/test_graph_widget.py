@@ -1,3 +1,4 @@
+import json
 from mock import Mock, patch, call
 from twisted.trial import unittest
 
@@ -9,6 +10,9 @@ from diamondash.exceptions import ConfigError
 
 class StubbedGraphWidget(GraphWidget):
     DEFAULTS = {'some_config_option': 'some-config-option'}
+
+    def __init__(self, metrics=[]):
+        self.metrics = metrics
 
 
 class GraphWidgetTestCase(unittest.TestCase):
@@ -65,8 +69,46 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertEqual(parsed_config['bucket_size'], 3600)
         self.assertEqual(parsed_config['metrics'], [metric1, metric2])
         self.assertEqual(
-            parsed_config['client_config']['metrics'],
+            parsed_config['client_config']['model']['metrics'],
             ['metric1-fake-client-config', 'metric2-fake-client-config'])
+
+    def test_handle_graphite_render_response(self):
+        def mk_metric(name, target, process_datapoints_return_value):
+            metric = Mock()
+            metric.name = name
+            metric.target = target
+            metric.process_datapoints = Mock(
+                return_value=process_datapoints_return_value)
+            return metric
+
+        data = [
+            {
+                'target': 'some.target',
+                'datapoints': [[0, None], [1, 2], [2, 3]],
+            }, {
+                'target': 'some.other.target',
+                'datapoints': [[0, 3], [2, 6], [4, 9]],
+            }, {
+                'target': 'yet.another.target',
+                'datapoints': [[4, 5], [8, None], [12, 15]],
+            }]
+
+        m1 = mk_metric('metric1', 'some.target', [[0, 0], [1, 2], [2, 3]])
+        m2 = mk_metric('metric2', 'yet.another.target', [[4, 5], [12, 15]])
+        m3 = mk_metric('metric3', 'and.other.target', None)
+
+        widget = StubbedGraphWidget(metrics=[m1, m2, m3])
+
+        result = widget.handle_graphite_render_response(data)
+        m1.process_datapoints.assert_called_with(
+            [[0, None], [1, 2], [2, 3]])
+        m2.process_datapoints.assert_called_with(
+            [[4, 5], [8, None], [12, 15]])
+        self.assertEqual(result, json.dumps({
+            'metric1': [[0, 0], [1, 2], [2, 3]],
+            'metric2': [[4, 5], [12, 15]],
+            'metric3': [],
+        }))
 
 
 class StubbedGraphWidgetMetric(GraphWidgetMetric):

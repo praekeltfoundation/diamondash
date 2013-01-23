@@ -53,18 +53,22 @@ class GraphWidget(MultiMetricGraphiteWidget):
             metrics.append(metric)
 
         config['metrics'] = metrics
-        config['client_config']['metrics'] = m_client_configs
+        config['client_config']['model']['metrics'] = m_client_configs
 
         return config
 
     def handle_graphite_render_response(self, data):
-        datapoints_by_target = (
-            super(GraphWidget, self).handle_graphite_render_response(data))
+        response_datapoints_by_target = dict(
+            (metric['target'], metric['datapoints']) for metric in data)
 
-        # TODO any graph widget specific processing
-        # (e.g. handling of different length datapoints)
+        datapoints_by_name = {}
+        for metric in self.metrics:
+            datapoints = response_datapoints_by_target.get(metric.target, [])
+            if datapoints:
+                datapoints = metric.process_datapoints(datapoints)
+            datapoints_by_name[metric.name] = datapoints
 
-        return json.dumps(datapoints_by_target)
+        return json.dumps(datapoints_by_name)
 
 
 class GraphWidgetMetric(GraphiteWidgetMetric):
