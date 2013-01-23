@@ -27,13 +27,15 @@ module.exports = {
       widgetViews = [];
 
       config.widgets.forEach(function(widgetConfig) {
-        var Model, View, name, model, view;
+        var Model, View, name, model, view, widgetModelConfig;
 
-        Model = loadClass(widgetConfig.model);
-        View = loadClass(widgetConfig.view);
-        name = widgetConfig.name;
-        model = new Model({name: name, dashboardName: dashboardName});
-        view = new View({el: "#" + name, model: model});
+        Model = loadClass(widgetConfig.modelClass);
+        widgetModelConfig = widgetConfig.model;
+        widgetModelConfig.dashboardName = dashboardName;
+        model = new Model(widgetModelConfig);
+
+        View = loadClass(widgetConfig.viewClass);
+        view = new View({el: "#" + model.get('name'), model: model});
 
         widgetViews.push(view);
         widgets.add(model);

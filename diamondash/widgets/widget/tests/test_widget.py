@@ -41,15 +41,15 @@ class WidgetTestCase(unittest.TestCase):
             'title': 'Test Widget',
             'width': 4,
             'client_config':  {
-                'name': 'test-widget',
-                'model': {
+                'model': {'name': 'test-widget'},
+                'modelClass': {
                     'className': 'ToyWidgetModel',
                     'modulePath': 'widgets/toy/toy-widget',
                 },
-                'view': {
+                'viewClass': {
                     'className': 'ToyWidgetView',
                     'modulePath': 'widgets/toy/toy-widget',
-                }
+                },
             }
         })
         self.assertTrue(mock_set_key_defaults.called)

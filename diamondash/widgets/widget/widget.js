@@ -1,5 +1,5 @@
 var Backbone = require('backbone'),
-exports = module.exports = {};
+    exports = module.exports = {};
 
 exports.WidgetModel = Backbone.Model.extend({
   idAttribute: 'name',

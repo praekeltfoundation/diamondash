@@ -32,7 +32,7 @@ class Widget(Element):
 
         name = config.get('name', None)
         if name is None:
-            raise ConfigError('Widget name not specified.')
+            raise ConfigError('All widgets need a name.')
 
         config = utils.set_key_defaults(
             'diamondash.widgets.widget.Widget', config, defaults)
@@ -50,12 +50,12 @@ class Widget(Element):
         view_module, view_class_name = cls.VIEW
 
         config['client_config'] = {
-            'name': name,
-            'model': {
+            'model': {'name': name},
+            'modelClass': {
                 'modulePath': path.join('widgets', model_module),
                 'className': model_class_name,
             },
-            'view': {
+            'viewClass': {
                 'modulePath': path.join('widgets', view_module),
                 'className': view_class_name,
             },

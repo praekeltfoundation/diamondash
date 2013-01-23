@@ -12,18 +12,21 @@ describe("DashboardController", function(){
         name: 'tatooine-the-dashboard',
         requestInterval: 10,
         widgets: [{
-          name: 'anakin-the-widget',
           model: {
+            name: 'anakin-the-widget'},
+          modelClass: {
             modulePath: "tests/dashboard.test",
             className: "ToyWidgetModelA"},
-          view: {
+          viewClass: {
             modulePath: "tests/dashboard.test",
             className: "ToyWidgetViewA"}}, {
-        name: 'qui-gon-the-widget',
+
           model: {
+            name: 'qui-gon-the-widget'},
+          modelClass: {
             modulePath: "tests/dashboard.test",
             className: "ToyWidgetModelB"},
-          view: {
+          viewClass: {
             modulePath: "tests/dashboard.test",
             className: "ToyWidgetViewB"}}]};
     });
@@ -32,8 +35,8 @@ describe("DashboardController", function(){
       dashboard = DashboardController.fromConfig(config);
       assert.equal(dashboard.widgets.get('anakin-the-widget').type,
                    'ToyWidgetModelA');
-                   assert.equal(dashboard.widgets.get('qui-gon-the-widget').type,
-                                'ToyWidgetModelB');
+      assert.equal(dashboard.widgets.get('qui-gon-the-widget').type,
+                   'ToyWidgetModelB');
     });
 
     it("should create the widget views correctly", function() {
@@ -44,8 +47,8 @@ describe("DashboardController", function(){
       //assert.equal(dashboard.widgetViews[1].el, '#qui-gon-the-widget');
       assert.equal(dashboard.widgetViews[0].model,
                    dashboard.widgets.at(0));
-                   assert.equal(dashboard.widgetViews[1].model,
-                                dashboard.widgets.at(1));
+      assert.equal(dashboard.widgetViews[1].model,
+                   dashboard.widgets.at(1));
     });
 
     it("should set the request interval correctly", function() {

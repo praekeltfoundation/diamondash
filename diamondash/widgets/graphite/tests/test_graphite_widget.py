@@ -394,11 +394,11 @@ class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
             [[0, None], [1, 2], [2, 3]])
         metric2.process_datapoints.assert_called_with(
             [[4, 5], [8, None], [12, 15]])
-        self.assertEqual(result, {
-            'some.target': [[0, 0], [1, 2], [2, 3]],
-            'yet.another.target': [[4, 5], [12, 15]],
-            'and.another.target': [],
-        })
+        self.assertEqual(result, [
+            {'target': 'some.target', 'datapoints': [[0, 0], [1, 2], [2, 3]]},
+            {'target': 'yet.another.target', 'datapoints': [[4, 5], [12, 15]]},
+            {'target': 'and.another.target', 'datapoints': []}
+        ])
 
 
 class GraphiteWidgetUtilsTestCase(unittest.TestCase):

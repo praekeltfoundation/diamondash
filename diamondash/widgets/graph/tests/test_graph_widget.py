@@ -93,8 +93,10 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': [[4, 5], [8, None], [12, 15]],
             }]
 
-        m1 = mk_metric('metric1', 'some.target', [[0, 0], [1, 2], [2, 3]])
-        m2 = mk_metric('metric2', 'yet.another.target', [[4, 5], [12, 15]])
+        m1 = mk_metric('metric1', 'some.target',
+                       [{'x': 0, 'y': 0}, {'x': 2, 'y': 1}, {'x': 3, 'y': 2}])
+        m2 = mk_metric('metric2', 'yet.another.target',
+                       [{'x': 5, 'y': 4}, {'x':  15, 'y': 1}])
         m3 = mk_metric('metric3', 'and.other.target', None)
 
         widget = StubbedGraphWidget(metrics=[m1, m2, m3])
@@ -104,11 +106,19 @@ class GraphWidgetTestCase(unittest.TestCase):
             [[0, None], [1, 2], [2, 3]])
         m2.process_datapoints.assert_called_with(
             [[4, 5], [8, None], [12, 15]])
-        self.assertEqual(result, json.dumps({
-            'metric1': [[0, 0], [1, 2], [2, 3]],
-            'metric2': [[4, 5], [12, 15]],
-            'metric3': [],
-        }))
+        self.assertEqual(result, json.dumps([{
+            'name': 'metric1',
+            'datapoints': [{'x': 0, 'y': 0},
+                           {'x': 2, 'y': 1},
+                           {'x': 3, 'y': 2}]
+        }, {
+            'name': 'metric2',
+            'datapoints': [{'x': 5, 'y': 4},
+                           {'x':  15, 'y': 1}]
+        }, {
+            'name': 'metric3',
+            'datapoints': []
+        }]))
 
 
 class StubbedGraphWidgetMetric(GraphWidgetMetric):

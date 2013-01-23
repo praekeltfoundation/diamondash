@@ -58,17 +58,14 @@ class GraphWidget(MultiMetricGraphiteWidget):
         return config
 
     def handle_graphite_render_response(self, data):
-        response_datapoints_by_target = dict(
-            (metric['target'], metric['datapoints']) for metric in data)
+        metric_data = super(
+            GraphWidget, self).handle_graphite_render_response(data)
 
-        datapoints_by_name = {}
-        for metric in self.metrics:
-            datapoints = response_datapoints_by_target.get(metric.target, [])
-            if datapoints:
-                datapoints = metric.process_datapoints(datapoints)
-            datapoints_by_name[metric.name] = datapoints
+        metric_output_data = [
+            {'name': metric.name, 'datapoints': metric_datum['datapoints']}
+            for metric, metric_datum in zip(self.metrics, metric_data)]
 
-        return json.dumps(datapoints_by_name)
+        return json.dumps(metric_output_data)
 
 
 class GraphWidgetMetric(GraphiteWidgetMetric):

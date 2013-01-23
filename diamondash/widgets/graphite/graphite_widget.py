@@ -163,14 +163,15 @@ class MultiMetricGraphiteWidget(GraphiteWidget):
         response_datapoints_by_target = dict(
             (metric['target'], metric['datapoints']) for metric in data)
 
-        datapoints_by_target = {}
-        for target, metric in self.metrics_by_target.iteritems():
-            datapoints = response_datapoints_by_target.get(target, [])
-            if datapoints:
-                datapoints = metric.process_datapoints(datapoints)
-            datapoints_by_target[target] = datapoints
+        metric_output_data = []
+        for metric in self.metrics:
+            datapoints = response_datapoints_by_target.get(metric.target, None)
+            processed_datapoints = (metric.process_datapoints(datapoints)
+                                    if datapoints is not None else [])
+            metric_output_data.append(
+                {'target': metric.target, 'datapoints': processed_datapoints})
 
-        return datapoints_by_target
+        return metric_output_data
 
 
 class GraphiteWidgetMetric(object):
