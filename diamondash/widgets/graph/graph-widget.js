@@ -63,12 +63,17 @@ exports.GraphWidgetMetricCollection = Backbone.Collection.extend({
 
 exports.GraphWidgetView = widget.WidgetView.extend({
   svgHeight: 180,
+  axisHeight: 12,
+  timeMarkerWidth: 132,
   margin: {top: 4, right: 4, bottom: 4, left: 4},
 
   initialize: function(options) {
     var margin = this.margin,
         width,
         svgHeight,
+        axisHeight = this.axisHeight,
+        chartWidth, chartHeight,
+        timeMarkerWidth = this.timeMarkerWidth,
         x, y,
         xAxis, yAxis,
         d3el,
@@ -83,25 +88,26 @@ exports.GraphWidgetView = widget.WidgetView.extend({
     // Chart Setup
     // -----------
     svgHeight = this.svgHeight;
+    chartWidth = width - margin.left - margin.right;
+    chartHeight = svgHeight - axisHeight - margin.top - margin.bottom;
 
     svg = d3el.append('svg')
         .attr('width', width)
         .attr('height', svgHeight)
       .append('g')
         .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
-    this.chartWidth = width - margin.left - margin.right;
-    this.chartHeight = svgHeight - margin.top - margin.bottom;
 
-    this.x = x = d3.time.scale().range([0, this.chartWidth]);
-    this.y = y = d3.scale.linear().range([this.chartHeight, 0]);
+    this.x = x = d3.time.scale().range([0, chartWidth]);
+    this.y = y = d3.scale.linear().range([chartHeight, 0]);
 
-    xAxis = d3.svg.axis()
+    var timeFormat = d3.time.format("%d-%m %H:%M");
+    var formatTime = function(x) { return timeFormat(new Date(x * 1000)); };
+
+    this.xAxis = xAxis = d3.svg.axis()
       .scale(x)
-      .orient('bottom');
-
-    yAxis = d3.svg.axis()
-      .scale(y)
-      .orient('left');
+      .orient('bottom')
+      .tickFormat(formatTime)
+      .ticks(parseInt(chartWidth / timeMarkerWidth, 10));
 
     this.line = d3.svg.line()
       .interpolate("basis")
@@ -109,16 +115,13 @@ exports.GraphWidgetView = widget.WidgetView.extend({
       .y(function(d) { return y(d.y); });
 
     this.chart = chart = svg.append('g')
-      .attr('class', 'chart');
+      .attr('class', 'chart')
+      .attr('height', chartHeight);
 
-    chart.append("g")
+    this.xAxisLine = svg.append("g")
       .attr('class', 'x axis')
-      .attr('transform', "translate(0," + this.chartHeight + ")")
+      .attr('transform', "translate(0," + (svgHeight - axisHeight - 12) + ")")
       .call(xAxis);
-
-    chart.append('g')
-      .attr('class', 'y axis')
-      .call(yAxis);
 
     // Legend Setup
     // -----------
@@ -141,6 +144,8 @@ exports.GraphWidgetView = widget.WidgetView.extend({
 
     this.legendItemValueLabel = legendItem.append('span')
       .attr('class', 'legend-item-value-label');
+
+    this.formatNumber = d3.format(".3s");
         
     // Model-View Bindings Setup
     // -------------------------
@@ -152,10 +157,13 @@ exports.GraphWidgetView = widget.WidgetView.extend({
         line = this.line,
         metrics = model.get('metrics').toJSON(),
         domain = model.get('domain'),
-        range = model.get('range');
+        range = model.get('range'),
+        formatNumber = this.formatNumber;
 
     this.x.domain(domain);
     this.y.domain(range);
+
+    this.xAxisLine.call(this.xAxis);
 
     var chartLines = this.chart.selectAll('.line')
       .data(metrics, function(d) { return d.name; });
@@ -168,9 +176,13 @@ exports.GraphWidgetView = widget.WidgetView.extend({
       .attr('d', function(d) { return line(d.datapoints); });
 
     this.legendItemTitleLabel.text(function(d) { return d.title + ": "; });
+
+    // format the last metric value displayed for each metric
     this.legendItemValueLabel.data(metrics, function(d) { return d.name; })
       .text(function(d) {
-        return (d.datapoints.length > 0 ? d.datapoints.slice(-1)[0].y : 0);
+        var datapoints = d.datapoints;
+        return (datapoints.length > 0 ?
+                formatNumber(datapoints[datapoints.length - 1].y): 0);
     });
   }
 });
