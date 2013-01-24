@@ -31,7 +31,7 @@ exports.GraphWidgetModel = widget.WidgetModel.extend({
       range: data.range
     }, {silent: true});
 
-    this.get('metrics').update(data.metrics);
+    this.get('metrics').update(data.metrics, {merge: true});
   }
 });
 
@@ -62,21 +62,35 @@ exports.GraphWidgetMetricCollection = Backbone.Collection.extend({
 });
 
 exports.GraphWidgetView = widget.WidgetView.extend({
-  height: 180,
+  svgHeight: 180,
   margin: {top: 4, right: 4, bottom: 4, left: 4},
 
   initialize: function(options) {
     var margin = this.margin,
-        width, height,
+        width,
+        svgHeight,
         x, y,
         xAxis, yAxis,
-        chart;
+        d3el,
+        svg, chart,
+        metrics,
+        legend, legendItem;
 
+    metrics = this.model.get('metrics').toJSON();
+    d3el = d3.select(this.el);
     this.width = width = this.$el.width();
-    height = this.height;
 
+    // Chart Setup
+    // -----------
+    svgHeight = this.svgHeight;
+
+    svg = d3el.append('svg')
+        .attr('width', width)
+        .attr('height', svgHeight)
+      .append('g')
+        .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
     this.chartWidth = width - margin.left - margin.right;
-    this.chartHeight = height - margin.top - margin.bottom;
+    this.chartHeight = svgHeight - margin.top - margin.bottom;
 
     this.x = x = d3.time.scale().range([0, this.chartWidth]);
     this.y = y = d3.scale.linear().range([this.chartHeight, 0]);
@@ -94,24 +108,42 @@ exports.GraphWidgetView = widget.WidgetView.extend({
       .x(function(d) { return x(d.x); })
       .y(function(d) { return y(d.y); });
 
-    this.svg = d3.select(this.el).append('svg')
-        .attr('width', width)
-        .attr('height', height)
-      .append('g')
-        .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
-
-    this.chart = chart = this.svg.append('g')
+    this.chart = chart = svg.append('g')
       .attr('class', 'chart');
 
     chart.append("g")
-        .attr('class', 'x axis')
-        .attr('transform', "translate(0," + this.chartHeight + ")")
-        .call(xAxis);
+      .attr('class', 'x axis')
+      .attr('transform', "translate(0," + this.chartHeight + ")")
+      .call(xAxis);
 
     chart.append('g')
-        .attr('class', 'y axis')
-        .call(yAxis);
+      .attr('class', 'y axis')
+      .call(yAxis);
 
+    // Legend Setup
+    // -----------
+    legend = d3el.append('ul')
+      .attr('class', 'legend');
+
+    this.legendItem = legendItem = legend.selectAll('.legend-item')
+      .data(metrics, function(d) { return d.name; })
+      .enter()
+      .append('li')
+        .attr('class', 'legend-item');
+
+    this.legendItemSwatch = legendItem.append('span')
+      .attr('class', 'legend-item-swatch')
+      .style('background-color', function(d) { return d.color; });
+
+    this.legendItemTitleLabel = legendItem.append('span')
+      .attr('class', 'legend-item-title-label')
+      .text(function(d) { return d.title; });
+
+    this.legendItemValueLabel = legendItem.append('span')
+      .attr('class', 'legend-item-value-label');
+        
+    // Model-View Bindings Setup
+    // -------------------------
     this.model.on('change', this.render, this);
   },
 
@@ -134,5 +166,11 @@ exports.GraphWidgetView = widget.WidgetView.extend({
 
     chartLines
       .attr('d', function(d) { return line(d.datapoints); });
+
+    this.legendItemTitleLabel.text(function(d) { return d.title + ": "; });
+    this.legendItemValueLabel.data(metrics, function(d) { return d.name; })
+      .text(function(d) {
+        return (d.datapoints.length > 0 ? d.datapoints.slice(-1)[0].y : 0);
+    });
   }
 });
