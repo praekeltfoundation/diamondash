@@ -61,17 +61,25 @@ class GraphWidget(MultiMetricGraphiteWidget):
         metric_data = super(
             GraphWidget, self).handle_graphite_render_response(data)
 
-        metric_output_data = [
+        domain = (min(d['x'] for m in metric_data for d in m['datapoints']),
+                  max(d['x'] for m in metric_data for d in m['datapoints']))
+
+        range = (min(d['y'] for m in metric_data for d in m['datapoints']),
+                 max(d['y'] for m in metric_data for d in m['datapoints']))
+
+        output_metric_data = [
             {'name': metric.name, 'datapoints': metric_datum['datapoints']}
             for metric, metric_datum in zip(self.metrics, metric_data)]
 
-        return json.dumps(metric_output_data)
+        return json.dumps({
+            'domain': domain,
+            'range': range,
+            'metrics': output_metric_data,
+        })
 
 
 class GraphWidgetMetric(GraphiteWidgetMetric):
     """A metric displayed by a GraphiteWidget"""
-
-    DEFAULTS = {'null_filter': 'skip'}
 
     def __init__(self, **kwargs):
         super(GraphWidgetMetric, self).__init__(**kwargs)

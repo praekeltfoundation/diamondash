@@ -62,7 +62,15 @@ class LValueWidget(SingleMetricGraphiteWidget):
 
         return config
 
-    def build_render_response(self, datapoints):
+    def handle_graphite_render_response(self, data):
+        """
+        Accepts graphite render response data and performs the data processing
+        and formatting necessary to have the data useable by lvalue widgets on
+        the client side.
+        """
+        datapoints = (
+            super(LValueWidget, self).handle_graphite_render_response(data))
+
         prev, last = datapoints[-2:]
 
         prev_y, last_y = prev[0] or 0, last[0] or 0
@@ -86,14 +94,3 @@ class LValueWidget(SingleMetricGraphiteWidget):
             'diff': diff_y,
             'percentage': percentage,
         })
-
-    def handle_graphite_render_response(self, data):
-        """
-        Accepts graphite render response data and performs the data processing
-        and formatting necessary to have the data useable by lvalue widgets on
-        the client side.
-        """
-        datapoints = (
-            super(LValueWidget, self).handle_graphite_render_response(data))
-
-        return self.build_render_response(datapoints)

@@ -7,10 +7,11 @@ require.config({
     'jquery': vendorPath + "jquery",
     'underscore': vendorPath + "underscore",
     'backbone': vendorPath + "backbone",
-    'd3': vendorPath + "d3.v2"
+    'd3': vendorPath + "d3"
   },
 
   shim: {
+    'd3': {exports: 'd3'},
     'backbone': {
       deps: ['underscore', 'jquery'],
       exports: 'Backbone'
@@ -19,5 +20,6 @@ require.config({
 });
 
 
-// TODO I cannot find away around this right now
-require(['jquery', 'backbone'], function($, Backbone) { Backbone.$ = $; });
+require(['jquery', 'backbone'], function($, Backbone) {
+  Backbone.$ = $;
+});

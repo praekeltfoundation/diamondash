@@ -1,6 +1,6 @@
 import json
 
-from mock import Mock, patch, call
+from mock import patch, call
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -67,47 +67,44 @@ class LValueWidgetTestCase(unittest.TestCase):
 
     @patch.object(utils, 'format_time')
     @patch.object(utils, 'format_number')
-    def test_build_render_response(self, mock_format_number, mock_format_time):
-        widget = StubbedLValueWidget(target='some.target', time_range=3600)
+    @patch.object(SingleMetricGraphiteWidget,
+                  'handle_graphite_render_response')
+    def test_handle_graphite_render_response(
+            self, mock_super_method, mock_format_number, mock_format_time):
+
         datapoints = [
+            [1346269.0, 1340875975],
+            [2178309.0, 1340875980],
+            [None, 1340875981],
+            [3524578.0, 1340875985],
+            [5702887.0, 1340875990],
+            [9227465.0, 1340875995]]
+
+        processed_datapoints = [
             [1346269.0, 1340875975],
             [2178309.0, 1340875980],
             [3524578.0, 1340875985],
             [5702887.0, 1340875990],
             [9227465.0, 1340875995]]
 
+        mock_super_method.return_value = processed_datapoints
+        widget = StubbedLValueWidget(target='some.target', time_range=3600)
+
         mock_format_time.side_effect = ["2012-06-28 09:33", "2012-06-28 10:33"]
         mock_format_number.side_effect = ["9.227M", "3.525M"]
 
-        results = widget.build_render_response(datapoints)
-
+        results = widget.handle_graphite_render_response(datapoints)
+        mock_super_method.assert_called_with(datapoints)
         self.assertEqual(
             mock_format_time.call_args_list,
             [call(1340875995), call(1340875995 + 3600 - 1)])
-
         self.assertEqual(
             mock_format_number.call_args_list,
             [call(9227465.0), call(9227465.0 - 5702887.0)])
-
-        expected_results = json.dumps({
+        self.assertEqual(results, json.dumps({
             'lvalue': "9.227M",
             'from': "2012-06-28 09:33",
             'to': "2012-06-28 10:33",
             'diff': "+3.525M",
             'percentage': "62%",
-        })
-        self.assertEqual(results, expected_results)
-
-    @patch.object(
-        SingleMetricGraphiteWidget, 'handle_graphite_render_response')
-    def test_handle_graphite_render_response(self, mock_super_method):
-
-        mock_super_method.return_value = ('processed-datapoints')
-        widget = StubbedLValueWidget()
-        widget.build_render_response = Mock(
-            return_value='built-render-response')
-
-        result = widget.handle_graphite_render_response('response-data')
-        mock_super_method.assert_called_with('response-data')
-        widget.build_render_response.assert_called_with('processed-datapoints')
-        self.assertEqual(result, 'built-render-response')
+        }))

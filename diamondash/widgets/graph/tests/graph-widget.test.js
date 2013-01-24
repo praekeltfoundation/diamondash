@@ -52,10 +52,16 @@ describe("GraphWidgetModel", function(){
           {name: 'm2', datapoints: [{x: 0, y: 8}, {x: 1, y: 9}]}]
       });
 
-      model.parse([
-        {name: 'm1', datapoints: [{x: 3, y: 9}, {x: 5, y: 3}]},
-        {name: 'm2', datapoints: [{x: 3, y: 8}, {x: 5, y: 11}]}
-      ]);
+      model.parse({
+        'domain': [3, 5],
+        'range': [3, 11],
+        'metrics': [
+           {name: 'm1', datapoints: [{x: 3, y: 9}, {x: 5, y: 3}]},
+           {name: 'm2', datapoints: [{x: 3, y: 8}, {x: 5, y: 11}]}]
+      });
+
+      assert.deepEqual(model.get('domain'), [3, 5]);
+      assert.deepEqual(model.get('range'), [3, 11]);
 
       assert.deepEqual(
         model.get('metrics')

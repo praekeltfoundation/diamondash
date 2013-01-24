@@ -106,7 +106,8 @@ class GraphWidgetTestCase(unittest.TestCase):
             [[0, None], [1, 2], [2, 3]])
         m2.process_datapoints.assert_called_with(
             [[4, 5], [8, None], [12, 15]])
-        self.assertEqual(result, json.dumps([{
+
+        expected_metric_data = [{
             'name': 'metric1',
             'datapoints': [{'x': 0, 'y': 0},
                            {'x': 2, 'y': 1},
@@ -118,7 +119,13 @@ class GraphWidgetTestCase(unittest.TestCase):
         }, {
             'name': 'metric3',
             'datapoints': []
-        }]))
+        }]
+
+        self.assertEqual(result, json.dumps({
+            'domain': [0, 15],
+            'range': [0, 4],
+            'metrics': expected_metric_data
+        }))
 
 
 class StubbedGraphWidgetMetric(GraphWidgetMetric):
