@@ -1,32 +1,32 @@
-.lvalue-group {
-	float: left;
-	width: 370px;
-}
-
-.lvalue-widget {
-	width: 370px;
-	height: 80px;
-}
-
 .lvalue-widget-container {
-	width: 100%;
-	font-size: 12px;
-	margin-top: 2px;
-	line-height: 1.5em;
+  padding: 0;
+  text-align: center;
 }
 
 .lvalue-lvalue {
-	float: left;
-	font-size: 37px;
+  margin: 10px auto;
+	font-size: 44px;
+  display: block;
+  text-align: center;
 }
 
 .lvalue-time {
-	text-align: right;
+  margin: 8px auto;
+  margin-right: 12px;
+	font-size: 14px;
+  text-align: right;
 	color: #808080;
 }
 
 .lvalue-change {
+  margin: 8px auto;
+	font-size: 22px;
 	margin-left: 5px;
-	float: left;
-	text-align: left;
 }
+
+.lvalue-change div {
+  display: inline-block;
+}
+
+.good-diff { color: #33cc33; }
+.bad-diff { color: #cc3333; }

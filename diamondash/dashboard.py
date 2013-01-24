@@ -218,13 +218,14 @@ class WidgetContainer(Element):
 
     def __init__(self, widget):
         self.widget = widget
-        self.span_class = "span%s" % widget.width
+        span_class = "span%s" % widget.width
+        self.classes = " ".join(('widget', span_class))
 
     @renderer
     def widget_renderer(self, request, tag):
         widget = self.widget
         tag.fillSlots(id_slot=widget.name,
-                      span_class_slot=self.span_class,
+                      class_slot=self.classes,
                       title_slot=widget.title,
                       widget_slot=widget)
         return tag

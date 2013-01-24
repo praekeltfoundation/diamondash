@@ -29,20 +29,20 @@ describe("LValueWidgetView", function(){
         model: model
       });
 
-
+      bindingResults = {};
       view.$el.find = function(el) { 
         currentEl = el;
 
         return {
-          text: function(text) { bindingResults[currentEl] = text; }
+          text: function(text) { bindingResults[currentEl] = text; },
+          addClass: function() { return this; },
+          removeClass: function() { return this; }
         };
       };
 
-      bindingResults = {};
-
-
       model.set({attr1: 'Laser', attr2: 'Blazer', attr3: 'Michelle'});
       view.render();
+
       assert.deepEqual(bindingResults, {
         'el1': "Laser",
         'el2': "Blazer",
