@@ -76,16 +76,10 @@ class LValueWidget(SingleMetricGraphiteWidget):
         prev_y, last_y = prev[0] or 0, last[0] or 0
         diff_y = last_y - prev_y
 
-        percentage = (diff_y / prev_y) * 100 if prev_y != 0 else 0
-        percentage = "{0:.0f}%".format(percentage)
+        percentage = (diff_y / prev_y) if prev_y != 0 else 0
 
-        last_y = utils.format_number(last_y)
-        diff_y = "%s%s" % ('+' if diff_y > 0 else '',
-                           utils.format_number(diff_y))
-
-        time = last[1] or 0
-        from_time = utils.format_time(time)
-        to_time = utils.format_time(time + self.time_range - 1)
+        from_time = last[1] or 0
+        to_time = from_time + self.time_range - 1
 
         return json.dumps({
             'lvalue': last_y,

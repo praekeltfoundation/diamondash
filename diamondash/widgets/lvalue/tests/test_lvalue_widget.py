@@ -65,12 +65,9 @@ class LValueWidgetTestCase(unittest.TestCase):
         }
         self.assertRaises(ConfigError, LValueWidget.parse_config, config)
 
-    @patch.object(utils, 'format_time')
-    @patch.object(utils, 'format_number')
     @patch.object(SingleMetricGraphiteWidget,
                   'handle_graphite_render_response')
-    def test_handle_graphite_render_response(
-            self, mock_super_method, mock_format_number, mock_format_time):
+    def test_handle_graphite_render_response(self, mock_super_method):
 
         datapoints = [
             [1346269.0, 1340875975],
@@ -90,21 +87,12 @@ class LValueWidgetTestCase(unittest.TestCase):
         mock_super_method.return_value = processed_datapoints
         widget = StubbedLValueWidget(target='some.target', time_range=3600)
 
-        mock_format_time.side_effect = ["2012-06-28 09:33", "2012-06-28 10:33"]
-        mock_format_number.side_effect = ["9.227M", "3.525M"]
-
         results = widget.handle_graphite_render_response(datapoints)
         mock_super_method.assert_called_with(datapoints)
-        self.assertEqual(
-            mock_format_time.call_args_list,
-            [call(1340875995), call(1340875995 + 3600 - 1)])
-        self.assertEqual(
-            mock_format_number.call_args_list,
-            [call(9227465.0), call(9227465.0 - 5702887.0)])
         self.assertEqual(results, json.dumps({
-            'lvalue': "9.227M",
-            'from': "2012-06-28 09:33",
-            'to': "2012-06-28 10:33",
-            'diff': "+3.525M",
-            'percentage': "62%",
+            'lvalue': 9227465.0,
+            'from': 1340875995,
+            'to': 1340875995 + 3600 - 1,
+            'diff': 9227465.0 - 5702887.0,
+            'percentage': 0.61803398874990854,
         }))

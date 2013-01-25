@@ -5,13 +5,13 @@ LValueWidgetView = lvalueWidget.LValueWidgetView;
 
 describe("LValueWidgetView", function(){
   describe(".render()", function() {
-    it("should perform the correct mode-view bindings", function() {
+    it("should perform the correct mode-view attr-el mappings", function() {
       var StubbedLValueWidgetView,
       model, view,
       bindingResults, currentEl;
 
       StubbedLValueWidgetView = LValueWidgetView.extend({
-        bindings: [
+        mappings: [
           {el: 'el1', attr: 'attr1'},
           {el: 'el2', attr: 'attr2'},
           {

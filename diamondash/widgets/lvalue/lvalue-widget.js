@@ -1,4 +1,5 @@
-var widget = require("widgets/widget/widget");
+var d3 = require('d3'),
+    widget = require("widgets/widget/widget");
 
 module.exports = {
   LValueWidgetModel: widget.WidgetModel.extend({
@@ -10,44 +11,60 @@ module.exports = {
       this.model.on('change', this.render, this);
     },
 
-    bindings: [{
+    _formatTime: d3.time.format("%d-%m-%Y %H:%M"),
+    formatTime: function(t) { return this._formatTime(new Date(t * 1000)); },
+
+    mappings: [{
       el: '.lvalue-lvalue',
-      attr: 'lvalue' 
+      attr: 'lvalue',
+      format: d3.format(".1s")
     }, {
       el: '.lvalue-diff',
-      attr: 'diff'
+      attr: 'diff',
+      format: d3.format(".3s")
     }, {
       el: '.lvalue-percentage',
       attr: 'percentage',
-      template: function(attr) { return "(" + attr + ")"; }
+      template: function(attr) { return "(" + attr + ")"; },
+      format: d3.format(".0%")
     }, {
       el: '.lvalue-from',
       attr: 'from',
-      template: function(attr) { return "from " + attr; }
+      template: function(attr) { return "from " + attr; },
+      format: 'formatTime'
     }, {
       el: '.lvalue-to',
       attr: 'to',
-      template: function(attr) { return "to " + attr; }
+      template: function(attr) { return "to " + attr; },
+      format: 'formatTime'
     }],
 
     render: function() {
       var $el = this.$el,
       model = this.model,
-      bindings = this.bindings,
+      mappings = this.mappings,
       i = -1,
-      b, template, attr, text,
+      m, template, attr, format, text,
       diff, diffEl;
 
       // bind model data to view elements
-      while (++i < bindings.length) {
-        b = bindings[i];
-        template = b.template;
-        attr = model.get(b.attr);
+      while (++i < mappings.length) {
+        m = mappings[i];
+        template = m.template;
+        attr = model.get(m.attr);
+
+        format = m.format;
+        if (typeof format === "string") {
+          attr = this[format](attr);
+        } else if (typeof format === "function") {
+          attr = format(attr);
+        }
+
         text = !template ? attr : template(attr);
-        $el.find(b.el).text(text);
+        $el.find(m.el).text(text);
       }
 
-      diff = Number(model.get('diff'));
+      diff = model.get('diff');
       diffEl = $el.find('.lvalue-change');
       if (diff < 0) {
         diffEl
