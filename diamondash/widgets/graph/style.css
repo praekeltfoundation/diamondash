@@ -35,3 +35,7 @@
   margin: 0 4px;
   border-radius: 4px;
 }
+
+.legend-item-value-label {
+  font-weight: bold;
+}
