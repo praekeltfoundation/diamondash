@@ -16,11 +16,21 @@ from diamondash.exceptions import ConfigError
 class StubbedGraphiteWidget(GraphiteWidget):
     DEFAULTS = {'some_config_option': 'some-config-option'}
 
-    def __init__(self, request_url=None):
-        self.request_url = request_url
-
 
 class GraphiteWidgetTestCase(unittest.TestCase):
+    @staticmethod
+    def mk_graphite_widget(**kwargs):
+        kwargs = utils.setdefaults(kwargs, {
+            'name': 'some-widget',
+            'title': 'Some Widget',
+            'client_config': {},
+            'width': 2,
+            'from_time': 3600,
+            'bucket_size': 60,
+            'graphite_url': 'fake-graphite-url',
+        })
+        return StubbedGraphiteWidget(**kwargs)
+
     def test_skip_nulls(self):
         input = [
             [None, 1340875870], [0.075312, 1340875875],
@@ -50,24 +60,20 @@ class GraphiteWidgetTestCase(unittest.TestCase):
 
         self.assertEqual(GraphiteWidgetMetric.zeroize_nulls(input), expected)
 
-    @patch.object(utils, 'slugify')
-    @patch.object(utils, 'set_key_defaults')
-    def test_parse_config(self, mock_set_key_defaults, mock_slugify):
+    def test_parse_config(self):
         """
         Should parse the config, altering it accordignly to configure the
         widget.
         """
         config = {
             'name': 'test-graphite-widget',
-            'graphite_url': 'fake_graphite_url',
+            'graphite_url': 'fake-graphite-url',
         }
         defaults = {'SomeWidgetType': "some widget's defaults"}
-        mock_set_key_defaults.side_effect = lambda k, original, d: original
 
         parsed_config = StubbedGraphiteWidget.parse_config(config, defaults)
         self.assertEqual(parsed_config['some_config_option'],
                          'some-config-option')
-        mock_set_key_defaults.assert_called()
 
     def test_parse_config_for_no_graphite_url(self):
         self.assertRaises(ConfigError, StubbedGraphiteWidget.parse_config,
@@ -115,10 +121,10 @@ class GraphiteWidgetTestCase(unittest.TestCase):
         handle the decoded response and return the result.
         """
         def assert_handle_render_request(result):
-            mock_getPage.assert_called_with('fake_request_url')
+            mock_getPage.assert_called_with('fake-request-url')
             widget.handle_graphite_render_response.assert_called_with(
                 json.loads(response_data))
-            self.assertEqual(result, 'fake_handled_graphite_render_response')
+            self.assertEqual(result, 'fake-handled-graphite-render-response')
 
         response_data = open(resource_filename(
             __name__, 'data/graphite_response_data.json')).read()
@@ -127,9 +133,10 @@ class GraphiteWidgetTestCase(unittest.TestCase):
         d.addCallback(lambda _: response_data)
         mock_getPage.return_value = d
 
-        widget = StubbedGraphiteWidget(request_url='fake_request_url')
+        widget = self.mk_graphite_widget()
+        widget.request_url = 'fake-request-url'
         widget.handle_graphite_render_response = Mock(
-            return_value='fake_handled_graphite_render_response')
+            return_value='fake-handled-graphite-render-response')
 
         deferredResult = widget.handle_render_request(None)
         deferredResult.addCallback(assert_handle_render_request)
@@ -140,36 +147,24 @@ class GraphiteWidgetTestCase(unittest.TestCase):
 class StubbedGraphiteWidgetMetric(GraphiteWidgetMetric):
     DEFAULTS = {'some_config_key': 22, 'some_other_config_key': 3}
 
-    def __init__(self, target=None, wrapped_target=None, null_filter=None):
-        self.target = target
-        self.wrapped_target = wrapped_target
-        self.filter_nulls = null_filter
-
 
 class GraphiteWidgetMetricTestCase(unittest.TestCase):
-
-    @patch.object(utils, 'parse_interval')
     @patch.object(GraphiteWidgetMetric, 'format_metric_target')
-    def test_parse_config(self, mock_format_metric_target,
-                          mock_parse_interval):
+    def test_parse_config(self, mock_format_metric_target):
 
         config = {
-            'target': 'some.random.target',
+            'target': 'some.target',
             'bucket_size': '1h',
         }
         defaults = {'some_config_key': 23}
 
-        mock_parse_interval.return_value = 3600
-        mock_format_metric_target.return_value = 'wrapped-target'
-
+        mock_format_metric_target.return_value = 'some.target -- wrapped'
         new_config = StubbedGraphiteWidgetMetric.parse_config(config, defaults)
-        mock_parse_interval.assert_called_with('1h')
-        mock_format_metric_target.assert_called_with(
-            'some.random.target', 3600)
+        mock_format_metric_target.assert_called_with('some.target', 3600)
         self.assertEqual(new_config, {
-            'target': 'some.random.target',
+            'target': 'some.target',
             'bucket_size': 3600,
-            'wrapped_target': 'wrapped-target',
+            'wrapped_target': 'some.target -- wrapped',
             'some_config_key': 23,
             'some_other_config_key': 3,
         })
@@ -185,11 +180,12 @@ class GraphiteWidgetMetricTestCase(unittest.TestCase):
 
     def test_process_datapoints(self):
         datapoints = 'fake-datapoints'
-        mock_null_filter = Mock(return_value='null-filtered-datapoints')
-        metric = StubbedGraphiteWidgetMetric(null_filter=mock_null_filter)
+        mock_filter_nulls = Mock(return_value='null-filtered-datapoints')
+        metric = mk_graphite_widget_metric()
+        metric.filter_nulls = mock_filter_nulls
 
         processed_datapoints = metric.process_datapoints(datapoints)
-        mock_null_filter.assert_called_with('fake-datapoints')
+        mock_filter_nulls.assert_called_with('fake-datapoints')
         self.assertEqual(processed_datapoints, 'null-filtered-datapoints')
 
     def test_format_metric_target(self):
@@ -235,21 +231,33 @@ class GraphiteWidgetMetricTestCase(unittest.TestCase):
 
 
 class StubbedSingleMetricGraphiteWidget(SingleMetricGraphiteWidget):
-    def __init__(self, metric=None, graphite_url=None, from_time=None):
+    def set_metric(self, metric):
         self.metric = metric
-        self.graphite_url = graphite_url
-        self.from_time = from_time
 
 
 class SingleMetricGraphiteWidgetTestCase(unittest.TestCase):
+    @staticmethod
+    def mk_single_metric_graphite_widget(**kwargs):
+        kwargs = utils.setdefaults(kwargs, {
+            'name': 'some-widget',
+            'title': 'Some Widget',
+            'client_config': {},
+            'width': 2,
+            'from_time': 3600,
+            'time_range': 3600,
+            'bucket_size': 60,
+            'graphite_url': 'some-url',
+            'metric': None
+        })
+        return StubbedSingleMetricGraphiteWidget(**kwargs)
 
     @patch.object(GraphiteWidget, 'build_request_url')
     def test__reset_request_url(self, mock_build_request_url):
         metric = Mock()
         metric.wrapped_target = 'wrapped-target'
 
-        widget = StubbedSingleMetricGraphiteWidget(
-            metric, 'graphite-url', 'from-time')
+        widget = self.mk_single_metric_graphite_widget(
+            metric=metric, graphite_url='graphite-url', from_time='from-time')
         mock_build_request_url.return_value = 'built-request-url'
 
         widget._reset_request_url()
@@ -258,7 +266,7 @@ class SingleMetricGraphiteWidgetTestCase(unittest.TestCase):
         self.assertEqual(widget.request_url, 'built-request-url')
 
     def test_set_metric(self):
-        widget = StubbedSingleMetricGraphiteWidget()
+        widget = self.mk_single_metric_graphite_widget()
         widget._reset_request_url = Mock()
 
         widget.set_metric('some-metric')
@@ -282,9 +290,9 @@ class SingleMetricGraphiteWidgetTestCase(unittest.TestCase):
             'datapoints': [[0, None], [1, 2], [2, 3]]
         }
 
-        metric = StubbedGraphiteWidgetMetric(target='some.target')
+        metric = mk_graphite_widget_metric(target='some.target')
         metric.process_datapoints = Mock(return_value=[[0, 0], [1, 2], [2, 3]])
-        widget = StubbedSingleMetricGraphiteWidget(metric=metric)
+        widget = self.mk_single_metric_graphite_widget(metric=metric)
 
         result = widget.handle_graphite_render_response(data)
         mock_find_dict_by_item.assert_called_with(
@@ -295,16 +303,25 @@ class SingleMetricGraphiteWidgetTestCase(unittest.TestCase):
 
 
 class StubbedMultiMetricGraphiteWidget(MultiMetricGraphiteWidget):
-    def __init__(self, metrics=[], metrics_by_target={},
-                 graphite_url=None, from_time=None):
-        self.metrics = metrics
-        self.metrics_by_target = metrics_by_target
-
-        self.graphite_url = graphite_url
-        self.from_time = from_time
+    def add_metric(self, metric):
+        self.metrics.append(metric)
+        self.metrics_by_target[metric.target] = metric
 
 
 class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
+    @staticmethod
+    def mk_multi_metric_graphite_widget(**kwargs):
+        kwargs = utils.setdefaults(kwargs, {
+            'name': 'some-widget',
+            'title': 'Some Widget',
+            'client_config': {},
+            'width': 2,
+            'from_time': 3600,
+            'bucket_size': 60,
+            'graphite_url': 'fake-graphite-url',
+            'metrics': []
+        })
+        return MultiMetricGraphiteWidget(**kwargs)
 
     @patch.object(GraphiteWidget, 'build_request_url')
     def test__reset_request_url(self, mock_build_request_url):
@@ -314,7 +331,7 @@ class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
         metric2 = Mock()
         metric2.wrapped_target = 'metric2-wrapped-target'
 
-        widget = StubbedMultiMetricGraphiteWidget(
+        widget = self.mk_multi_metric_graphite_widget(
             metrics=[metric1, metric2],
             graphite_url='graphite-url',
             from_time='from-time')
@@ -328,27 +345,28 @@ class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
         self.assertEqual(widget.request_url, 'built-request-url')
 
     def test__add_metric(self):
-        metric = StubbedGraphiteWidgetMetric(
-            target='some-target', wrapped_target='some-wrapped-target')
-        widget = StubbedMultiMetricGraphiteWidget(metrics=[])
+        metric = mk_graphite_widget_metric(
+            target='some.target', wrapped_target='some.wrapped.target')
+        widget = self.mk_multi_metric_graphite_widget()
         widget._reset_request_url = Mock()
 
         widget.add_metric(metric)
         widget._reset_request_url.assert_called()
         self.assertEqual(widget.metrics, [metric])
-        self.assertEqual(widget.metrics_by_target['some-target'], metric)
+        self.assertEqual(widget.metrics_by_target['some.target'], metric)
 
     def test_add_metric(self):
-        widget = StubbedMultiMetricGraphiteWidget()
+        widget = self.mk_multi_metric_graphite_widget()
         widget._add_metric = Mock()
         widget._reset_request_url = Mock()
 
-        widget.add_metric('fake-metric')
-        widget._add_metric.assert_called_with('fake-metric')
+        metric = mk_graphite_widget_metric()
+        widget.add_metric(metric)
+        widget._add_metric.assert_called_with(metric)
         widget._reset_request_url.assert_called()
 
     def test_add_metrics(self):
-        widget = StubbedMultiMetricGraphiteWidget()
+        widget = self.mk_multi_metric_graphite_widget()
         widget._add_metric = Mock()
         widget._reset_request_url = Mock()
 
@@ -371,17 +389,17 @@ class MultiMetricGraphiteWidgetTestCase(unittest.TestCase):
                 'datapoints': [[4, 5], [8, None], [12, 15]],
             }]
 
-        metric1 = StubbedGraphiteWidgetMetric(target='some.target')
+        metric1 = mk_graphite_widget_metric(target='some.target')
         metric1.process_datapoints = Mock(
             return_value=[[0, 0], [1, 2], [2, 3]])
 
-        metric2 = StubbedGraphiteWidgetMetric(target='yet.another.target')
+        metric2 = mk_graphite_widget_metric(target='yet.another.target')
         metric2.process_datapoints = Mock(return_value=[[4, 5], [12, 15]])
 
-        metric3 = StubbedGraphiteWidgetMetric(target='and.another.target')
+        metric3 = mk_graphite_widget_metric(target='and.another.target')
         metric3.process_datapoints = Mock()
 
-        widget = StubbedMultiMetricGraphiteWidget(
+        widget = self.mk_multi_metric_graphite_widget(
             metrics=[metric1, metric2, metric3],
             metrics_by_target={
                 'some.target': metric1,
@@ -421,3 +439,16 @@ class GraphiteWidgetUtilsTestCase(unittest.TestCase):
         assert_agg_method('somefunc("foo.max", foo.min)', "min")
         assert_agg_method('foo(bar(baz.min), baz.max)', "min")
         assert_agg_method('foo(bar("baz.min"), baz.max)', "max")
+
+
+def mk_graphite_widget_metric(**kwargs):
+    kwargs = utils.setdefaults(kwargs, {
+        'target': 'some.target',
+        'wrapped_target': 'some.target -- wrapped',
+        'null_filter': 'some-null-filter',
+        'name': 'some-widget',
+        'title': 'some widget',
+        'client_config': {},
+        'graphite_url': 'fake-graphite-url',
+    })
+    return StubbedGraphiteWidgetMetric(**kwargs)

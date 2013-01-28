@@ -3,7 +3,7 @@
 """Diamondash's web server functionality"""
 
 import yaml
-from os import path
+from os import listdir, path
 from glob import glob
 
 from twisted.web.static import File
@@ -24,9 +24,9 @@ resource = resource
 server = None
 
 
-def configure(dir):
+def configure(config_dir):
     global server
-    server = DiamondashServer.from_config_dir(dir)
+    server = DiamondashServer.from_config_dir(config_dir)
 
 
 @route('/')
@@ -153,17 +153,27 @@ class DiamondashServer(object):
     def get_widget_resource(self, resource_type, widget_type):
         # TODO log non-existent widget type requests
         try:
-            res = self.widget_resources[resource_type][widget_type]
+            return self.widget_resources[resource_type][widget_type]
         except KeyError:
             return NoResource()
-        else:
-            return res
 
     def get_widget_javascripts(self, widget_type):
         return self.get_widget_resource('javascripts', widget_type)
 
     def get_widget_stylesheets(self, widget_type):
         return self.get_widget_resource('stylesheets', widget_type)
+
+    @classmethod
+    def dashboards_from_dir(cls, dashboards_dir, defaults=None):
+        """Creates a list of dashboards from a config dir"""
+        dashboards = []
+
+        for filename in listdir(dashboards_dir):
+            filepath = path.join(dashboards_dir, filename)
+            dashboard = Dashboard.from_config_file(filepath, defaults)
+            dashboards.append(dashboard)
+
+        return dashboards
 
     @classmethod
     def from_config_dir(cls, config_dir):
@@ -176,8 +186,8 @@ class DiamondashServer(object):
         dashboard_defaults['widget_defaults'] = widget_defaults
 
         dashboards_dir = path.join(config_dir, "dashboards")
-        dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
-                                                   dashboard_defaults)
+        dashboards = cls.dashboards_from_dir(dashboards_dir,
+                                             dashboard_defaults)
         public_resources = cls.create_public_resources()
         widget_resources = cls.create_widget_resources()
 
@@ -186,9 +196,7 @@ class DiamondashServer(object):
     def add_dashboard(self, dashboard):
         """Adds a dashboard to diamondash"""
         self.dashboards.append(dashboard)
-
-        name = dashboard.name
-        self.dashboards_by_name[name] = dashboard
+        self.dashboards_by_name[dashboard.name] = dashboard
 
         share_id = dashboard.share_id
         if share_id is not None:

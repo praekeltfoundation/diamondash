@@ -30,7 +30,7 @@ class GraphWidget(MultiMetricGraphiteWidget):
     def parse_config(cls, config, defaults={}):
         config = super(GraphWidget, cls).parse_config(config, defaults)
 
-        config = dict(cls.DEFAULTS, **config)
+        config = utils.setdefaults(config, cls.DEFAULTS)
         utils.set_key_defaults(
             'diamondash.widgets.graph.GraphWidget', config, defaults)
 

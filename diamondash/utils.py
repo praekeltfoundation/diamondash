@@ -1,10 +1,9 @@
 import re
 import sys
 from os import path
-from datetime import datetime
 from unidecode import unidecode
 
-_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+_punct_re = re.compile(r'[^a-zA-Z0-9]+')
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
 _eps = 0.0001
 
@@ -19,29 +18,11 @@ def isint(n):
     return abs(n - int(n)) <= _eps
 
 
-def format_number(n):
-    mag = 0
-    if abs(n) < 1000:
-        return (str(int(n)) if isint(n)
-                else '%.3f' % (n,))
-    while abs(n) >= 1000 and mag < len(_number_suffixes) - 1:
-        mag += 1
-        n /= 1000.0
-    return '%.3f%s' % (n, _number_suffixes[mag])
-
-
-def format_time(time):
-    # convert and cut of seconds
-    time = str(datetime.utcfromtimestamp(time))[:-3]
-    return time
-
-
 def slugify(text):
     """Slugifies the passed in text"""
-    result = []
-    for word in _punct_re.split(text.lower()):
-        result.extend(unidecode(word).split())
-    return '-'.join(result)
+    text = unidecode(text).lower()
+    segments = _punct_re.split(text)
+    return '-'.join(word for segment in segments for word in segment.split())
 
 
 def import_module(name):
@@ -66,9 +47,7 @@ def load_class_by_string(class_path):
     Load a class when given its full name, including modules in python
     dot notation.
     """
-    parts = class_path.split('.')
-    module_name = '.'.join(parts[:-1])
-    class_name = parts[-1]
+    module_name, class_name = class_path.rsplit('.', 1)
     return load_class(module_name, class_name)
 
 
@@ -99,14 +78,27 @@ def last_dir_in_path(pathname):
     return path.split(path.dirname(pathname))[1]
 
 
+def setdefaults(original, defaults):
+    """
+    Returns a new dict updated with `defaults`, then with the `original`.
+    """
+    new_dict = {}
+    new_dict.update(defaults)
+    new_dict.update(original)
+    return new_dict
+
+
 def set_key_defaults(key, original, defaults):
     """
     If `key` exists in `defaults`, returns a dict derived from the key's
     value, then overidden with `original`. Otherwise, returns `original`.
     """
     key_defaults = defaults.get(key, None)
-    return (dict(key_defaults, **original)
-            if key_defaults is not None else original)
+
+    if key_defaults is None:
+        return original
+
+    return setdefaults(original, key_defaults)
 
 
 def find_dict_by_item(dict_list, key, value):

@@ -7,10 +7,10 @@ def listify(filename):
     return filter(None, open(filename, 'r').read().split('\n'))
 
 
-def files_in_dir(package, dir):
-    """Lists the files in `package/dir` recursively"""
+def files_in_dir(package, rootdir):
+    """Lists the files in `package/rootdir` recursively"""
     list = []
-    rootdir = path.join(package, dir)
+    rootdir = path.join(package, rootdir)
     for root, subdirs, files in walk(rootdir):
         for file in files:
             filepath = path.relpath(path.join(root, file), package)

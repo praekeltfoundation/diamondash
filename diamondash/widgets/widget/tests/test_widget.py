@@ -1,7 +1,6 @@
-from mock import patch
 from twisted.trial import unittest
 
-from diamondash import utils
+#from diamondash import utils
 from diamondash.widgets.widget import Widget
 from diamondash.exceptions import ConfigError
 
@@ -14,11 +13,7 @@ class ToyWidget(Widget):
 
 
 class WidgetTestCase(unittest.TestCase):
-    @patch.object(utils, 'slugify')
-    @patch.object(ToyWidget, 'parse_width')
-    @patch.object(utils, 'set_key_defaults')
-    def test_parse_config(self, mock_set_key_defaults, mock_parse_width,
-                          mock_slugify):
+    def test_parse_config(self):
         """
         Should parse the config, altering it accordignly to configure the
         widget.
@@ -30,10 +25,6 @@ class WidgetTestCase(unittest.TestCase):
             'width': 2
         }
         defaults = {'SomeWidgetType': "some widget's defaults"}
-
-        mock_parse_width.return_value = 4
-        mock_slugify.return_value = 'test-widget'
-        mock_set_key_defaults.side_effect = lambda k, original, d: original
 
         parsed_config = ToyWidget.parse_config(config, defaults)
         self.assertEqual(parsed_config, {
@@ -52,9 +43,6 @@ class WidgetTestCase(unittest.TestCase):
                 },
             }
         })
-        self.assertTrue(mock_set_key_defaults.called)
-        mock_slugify.assert_called_with('Test Widget')
-        mock_parse_width.assert_called_with(2)
 
     def test_from_config_for_no_name(self):
         """
@@ -63,19 +51,16 @@ class WidgetTestCase(unittest.TestCase):
         """
         self.assertRaises(ConfigError, Widget.parse_config, {})
 
-    @patch.object(utils, 'set_key_defaults')
-    def test_parse_config_for_no_title(self, mock_set_key_defaults):
+    def test_parse_config_for_no_title(self):
         """
         Should set the widget title to the name passed into the config if no
         title is in the config.
         """
         config = {'name': 'Test Widget'}
-        mock_set_key_defaults.return_value = config
         parsed_config = ToyWidget.parse_config(config)
         self.assertEqual(parsed_config['title'], 'Test Widget')
 
-    @patch.object(utils, 'set_key_defaults')
-    def test_parse_config_for_no_width(self, mock_set_key_defaults):
+    def test_parse_config_for_no_width(self):
         """
         Should set the widget width to the minimum column span if no width
         value is given.
@@ -84,7 +69,6 @@ class WidgetTestCase(unittest.TestCase):
             'name': 'Test Widget',
             'title': 'Test Widget'
         }
-        mock_set_key_defaults.return_value = config
         parsed_config = ToyWidget.parse_config(config)
         self.assertEqual(parsed_config['width'], ToyWidget.MIN_COLUMN_SPAN)
 

@@ -3,13 +3,14 @@ from os import path
 from twisted.web.template import Element
 
 from diamondash import utils
-from diamondash.exceptions import ConfigError
+from diamondash.exceptions import ConfigError, NotImplementedError
 
 
 class Widget(Element):
     """Abstract class for dashboard widgets."""
 
     loader = None
+
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
@@ -84,4 +85,4 @@ class Widget(Element):
         Handles a 'render' request from the client, where `params` are the
         request parameters.
         """
-        return {}
+        raise NotImplementedError()

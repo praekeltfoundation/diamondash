@@ -28,14 +28,13 @@ class LValueWidget(SingleMetricGraphiteWidget):
 
     def __init__(self, **kwargs):
         super(LValueWidget, self).__init__(**kwargs)
-        self.metric = kwargs['metric']
         self.time_range = kwargs['time_range']
 
     @classmethod
     def parse_config(cls, config, defaults={}):
         config = super(LValueWidget, cls).parse_config(config, defaults)
 
-        config = dict(cls.DEFAULTS, **config)
+        config = utils.setdefaults(config, cls.DEFAULTS)
         config = utils.set_key_defaults(
             'diamondash.widgets.lvalue.LValueWidget', config, defaults)
 

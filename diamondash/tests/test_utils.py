@@ -14,27 +14,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(utils.isint(-213.0))
         self.assertFalse(utils.isint(23123.123123))
 
-    def test_format_number(self):
-        def assert_format(input, expected):
-            result = utils.format_number(input)
-            self.assertEqual(result, expected)
-
-        assert_format(999999, '999.999K')
-        assert_format(1999999, '2.000M')
-        assert_format(1234123456789, '1.234T')
-        assert_format(123456123456789, '123.456T')
-        assert_format(3.034992, '3.035')
-        assert_format(2, '2')
-        assert_format(2.0, '2')
-
-    def test_format_time(self):
-        def assert_format(input, expected):
-            result = utils.format_time(input)
-            self.assertEqual(result, expected)
-
-        assert_format(1341318035, '2012-07-03 12:20')
-        assert_format(1841318020, '2028-05-07 13:13')
-
     def test_slugify(self):
         """Should change 'SomethIng_lIke tHis' to 'something-like-this'"""
         self.assertEqual(utils.slugify('SoMeThing_liKe!tHis'),
@@ -89,6 +68,14 @@ class UtilsTestCase(unittest.TestCase):
                 'another_config_option': 21,
             },
         })
+
+    def test_setdefaults(self):
+        original = {'a': 1}
+        defaults = {'a': 0, 'b': 2}
+        self.assertEqual(
+            utils.setdefaults(original, defaults), {'a': 1, 'b': 2})
+        self.assertEqual(original, {'a': 1})
+        self.assertEqual(defaults, {'a': 0, 'b': 2})
 
     def test_find_dict_by_item(self):
         def assert_dict(dict_list, key, value, expected_dict):

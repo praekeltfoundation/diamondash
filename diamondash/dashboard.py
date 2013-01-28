@@ -4,15 +4,13 @@
 
 import json
 import yaml
-from os import listdir, path
-from pkg_resources import resource_string
+from os import path
+from pkg_resources import resource_string, resource_filename
 
 from twisted.web.template import Element, renderer, XMLString
 
 from exceptions import ConfigError
 from diamondash import utils
-from diamondash.widgets.widget import Widget
-from diamondash.widgets.graph import GraphWidget
 
 
 class Dashboard(Element):
@@ -22,16 +20,18 @@ class Dashboard(Element):
     Dashboard instances are created when diamondash starts.
     """
 
-    DEFAULT_REQUEST_INTERVAL = '10s'
-    DEFAULT_WIDGET_CLASS = GraphWidget
-    LAYOUT_FUNCTIONS = ['newrow']
+    DEFAULT_TEMPLATE_FILEPATH = resource_filename(
+        __name__, 'templates/dashboard_container.xml')
+    DEFAULT_REQUEST_INTERVAL = '60s'
+    LAYOUT_FUNCTIONS = {'newrow': '_new_row'}
     WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
     WIDGET_JAVASCRIPTS_PATH = "widgets/"
 
-    loader = XMLString(
-        resource_string(__name__, 'templates/dashboard_container.xml'))
+    # the max number of columns allowed by Bootstrap's grid system
+    MAX_WIDTH = 12
 
-    def __init__(self, name, title, widgets, client_config, share_id=None):
+    def __init__(self, name, title, widgets, client_config, share_id=None,
+                 template_filepath=None):
         self.name = name
         self.title = title
         self.share_id = share_id
@@ -41,41 +41,22 @@ class Dashboard(Element):
 
         self.widgets = []
         self.widgets_by_name = {}
-        self.rows = [[]]  # init with an empty first row
-        self.last_row_width = 0
+        self.last_row = WidgetRow()
+        self.rows = [self.last_row]
 
         self.stylesheets = set()
         self.javascripts = set()
 
-        self.layoutfns = {
-            'newrow': self._new_row
-        }
+        if template_filepath is None:
+            template_filepath = self.DEFAULT_TEMPLATE_FILEPATH
+        self.loader = XMLString(open(template_filepath).read())
 
         for widget in widgets:
             self.add_widget(widget)
 
-    def get_widget(self, name):
-        """Returns a widget using the passed in widget name"""
-        return self.widgets_by_name.get(name, None)
-
-    @classmethod
-    def dashboards_from_dir(cls, dir, defaults=None):
-        """Creates a list of dashboards from a config dir"""
-        dashboards = []
-
-        for filename in listdir(dir):
-            filepath = path.join(dir, filename)
-            dashboard = Dashboard.from_config_file(filepath, defaults)
-            dashboards.append(dashboard)
-
-        return dashboards
-
     @classmethod
     def from_config(cls, config):
-        """
-        Parses a dashboard config, applying changes
-        where appropriate and returning the resulting config
-        """
+        """Creates a Dashboard from a config dict."""
 
         name = config.get('name', None)
         if name is None:
@@ -89,22 +70,25 @@ class Dashboard(Element):
         client_config['name'] = name
         request_interval = config.get(
             'request_interval', cls.DEFAULT_REQUEST_INTERVAL)
+
+        # parse request interval and convert to milliseconds for client side
         request_interval = utils.parse_interval(request_interval) * 1000
+
         client_config['requestInterval'] = request_interval
 
         if 'widgets' not in config:
             raise ConfigError('Dashboard %s does not have any widgets' % name)
 
-        widget_defaults = config.setdefault('widget_defaults', {})
-
         widgets = []
+        widget_defaults = config.get('widget_defaults', {})
+
         for widget_config in config['widgets']:
-            if (widget_config in cls.LAYOUT_FUNCTIONS):
+            if (isinstance(widget_config, str) and
+                widget_config in cls.LAYOUT_FUNCTIONS):
                 widgets.append(widget_config)
             else:
-                type = widget_config.pop('type', None)
-                widget_class = (cls.DEFAULT_WIDGET_CLASS if type is None
-                                else utils.load_class_by_string(type))
+                widget_type = widget_config.pop('type', None)
+                widget_class = utils.load_class_by_string(widget_type)
                 widget = widget_class.from_config(widget_config,
                                                   widget_defaults)
                 widgets.append(widget)
@@ -127,38 +111,21 @@ class Dashboard(Element):
 
         return cls.from_config(config)
 
-    @classmethod
-    def from_args(cls, **kwargs):
-        """Loads dashboard config from args"""
-
-        config = {}
-        if kwargs is not None:
-            config.update(kwargs)
-
-        config = cls.parse_config(config)
-        return cls.from_config(kwargs)
-
     def _new_row(self):
-        self.rows.append([])
-        self.last_row_width = 0
+        self.last_row = WidgetRow()
+        self.rows.append(self.last_row)
 
     def add_widget(self, widget):
         """Adds a widget to the dashboard. """
 
         if (widget in self.LAYOUT_FUNCTIONS):
-            layoutfn = self.layoutfns.get(widget, lambda x: x)
-            layoutfn()
+            self.apply_layout_fn(widget)
         else:
-            name = widget.name
-            self.widgets_by_name[name] = widget
-            self.widgets.append(widget)
-
-            self.last_row_width += widget.width
-            if self.last_row_width > Widget.MAX_COLUMN_SPAN:
+            if self.last_row.width + widget.width > self.MAX_WIDTH:
                 self._new_row()
-                self.last_row_width = widget.width
 
-            self.rows[-1].append(widget)  # append to the last row
+            self.widgets_by_name[widget.name] = widget
+            self.widgets.append(widget)
 
             self.client_config['widgets'].append(widget.client_config)
 
@@ -168,6 +135,16 @@ class Dashboard(Element):
             self.javascripts.update([path.join(self.WIDGET_JAVASCRIPTS_PATH, j)
                                      for j in widget.JAVASCRIPTS])
 
+            # append to the last row
+            self.last_row.add_widget(WidgetContainer(widget))
+
+    def get_widget(self, name):
+        """Returns a widget using the passed in widget name."""
+        return self.widgets_by_name.get(name, None)
+
+    def apply_layout_fn(self, name):
+        return getattr(self, self.LAYOUT_FUNCTIONS[name])()
+
     @renderer
     def stylesheets_renderer(self, request, tag):
         for stylesheet in self.stylesheets:
@@ -176,7 +153,7 @@ class Dashboard(Element):
     @renderer
     def widget_row_renderer(self, request, tag):
         for row in self.rows:
-            yield WidgetRow(row)
+            yield row
 
     @renderer
     def init_script_renderer(self, request, tag):
@@ -191,18 +168,23 @@ class WidgetRow(Element):
     """
     A row of Widget elements on a dashboard
 
-    WidgetRow instances are created on page request.
+    WidgetRow instances are created when diamondash starts.
     """
 
     loader = XMLString(resource_string(__name__, 'templates/widget_row.xml'))
 
-    def __init__(self, widgets):
-        self.widgets = widgets
+    def __init__(self):
+        self.width = 0
+        self.widgets = []
+
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+        self.width += widget.width
 
     @renderer
     def widget_renderer(self, request, tag):
         for widget in self.widgets:
-            contained_widget = WidgetContainer(widget)
+            contained_widget = widget
             yield contained_widget
 
 
@@ -210,7 +192,7 @@ class WidgetContainer(Element):
     """
     Widget container element holding a widget element.
 
-    WidgetContainer instances are created on page request.
+    WidgetContainer instances are created when diamondash starts.
     """
 
     loader = XMLString(
@@ -218,6 +200,7 @@ class WidgetContainer(Element):
 
     def __init__(self, widget):
         self.widget = widget
+        self.width = widget.width
         span_class = "span%s" % widget.width
         self.classes = " ".join(('widget', span_class))
 

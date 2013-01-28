@@ -203,8 +203,8 @@ class GraphiteWidgetMetric(object):
 
     @classmethod
     def parse_config(cls, config, defaults={}):
-        defaults = dict(cls.DEFAULTS, **defaults)
-        config = dict(defaults, **config)
+        defaults = utils.setdefaults(defaults, cls.DEFAULTS)
+        config = utils.setdefaults(config, defaults)
 
         target = config.get('target', None)
         if target is None:
