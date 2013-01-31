@@ -1,0 +1,15 @@
+{
+  "name": "diamondash",
+  "version": "0.1.0",
+  "devDependencies": {
+    "jquery": "*",
+    "d3": "*",
+    "jsdom": "*",
+    "sinon": "*",
+    "underscore": "*",
+    "backbone": "*",
+    "xmlhttprequest": "*",
+    "mocha": "*",
+    "grunt", "*"
+  }
+}
