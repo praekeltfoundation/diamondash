@@ -5,8 +5,6 @@ from pkg_resources import resource_filename
 
 from mock import patch, Mock
 from twisted.trial import unittest
-from twisted.web.resource import NoResource
-from twisted.python.filepath import FilePath
 
 from diamondash import utils
 from diamondash import server
@@ -43,7 +41,7 @@ class ServerTestCase(unittest.TestCase):
         dashboard = mk_dashboard(widgets=[widget])
         dashboard.get_widget = Mock(return_value=widget)
 
-        dd_server = DiamondashServer([], None, {})
+        dd_server = DiamondashServer([], None)
         dd_server.dashboards_by_name['test-dashboard'] = dashboard
         server.server = dd_server
 
@@ -56,7 +54,7 @@ class ServerTestCase(unittest.TestCase):
         """
         Should return an empty JSON object if the dashboard does not exist.
         """
-        dd_server = DiamondashServer([], None, {})
+        dd_server = DiamondashServer([], None)
         server.server = dd_server
 
         result = server.handle_render_request(
@@ -70,7 +68,7 @@ class ServerTestCase(unittest.TestCase):
         dashboard = mk_dashboard()
         dashboard.get_widget = Mock(return_value=None)
 
-        dd_server = DiamondashServer([], None, {})
+        dd_server = DiamondashServer([], None)
         dd_server.dashboards_by_name['test-dashboard'] = dashboard
         server.server = dd_server
 
@@ -87,50 +85,6 @@ class StubbedDiamondashServer(DiamondashServer):
 
 
 class DiamondashServerTestCase(unittest.TestCase):
-
-    @patch.object(server, 'create_resource_from_path')
-    def test_create_widget_resources(self, mock_create_resource_from_path):
-        """
-        Should create the widget resources (javascripts and stylesheets) from
-        files.
-        """
-        def stubbed_create_resource_from_path(pathname):
-            return '%s -- created' % pathname
-
-        mock_create_resource_from_path.side_effect = (
-            stubbed_create_resource_from_path)
-
-        widget_resources = StubbedDiamondashServer.create_widget_resources()
-        widgets_dir = path.join(_test_data_dir, 'widgets')
-        self.assertEqual(widget_resources, {
-            'javascripts': {
-                'a': '%s/a/*.js -- created' % widgets_dir,
-                'b': '%s/b/*.js -- created' % widgets_dir,
-            },
-            'stylesheets': {
-                'a': '%s/a/*.css -- created' % widgets_dir,
-                'b': '%s/b/*.css -- created' % widgets_dir,
-            },
-        })
-
-    def test_get_widget_resource(self):
-        """
-        Should return the resources corresponding to the passed in resource
-        type and widget type.
-        """
-        widget_resources = {
-            'resource-a': {'widget-1': 'a1-resources'}
-        }
-        dd_server = DiamondashServer([], None, widget_resources)
-
-        result = dd_server.get_widget_resource('resource-a', 'widget-1')
-        self.assertEqual(result, 'a1-resources')
-
-    def test_get_widget_resource_for_bad_type_request(self):
-        dd_server = DiamondashServer([], None, {})
-        result = dd_server.get_widget_resource('resource-a', 'widget-1')
-        self.assertTrue(isinstance(result, NoResource))
-
     @patch.object(Dashboard, 'from_config_file')
     def test_dashboards_from_dir(self, mock_from_config_file):
         """Should create a list of dashboards from a config dir."""
@@ -152,10 +106,8 @@ class DiamondashServerTestCase(unittest.TestCase):
     def test_from_config_dir(self, mock_dashboards_from_dir):
         """Should create the server from a configuration directory."""
 
-        self.patch(StubbedDiamondashServer, 'create_public_resources',
-                   staticmethod(lambda *a, **kw: 'fake-public-resources'))
-        self.patch(StubbedDiamondashServer, 'create_widget_resources',
-                   staticmethod(lambda *a, **kw: 'fake-widget-resources'))
+        self.patch(StubbedDiamondashServer, 'create_resources',
+                   staticmethod(lambda *a, **kw: 'fake-resources'))
         mock_dashboards_from_dir.return_value = ['fake-dashboards']
 
         config_dir = path.join(_test_data_dir, 'etc')
@@ -170,8 +122,7 @@ class DiamondashServerTestCase(unittest.TestCase):
             expected_dashboards_dir, expected_dashboard_defaults)
 
         self.assertEqual(dd_server.dashboards, ['fake-dashboards'])
-        self.assertEqual(dd_server.public_resources, 'fake-public-resources')
-        self.assertEqual(dd_server.widget_resources, 'fake-widget-resources')
+        self.assertEqual(dd_server.resources, 'fake-resources')
 
     def test_add_dashboard(self):
         """Should add a dashboard to the server."""
@@ -180,7 +131,7 @@ class DiamondashServerTestCase(unittest.TestCase):
 
         stubbed_index_add_dashboard.called = False
 
-        dd_server = DiamondashServer([], None, {})
+        dd_server = DiamondashServer([], None)
         dd_server.index.add_dashboard = stubbed_index_add_dashboard
         dashboard = mk_dashboard(name='some-dashboard',
                                  share_id='some-share-id')
@@ -192,30 +143,6 @@ class DiamondashServerTestCase(unittest.TestCase):
         self.assertEqual(
             dd_server.dashboards_by_share_id['some-share-id'], dashboard)
         self.assertTrue(stubbed_index_add_dashboard.called)
-
-    def test_create_resource_from_path(self):
-        """
-        Should create a resource containing all the files and dirs that match
-        the pathname.
-        """
-        def assert_resources(pathname, expected_entities):
-            pathname = path.join(_test_data_dir, pathname)
-            res = server.create_resource_from_path(pathname)
-            entities = res.listEntities()
-            for entity, expected_entity in zip(entities, expected_entities):
-                name, filepath = entity
-                expected_name, expected_filepath = expected_entity
-                expected_filepath = FilePath(
-                    path.join(_test_data_dir, expected_filepath))
-
-                self.assertEqual(name, expected_name)
-                self.assertEqual(filepath, expected_filepath)
-
-        assert_resources('widgets/a/*.js',
-                         [('a-widget.js', 'widgets/a/a-widget.js')])
-
-        assert_resources('widgets/b/*.py',
-                         [('b_widget.py', 'widgets/b/b_widget.py')])
 
 
 class StubbedDashboardIndexListItem(DashboardIndexListItem):

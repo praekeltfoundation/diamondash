@@ -17,7 +17,7 @@ widgets.WidgetModel = Backbone.Model.extend({
 });
 
 widgets.WidgetCollection = Backbone.Collection.extend({
-  model: exports.WidgetModel
+  model: widgets.WidgetModel
 });
 
 widgets.WidgetView = Backbone.View.extend({

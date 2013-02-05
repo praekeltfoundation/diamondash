@@ -19,9 +19,6 @@ class StubbedDashboard(Dashboard):
 
 
 class ToyWidget(Widget):
-    STYLESHEETS = ('toy/style.css',)
-    JAVASCRIPTS = ('toy/toy-widget',)
-
     @classmethod
     def from_config(cls, config, defaults):
         return "%s -- loaded" % config['name']
@@ -42,8 +39,6 @@ class DashboardTestCase(unittest.TestCase):
         """Should add a widget to the dashboard."""
 
         dashboard = Dashboard('test-dashboard', 'Test Dashboard', [], {})
-        dashboard.WIDGET_STYLESHEETS_PATH = "/test/css/widgets/"
-        dashboard.WIDGET_JAVASCRIPTS_PATH = "widgets/"
 
         widget = ToyWidget(name='toy', title='Toy',
                            client_config='toy_client_config', width=2)
@@ -55,10 +50,6 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(dashboard.last_row.width, 2)
         self.assertEqual(dashboard.client_config['widgets'][0],
                          'toy_client_config')
-        self.assertEqual(dashboard.stylesheets,
-                         set(['/test/css/widgets/toy/style.css']))
-        self.assertEqual(dashboard.javascripts,
-                         set(['widgets/toy/toy-widget']))
 
     def test_add_widget_for_layout_fn(self):
         """

@@ -1,7 +1,4 @@
 import json
-from pkg_resources import resource_string
-
-from twisted.web.template import XMLString
 
 from diamondash import utils
 from diamondash.exceptions import ConfigError
@@ -10,8 +7,6 @@ from diamondash.widgets.graphite import (
 
 
 class GraphWidget(MultiMetricGraphiteWidget):
-    loader = XMLString(resource_string(__name__, 'template.xml'))
-
     DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
@@ -20,11 +15,8 @@ class GraphWidget(MultiMetricGraphiteWidget):
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
-    STYLESHEETS = ('graph/style.css',)
-    JAVASCRIPTS = ('graph/graph-widget',)
-
-    MODEL = ('graph/graph-widget', 'GraphWidgetModel')
-    VIEW = ('graph/graph-widget', 'GraphWidgetView')
+    MODEL = 'GraphWidgetModel'
+    VIEW = 'GraphWidgetView'
 
     @classmethod
     def parse_config(cls, config, defaults={}):

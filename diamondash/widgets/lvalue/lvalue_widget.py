@@ -20,11 +20,8 @@ class LValueWidget(SingleMetricGraphiteWidget):
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
-    STYLESHEETS = ('lvalue/style.css',)
-    JAVASCRIPTS = ('lvalue/lvalue-widget',)
-
-    MODEL = ('lvalue/lvalue-widget', 'LValueWidgetModel')
-    VIEW = ('lvalue/lvalue-widget', 'LValueWidgetView')
+    MODEL = 'LValueWidgetModel'
+    VIEW = 'LValueWidgetView'
 
     def __init__(self, **kwargs):
         super(LValueWidget, self).__init__(**kwargs)

@@ -8,8 +8,8 @@ from diamondash.exceptions import ConfigError
 class ToyWidget(Widget):
     MIN_COLUMN_SPAN = 4
     MAX_COLUMN_SPAN = 8
-    MODEL = ('toy/toy-widget', 'ToyWidgetModel')
-    VIEW = ('toy/toy-widget', 'ToyWidgetView')
+    MODEL = 'ToyWidgetModel'
+    VIEW = 'ToyWidgetView'
 
 
 class WidgetTestCase(unittest.TestCase):
@@ -33,14 +33,8 @@ class WidgetTestCase(unittest.TestCase):
             'width': 4,
             'client_config':  {
                 'model': {'name': 'test-widget'},
-                'modelClass': {
-                    'className': 'ToyWidgetModel',
-                    'modulePath': 'widgets/toy/toy-widget',
-                },
-                'viewClass': {
-                    'className': 'ToyWidgetView',
-                    'modulePath': 'widgets/toy/toy-widget',
-                },
+                'modelClass': 'ToyWidgetModel',
+                'viewClass': 'ToyWidgetView',
             }
         })
 

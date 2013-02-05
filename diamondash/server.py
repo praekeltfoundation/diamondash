@@ -4,15 +4,12 @@
 
 import yaml
 from os import listdir, path
-from glob import glob
 
 from twisted.web.static import File
-from twisted.web.resource import Resource, NoResource
 from twisted.web.template import Element, renderer, XMLString, tags
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
-from utils import last_dir_in_path
 from dashboard import Dashboard, DashboardPage
 
 SHARED_URL_PREFIX = 'shared'
@@ -34,20 +31,16 @@ def show_index(request):
     return server.index
 
 
-@route('/public/')
-def public(request):
-    """Routing for all public files (css, js)"""
-    return server.public_resources
+@route('/css/')
+def serve_css(request):
+    """Routing for all css files"""
+    return server.resources.getChild('css', request)
 
 
-@route('/public/js/widgets/<string:widget_type>/')
-def widget_javascripts(request, widget_type):
-    return server.get_widget_javascripts(widget_type)
-
-
-@route('/public/css/widgets/<string:widget_type>/')
-def widget_stylesheets(request, widget_type):
-    return server.get_widget_stylesheets(widget_type)
+@route('/js/')
+def serve_js(request):
+    """Routing for all js files"""
+    return server.resources.getChild('js', request)
 
 
 @route('/favicon.ico')
@@ -92,76 +85,22 @@ def handle_render_request(request, dashboard_name, widget_name):
     return widget.handle_render_request(request)  # return a deferred
 
 
-def create_resource_from_path(pathname):
-    res = Resource()
-    filepaths = glob(pathname)
-    for filepath in filepaths:
-        res.putChild(path.basename(filepath), File(filepath))
-    return res
-
-
 class DiamondashServer(object):
     """Contains the server's configuration options and dashboards"""
 
     ROOT_RESOURCE_DIR = resource_filename(__name__, '')
     CONFIG_FILENAME = 'diamondash.yml'
 
-    def __init__(self, dashboards, public_resources, widget_resources):
+    def __init__(self, dashboards, resources):
         self.dashboards = []
         self.dashboards_by_name = {}
         self.dashboards_by_share_id = {}
 
-        self.public_resources = public_resources
-        self.widget_resources = widget_resources
-
+        self.resources = resources
         self.index = Index()
 
         for dashboard in dashboards:
             self.add_dashboard(dashboard)
-
-    @classmethod
-    def create_widget_resources(cls):
-        """
-        Creates js and css resources, organised by widget type.
-        """
-        type_paths = glob(path.join(cls.ROOT_RESOURCE_DIR, 'widgets', '*/'))
-        widget_javascripts = {}
-        widget_stylesheets = {}
-
-        for type_path in type_paths:
-            # obtain widget type from the dir the widget module resides in
-            type = last_dir_in_path(type_path)
-
-            javascript_paths = path.join(type_path, '*.js')
-            javascripts = create_resource_from_path(javascript_paths)
-            widget_javascripts[type] = javascripts
-
-            stylesheet_paths = path.join(type_path, '*.css')
-            stylesheets = create_resource_from_path(stylesheet_paths)
-            widget_stylesheets[type] = stylesheets
-
-        return {
-            'javascripts': widget_javascripts,
-            'stylesheets': widget_stylesheets,
-        }
-
-    @classmethod
-    def create_public_resources(cls):
-        public_dir = path.join(cls.ROOT_RESOURCE_DIR, 'public')
-        return File(public_dir)
-
-    def get_widget_resource(self, resource_type, widget_type):
-        # TODO log non-existent widget type requests
-        try:
-            return self.widget_resources[resource_type][widget_type]
-        except KeyError:
-            return NoResource()
-
-    def get_widget_javascripts(self, widget_type):
-        return self.get_widget_resource('javascripts', widget_type)
-
-    def get_widget_stylesheets(self, widget_type):
-        return self.get_widget_resource('stylesheets', widget_type)
 
     @classmethod
     def dashboards_from_dir(cls, dashboards_dir, defaults=None):
@@ -176,6 +115,10 @@ class DiamondashServer(object):
         return dashboards
 
     @classmethod
+    def create_resources(cls, pathname):
+        return File(path.join(cls.ROOT_RESOURCE_DIR, pathname))
+
+    @classmethod
     def from_config_dir(cls, config_dir):
         """Creates diamondash server from config file"""
         config_file = path.join(config_dir, cls.CONFIG_FILENAME)
@@ -188,10 +131,9 @@ class DiamondashServer(object):
         dashboards_dir = path.join(config_dir, "dashboards")
         dashboards = cls.dashboards_from_dir(dashboards_dir,
                                              dashboard_defaults)
-        public_resources = cls.create_public_resources()
-        widget_resources = cls.create_widget_resources()
 
-        return cls(dashboards, public_resources, widget_resources)
+        resources = cls.create_resources('public')
+        return cls(dashboards, resources)
 
     def add_dashboard(self, dashboard):
         """Adds a dashboard to diamondash"""
@@ -208,7 +150,7 @@ class DiamondashServer(object):
 class Index(Element):
     """Index element with links to dashboards"""
 
-    loader = XMLString(resource_string(__name__, 'templates/index.xml'))
+    loader = XMLString(resource_string(__name__, 'views/index.xml'))
 
     def __init__(self, dashboards=[]):
         self.dashboard_list_items = []
@@ -227,7 +169,7 @@ class Index(Element):
 
 class DashboardIndexListItem(Element):
     loader = XMLString(resource_string(
-        __name__, 'templates/index_dashboard_list_item.xml'))
+        __name__, 'views/index_dashboard_list_item.xml'))
 
     def __init__(self, title, url, shared_url_tag):
         self.title = title

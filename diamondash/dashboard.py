@@ -4,7 +4,6 @@
 
 import json
 import yaml
-from os import path
 from pkg_resources import resource_string, resource_filename
 
 from twisted.web.template import Element, renderer, XMLString
@@ -21,11 +20,9 @@ class Dashboard(Element):
     """
 
     DEFAULT_TEMPLATE_FILEPATH = resource_filename(
-        __name__, 'templates/dashboard_container.xml')
+        __name__, 'views/dashboard_container.xml')
     DEFAULT_REQUEST_INTERVAL = '60s'
     LAYOUT_FUNCTIONS = {'newrow': '_new_row'}
-    WIDGET_STYLESHEETS_PATH = "/public/css/widgets/"
-    WIDGET_JAVASCRIPTS_PATH = "widgets/"
 
     # the max number of columns allowed by Bootstrap's grid system
     MAX_WIDTH = 12
@@ -126,14 +123,7 @@ class Dashboard(Element):
 
             self.widgets_by_name[widget.name] = widget
             self.widgets.append(widget)
-
             self.client_config['widgets'].append(widget.client_config)
-
-            self.stylesheets.update([path.join(self.WIDGET_STYLESHEETS_PATH, s)
-                                     for s in widget.STYLESHEETS])
-
-            self.javascripts.update([path.join(self.WIDGET_JAVASCRIPTS_PATH, j)
-                                     for j in widget.JAVASCRIPTS])
 
             # append to the last row
             self.last_row.add_widget(WidgetContainer(widget))
@@ -171,7 +161,7 @@ class WidgetRow(Element):
     WidgetRow instances are created when diamondash starts.
     """
 
-    loader = XMLString(resource_string(__name__, 'templates/widget_row.xml'))
+    loader = XMLString(resource_string(__name__, 'views/widget_row.xml'))
 
     def __init__(self):
         self.width = 0
@@ -195,8 +185,7 @@ class WidgetContainer(Element):
     WidgetContainer instances are created when diamondash starts.
     """
 
-    loader = XMLString(
-        resource_string(__name__, 'templates/widget_container.xml'))
+    loader = XMLString(resource_string(__name__, 'views/widget_container.xml'))
 
     def __init__(self, widget):
         self.widget = widget
@@ -221,8 +210,7 @@ class DashboardPage(Element):
     DashboardPage instances are created on page request.
     """
 
-    loader = XMLString(resource_string(__name__,
-                                       'templates/dashboard_page.xml'))
+    loader = XMLString(resource_string(__name__, 'views/dashboard_page.xml'))
 
     def __init__(self, dashboard, is_shared):
         self.dashboard = dashboard

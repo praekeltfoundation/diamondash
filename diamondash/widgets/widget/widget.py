@@ -1,6 +1,7 @@
-from os import path
+from pkg_resources import resource_string
 
 from twisted.web.template import Element
+from twisted.web.template import XMLString
 
 from diamondash import utils
 from diamondash.exceptions import ConfigError, NotImplementedError
@@ -9,17 +10,14 @@ from diamondash.exceptions import ConfigError, NotImplementedError
 class Widget(Element):
     """Abstract class for dashboard widgets."""
 
-    loader = None
+    loader = XMLString(resource_string(__name__, 'template.xml'))
 
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
-    STYLESHEETS = ()
-    JAVASCRIPTS = ('widget/widget',)
-
-    # (js_module_path, class_name)
-    MODEL = ('widget/widget', 'WidgetModel')
-    VIEW = ('widget/widget', 'WidgetView')
+    # backbone model and view classes
+    MODEL = 'WidgetModel'
+    VIEW = 'WidgetView'
 
     def __init__(self, **kwargs):
         self.name = kwargs['name']
@@ -47,19 +45,10 @@ class Widget(Element):
         config['width'] = (cls.MIN_COLUMN_SPAN if width is None
                            else cls.parse_width(width))
 
-        model_module, model_class_name = cls.MODEL
-        view_module, view_class_name = cls.VIEW
-
         config['client_config'] = {
             'model': {'name': name},
-            'modelClass': {
-                'modulePath': path.join('widgets', model_module),
-                'className': model_class_name,
-            },
-            'viewClass': {
-                'modulePath': path.join('widgets', view_module),
-                'className': view_class_name,
-            },
+            'modelClass': cls.MODEL,
+            'viewClass': cls.VIEW,
         }
 
         return config
