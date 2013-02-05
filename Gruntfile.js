@@ -1,18 +1,18 @@
 module.exports = function(grunt) {
-  var indexStylesheets = [
+  var globalStylesheets = [
     "diamondash/client/vendor/bootstrap/css/bootstrap.css",
     "diamondash/client/vendor/bootstrap/css/bootstrap-responsive.css",
-    "diamondash/client/css/style.css",
-    "diamondash/client/css/index.css"
+    "diamondash/client/css/style.css"
   ];
 
-  var dashboardStylesheets = [
-    "diamondash/client/vendor/bootstrap/css/bootstrap.css",
-    "diamondash/client/vendor/bootstrap/css/bootstrap-responsive.css",
-    "diamondash/client/css/style.css",
+  var indexStylesheets = [].concat(globalStylesheets, [
+    "diamondash/client/css/index.css"
+  ]);
+
+  var dashboardStylesheets = [].concat(globalStylesheets, [
     "diamondash/client/css/dashboard.css",
     "diamondash/widgets/**/*.css"
-  ];
+  ]);
 
   var diamondashModules = [
     "diamondash/client/js/__prepend__.js",
