@@ -5,73 +5,57 @@ widgets.LValueWidgetModel = widgets.WidgetModel.extend({
 });
 
 widgets.LValueWidgetView = widgets.WidgetView.extend({
+  slotSelectors: [
+    '.lvalue-lvalue-slot',
+    '.lvalue-diff-slot',
+    '.lvalue-percentage-slot',
+    '.lvalue-from-slot',
+    '.lvalue-to-slot'
+  ],
+
   initialize: function(options) {
     this.model.on('change', this.render, this);
+
+    var $el = this.$el,
+        $slots = this.$slots = {};
+
+    this.slotSelectors.forEach(
+      function(s) { return $slots[s] = $el.find(s); });
+
+    this.$changeEl = $el.find('.lvalue-change');
   },
+
+  formatLValue: d3.format(".2s"),
+  formatDiff: d3.format(".3s"),
+  formatPercentage: d3.format(".0%"),
 
   _formatTime: d3.time.format("%d-%m-%Y %H:%M"),
   formatTime: function(t) { return this._formatTime(new Date(t * 1000)); },
 
-  mappings: [{
-    el: '.lvalue-lvalue',
-    attr: 'lvalue',
-    format: d3.format(".1s")
-  }, {
-    el: '.lvalue-diff',
-    attr: 'diff',
-    format: d3.format(".3s")
-  }, {
-    el: '.lvalue-percentage',
-    attr: 'percentage',
-    template: function(attr) { return "(" + attr + ")"; },
-    format: d3.format(".0%")
-  }, {
-    el: '.lvalue-from',
-    attr: 'from',
-    template: function(attr) { return "from " + attr; },
-    format: 'formatTime'
-  }, {
-    el: '.lvalue-to',
-    attr: 'to',
-    template: function(attr) { return "to " + attr; },
-    format: 'formatTime'
-  }],
+  applySlotValues: function(slotValues) {
+      var $slots = this.$slots;
+      for(var s in slotValues) { $slots[s].text(slotValues[s]); }
+  },
 
   render: function() {
-    var $el = this.$el,
-    model = this.model,
-    mappings = this.mappings,
-    i = -1,
-    m, template, attr, format, text,
-    diff, diffEl;
+    var model = this.model,
+        diff= model.get('diff'),
+        $changeEl = this.$changeEl;
 
-    // bind model data to view elements
-    while (++i < mappings.length) {
-      m = mappings[i];
-      template = m.template;
-      attr = model.get(m.attr);
+    this.applySlotValues({
+      '.lvalue-from-slot': this.formatTime(model.get('from')),
+      '.lvalue-to-slot': this.formatTime(model.get('to')),
+      '.lvalue-lvalue-slot': this.formatLValue(model.get('lvalue')),
+      '.lvalue-diff-slot': this.formatDiff(diff),
+      '.lvalue-percentage-slot': this.formatPercentage(model.get('percentage'))
+    });
 
-      format = m.format;
-      if (typeof format === "string") {
-        attr = this[format](attr);
-      } else if (typeof format === "function") {
-        attr = format(attr);
-      }
-
-      text = !template ? attr : template(attr);
-      $el.find(m.el).text(text);
-    }
-
-    diff = model.get('diff');
-    diffEl = $el.find('.lvalue-change');
     if (diff < 0) {
-      diffEl
-        .removeClass('good-diff')
-        .addClass('bad-diff');
+      $changeEl.removeClass('good-diff').addClass('bad-diff');
+    } else if (diff > 0) {
+      $changeEl.removeClass('bad-diff').addClass('good-diff');
     } else {
-      diffEl
-        .removeClass('bad-diff')
-        .addClass('good-diff');
+      $changeEl.removeClass('bad-diff').removeClass('good-diff');
     }
   }
 });
