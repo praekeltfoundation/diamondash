@@ -1,11 +1,4 @@
-var widget = require('widgets/widget/widget');
-var lvalue = require('widgets/lvalue/lvalue-widget');
-
-module.exports = {
-
-  DashboardController: function() {
-    var loadClass;
-
+diamondash.DashboardController = (function() {
     function DashboardController(args) {
       this.name = args.name;
       this.widgets = args.widgets;
@@ -16,26 +9,30 @@ module.exports = {
     DashboardController.DEFAULT_REQUEST_INTERVAL = 10000;
 
     DashboardController.fromConfig = function(config) {
-      var dashboardName, requestInterval, widgets, widgetViews;
+      var diamondashWidgets = diamondash.widgets,
+          dashboardName,
+          requestInterval,
+          widgets,
+          widgetViews;
 
       dashboardName = config.name;
 
       requestInterval = (config.requestInterval ||
                          DashboardController.DEFAULT_REQUEST_INTERVAL);
 
-      widgets = new widget.WidgetCollection();
+      widgets = new diamondashWidgets.WidgetCollection();
       widgetViews = [];
 
       config.widgets.forEach(function(widgetConfig) {
         var Model, View, name, model, view, widgetModelConfig;
 
-        Model = loadClass(widgetConfig.modelClass);
+        Model = diamondashWidgets[widgetConfig.modelClass];
         widgetModelConfig = widgetConfig.model;
         widgetModelConfig.dashboardName = dashboardName;
         model = new Model(widgetModelConfig);
 
-        View = loadClass(widgetConfig.viewClass);
-        view = new View({el: "#" + model.get('name'), model: model});
+        View = diamondashWidgets[widgetConfig.viewClass];
+        view = new View({el: $("#" + model.get('name')), model: model});
 
         widgetViews.push(view);
         widgets.add(model);
@@ -58,11 +55,5 @@ module.exports = {
       }
     };
 
-    loadClass = function(config) {
-      return require(config.modulePath)[config.className];
-    };
-
     return DashboardController;
-  }()
-
-};
+})();

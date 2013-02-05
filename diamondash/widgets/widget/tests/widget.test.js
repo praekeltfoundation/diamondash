@@ -1,7 +1,4 @@
-var assert = require('assert'),
-sinon = require('sinon'),
-widget = require('../widget'),
-WidgetModel = widget.WidgetModel;
+var WidgetModel = diamondash.widgets.WidgetModel;
 
 describe("WidgetModel", function() {
   describe(".url()", function() {
@@ -25,7 +22,7 @@ describe("WidgetModel", function() {
         name: 'some-widget',
         dashboardName: 'some-dashboard'
       });
-      sinon.spy(model, '_fetch');
+      sinon.stub(model, '_fetch');
       model.fetch();
       assert.equal(model._fetch.called, false);
 
@@ -33,7 +30,7 @@ describe("WidgetModel", function() {
         name: 'some-widget',
         dashboardName: 'some-dashboard'
       });
-      sinon.spy(model, '_fetch');
+      sinon.stub(model, '_fetch');
       model.fetch();
       assert(model._fetch.called);
     });

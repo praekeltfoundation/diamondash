@@ -1,7 +1,5 @@
-var assert = require('assert'),
-graphWidget = require('../graph-widget'),
-GraphWidgetModel = graphWidget.GraphWidgetModel,
-GraphWidgetView = graphWidget.GraphWidgetView;
+var GraphWidgetModel = diamondash.widgets.GraphWidgetModel,
+    GraphWidgetView = diamondash.widgets.GraphWidgetView;
 
 describe("GraphWidgetModel", function(){
   describe(".initialize()", function() {

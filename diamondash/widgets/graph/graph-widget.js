@@ -1,14 +1,11 @@
-var d3 = require('d3'), 
-    Backbone = require('backbone'),
-    widget = require("widgets/widget/widget"),
-    exports = module.exports = {};
+var widgets = diamondash.widgets;
 
-exports.GraphWidgetModel = widget.WidgetModel.extend({
+widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
     var self = this,
-        metrics = new exports.GraphWidgetMetricCollection(options.metrics);
+        metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
 
     metrics
       .on(
@@ -44,7 +41,7 @@ var nextColor = function() {
   return color(colorCount++ % maxColors);
 };
 
-exports.GraphWidgetMetricModel = Backbone.Model.extend({
+widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
@@ -57,11 +54,11 @@ exports.GraphWidgetMetricModel = Backbone.Model.extend({
   }
 });
 
-exports.GraphWidgetMetricCollection = Backbone.Collection.extend({
-  model: exports.GraphWidgetMetricModel
+widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
+  model: widgets.GraphWidgetMetricModel
 });
 
-exports.GraphWidgetView = widget.WidgetView.extend({
+widgets.GraphWidgetView = widgets.WidgetView.extend({
   svgHeight: 180,
   axisHeight: 12,
   timeMarkerWidth: 132,

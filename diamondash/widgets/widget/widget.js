@@ -1,7 +1,6 @@
-var Backbone = require('backbone'),
-    exports = module.exports = {};
+var widgets = diamondash.widgets;
 
-exports.WidgetModel = Backbone.Model.extend({
+widgets.WidgetModel = Backbone.Model.extend({
   idAttribute: 'name',
   isStatic: true,
 
@@ -17,9 +16,9 @@ exports.WidgetModel = Backbone.Model.extend({
   }
 });
 
-exports.WidgetCollection = Backbone.Collection.extend({
+widgets.WidgetCollection = Backbone.Collection.extend({
   model: exports.WidgetModel
 });
 
-exports.WidgetView = Backbone.View.extend({
+widgets.WidgetView = Backbone.View.extend({
 });

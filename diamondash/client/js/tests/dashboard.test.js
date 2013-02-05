@@ -1,34 +1,47 @@
-var assert = require('assert'),
-widget = require('widgets/widget/widget'),
-dashboard = require('../dashboard'),
-DashboardController = dashboard.DashboardController;
+var widgets = diamondash.widgets,
+    DashboardController = diamondash.DashboardController;
 
 describe("DashboardController", function(){
   describe(".fromConfig()", function(){
     var dashboard, config;
+    
+    before(function() {
+      widgets.ToyWidgetModelA = widgets.WidgetModel.extend({
+        type: 'ToyWidgetModelA'
+      });
+
+      widgets.ToyWidgetModelB = widgets.WidgetModel.extend({
+        type: 'ToyWidgetModelB'
+      });
+
+      widgets.ToyWidgetViewA = widgets.WidgetView.extend({
+        type: 'ToyWidgetViewA'
+      });
+
+      widgets.ToyWidgetViewB = widgets.WidgetView.extend({
+        type: 'ToyWidgetViewB'
+      });
+    });
+
+    after(function() {
+      delete widgets.ToyWidgetModelA;
+      delete widgets.ToyWidgetViewA;
+      delete widgets.ToyWidgetModelB;
+      delete widgets.ToyWidgetViewB;
+    });
 
     beforeEach(function() {
       config = {
         name: 'tatooine-the-dashboard',
         requestInterval: 10,
         widgets: [{
-          model: {
-            name: 'anakin-the-widget'},
-          modelClass: {
-            modulePath: "tests/dashboard.test",
-            className: "ToyWidgetModelA"},
-          viewClass: {
-            modulePath: "tests/dashboard.test",
-            className: "ToyWidgetViewA"}}, {
-
-          model: {
-            name: 'qui-gon-the-widget'},
-          modelClass: {
-            modulePath: "tests/dashboard.test",
-            className: "ToyWidgetModelB"},
-          viewClass: {
-            modulePath: "tests/dashboard.test",
-            className: "ToyWidgetViewB"}}]};
+          model: {name: 'anakin-the-widget'},
+          modelClass: "ToyWidgetModelA",
+          viewClass: "ToyWidgetViewA"
+        }, {
+          model: {name: 'qui-gon-the-widget'},
+          modelClass: "ToyWidgetModelB",
+          viewClass:"ToyWidgetViewB"}]};
     });
 
     it("should create the widget model collection correctly", function() {
@@ -68,26 +81,3 @@ describe("DashboardController", function(){
     });
   });
 });
-
-var ToyWidgetModelA = widget.WidgetModel.extend({
-  type: 'ToyWidgetModelA'
-});
-
-var ToyWidgetModelB = widget.WidgetModel.extend({
-  type: 'ToyWidgetModelB'
-});
-
-var ToyWidgetViewA = widget.WidgetView.extend({
-  type: 'ToyWidgetViewA'
-});
-
-var ToyWidgetViewB = widget.WidgetView.extend({
-  type: 'ToyWidgetViewB'
-});
-
-module.exports = {
-  ToyWidgetModelA: ToyWidgetModelA,
-  ToyWidgetModelB: ToyWidgetModelB,
-  ToyWidgetViewA: ToyWidgetViewA,
-  ToyWidgetViewB: ToyWidgetViewB
-};
