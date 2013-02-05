@@ -63,21 +63,5 @@ describe("DashboardController", function(){
       assert.equal(dashboard.widgetViews[1].model,
                    dashboard.widgets.at(1));
     });
-
-    it("should set the request interval correctly", function() {
-      dashboard = DashboardController.fromConfig(config);
-      assert.equal(dashboard.requestInterval, 10);
-
-      config = {widgets: []};
-      dashboard = DashboardController.fromConfig(config);
-      assert.equal(dashboard.requestInterval,
-                   DashboardController.DEFAULT_REQUEST_INTERVAL);
-
-    });
-
-    it("should set the dashboard name", function() {
-      dashboard = DashboardController.fromConfig(config);
-      assert.equal(dashboard.name, 'tatooine-the-dashboard');
-    });
   });
 });
