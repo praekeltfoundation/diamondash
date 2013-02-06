@@ -24,7 +24,7 @@ describe("WidgetModel", function() {
       });
       sinon.stub(model, '_fetch');
       model.fetch();
-      assert.equal(model._fetch.called, false);
+      assert(!model._fetch.called);
 
       model = new DynamicWidgetModel({
         name: 'some-widget',

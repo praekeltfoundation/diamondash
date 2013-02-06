@@ -5,15 +5,12 @@ from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.widgets.lvalue import LValueWidget
-from diamondash.widgets.graphite import GraphiteWidgetMetric
+from diamondash.backends.graphite import GraphiteBackend
 from diamondash.exceptions import ConfigError
 
 
 class StubbedLValueWidget(LValueWidget):
-    DEFAULTS = {'time_range': '3h'}
-
-    def set_metric(self, metric):
-        self.metric = metric
+    __DEFAULTS = {'time_range': '3h'}
 
 
 class LValueWidgetTestCase(unittest.TestCase):
@@ -24,14 +21,13 @@ class LValueWidgetTestCase(unittest.TestCase):
             'title': 'Some Widget',
             'client_config': {},
             'width': 2,
-            'from_time': 3600,
             'time_range': 3600,
             'bucket_size': 60,
-            'graphite_url': 'some-url',
-            'metric': None
+            'backend': None
         })
         return StubbedLValueWidget(**kwargs)
 
+    '''
     @staticmethod
     def mk_graphite_widget_metric(**kwargs):
         kwargs = utils.setdefaults(kwargs, {
@@ -44,8 +40,9 @@ class LValueWidgetTestCase(unittest.TestCase):
             'graphite_url': 'fake-graphite-url',
         })
         return GraphiteWidgetMetric(**kwargs)
+    '''
 
-    @patch.object(GraphiteWidgetMetric, 'from_config')
+    @patch.object(GraphiteBackend, 'from_config')
     def test_parse_config(self, mock_GraphiteWidgetMetric_from_config):
         """
         Should parse the config, altering it accordingly to configure the

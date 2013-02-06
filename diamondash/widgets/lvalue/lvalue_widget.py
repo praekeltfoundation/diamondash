@@ -1,21 +1,18 @@
 import json
 from pkg_resources import resource_string
 
+from twisted.python import log
 from twisted.web.template import XMLString
 
 from diamondash import utils
-from diamondash.exceptions import ConfigError
-from diamondash.widgets.graphite import (
-    SingleMetricGraphiteWidget, GraphiteWidgetMetric)
+from diamondash.widgets import Widget
+from diamondash.backends.graphite import GraphiteBackend
 
 
-class LValueWidget(SingleMetricGraphiteWidget):
-    loader = XMLString(resource_string(__name__, 'template.xml'))
+class LValueWidget(Widget):
 
-    DEFAULTS = {
-        'time_range': '1d',
-        'metric_defaults': {'null_filter': 'noop'}
-    }
+    __DEFAULTS = {'time_range': '1d'}
+    __CONFIG_TAG = 'diamondash.widgets.lvalue.LValueWidget'
 
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
@@ -23,49 +20,55 @@ class LValueWidget(SingleMetricGraphiteWidget):
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
 
+    loader = XMLString(resource_string(__name__, 'template.xml'))
+
     def __init__(self, **kwargs):
         super(LValueWidget, self).__init__(**kwargs)
+        self.backend = kwargs['backend']
         self.time_range = kwargs['time_range']
 
     @classmethod
     def parse_config(cls, config, defaults={}):
         config = super(LValueWidget, cls).parse_config(config, defaults)
-
-        config = utils.setdefaults(config, cls.DEFAULTS)
-        config = utils.set_key_defaults(
-            'diamondash.widgets.lvalue.LValueWidget', config, defaults)
-
-        target = config.get('target', None)
-        if target is None:
-            raise ConfigError(
-                "LValue widget %s needs a metric target" % config['name'])
+        config = cls.setdefaults(config, defaults)
 
         # Set the bucket size to the passed in time range (for eg, if 1d was
         # the time range, the data for the entire day would be aggregated).
         time_range = utils.parse_interval(config['time_range'])
         config['time_range'] = time_range
-        config['bucket_size'] = time_range
 
-        # Set the from param to double the bucket size. As a result, graphite
-        # will return two datapoints for each metric: the previous value and
-        # the last value. The last and previous values will be used to
-        # calculate the percentage increase.
-        config['from_time'] = int(time_range) * 2
+        # We set the from param to double the bucket size. As a result,
+        # graphite will return two datapoints for each metric: the previous
+        # value and the last value.  The last and previous values will be used
+        # to calculate the percentage increase.
+        from_time = int(time_range) * 2
 
-        metric_defaults = config.get('metric_defaults', {})
-        config['metric'] = GraphiteWidgetMetric.from_config(
-            {'target': target, 'bucket_size': time_range}, metric_defaults)
+        # We have this set to use the Graphite backend for now, but the type
+        # of backend could be made configurable in future
+        config['backend'] = GraphiteBackend.from_config({
+            'from_time': from_time,
+            'metrics': [{
+                'target': config.get('target'),
+                'bucket_size': time_range
+            }]
+        }, defaults)
 
         return config
 
-    def handle_graphite_render_response(self, data):
+    def process_backend_response(self, metric_data):
         """
         Accepts graphite render response data and performs the data processing
         and formatting necessary to have the data useable by lvalue widgets on
         the client side.
         """
-        datapoints = (
-            super(LValueWidget, self).handle_graphite_render_response(data))
+
+        datapoints = []
+        if not metric_data:
+            log.msg(
+                "LValueWidget '%s' received an empty response from backend."
+                % self.title)
+        else:
+            datapoints = metric_data[0]['datapoints']
 
         prev, last = datapoints[-2:]
 
@@ -84,3 +87,13 @@ class LValueWidget(SingleMetricGraphiteWidget):
             'diff': diff_y,
             'percentage': percentage,
         })
+
+    def handle_render_request(self, request):
+        # In future, we could pass kwargs (such as different 'from' and 'to'
+        # request parameters) to the backend and make two get_data() calls (two
+        # requests to the backend). This would allow us to get lvalue data with
+        # less of a burden on graphite.
+        d = self.backend.get_data()
+
+        d.addCallback(self.process_backend_data)
+        return d

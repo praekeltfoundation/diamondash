@@ -93,7 +93,7 @@ def set_key_defaults(key, original, defaults):
     If `key` exists in `defaults`, returns a dict derived from the key's
     value, then overidden with `original`. Otherwise, returns `original`.
     """
-    key_defaults = defaults.get(key, None)
+    key_defaults = defaults.get(key)
 
     if key_defaults is None:
         return original

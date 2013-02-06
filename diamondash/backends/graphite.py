@@ -4,45 +4,52 @@ from urllib import urlencode
 
 from twisted.web import client
 
-from diamondash import utils
-from diamondash.widgets.widget import Widget
+from diamondash import utils, ConfigMixin
 from diamondash.exceptions import ConfigError
+from diamondash.backends import Backend
 
 
-class GraphiteWidget(Widget):
+class GraphiteBackend(Backend):
     """Abstract widget for displaying metric data from graphite."""
 
-    DEFAULTS = {'graphite_url': 'http://127.0.0.1:8080'}
+    __DEFAULTS = {
+        'graphite_url': 'http://127.0.0.1:8080',
+        'from_time': '1d',
+        'metric_defaults': {'bucket_size': '1h'}
+    }
+    __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
 
-    def __init__(self, **kwargs):
-        super(GraphiteWidget, self).__init__(**kwargs)
-        self.from_time = kwargs['from_time']
-        self.bucket_size = kwargs['bucket_size']
-        self.graphite_url = kwargs['graphite_url']
+    def __init__(self, metrics, graphite_url, from_time):
+        self.graphite_url = graphite_url
+        self.from_time = from_time
+        self.add_metrics(metrics)
 
     @classmethod
     def parse_config(cls, config, defaults={}):
-        """Parses the graphite widget config, altering it where necessary."""
-        config = super(GraphiteWidget, cls).parse_config(config, defaults)
-
-        config = dict(cls.DEFAULTS, **config)
-        config = utils.set_key_defaults(
-            'diamondash.widgets.graphite.GraphiteWidget', config, defaults)
+        config = super(GraphiteBackend, cls).parse_config(config, defaults)
+        config = cls.setdefaults(config, defaults)
 
         if 'graphite_url' not in config:
             raise ConfigError(
-                "Graphite widget %s needs a graphite_url" % config['name'])
+                "All graphite backends need a 'graphite_url' field")
+
+        if 'from_time' not in config:
+            raise ConfigError(
+                "All graphite backends need a 'from_time' field")
+
+        config['metrics'] = [GraphiteMetric.from_config(m, defaults)
+                             for m in config.get('metrics', [])]
 
         return config
 
     @classmethod
-    def build_request_url(cls, graphite_url, targets, from_param):
+    def build_request_url(cls, graphite_url, from_time, targets):
         """
         Constructs the graphite render url
         """
         params = {
             'target': targets,
-            'from': "-%ss" % from_param,
+            'from': "-%ss" % from_time,
             'format': 'json',
         }
         render_url = "render/?%s" % urlencode(params, True)
@@ -50,86 +57,17 @@ class GraphiteWidget(Widget):
 
         return '/'.join((graphite_url, render_url))
 
-    def _reset_request_url(self):
+    def _build_request_url(self, graphite_url, from_time):
         """
-        Resets an instance's request_url (due to changes to the graphite url,
-        metric(s), or request parameters.
-
-        NOTE: To be implemented by subclasses.
+        Internal method that constructs the graphite request url using the
+        calling instance's metrics' wrapped targets.
         """
-        pass
-
-    def handle_graphite_render_response(self, data):
-        """
-        Accepts graphite render response data and performs any necessary
-        data processing/formatting/mangling steps to have the data useable by
-        the client side.
-
-        To be implemented by subclasses.
-        """
-        return data
-
-    def handle_render_request(self, request):
-        if self.request_url is None:
-            # TODO: log?
-            return "{}"
-
-        d = client.getPage(self.request_url)
-        d.addCallback(lambda data: json.loads(data))
-        d.addCallback(self.handle_graphite_render_response)
-
-        return d
-
-
-class SingleMetricGraphiteWidget(GraphiteWidget):
-    """Abstract widget for displaying a single metric's data from graphite."""
-
-    def __init__(self, **kwargs):
-        super(SingleMetricGraphiteWidget, self).__init__(**kwargs)
-        self.set_metric(kwargs['metric'])
-
-    def _reset_request_url(self):
-        self.request_url = self.build_request_url(
-            self.graphite_url, [self.metric.wrapped_target], self.from_time)
-
-    def set_metric(self, metric):
-        """Sets the widget's metric"""
-        self.metric = metric
-        self._reset_request_url()
-
-    def handle_graphite_render_response(self, data):
-        """
-        Accepts graphite render response data and performs the data processing
-        and formatting on the datapoints based on the widget's metric's
-        configuration.
-        """
-        metric_data = utils.find_dict_by_item(
-            data, 'target', self.metric.target)
-
-        if metric_data is None:
-            # TODO: log?
-            return "{}"
-
-        return self.metric.process_datapoints(metric_data['datapoints'])
-
-
-class MultiMetricGraphiteWidget(GraphiteWidget):
-    """
-    Abstract widget for displaying a multiple metrics' data from graphite.
-    """
-
-    def __init__(self, **kwargs):
-        super(MultiMetricGraphiteWidget, self).__init__(**kwargs)
-        self.metrics = []
-        self.metrics_by_target = {}
-
-        for metric in kwargs['metrics']:
-            self.add_metric(metric)
-
-    def _reset_request_url(self):
         wrapped_targets = [m.wrapped_target for m in self.metrics]
-        self.request_url = self.build_request_url(
-            self.graphite_url, wrapped_targets, self.from_time)
+        return self.build_request_url(graphite_url, from_time, wrapped_targets)
+
+    def _reset_request_url(self):
+        self.request_url = self._build_request_url(self.graphite_url,
+                                                   self.from_time)
 
     def _add_metric(self, metric):
         """
@@ -154,35 +92,52 @@ class MultiMetricGraphiteWidget(GraphiteWidget):
             self._add_metric(metric)
         self._reset_request_url()
 
-    def handle_graphite_render_response(self, data):
+    def handle_graphite_response(self, data):
         """
-        Accepts graphite render response data and performs the data processing
-        and formatting on the datapoints based on the widget's metrics'
-        configurations.
+        Accepts graphite render response data and processes it into a
+        normalized format.
         """
-        response_datapoints_by_target = dict(
+        data = json.loads(data)
+
+        datapoints_by_target = dict(
             (metric['target'], metric['datapoints']) for metric in data)
 
-        metric_output_data = []
+        output = []
         for metric in self.metrics:
-            datapoints = response_datapoints_by_target.get(metric.target, None)
-            processed_datapoints = (metric.process_datapoints(datapoints)
-                                    if datapoints is not None else [])
-            metric_output_data.append(
-                {'target': metric.target, 'datapoints': processed_datapoints})
+            datapoints = datapoints_by_target.get(metric.target, [])
+            if datapoints:
+                datapoints = metric.process_datapoints(datapoints)
+            output.append({
+                'datapoints': datapoints,
+                'metadata': metric.metadata
+            })
 
-        return metric_output_data
+        return output
+
+    def get_data(self, **kwargs):
+        if not kwargs:
+            request_url = self.request_url
+        else:
+            graphite_url = kwargs.get('graphite_url', self.graphite_url)
+            from_time = kwargs.get('from_time', self.from_time)
+            request_url = self._build_request_url(graphite_url, from_time)
+
+        d = client.getPage(request_url)
+        d.addCallback(self.handle_graphite_response)
+        return d
 
 
-class GraphiteWidgetMetric(object):
+class GraphiteMetric(ConfigMixin):
     """A metric displayed by a GraphiteWidget"""
 
-    DEFAULTS = {'null_filter': 'skip'}
+    __DEFAULTS = {'null_filter': 'skip'}
+    __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
 
     def __init__(self, **kwargs):
         self.target = kwargs['target']
         self.wrapped_target = kwargs['wrapped_target']
         self.set_null_filter(kwargs['null_filter'])
+        self.metadata = kwargs['metadata']
 
     @classmethod
     def skip_nulls(cls, datapoints):
@@ -203,14 +158,13 @@ class GraphiteWidgetMetric(object):
 
     @classmethod
     def parse_config(cls, config, defaults={}):
-        defaults = utils.setdefaults(defaults, cls.DEFAULTS)
-        config = utils.setdefaults(config, defaults)
+        config = cls.setdefaults(config, defaults)
 
-        target = config.get('target', None)
+        target = config.get('target')
         if target is None:
             raise ConfigError("All metrics need a target")
 
-        bucket_size = config.get('bucket_size', None)
+        bucket_size = config.get('bucket_size')
         if bucket_size is not None:
             bucket_size = utils.parse_interval(bucket_size)
             config['bucket_size'] = bucket_size
@@ -219,12 +173,9 @@ class GraphiteWidgetMetric(object):
         else:
             config['wrapped_target'] = target
 
-        return config
+        config.setdefault('metadata', {})
 
-    @classmethod
-    def from_config(cls, config, defaults={}):
-        config = cls.parse_config(config, defaults)
-        return cls(**config)
+        return config
 
     @classmethod
     def format_metric_target(cls, target, bucket_size):
@@ -250,8 +201,7 @@ class GraphiteWidgetMetric(object):
         filtering), and returns the processed datapoints.
         """
         datapoints = self.filter_nulls(datapoints)
-
-        return datapoints
+        return [{'x': x, 'y': y} for y, x in datapoints]
 
 
 # Borrowed from the bit of pyparsing, the graphite expression parser uses.
