@@ -2,7 +2,7 @@ from twisted.trial import unittest
 
 #from diamondash import utils
 from diamondash.widgets.widget import Widget
-from diamondash.exceptions import ConfigError
+from diamondash import ConfigError
 
 
 class ToyWidget(Widget):
@@ -20,13 +20,13 @@ class WidgetTestCase(unittest.TestCase):
         """
 
         config = {
-            'name': 'Test Widget',
+            'name': u'Test Widget',
             'title': 'Test Widget',
             'width': 2
         }
-        defaults = {'SomeWidgetType': "some widget's defaults"}
+        class_defaults = {'SomeWidgetType': "some widget's defaults"}
 
-        parsed_config = ToyWidget.parse_config(config, defaults)
+        parsed_config = ToyWidget.parse_config(config, class_defaults)
         self.assertEqual(parsed_config, {
             'name': 'test-widget',
             'title': 'Test Widget',
@@ -50,7 +50,7 @@ class WidgetTestCase(unittest.TestCase):
         Should set the widget title to the name passed into the config if no
         title is in the config.
         """
-        config = {'name': 'Test Widget'}
+        config = {'name': u'Test Widget'}
         parsed_config = ToyWidget.parse_config(config)
         self.assertEqual(parsed_config['title'], 'Test Widget')
 
@@ -60,8 +60,8 @@ class WidgetTestCase(unittest.TestCase):
         value is given.
         """
         config = {
-            'name': 'Test Widget',
-            'title': 'Test Widget'
+            'name': u'Test Widget',
+            'title': u'Test Widget'
         }
         parsed_config = ToyWidget.parse_config(config)
         self.assertEqual(parsed_config['width'], ToyWidget.MIN_COLUMN_SPAN)

@@ -1,8 +1,7 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-    <link rel="stylesheet" href="/public/css/style.css" type="text/css" />
-    <link rel="stylesheet" href="/public/css/index.css" type="text/css" />
+    <link href="/css/index.css" rel="stylesheet" type="text/css" />
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>

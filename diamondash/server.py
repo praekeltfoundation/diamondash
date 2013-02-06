@@ -17,7 +17,7 @@ SHARED_URL_PREFIX = 'shared'
 # We need resource imported for klein magic. This makes pyflakes happy.
 resource = resource
 
-# singleton instance for the server
+# instance for the server
 server = None
 
 
@@ -103,13 +103,13 @@ class DiamondashServer(object):
             self.add_dashboard(dashboard)
 
     @classmethod
-    def dashboards_from_dir(cls, dashboards_dir, defaults=None):
+    def dashboards_from_dir(cls, dashboards_dir, class_defaults={}):
         """Creates a list of dashboards from a config dir"""
         dashboards = []
 
         for filename in listdir(dashboards_dir):
             filepath = path.join(dashboards_dir, filename)
-            dashboard = Dashboard.from_config_file(filepath, defaults)
+            dashboard = Dashboard.from_config_file(filepath, class_defaults)
             dashboards.append(dashboard)
 
         return dashboards
@@ -124,13 +124,9 @@ class DiamondashServer(object):
         config_file = path.join(config_dir, cls.CONFIG_FILENAME)
         config = yaml.safe_load(open(config_file))
 
-        dashboard_defaults = config.get('dashboard_defaults', {})
-        widget_defaults = config.get('widget_defaults', {})
-        dashboard_defaults['widget_defaults'] = widget_defaults
-
+        class_defaults = config.get('defaults', {})
         dashboards_dir = path.join(config_dir, "dashboards")
-        dashboards = cls.dashboards_from_dir(dashboards_dir,
-                                             dashboard_defaults)
+        dashboards = cls.dashboards_from_dir(dashboards_dir, class_defaults)
 
         resources = cls.create_resources('public')
         return cls(dashboards, resources)

@@ -3,7 +3,7 @@
 from os import path
 from pkg_resources import resource_filename
 
-from mock import patch, Mock
+from mock import patch, call, Mock
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -42,11 +42,11 @@ class ServerTestCase(unittest.TestCase):
         dashboard.get_widget = Mock(return_value=widget)
 
         dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['test-dashboard'] = dashboard
+        dd_server.dashboards_by_name['some-dashboard'] = dashboard
         server.server = dd_server
 
         result = server.handle_render_request(
-            'fake-render-request', 'test-dashboard', 'test-widget')
+            'fake-render-request', 'some-dashboard', 'test-widget')
         self.assertEqual(
             result, "fake-render-request -- handled by test-widget")
 
@@ -58,7 +58,7 @@ class ServerTestCase(unittest.TestCase):
         server.server = dd_server
 
         result = server.handle_render_request(
-            'fake-render-request', 'test-dashboard', 'test-widget')
+            'fake-render-request', 'some-dashboard', 'test-widget')
         self.assertEqual(result, "{}")
 
     def test_handle_render_for_bad_widget_request(self):
@@ -69,11 +69,11 @@ class ServerTestCase(unittest.TestCase):
         dashboard.get_widget = Mock(return_value=None)
 
         dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['test-dashboard'] = dashboard
+        dd_server.dashboards_by_name['some-dashboard'] = dashboard
         server.server = dd_server
 
         result = server.handle_render_request(
-            'fake-render-request', 'test-dashboard', 'test-widget')
+            'fake-render-request', 'some-dashboard', 'test-widget')
         self.assertEqual(result, "{}")
 
 
@@ -86,42 +86,35 @@ class StubbedDiamondashServer(DiamondashServer):
 
 class DiamondashServerTestCase(unittest.TestCase):
     @patch.object(Dashboard, 'from_config_file')
-    def test_dashboards_from_dir(self, mock_from_config_file):
-        """Should create a list of dashboards from a config dir."""
-
-        def stubbed_from_config_file(filename, defaults=None):
-            return "%s -- loaded" % filename
-
-        mock_from_config_file.side_effect = stubbed_from_config_file
-        dashboards_dir = resource_filename(
-            __name__, 'test_dashboard_data/dashboards/')
-        dashboards = StubbedDiamondashServer.dashboards_from_dir(
-            dashboards_dir, None)
-
-        expected = ["%s%s -- loaded" % (dashboards_dir, file) for file in
-                    ('dashboard1.yml', 'dashboard2.yml')]
-        self.assertEqual(dashboards, expected)
-
-    @patch.object(StubbedDiamondashServer, 'dashboards_from_dir')
-    def test_from_config_dir(self, mock_dashboards_from_dir):
+    def test_from_config_dir(self, mock_dashboard_from_config_file):
         """Should create the server from a configuration directory."""
 
         self.patch(StubbedDiamondashServer, 'create_resources',
                    staticmethod(lambda *a, **kw: 'fake-resources'))
-        mock_dashboards_from_dir.return_value = ['fake-dashboards']
+        mock_dashboard_from_config_file.side_effect = (
+            lambda filepath, class_defaults: "%s -- created" % filepath)
 
         config_dir = path.join(_test_data_dir, 'etc')
         dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
 
-        expected_dashboards_dir = path.join(config_dir, 'dashboards')
-        expected_dashboard_defaults = {
-            'some_dashboard_default': 'mon mothma',
-            'widget_defaults': {'some_widget_default': 'admiral ackbar'}
+        expected_class_defaults = {
+            'module.path.to.some.Class': {
+                'foo': 'bar',
+                'lerp': 'larp'
+            }
         }
-        mock_dashboards_from_dir.assert_called_with(
-            expected_dashboards_dir, expected_dashboard_defaults)
+        dashboard_path = path.join(config_dir, 'dashboards')
+        expected_dashboard1_path = path.join(dashboard_path, 'dashboard1.yml')
+        expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
 
-        self.assertEqual(dd_server.dashboards, ['fake-dashboards'])
+        self.assertEqual(
+            mock_dashboard_from_config_file.call_args_list,
+            [call(expected_dashboard1_path, expected_class_defaults),
+             call(expected_dashboard2_path, expected_class_defaults)])
+        self.assertEqual(
+            dd_server.dashboards,
+            ['%s -- created' % expected_dashboard1_path,
+             '%s -- created' % expected_dashboard2_path])
         self.assertEqual(dd_server.resources, 'fake-resources')
 
     def test_add_dashboard(self):
@@ -164,11 +157,9 @@ class IndexTestCase(unittest.TestCase):
         mock_from_dashboard.side_effect = stubbed_from_dashboard
 
         index = Index()
-        dashboard = StubbedDashboard(
-            'test-dashboard', [], 'Test Dashboard', {})
-        index.add_dashboard(dashboard)
+        index.add_dashboard(mk_dashboard(name='some-dashboard'))
         self.assertEqual(index.dashboard_list_items[0],
-                         'created from: test-dashboard')
+                         'created from: some-dashboard')
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
@@ -176,12 +167,11 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         """
         Should create a dashboard index list item from a dashboard instance.
         """
-        dashboard = StubbedDashboard(
-            'test-dashboard', 'Test Dashboard', [], {}, 'test-share-id')
+        dashboard = mk_dashboard(share_id='test-share-id')
         item = StubbedDashboardIndexListItem.from_dashboard(dashboard)
 
-        self.assertEqual(item.url, '/test-dashboard')
-        self.assertEqual(item.title, 'Test Dashboard')
+        self.assertEqual(item.url, '/some-dashboard')
+        self.assertEqual(item.title, 'Some Dashboard')
 
         expected_shared_url = '/shared/test-share-id'
         self.assertEqual(item.shared_url_tag.tagName, 'a')
@@ -194,9 +184,7 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should set the dashboard index list item's shared_url tag to an empty
         string if the dashboard does not have a share id.
         """
-        dashboard = StubbedDashboard(
-            'test-dashboard', [], 'Test Dashboard', {})
-        item = StubbedDashboardIndexListItem.from_dashboard(dashboard)
+        item = StubbedDashboardIndexListItem.from_dashboard(mk_dashboard())
         self.assertEqual(item.shared_url_tag, '')
 
 
@@ -205,6 +193,6 @@ def mk_dashboard(**kwargs):
         'name': 'some-dashboard',
         'title': 'Some Dashboard',
         'widgets': [],
-        'client_config': {}
+        'client_config': {},
     })
     return StubbedDashboard(**kwargs)

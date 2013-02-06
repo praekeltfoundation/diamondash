@@ -8,16 +8,18 @@ from pkg_resources import resource_string, resource_filename
 
 from twisted.web.template import Element, renderer, XMLString
 
-from exceptions import ConfigError
-from diamondash import utils
+from diamondash import utils, ConfigMixin, ConfigError
 
 
-class Dashboard(Element):
+class Dashboard(Element, ConfigMixin):
     """
     Holds a dashboard's configuration data and widget elements.
 
     Dashboard instances are created when diamondash starts.
     """
+
+    __DEFAULTS = {'request_interval': '60s'}
+    __CONFIG_TAG = 'diamondash.dashboard.Dashboard'
 
     DEFAULT_TEMPLATE_FILEPATH = resource_filename(
         __name__, 'views/dashboard_container.xml')
@@ -27,14 +29,13 @@ class Dashboard(Element):
     # the max number of columns allowed by Bootstrap's grid system
     MAX_WIDTH = 12
 
-    def __init__(self, name, title, widgets, client_config, share_id=None,
-                 template_filepath=None):
-        self.name = name
-        self.title = title
-        self.share_id = share_id
+    def __init__(self, **kwargs):
+        self.name = kwargs['name']
+        self.title = kwargs['title']
+        self.share_id = kwargs.get('share_id')
 
-        self.client_config = client_config
-        client_config.setdefault('widgets', [])
+        self.client_config = kwargs['client_config']
+        self.client_config.setdefault('widgets', [])
 
         self.widgets = []
         self.widgets_by_name = {}
@@ -44,41 +45,40 @@ class Dashboard(Element):
         self.stylesheets = set()
         self.javascripts = set()
 
+        template_filepath = kwargs.get('template_filepath')
         if template_filepath is None:
             template_filepath = self.DEFAULT_TEMPLATE_FILEPATH
         self.loader = XMLString(open(template_filepath).read())
 
-        for widget in widgets:
+        for widget in kwargs.get('widgets', []):
             self.add_widget(widget)
 
     @classmethod
-    def from_config(cls, config):
-        """Creates a Dashboard from a config dict."""
+    def parse_config(cls, config, class_defaults={}):
+        """Parses a Dashboard config."""
+        defaults = class_defaults.get(cls.__CONFIG_TAG, {})
+        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
 
         name = config.get('name', None)
         if name is None:
             raise ConfigError('Dashboard name not specified.')
 
-        title = config.get('title', name)
+        config.setdefault('title', name)
         name = utils.slugify(name)
-        share_id = config.get('share_id', None)
+        config['name'] = name
+        config['share_id'] = config.get('share_id')
 
-        client_config = {}
-        client_config['name'] = name
-        request_interval = config.get(
-            'request_interval', cls.DEFAULT_REQUEST_INTERVAL)
-
-        # parse request interval and convert to milliseconds for client side
-        request_interval = utils.parse_interval(request_interval) * 1000
-
-        client_config['requestInterval'] = request_interval
+        # request interval is converted to milliseconds for client side
+        config['client_config'] = {
+            'name': name,
+            'requestInterval': (
+                utils.parse_interval(config['request_interval']) * 1000),
+        }
 
         if 'widgets' not in config:
             raise ConfigError('Dashboard %s does not have any widgets' % name)
 
         widgets = []
-        widget_defaults = config.get('widget_defaults', {})
-
         for widget_config in config['widgets']:
             if (isinstance(widget_config, str) and
                 widget_config in cls.LAYOUT_FUNCTIONS):
@@ -86,27 +86,22 @@ class Dashboard(Element):
             else:
                 widget_type = widget_config.pop('type', None)
                 widget_class = utils.load_class_by_string(widget_type)
-                widget = widget_class.from_config(widget_config,
-                                                  widget_defaults)
+                widget = widget_class.from_config(
+                    widget_config, class_defaults)
                 widgets.append(widget)
+        config['widgets'] = widgets
 
-        return cls(name, title, widgets, client_config, share_id)
+        return config
 
     @classmethod
-    def from_config_file(cls, filename, defaults=None):
+    def from_config_file(cls, filename, class_defaults=None):
         """Loads dashboard config from a config file"""
-        # TODO check and test for invalid config files
-
-        config = {}
-        if defaults is not None:
-            config.update(defaults)
-
         try:
-            config.update(yaml.safe_load(open(filename)))
+            config = yaml.safe_load(open(filename))
         except IOError:
             raise ConfigError('File %s not found.' % (filename,))
 
-        return cls.from_config(config)
+        return cls.from_config(config, class_defaults)
 
     def _new_row(self):
         self.last_row = WidgetRow()

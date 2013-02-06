@@ -1,5 +1,4 @@
-dashboard_defaults: 
-   'some_dashboard_default': 'mon mothma'
-
-widget_defaults: 
-   'some_widget_default': 'admiral ackbar'
+defaults: 
+  'module.path.to.some.Class':
+    'foo': 'bar'
+    'lerp': 'larp'

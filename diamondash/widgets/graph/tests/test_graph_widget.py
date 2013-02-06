@@ -1,14 +1,11 @@
 import json
-from mock import Mock, patch, call
+from mock import patch
 from twisted.trial import unittest
 
 from diamondash import utils
-from diamondash.widgets.graph import GraphWidget, GraphWidgetMetric
-from diamondash.exceptions import ConfigError
-
-
-class StubbedGraphWidget(GraphWidget):
-    DEFAULTS = {'some_config_option': 'some-config-option'}
+from diamondash import ConfigError
+from diamondash.widgets.graph import GraphWidget
+from diamondash.backends.graphite import GraphiteBackend, GraphiteMetric
 
 
 class GraphWidgetTestCase(unittest.TestCase):
@@ -20,103 +17,112 @@ class GraphWidgetTestCase(unittest.TestCase):
             'client_config': {},
             'width': 2,
             'from_time': 3600,
-            'bucket_size': 60,
-            'graphite_url': 'some-url',
-            'metrics': []
+            'backend': None
         })
-        return StubbedGraphWidget(**kwargs)
+        return GraphWidget(**kwargs)
 
-    @patch.object(GraphWidgetMetric, 'from_config')
-    def test_parse_config(self, mock_GraphWidgetMetric_from_config):
+    @patch.object(GraphiteBackend, 'from_config')
+    def test_parse_config(self, mock_GraphiteBackend_from_config):
         config = {
-            'name': 'test-graph-widget',
+            'name': u'test-graph-widget',
             'graphite_url': 'fake_graphite_url',
             'metrics': [
-                {'name': 'random sum', 'target':'vumi.random.count.sum'},
-                {'name': 'random avg', 'target':'vumi.random.timer.avg'}],
+                {'name': u'random sum', 'target':'vumi.random.count.sum'},
+                {'name': u'random avg', 'target':'vumi.random.timer.avg'}],
             'time_range': '1d',
             'bucket_size': '1h',
             'metric_defaults': {
                 'some_metric_config_option': 'some-metric-config-option'
             }
         }
-        defaults = {'SomeWidgetType': "some widget's defaults"}
+        class_defaults = {'SomeWidgetType': "some widget's defaults"}
+        mock_GraphiteBackend_from_config.return_value = 'fake-backend'
 
-        metric1, metric2 = Mock(), Mock()
-        metric1.client_config = 'metric1-fake-client-config'
-        metric2.client_config = 'metric2-fake-client-config'
-        mock_GraphWidgetMetric_from_config.side_effect = [metric1, metric2]
-
-        parsed_config = StubbedGraphWidget.parse_config(config, defaults)
-
-        metric1_from_config_call = call({
-                'name': 'random sum',
-                'target': 'vumi.random.count.sum',
-                'bucket_size': 3600
-            }, {'some_metric_config_option': 'some-metric-config-option'})
-        metric2_from_config_call = call({
-                 'name': 'random avg',
-                 'target': 'vumi.random.timer.avg',
-                 'bucket_size': 3600
-            }, {'some_metric_config_option': 'some-metric-config-option'})
-        self.assertEqual(
-            mock_GraphWidgetMetric_from_config.call_args_list,
-            [metric1_from_config_call, metric2_from_config_call])
-
-        self.assertEqual(parsed_config['from_time'], 86400)
-        self.assertEqual(parsed_config['bucket_size'], 3600)
-        self.assertEqual(parsed_config['metrics'], [metric1, metric2])
+        parsed_config = GraphWidget.parse_config(config, class_defaults)
+        mock_GraphiteBackend_from_config.assert_called_width({
+            'from_time': '1d',
+            'metrics': [
+                {
+                    'target':'vumi.random.count.sum',
+                    'bucket_size': '1h',
+                    'metadata': {
+                        'name': 'random-sum',
+                        'title': 'random sum',
+                        'client_config': {
+                            'name': 'random-sum',
+                            'title': 'random sum',
+                        },
+                    },
+                },
+                {
+                    'target':'vumi.random.timer.avg',
+                    'bucket_size': '1h',
+                    'metadata': {
+                        'name': 'random-avg',
+                        'title': 'random avg',
+                        'client_config': {
+                            'name': 'random-avg',
+                            'title': 'random avg',
+                        },
+                    },
+                },
+            ]
+        }, class_defaults)
+        self.assertEqual(parsed_config['backend'], 'fake-backend')
         self.assertEqual(
             parsed_config['client_config']['model']['metrics'],
-            ['metric1-fake-client-config', 'metric2-fake-client-config'])
+            [{'name': 'random-sum', 'title': 'random sum'},
+             {'name': 'random-avg', 'title': 'random avg'}])
 
-    def test_handle_graphite_render_response(self):
-        def mk_metric(name, target, process_datapoints_return_value):
-            metric = Mock()
-            metric.name = name
-            metric.target = target
-            metric.process_datapoints = Mock(
-                return_value=process_datapoints_return_value)
-            return metric
+    def test_parse_config_for_no_metrics(self):
+        self.assertRaises(ConfigError, GraphWidget.parse_config,
+                          {'name': u'some metric'}, {})
+
+    def test_process_backend_response(self):
+        def mk_metric(name='some-metric', title='Some Metric',
+                      target='some.target', **kwargs):
+            metric_config = {
+                'target': target,
+                'wrapped_target': '%s -- wrapped' % target,
+                'null_filter': 'zeroize',
+                'metadata': {'name': name, 'title': title}
+            }
+            metric_config.update(kwargs)
+            return GraphiteMetric(**metric_config)
 
         data = [
             {
-                'target': 'some.target',
-                'datapoints': [[0, None], [1, 2], [2, 3]],
+                'metadata': {'name': 'metric-1'},
+                'datapoints': [{'x': 0, 'y': 0},
+                               {'x': 2, 'y': 1},
+                               {'x': 3, 'y': 2}]
             }, {
-                'target': 'some.other.target',
-                'datapoints': [[0, 3], [2, 6], [4, 9]],
+                'metadata': {'name': 'metric-2'},
+                'datapoints': [{'x': 5, 'y': 4},
+                               {'x':  15, 'y': 1}]
             }, {
-                'target': 'yet.another.target',
-                'datapoints': [[4, 5], [8, None], [12, 15]],
-            }]
+                'metadata': {'name': 'metric-3'},
+                'datapoints': []
+            }
+        ]
 
-        m1 = mk_metric('metric1', 'some.target',
-                       [{'x': 0, 'y': 0}, {'x': 2, 'y': 1}, {'x': 3, 'y': 2}])
-        m2 = mk_metric('metric2', 'yet.another.target',
-                       [{'x': 5, 'y': 4}, {'x':  15, 'y': 1}])
-        m3 = mk_metric('metric3', 'and.other.target', None)
+        result = self.mk_graph_widget().process_backend_response(data)
 
-        widget = self.mk_graph_widget(metrics=[m1, m2, m3])
-        result = widget.handle_graphite_render_response(data)
-        m1.process_datapoints.assert_called_with(
-            [[0, None], [1, 2], [2, 3]])
-        m2.process_datapoints.assert_called_with(
-            [[4, 5], [8, None], [12, 15]])
-
-        expected_metric_data = [{
-            'name': 'metric1',
-            'datapoints': [{'x': 0, 'y': 0},
-                           {'x': 2, 'y': 1},
-                           {'x': 3, 'y': 2}]
-        }, {
-            'name': 'metric2',
-            'datapoints': [{'x': 5, 'y': 4},
-                           {'x':  15, 'y': 1}]
-        }, {
-            'name': 'metric3',
-            'datapoints': []
-        }]
+        expected_metric_data = [
+            {
+                'name': 'metric-1',
+                'datapoints': [{'x': 0, 'y': 0},
+                               {'x': 2, 'y': 1},
+                               {'x': 3, 'y': 2}]
+            }, {
+                'name': 'metric-2',
+                'datapoints': [{'x': 5, 'y': 4},
+                               {'x':  15, 'y': 1}]
+            }, {
+                'name': 'metric-3',
+                'datapoints': []
+            }
+        ]
 
         self.assertEqual(result, json.dumps({
             'domain': [0, 15],
@@ -124,14 +130,15 @@ class GraphWidgetTestCase(unittest.TestCase):
             'metrics': expected_metric_data
         }))
 
-
+'''
 class StubbedGraphWidgetMetric(GraphWidgetMetric):
     DEFAULTS = {'some_config_option': 'some-config-option'}
+'''
 
 
+'''
 class GraphWidgetMetricTestCase(unittest.TestCase):
-    @staticmethod
-    def mk_graph_widget_metric(**kwargs):
+    @staticmethod def mk_graph_widget_metric(**kwargs):
         kwargs = utils.setdefaults(kwargs, {
             'target': 'some.target',
             'wrapped_target': 'some.target -- wrapped',
@@ -145,7 +152,7 @@ class GraphWidgetMetricTestCase(unittest.TestCase):
 
     def test_parse_config(self):
         config = {
-            'name': 'some metric',
+            'name': u'some metric',
             'title': 'Some Metric',
             'target': 'some.random.metric',
         }
@@ -156,21 +163,9 @@ class GraphWidgetMetricTestCase(unittest.TestCase):
         self.assertEqual(parsed_config['client_config'],
                          {'name': 'some-metric', 'title': 'Some Metric'})
 
-    def test_parse_config_for_no_name(self):
-        self.assertRaises(
-            ConfigError, GraphWidgetMetric.parse_config,
-            {'target': 'some.random.metric'}, {})
-
-    def test_parse_config_for_no_title(self):
-        config = {
-            'name': 'some metric',
-            'target': 'some.random.metric',
-        }
-        parsed_config = GraphWidgetMetric.parse_config(config, {})
-        self.assertEqual(parsed_config['title'], 'some metric')
-
     def test_process_datapoints(self):
         metric = self.mk_graph_widget_metric()
         self.assertEqual(
             metric.process_datapoints([[0, 1], [1, 2], [3, 5]]),
             [{'x': 1, 'y': 0}, {'x': 2, 'y': 1}, {'x': 5, 'y': 3}])
+'''
