@@ -56,8 +56,6 @@ describe("DashboardController", function(){
       dashboard = DashboardController.fromConfig(config);
       assert.equal(dashboard.widgetViews[0].type, 'ToyWidgetViewA');
       assert.equal(dashboard.widgetViews[1].type, 'ToyWidgetViewB');
-      //assert.equal(dashboard.widgetViews[0].el, '#anakin-the-widget');
-      //assert.equal(dashboard.widgetViews[1].el, '#qui-gon-the-widget');
       assert.equal(dashboard.widgetViews[0].model,
                    dashboard.widgets.at(0));
       assert.equal(dashboard.widgetViews[1].model,
