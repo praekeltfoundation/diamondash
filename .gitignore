@@ -43,5 +43,3 @@ logs/
 
 # Node stuff (for js tests)
 node_modules
-
-diamondash/public/
