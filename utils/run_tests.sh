@@ -6,4 +6,4 @@ trial diamondash
 
 # client tests
 # ------------
-./grunt test
+./utils/grunt test

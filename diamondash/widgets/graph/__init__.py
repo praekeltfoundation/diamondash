@@ -1,4 +1,3 @@
-__all__ = ['GraphWidget', 'GraphWidgetMetric']
+__all__ = ['GraphWidget']
 
-from diamondash.widgets.graph.graph_widget import (
-    GraphWidget, GraphWidgetMetric)
+from diamondash.widgets.graph.graph_widget import GraphWidget

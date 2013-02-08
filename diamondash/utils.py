@@ -78,12 +78,14 @@ def last_dir_in_path(pathname):
     return path.split(path.dirname(pathname))[1]
 
 
-def setdefaults(original, defaults):
+def setdefaults(original, *defaults):
     """
-    Returns a new dict updated with `defaults`, then with the `original`.
+    Returns a new dict updated with a tuple of default dicts, then with the
+    original dict.
     """
     new_dict = {}
-    new_dict.update(defaults)
+    for d in defaults:
+        new_dict.update(d)
     new_dict.update(original)
     return new_dict
 
@@ -93,7 +95,7 @@ def set_key_defaults(key, original, defaults):
     If `key` exists in `defaults`, returns a dict derived from the key's
     value, then overidden with `original`. Otherwise, returns `original`.
     """
-    key_defaults = defaults.get(key, None)
+    key_defaults = defaults.get(key)
 
     if key_defaults is None:
         return original

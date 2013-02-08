@@ -3,12 +3,14 @@ from pkg_resources import resource_string
 from twisted.web.template import Element
 from twisted.web.template import XMLString
 
-from diamondash import utils
-from diamondash.exceptions import ConfigError, NotImplementedError
+from diamondash import utils, ConfigMixin, ConfigError, NotImplementedError
 
 
-class Widget(Element):
+class Widget(Element, ConfigMixin):
     """Abstract class for dashboard widgets."""
+
+    __DEFAULTS = {}
+    __CONFIG_TAG = 'diamondash.widgets.Widget'
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
@@ -24,17 +26,17 @@ class Widget(Element):
         self.title = kwargs['title']
         self.client_config = kwargs['client_config']
         self.width = kwargs['width']
+        self.backends = kwargs.get('backends')
 
     @classmethod
-    def parse_config(cls, config, defaults={}):
+    def parse_config(cls, config, class_defaults={}):
         """Parses a widget config, altering it where necessary."""
+        defaults = class_defaults.get(cls.__CONFIG_TAG, {})
+        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
 
         name = config.get('name', None)
         if name is None:
             raise ConfigError('All widgets need a name.')
-
-        config = utils.set_key_defaults(
-            'diamondash.widgets.widget.Widget', config, defaults)
 
         name = config['name']
         config.setdefault('title', name)
@@ -52,12 +54,6 @@ class Widget(Element):
         }
 
         return config
-
-    @classmethod
-    def from_config(cls, config, defaults={}):
-        """Parses a widget config, then returns the constructed widget."""
-        config = cls.parse_config(config, defaults)
-        return cls(**config)
 
     @classmethod
     def parse_width(cls, width):

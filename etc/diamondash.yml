@@ -1,6 +1,6 @@
-dashboard_defaults:
-    request_interval: '10s'
+defaults:
+    diamondash.dashboard.Dashboard:
+        request_interval: '10s'
 
-widget_defaults:
     diamondash.widgets.graphite.GraphiteWidget:
         graphite_url: "http://127.0.0.1:8080"

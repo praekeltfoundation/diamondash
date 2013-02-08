@@ -16,9 +16,9 @@ class UtilsTestCase(unittest.TestCase):
 
     def test_slugify(self):
         """Should change 'SomethIng_lIke tHis' to 'something-like-this'"""
-        self.assertEqual(utils.slugify('SoMeThing_liKe!tHis'),
+        self.assertEqual(utils.slugify(u'SoMeThing_liKe!tHis'),
                          'something-like-this')
-        self.assertEqual(utils.slugify('Godspeed You! Black Emperor'),
+        self.assertEqual(utils.slugify(u'Godspeed You! Black Emperor'),
                          'godspeed-you-black-emperor')
 
     def test_parse_interval(self):
@@ -76,6 +76,16 @@ class UtilsTestCase(unittest.TestCase):
             utils.setdefaults(original, defaults), {'a': 1, 'b': 2})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults, {'a': 0, 'b': 2})
+
+        original = {'a': 1}
+        defaults1 = {'a': 0, 'b': 2}
+        defaults2 = {'b': 3, 'c': 4}
+        self.assertEqual(
+            utils.setdefaults(original, defaults1, defaults2),
+            {'a': 1, 'b': 3, 'c': 4})
+        self.assertEqual(original, {'a': 1})
+        self.assertEqual(defaults1, {'a': 0, 'b': 2})
+        self.assertEqual(defaults2, {'b': 3, 'c': 4})
 
     def test_find_dict_by_item(self):
         def assert_dict(dict_list, key, value, expected_dict):
