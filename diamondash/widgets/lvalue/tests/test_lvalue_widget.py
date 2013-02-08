@@ -22,21 +22,6 @@ class LValueWidgetTestCase(unittest.TestCase):
         })
         return LValueWidget(**kwargs)
 
-    '''
-    @staticmethod
-    def mk_graphite_widget_metric(**kwargs):
-        kwargs = utils.setdefaults(kwargs, {
-            'target': 'some.target',
-            'wrapped_target': 'some.target -- wrapped',
-            'null_filter': 'some-null-filter',
-            'name': 'some-widget',
-            'title': 'some widget',
-            'client_config': {},
-            'graphite_url': 'fake-graphite-url',
-        })
-        return GraphiteWidgetMetric(**kwargs)
-    '''
-
     @patch.object(GraphiteBackend, 'from_config')
     def test_parse_config(self, mock_GraphiteBackend_from_config):
         """
