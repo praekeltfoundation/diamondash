@@ -56,6 +56,8 @@ class Dashboard(Element, ConfigMixin):
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         """Parses a Dashboard config."""
+        class_defaults = cls.override_class_defaults(
+            class_defaults, config.pop('defaults', {}))
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
         config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
 

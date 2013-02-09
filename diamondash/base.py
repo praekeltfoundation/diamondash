@@ -14,6 +14,21 @@ class ConfigMixin(object):
     __CONFIG_TAG = 'diamondash.ConfigMixin'
 
     @classmethod
+    def override_class_defaults(cls, class_defaults, overrides={}):
+        """
+        Takes in `class_defaults` and `overrides` dicts with defaults for
+        classes and returns a new dict containing the original defaults for
+        each class in `class_defaults` updated with the respective class
+        defaults in `overrides`.
+        """
+        new_class_defaults = {}
+        for config_tag, defaults in class_defaults.iteritems():
+            new_class_defaults[config_tag] = utils.setdefaults(
+                overrides.get(config_tag, {}), defaults)
+
+        return new_class_defaults
+
+    @classmethod
     def from_config(cls, config, class_defaults={}):
         """
         Parses a config, then returns an instances constructed from the config.

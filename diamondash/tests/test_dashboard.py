@@ -14,11 +14,11 @@ class StubbedDashboard(Dashboard):
         'layoutfn2': lambda x: x
     }
 
-    def add_widget(self, widget):
-        self.widgets.append(widget)
-
 
 class ToyWidget(Widget):
+    __DEFAULTS = {'some-option': 'some-value'}
+    __CONFIG_TAG = 'diamondash.tests.test_dashboard.ToyWidget'
+
     @classmethod
     def from_config(cls, config, class_defaults):
         return "%s -- created" % config['name']
@@ -128,6 +128,25 @@ class DashboardTestCase(unittest.TestCase):
             'layoutfn2',
             'widget2 -- created',
         ])
+
+    def test_parse_config_for_defaults(self):
+        class_defaults = {
+            Dashboard._Dashboard__CONFIG_TAG: {
+                'some-field': 'lerp',
+                'some-other-field': 23,
+            }
+        }
+        config = StubbedDashboard.parse_config({
+            'name': u'Test Dashboard',
+            'widgets': [],
+            'defaults': {
+                Dashboard._Dashboard__CONFIG_TAG: {'some-field': 'larp'}
+            }
+        }, class_defaults)
+        self.assertEqual(config['title'], 'Test Dashboard')
+        self.assertFalse(config.get('defaults'))
+        self.assertEqual(config['some-field'], 'larp')
+        self.assertEqual(config['some-other-field'], 23)
 
     def test_parse_config_for_no_name(self):
         """
