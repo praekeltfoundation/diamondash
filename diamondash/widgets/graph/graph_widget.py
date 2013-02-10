@@ -76,11 +76,10 @@ class GraphWidget(Widget):
         return config
 
     def process_backend_response(self, metric_data):
-        domain = (min(d['x'] for m in metric_data for d in m['datapoints']),
-                  max(d['x'] for m in metric_data for d in m['datapoints']))
-
-        range = (min(d['y'] for m in metric_data for d in m['datapoints']),
-                 max(d['y'] for m in metric_data for d in m['datapoints']))
+        x_values = [d['x'] for m in metric_data for d in m['datapoints']] + [0]
+        y_values = [d['y'] for m in metric_data for d in m['datapoints']] + [0]
+        domain = (min(x_values), max(x_values))
+        range = (min(y_values), max(y_values))
 
         output_metric_data = [{
             'name': m['metadata']['name'],

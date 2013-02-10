@@ -5,7 +5,7 @@ from twisted.trial import unittest
 from diamondash import utils
 from diamondash import ConfigError
 from diamondash.widgets.graph import GraphWidget
-from diamondash.backends.graphite import GraphiteBackend, GraphiteMetric
+from diamondash.backends.graphite import GraphiteBackend
 
 
 class GraphWidgetTestCase(unittest.TestCase):
@@ -79,17 +79,6 @@ class GraphWidgetTestCase(unittest.TestCase):
                           {'name': u'some metric'}, {})
 
     def test_process_backend_response(self):
-        def mk_metric(name='some-metric', title='Some Metric',
-                      target='some.target', **kwargs):
-            metric_config = {
-                'target': target,
-                'wrapped_target': '%s -- wrapped' % target,
-                'null_filter': 'zeroize',
-                'metadata': {'name': name, 'title': title}
-            }
-            metric_config.update(kwargs)
-            return GraphiteMetric(**metric_config)
-
         data = [
             {
                 'metadata': {'name': 'metric-1'},
@@ -105,7 +94,6 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': []
             }
         ]
-
         result = self.mk_graph_widget().process_backend_response(data)
 
         expected_metric_data = [
@@ -123,9 +111,25 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': []
             }
         ]
-
         self.assertEqual(result, json.dumps({
             'domain': [0, 15],
             'range': [0, 4],
+            'metrics': expected_metric_data
+        }))
+
+    def test_process_backend_response_for_empty_datapoints(self):
+        data = [
+            {'metadata': {'name': 'metric-1'}, 'datapoints': []},
+            {'metadata': {'name': 'metric-2'}, 'datapoints': []},
+            {'metadata': {'name': 'metric-3'}, 'datapoints': []}]
+        result = self.mk_graph_widget().process_backend_response(data)
+
+        expected_metric_data = [
+            {'name': 'metric-1', 'datapoints': []},
+            {'name': 'metric-2', 'datapoints': []},
+            {'name': 'metric-3', 'datapoints': []}]
+        self.assertEqual(result, json.dumps({
+            'domain': [0, 0],
+            'range': [0, 0],
             'metrics': expected_metric_data
         }))
