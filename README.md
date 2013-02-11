@@ -49,14 +49,13 @@ To run client-side tests:
 ./utils/grunt test
 `
 
-For client-side development, a build step is required. To watch and build on
-changes:
+For client-side development, a build step is required. To watch and build on changes:
 
 `
 ./utils/grunt watch
 `
 
-To only build when changes have been made:
+Alternatively, building can be done manually with:
 
 `
 ./utils/grunt
