@@ -1,11 +1,11 @@
 import json
 
-from mock import patch
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.widgets.lvalue import LValueWidget
 from diamondash.backends.graphite import GraphiteBackend
+from diamondash.tests import helpers
 
 
 class LValueWidgetTestCase(unittest.TestCase):
@@ -22,31 +22,32 @@ class LValueWidgetTestCase(unittest.TestCase):
         })
         return LValueWidget(**kwargs)
 
-    @patch.object(GraphiteBackend, 'from_config')
-    def test_parse_config(self, mock_GraphiteBackend_from_config):
+    def test_parse_config(self):
         """
         Should parse the config, altering it accordingly to configure the
         widget.
         """
+        helpers.stub_from_config(GraphiteBackend)
+
         config = {
             'name': u'test-lvalue-widget',
             'target': 'vumi.random.count.sum',
             'time_range': '1h',
         }
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
-        mock_GraphiteBackend_from_config.return_value = 'fake-backend'
 
         parsed_config = LValueWidget.parse_config(config, class_defaults)
-        mock_GraphiteBackend_from_config.assert_called_with({
+        expected_backend_config = {
             'from_time': 7200,
             'metrics': [{
                 'target': config['target'],
                 'bucket_size': 3600,
                 'null_filter': 'zeroize',
             }]
-        }, class_defaults)
+        }
+        self.assertEqual(parsed_config['backend'],
+                         (expected_backend_config, class_defaults))
         self.assertEqual(parsed_config['time_range'], 3600)
-        self.assertEqual(parsed_config['backend'], 'fake-backend')
 
     def test_process_backend_response(self):
         data = [

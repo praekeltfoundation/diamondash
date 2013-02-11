@@ -1,6 +1,5 @@
 from twisted.trial import unittest
 
-#from diamondash import utils
 from diamondash.widgets.widget import Widget
 from diamondash import ConfigError
 

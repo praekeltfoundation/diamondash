@@ -1,11 +1,11 @@
 import json
-from mock import patch
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash import ConfigError
 from diamondash.widgets.graph import GraphWidget
 from diamondash.backends.graphite import GraphiteBackend
+from diamondash.tests import helpers
 
 
 class GraphWidgetTestCase(unittest.TestCase):
@@ -21,8 +21,9 @@ class GraphWidgetTestCase(unittest.TestCase):
         })
         return GraphWidget(**kwargs)
 
-    @patch.object(GraphiteBackend, 'from_config')
-    def test_parse_config(self, mock_GraphiteBackend_from_config):
+    def test_parse_config(self):
+        helpers.stub_from_config(GraphiteBackend)
+
         config = {
             'name': u'test-graph-widget',
             'graphite_url': 'fake_graphite_url',
@@ -31,18 +32,16 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {'name': u'random avg', 'target':'vumi.random.timer.avg'}],
             'time_range': '1d',
             'bucket_size': '1h',
-            'metric_defaults': {
-                'some_metric_config_option': 'some-metric-config-option'
-            }
+            'metric_defaults': {'some_metric_option': 'some-value'}
         }
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
-        mock_GraphiteBackend_from_config.return_value = 'fake-backend'
 
         parsed_config = GraphWidget.parse_config(config, class_defaults)
-        mock_GraphiteBackend_from_config.assert_called_width({
+        expected_backend_config = {
             'from_time': '1d',
             'metrics': [
                 {
+                    'some_metric_option': 'some-value',
                     'target':'vumi.random.count.sum',
                     'bucket_size': '1h',
                     'metadata': {
@@ -55,6 +54,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                     },
                 },
                 {
+                    'some_metric_option': 'some-value',
                     'target':'vumi.random.timer.avg',
                     'bucket_size': '1h',
                     'metadata': {
@@ -67,8 +67,9 @@ class GraphWidgetTestCase(unittest.TestCase):
                     },
                 },
             ]
-        }, class_defaults)
-        self.assertEqual(parsed_config['backend'], 'fake-backend')
+        }
+        self.assertEqual(parsed_config['backend'],
+                         (expected_backend_config, class_defaults))
         self.assertEqual(
             parsed_config['client_config']['model']['metrics'],
             [{'name': 'random-sum', 'title': 'random sum'},

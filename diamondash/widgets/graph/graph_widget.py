@@ -59,11 +59,11 @@ class GraphWidget(Widget):
         """
         config = utils.setdefaults(config, metric_defaults)
 
-        name = config.get('name')
+        name = config.pop('name')
         if name is None:
             raise ConfigError('Every graph metric needs a name.')
 
-        title = config.get('title', name)
+        title = config.pop('title', name)
         name = utils.slugify(name)
         client_config = {'name': name, 'title': title}
 

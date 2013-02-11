@@ -3,14 +3,14 @@
 from os import path
 from pkg_resources import resource_filename
 
-from mock import patch, call, Mock
+from mock import Mock
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash import server
 from diamondash.widgets.widget import Widget
 from diamondash.dashboard import Dashboard
-from diamondash.server import DiamondashServer, Index, DashboardIndexListItem
+from diamondash.server import DiamondashServer, DashboardIndexListItem
 
 _test_data_dir = resource_filename(__name__, 'test_server_data/')
 
@@ -85,15 +85,16 @@ class StubbedDiamondashServer(DiamondashServer):
 
 
 class DiamondashServerTestCase(unittest.TestCase):
-    @patch.object(Dashboard, 'from_config_file')
-    def test_from_config_dir(self, mock_dashboard_from_config_file):
-        """Should create the server from a configuration directory."""
-
+    def setUp(self):
         self.patch(StubbedDiamondashServer, 'create_resources',
-                   staticmethod(lambda *a, **kw: 'fake-resources'))
-        mock_dashboard_from_config_file.side_effect = (
-            lambda filepath, class_defaults: "%s -- created" % filepath)
+                   staticmethod(lambda *a, **kw: 'created-resources'))
 
+        stubbed_from_config_file = staticmethod(
+            lambda filepath, class_defaults: (filepath, class_defaults))
+        self.patch(Dashboard, 'from_config_file', stubbed_from_config_file)
+
+    def test_from_config_dir(self):
+        """Should create the server from a configuration directory."""
         config_dir = path.join(_test_data_dir, 'etc')
         dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
 
@@ -108,14 +109,10 @@ class DiamondashServerTestCase(unittest.TestCase):
         expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
 
         self.assertEqual(
-            mock_dashboard_from_config_file.call_args_list,
-            [call(expected_dashboard1_path, expected_class_defaults),
-             call(expected_dashboard2_path, expected_class_defaults)])
-        self.assertEqual(
             dd_server.dashboards,
-            ['%s -- created' % expected_dashboard1_path,
-             '%s -- created' % expected_dashboard2_path])
-        self.assertEqual(dd_server.resources, 'fake-resources')
+            [(expected_dashboard1_path, expected_class_defaults),
+             (expected_dashboard2_path, expected_class_defaults)])
+        self.assertEqual(dd_server.resources, 'created-resources')
 
     def test_add_dashboard(self):
         """Should add a dashboard to the server."""
@@ -143,23 +140,6 @@ class StubbedDashboardIndexListItem(DashboardIndexListItem):
         self.title = title
         self.url = url
         self.shared_url_tag = shared_url_tag
-
-
-class IndexTestCase(unittest.TestCase):
-    @patch.object(DashboardIndexListItem, 'from_dashboard')
-    def test_add_dashboard(self, mock_from_dashboard):
-        """
-        Should add a dashboard list item to the index's dashboard list.
-        """
-        def stubbed_from_dashboard(dashboard):
-            return 'created from: %s' % dashboard.name
-
-        mock_from_dashboard.side_effect = stubbed_from_dashboard
-
-        index = Index()
-        index.add_dashboard(mk_dashboard(name='some-dashboard'))
-        self.assertEqual(index.dashboard_list_items[0],
-                         'created from: some-dashboard')
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
