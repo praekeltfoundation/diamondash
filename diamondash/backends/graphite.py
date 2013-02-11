@@ -3,6 +3,7 @@ import json
 from urllib import urlencode
 
 from twisted.web import client
+from twisted.python import log
 
 from diamondash import utils, ConfigMixin, ConfigError
 from diamondash.backends import Backend
@@ -43,15 +44,12 @@ class GraphiteBackend(Backend):
         """
         Constructs the graphite render url
         """
-        params = {
-            'target': targets,
-            'from': "-%ss" % from_time,
-            'format': 'json',
-        }
+        params = [
+            ('from', "-%ss" % from_time),
+            ('target', targets),
+            ('format', 'json')]
         render_url = "render/?%s" % urlencode(params, True)
-        graphite_url = graphite_url.strip('/')
-
-        return '/'.join((graphite_url, render_url))
+        return '/'.join((graphite_url.strip('/'), render_url))
 
     def _build_request_url(self, graphite_url, from_time):
         """
@@ -70,8 +68,14 @@ class GraphiteBackend(Backend):
         Adds a metric to the widget. Used by `add_metric()` and `add_metrics()`
         to keep things DRY.
         """
+        target = metric.target
+        if target in self.metrics_by_target:
+            log.msg("Metric with target '%s' already exists in "
+                    "Graphite backend." % target)
+            return
+
         self.metrics.append(metric)
-        self.metrics_by_target[metric.target] = metric
+        self.metrics_by_target[target] = metric
 
     def add_metric(self, metric):
         """

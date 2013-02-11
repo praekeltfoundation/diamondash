@@ -23,4 +23,4 @@ class Backend(ConfigMixin):
         Returns data from the backend according to the backend's configuration
         and the passed in arguments.
         """
-        return NotImplementedError()
+        raise NotImplementedError()

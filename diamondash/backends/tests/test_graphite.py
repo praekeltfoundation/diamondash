@@ -1,6 +1,6 @@
 import json
 
-from mock import call, patch, Mock
+from mock import Mock
 from twisted.internet.defer import Deferred
 from twisted.web import client
 from twisted.trial import unittest
@@ -8,47 +8,70 @@ from twisted.trial import unittest
 from diamondash import utils, ConfigError
 from diamondash.backends.graphite import (
     GraphiteBackend, GraphiteMetric, guess_aggregation_method)
+from diamondash.tests import helpers
+
+
+def mk_graphite_metric(target='some.target', **kwargs):
+    wrapped_target = (
+        'alias(summarize(%s, "3600s", "avg"), "%s")' % (target, target))
+    kwargs = utils.setdefaults(kwargs, {
+        'target': target,
+        'wrapped_target': wrapped_target,
+        'null_filter': 'zeroize',
+        'metadata': {},
+    })
+    return GraphiteMetric(**kwargs)
 
 
 class GraphiteBackendTestCase(unittest.TestCase):
-    def mk_graphite_backend(self, **kwargs):
-        def mock_add_metrics(self, metrics):
-            for metric in metrics:
-                self._add_metric(metric)
+    M1_RAW_DATAPOINTS = [
+        [None, 1342382400],
+        [0.04924959844054583, 1342386000],
+        [0.05052084873949578, 1342389600]]
+    M1_PROCESSED_DATAPOINTS = [
+        {'x': 1342382400, 'y': 0},
+        {'x': 1342386000, 'y': 0.04924959844054583},
+        {'x': 1342389600, 'y': 0.05052084873949578}]
 
-        patcher = self.patch(GraphiteBackend, 'add_metrics', mock_add_metrics)
+    M2_RAW_DATAPOINTS = [
+        [None, 1342382400],
+        [1281.0, 1342386000],
+        [285.0, 1342389600]]
+    M2_PROCESSED_DATAPOINTS = [
+        {'x': 1342382400, 'y': 0},
+        {'x': 1342386000, 'y': 1281.0},
+        {'x': 1342389600, 'y': 285.0}]
+
+    def mk_graphite_backend(self, **kwargs):
         kwargs = utils.setdefaults(kwargs, {
             'from_time': 3600,
-            'graphite_url': 'fake-graphite-url',
+            'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [],
         })
         backend = GraphiteBackend(**kwargs)
-        backend.request_url = 'fake-built-request-url'
-        patcher.restore()
-
         return backend
 
-    @patch.object(GraphiteMetric, 'from_config')
-    def test_parse_config(self, mock_graphite_metric_from_config):
-        mock_graphite_metric_from_config.side_effect = (
-            lambda config, class_defaults: "%s -- created" % config)
+    def stub_getPage(self, response_data):
+        d = Deferred()
+        d.addCallback(lambda _: response_data)
+        client.getPage = Mock(return_value=d)
+
+    def test_parse_config(self):
+        helpers.stub_from_config(GraphiteMetric)
         config = {
-            'graphite_url': 'fake-graphite-url',
+            'graphite_url': 'http://some-graphite-url.moc:8080/',
             'from_time': '1h',
             'metrics': ['fake-metric-1', 'fake-metric-2']
         }
         class_defaults = {'SomeType': "some default value"}
 
         parsed_config = GraphiteBackend.parse_config(config, class_defaults)
-        self.assertEqual(
-            mock_graphite_metric_from_config.call_args_list,
-            [call('fake-metric-1', class_defaults),
-             call('fake-metric-2', class_defaults)]
-        )
         self.assertEqual(parsed_config, {
-            'graphite_url': 'fake-graphite-url',
+            'graphite_url': 'http://some-graphite-url.moc:8080/',
             'from_time': 3600,
-            'metrics': ['fake-metric-1 -- created', 'fake-metric-2 -- created']
+            'metrics': [
+                ('fake-metric-1', class_defaults),
+                ('fake-metric-2', class_defaults)]
         })
 
     def test_build_request_url(self):
@@ -86,120 +109,85 @@ class GraphiteBackendTestCase(unittest.TestCase):
              '&target=summarize%28vumi.random.count.sum'
              '%2C+%22120s%22%2C+%22sum%22%29&format=json'))
 
-    def test_add_metric(self):
-        backend = self.mk_graphite_backend(
-            graphite_url='fake-graphite-url', from_time=3600)
-        backend.build_request_url = Mock(
-            return_value='new-fake-built-request-url')
-
-        metric = mk_graphite_metric(target='some.target')
-        backend.add_metric(metric)
-
-        self.assertEqual(backend.metrics, [metric])
-        self.assertEqual(backend.request_url, 'new-fake-built-request-url')
-        backend.build_request_url.assert_called_with(
-            'fake-graphite-url', 3600, ['some.target -- wrapped'])
-
-    def test_add_metrics(self):
-        backend = self.mk_graphite_backend(
-            graphite_url='fake-graphite-url', from_time=3600)
-        backend.build_request_url = Mock(
-            return_value='new-fake-built-request-url')
-
-        m1 = mk_graphite_metric(target='some.target')
-        m2 = mk_graphite_metric(target='some.other.target')
-        backend.add_metrics([m1, m2])
-
-        self.assertEqual(backend.metrics, [m1, m2])
-        self.assertEqual(backend.request_url, 'new-fake-built-request-url')
-        backend.build_request_url.assert_called_with(
-            'fake-graphite-url',
-            3600,
-            ['some.target -- wrapped', 'some.other.target -- wrapped'])
-
-    @patch.object(client, 'getPage')
-    def test_get_data(self, mock_getPage):
-        def assert_handle_render_request(result):
-            mock_getPage.assert_called_with('fake-request-url')
-            m1.process_datapoints.assert_called_with(m1_raw_datapoints)
-            m2.process_datapoints.assert_called_with(m2_raw_datapoints)
-            self.assertEqual(
-                result,
-                [{'metadata': {'some-field': 'lorem'},
-                  'datapoints': m1_processed_datapoints},
-                 {'metadata': {'some-field': 'ipsum'},
-                  'datapoints': m2_processed_datapoints}])
-
+    def test_get_data(self):
         m1 = mk_graphite_metric(
             target='some.target',
             metadata={'some-field': 'lorem'})
-        m1_raw_datapoints = [
-            [None, 1342382400],
-            [0.04924959844054583, 1342386000],
-            [0.05052084873949578, 1342389600]]
-        m1_processed_datapoints = [
-            {'x': 1342382400, 'y': 0},
-            {'x': 1342386000, 'y': 0.04924959844054583},
-            {'x': 1342389600, 'y': 0.05052084873949578}]
-        m1.process_datapoints = Mock(return_value=m1_processed_datapoints)
-
         m2 = mk_graphite_metric(
             target='some.other.target',
             metadata={'some-field': 'ipsum'})
-        m2_raw_datapoints = [
-            [None, 1342382400],
-            [1281.0, 1342386000],
-            [285.0, 1342389600]]
-        m2_processed_datapoints = [
-            {'x': 0, 'y': 0},
-            {'x': 1342386000, 'y': 1281.0},
-            {'x': 1342389600, 'y': 285.0}]
-        m2.process_datapoints = Mock(return_value=m2_processed_datapoints)
 
         response_data = json.dumps([
-            {"target": "some.target", "datapoints": m1_raw_datapoints},
-            {"target": "some.other.target", "datapoints": m2_raw_datapoints}])
-
-        d = Deferred()
-        d.addCallback(lambda _: response_data)
-        mock_getPage.return_value = d
+            {"target": "some.target",
+             "datapoints": self.M1_RAW_DATAPOINTS},
+            {"target": "some.other.target",
+             "datapoints": self.M2_RAW_DATAPOINTS}])
+        self.stub_getPage(response_data)
 
         backend = self.mk_graphite_backend(
-            graphite_url='fake-graphite-url',
+            graphite_url='http://some-graphite-url.moc:8080/',
             from_time=3600,
             metrics=[m1, m2])
-        backend.request_url = 'fake-request-url'
-
         deferredResult = backend.get_data()
+
+        def assert_handle_render_request(result):
+            client.getPage.assert_called_with(
+                "http://some-graphite-url.moc:8080/render/?from=-3600s"
+                "&target=alias%28summarize%28some.target%2C+%223600s"
+                "%22%2C+%22avg%22%29%2C+%22some.target%22%29"
+                "&target=alias%28summarize%28some.other.target"
+                "%2C+%223600s%22%2C+%22avg%22%29%2C+%22"
+                "some.other.target%22%29&format=json")
+            self.assertEqual(
+                result,
+                [{'metadata': {'some-field': 'lorem'},
+                  'datapoints': self.M1_PROCESSED_DATAPOINTS},
+                 {'metadata': {'some-field': 'ipsum'},
+                  'datapoints': self.M2_PROCESSED_DATAPOINTS}])
         deferredResult.addCallback(assert_handle_render_request)
+
         deferredResult.callback(None)
         return deferredResult
 
-    @patch.object(client, 'getPage')
-    def test_get_data_for_kwargs(self, mock_getPage):
-        def assert_handle_render_request(result):
-            backend.build_request_url.assert_called_with(
-                'fake-custom-graphite-url',
-                7200,
-                ['some.target -- wrapped', 'some.other.target -- wrapped'])
-            mock_getPage.assert_called_with('new-fake-built-request-url')
+    def test_get_data_for_kwargs(self):
+        m1 = mk_graphite_metric(
+            target='some.target',
+            metadata={'some-field': 'lorem'})
+        m2 = mk_graphite_metric(
+            target='some.other.target',
+            metadata={'some-field': 'ipsum'})
 
-        d = Deferred()
-        d.addCallback(lambda _: 'fake-getPage-response')
-        mock_getPage.return_value = d
+        response_data = json.dumps([
+            {"target": "some.target",
+             "datapoints": self.M1_RAW_DATAPOINTS},
+            {"target": "some.other.target",
+             "datapoints": self.M2_RAW_DATAPOINTS}])
+        self.stub_getPage(response_data)
 
-        metrics = [mk_graphite_metric(target='some.target'),
-                   mk_graphite_metric(target='some.other.target')]
         backend = self.mk_graphite_backend(
-            graphite_url='fake-graphite-url', metrics=metrics)
-        backend.handle_graphite_response = Mock()  # covered in test_get_data()
-        backend.build_request_url = Mock(
-            return_value='new-fake-built-request-url')
-
+            graphite_url='http://some-graphite-url.moc:8080/',
+            from_time=3600,
+            metrics=[m1, m2])
         deferredResult = backend.get_data(
-            graphite_url='fake-custom-graphite-url',
+            graphite_url='http://some-new-graphite-url.moc:7112/',
             from_time='2h')
+
+        def assert_handle_render_request(result):
+            client.getPage.assert_called_with(
+                "http://some-new-graphite-url.moc:7112/render/?from=-7200s"
+                "&target=alias%28summarize%28some.target%2C+%223600s"
+                "%22%2C+%22avg%22%29%2C+%22some.target%22%29"
+                "&target=alias%28summarize%28some.other.target"
+                "%2C+%223600s%22%2C+%22avg%22%29%2C+%22"
+                "some.other.target%22%29&format=json")
+            self.assertEqual(
+                result,
+                [{'metadata': {'some-field': 'lorem'},
+                  'datapoints': self.M1_PROCESSED_DATAPOINTS},
+                 {'metadata': {'some-field': 'ipsum'},
+                  'datapoints': self.M2_PROCESSED_DATAPOINTS}])
         deferredResult.addCallback(assert_handle_render_request)
+
         deferredResult.callback(None)
         return deferredResult
 
@@ -234,8 +222,7 @@ class GraphiteMetricTestCase(unittest.TestCase):
 
         self.assertEqual(GraphiteMetric.zeroize_nulls(input), expected)
 
-    @patch.object(GraphiteMetric, 'format_metric_target')
-    def test_parse_config(self, mock_format_metric_target):
+    def test_parse_config(self):
         config = {
             'target': 'some.target',
             'bucket_size': '1h',
@@ -244,14 +231,13 @@ class GraphiteMetricTestCase(unittest.TestCase):
         }
         class_defaults = {'SomeType': "some default value"}
 
-        mock_format_metric_target.return_value = 'some.target -- wrapped'
         new_config = GraphiteMetric.parse_config(config, class_defaults)
-        mock_format_metric_target.assert_called_with('some.target', 3600)
         self.assertEqual(new_config, {
             'target': 'some.target',
             'bucket_size': 3600,
             'null_filter': 'zeroize',
-            'wrapped_target': 'some.target -- wrapped',
+            'wrapped_target': ('alias(summarize(some.target, "3600s", "avg"), '
+                               '"some.target")'),
             'metadata': {'name': 'luke-the-metric'}
         })
 
@@ -268,20 +254,13 @@ class GraphiteMetricTestCase(unittest.TestCase):
             [None, 1342382400],
             [0.04924959844054583, 1342386000],
             [0.05052084873949578, 1342389600]]
-        null_filtered_datapoints = [
-            [0, 1342382400],
-            [0.04924959844054583, 1342386000],
-            [0.05052084873949578, 1342389600]]
-        mock_filter_nulls = Mock(return_value=null_filtered_datapoints)
-        metric = mk_graphite_metric()
-        metric.filter_nulls = mock_filter_nulls
+        metric = mk_graphite_metric(null_filter='zeroize')
 
         expected_processed_datapoints = [
             {'x': 1342382400, 'y': 0},
             {'x': 1342386000, 'y': 0.04924959844054583},
             {'x': 1342389600, 'y': 0.05052084873949578}]
         processed_datapoints = metric.process_datapoints(datapoints)
-        mock_filter_nulls.assert_called_with(datapoints)
         self.assertEqual(processed_datapoints, expected_processed_datapoints)
 
     def test_format_metric_target(self):
@@ -346,13 +325,3 @@ class GraphiteUtilsTestCase(unittest.TestCase):
         assert_agg_method('somefunc("foo.max", foo.min)', "min")
         assert_agg_method('foo(bar(baz.min), baz.max)', "min")
         assert_agg_method('foo(bar("baz.min"), baz.max)', "max")
-
-
-def mk_graphite_metric(target='some.target', **kwargs):
-    kwargs = utils.setdefaults(kwargs, {
-        'target': target,
-        'wrapped_target': '%s -- wrapped' % target,
-        'null_filter': 'zeroize',
-        'metadata': {},
-    })
-    return GraphiteMetric(**kwargs)
