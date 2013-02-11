@@ -24,6 +24,8 @@ def mk_graphite_metric(target='some.target', **kwargs):
 
 
 class GraphiteBackendTestCase(unittest.TestCase):
+    M1_TARGET = 'some.target'
+    M1_METADATA = {'some-field': 'lorem'}
     M1_RAW_DATAPOINTS = [
         [None, 1342382400],
         [0.04924959844054583, 1342386000],
@@ -33,6 +35,8 @@ class GraphiteBackendTestCase(unittest.TestCase):
         {'x': 1342386000, 'y': 0.04924959844054583},
         {'x': 1342389600, 'y': 0.05052084873949578}]
 
+    M2_TARGET = 'some.other.target'
+    M2_METADATA = {'some-field': 'ipsum'}
     M2_RAW_DATAPOINTS = [
         [None, 1342382400],
         [1281.0, 1342386000],
@@ -42,18 +46,29 @@ class GraphiteBackendTestCase(unittest.TestCase):
         {'x': 1342386000, 'y': 1281.0},
         {'x': 1342389600, 'y': 285.0}]
 
+    RESPONSE_DATA = json.dumps([
+        {"target": M1_TARGET, "datapoints": M1_RAW_DATAPOINTS},
+        {"target": M2_TARGET, "datapoints": M2_RAW_DATAPOINTS}])
+
+    def setUp(self):
+        self.m1 = mk_graphite_metric(
+            target=self.M1_TARGET, metadata=self.M1_METADATA)
+        self.m2 = mk_graphite_metric(
+            target=self.M2_TARGET, metadata=self.M2_METADATA)
+        self.stub_getPage()
+
     def mk_graphite_backend(self, **kwargs):
         kwargs = utils.setdefaults(kwargs, {
             'from_time': 3600,
             'graphite_url': 'http://some-graphite-url.moc:8080/',
-            'metrics': [],
+            'metrics': [self.m1, self.m2],
         })
         backend = GraphiteBackend(**kwargs)
         return backend
 
-    def stub_getPage(self, response_data):
+    def stub_getPage(self):
         d = Deferred()
-        d.addCallback(lambda _: response_data)
+        d.addCallback(lambda _: self.RESPONSE_DATA)
         client.getPage = Mock(return_value=d)
 
     def test_parse_config(self):
@@ -109,85 +124,37 @@ class GraphiteBackendTestCase(unittest.TestCase):
              '&target=summarize%28vumi.random.count.sum'
              '%2C+%22120s%22%2C+%22sum%22%29&format=json'))
 
+    def assert_handle_render_request(self, result, base_url, from_time):
+        client.getPage.assert_called_with(
+            "%s/render/?from=-%ss" % (base_url, from_time) +
+            "&target=alias%28summarize%28some.target%2C+%223600s"
+            "%22%2C+%22avg%22%29%2C+%22some.target%22%29"
+            "&target=alias%28summarize%28some.other.target"
+            "%2C+%223600s%22%2C+%22avg%22%29%2C+%22"
+            "some.other.target%22%29&format=json")
+        self.assertEqual(
+            result,
+            [{'metadata': self.M1_METADATA,
+              'datapoints': self.M1_PROCESSED_DATAPOINTS},
+             {'metadata': self.M2_METADATA,
+              'datapoints': self.M2_PROCESSED_DATAPOINTS}])
+
     def test_get_data(self):
-        m1 = mk_graphite_metric(
-            target='some.target',
-            metadata={'some-field': 'lorem'})
-        m2 = mk_graphite_metric(
-            target='some.other.target',
-            metadata={'some-field': 'ipsum'})
-
-        response_data = json.dumps([
-            {"target": "some.target",
-             "datapoints": self.M1_RAW_DATAPOINTS},
-            {"target": "some.other.target",
-             "datapoints": self.M2_RAW_DATAPOINTS}])
-        self.stub_getPage(response_data)
-
-        backend = self.mk_graphite_backend(
-            graphite_url='http://some-graphite-url.moc:8080/',
-            from_time=3600,
-            metrics=[m1, m2])
+        base_url = 'http://some-graphite-url.moc:8080'
+        backend = self.mk_graphite_backend()
         deferredResult = backend.get_data()
-
-        def assert_handle_render_request(result):
-            client.getPage.assert_called_with(
-                "http://some-graphite-url.moc:8080/render/?from=-3600s"
-                "&target=alias%28summarize%28some.target%2C+%223600s"
-                "%22%2C+%22avg%22%29%2C+%22some.target%22%29"
-                "&target=alias%28summarize%28some.other.target"
-                "%2C+%223600s%22%2C+%22avg%22%29%2C+%22"
-                "some.other.target%22%29&format=json")
-            self.assertEqual(
-                result,
-                [{'metadata': {'some-field': 'lorem'},
-                  'datapoints': self.M1_PROCESSED_DATAPOINTS},
-                 {'metadata': {'some-field': 'ipsum'},
-                  'datapoints': self.M2_PROCESSED_DATAPOINTS}])
-        deferredResult.addCallback(assert_handle_render_request)
-
+        deferredResult.addCallback(
+            self.assert_handle_render_request, base_url, 3600)
         deferredResult.callback(None)
         return deferredResult
 
     def test_get_data_for_kwargs(self):
-        m1 = mk_graphite_metric(
-            target='some.target',
-            metadata={'some-field': 'lorem'})
-        m2 = mk_graphite_metric(
-            target='some.other.target',
-            metadata={'some-field': 'ipsum'})
-
-        response_data = json.dumps([
-            {"target": "some.target",
-             "datapoints": self.M1_RAW_DATAPOINTS},
-            {"target": "some.other.target",
-             "datapoints": self.M2_RAW_DATAPOINTS}])
-        self.stub_getPage(response_data)
-
-        backend = self.mk_graphite_backend(
-            graphite_url='http://some-graphite-url.moc:8080/',
-            from_time=3600,
-            metrics=[m1, m2])
+        backend = self.mk_graphite_backend()
+        base_url = 'http://some-new-graphite-url.moc:7112'
         deferredResult = backend.get_data(
-            graphite_url='http://some-new-graphite-url.moc:7112/',
-            from_time='2h')
-
-        def assert_handle_render_request(result):
-            client.getPage.assert_called_with(
-                "http://some-new-graphite-url.moc:7112/render/?from=-7200s"
-                "&target=alias%28summarize%28some.target%2C+%223600s"
-                "%22%2C+%22avg%22%29%2C+%22some.target%22%29"
-                "&target=alias%28summarize%28some.other.target"
-                "%2C+%223600s%22%2C+%22avg%22%29%2C+%22"
-                "some.other.target%22%29&format=json")
-            self.assertEqual(
-                result,
-                [{'metadata': {'some-field': 'lorem'},
-                  'datapoints': self.M1_PROCESSED_DATAPOINTS},
-                 {'metadata': {'some-field': 'ipsum'},
-                  'datapoints': self.M2_PROCESSED_DATAPOINTS}])
-        deferredResult.addCallback(assert_handle_render_request)
-
+            graphite_url=base_url, from_time='2h')
+        deferredResult.addCallback(
+            self.assert_handle_render_request, base_url, 7200)
         deferredResult.callback(None)
         return deferredResult
 
