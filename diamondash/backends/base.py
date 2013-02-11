@@ -1,4 +1,4 @@
-from diamondash import ConfigMixin, NotImplementedError
+from diamondash import ConfigMixin
 from diamondash import utils
 
 
