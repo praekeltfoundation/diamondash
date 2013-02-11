@@ -1,3 +1,3 @@
-__all__ = ['ConfigMixin', 'ConfigError', 'NotImplementedError']
+__all__ = ['ConfigMixin', 'ConfigError']
 
-from diamondash.base import ConfigMixin, ConfigError, NotImplementedError
+from diamondash.base import ConfigMixin, ConfigError

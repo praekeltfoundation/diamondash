@@ -3,7 +3,7 @@ from pkg_resources import resource_string
 from twisted.web.template import Element
 from twisted.web.template import XMLString
 
-from diamondash import utils, ConfigMixin, ConfigError, NotImplementedError
+from diamondash import utils, ConfigMixin, ConfigError
 
 
 class Widget(Element, ConfigMixin):
