@@ -3,7 +3,6 @@
 from os import path
 from pkg_resources import resource_filename
 
-from mock import Mock
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -18,10 +17,21 @@ _test_data_dir = resource_filename(__name__, 'test_server_data/')
 class StubbedDashboard(Dashboard):
     def add_widget(self, widget):
         self.widgets.append(widget)
+        self.widgets_by_name[widget.name] = widget
 
     @classmethod
     def dashboards_from_dir(cls, dashboards_dir, defaults=None):
         return ['fake-dashboards']
+
+
+def mk_dashboard(**kwargs):
+    kwargs = utils.setdefaults(kwargs, {
+        'name': 'some-dashboard',
+        'title': 'Some Dashboard',
+        'widgets': [],
+        'client_config': {},
+    })
+    return StubbedDashboard(**kwargs)
 
 
 class ToyWidget(Widget):
@@ -36,10 +46,9 @@ class ServerTestCase(unittest.TestCase):
         Should route the render request to the appropriate widget on the
         appropropriate dashboard.
         """
-        widget = ToyWidget(name='test-widget', title='title', client_config={},
-                           width=2)
+        widget = ToyWidget(
+            name='test-widget', title='title', client_config={}, width=2)
         dashboard = mk_dashboard(widgets=[widget])
-        dashboard.get_widget = Mock(return_value=widget)
 
         dd_server = DiamondashServer([], None)
         dd_server.dashboards_by_name['some-dashboard'] = dashboard
@@ -66,8 +75,6 @@ class ServerTestCase(unittest.TestCase):
         Should return an empty JSON object if the widget does not exist.
         """
         dashboard = mk_dashboard()
-        dashboard.get_widget = Mock(return_value=None)
-
         dd_server = DiamondashServer([], None)
         dd_server.dashboards_by_name['some-dashboard'] = dashboard
         server.server = dd_server
@@ -166,13 +173,3 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         """
         item = StubbedDashboardIndexListItem.from_dashboard(mk_dashboard())
         self.assertEqual(item.shared_url_tag, '')
-
-
-def mk_dashboard(**kwargs):
-    kwargs = utils.setdefaults(kwargs, {
-        'name': 'some-dashboard',
-        'title': 'Some Dashboard',
-        'widgets': [],
-        'client_config': {},
-    })
-    return StubbedDashboard(**kwargs)
