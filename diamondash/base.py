@@ -24,7 +24,7 @@ class ConfigMixin(object):
         new_class_defaults = {}
         for config_tag, defaults in class_defaults.iteritems():
             new_class_defaults[config_tag] = utils.update_dict(
-                overrides.get(config_tag, {}), defaults)
+                defaults, overrides.get(config_tag, {}))
 
         return new_class_defaults
 

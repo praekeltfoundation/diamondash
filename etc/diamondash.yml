@@ -3,4 +3,4 @@ defaults:
         request_interval: '10s'
 
     diamondash.backends.graphite.GraphiteBackend:
-        graphite_url: "http://127.0.0.1:7110"
+        graphite_url: "http://127.0.0.1:8080"

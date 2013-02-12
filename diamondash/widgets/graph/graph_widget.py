@@ -27,7 +27,7 @@ class GraphWidget(Widget):
     def parse_config(cls, config, class_defaults={}):
         config = super(GraphWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
         metric_configs = config.pop('metrics', None)
         if metric_configs is None:
@@ -76,10 +76,10 @@ class GraphWidget(Widget):
         return config
 
     def process_backend_response(self, metric_data):
-        x_values = [d['x'] for m in metric_data for d in m['datapoints']] + [0]
-        y_values = [d['y'] for m in metric_data for d in m['datapoints']] + [0]
-        domain = (min(x_values), max(x_values))
-        range = (min(y_values), max(y_values))
+        x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
+        y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
+        domain = (min(x_vals), max(x_vals))
+        range = (min(y_vals), max(y_vals))
 
         output_metric_data = [{
             'name': m['metadata']['name'],

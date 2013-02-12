@@ -31,7 +31,7 @@ class LValueWidget(Widget):
     def parse_config(cls, config, class_defaults={}):
         config = super(LValueWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
         # Set the bucket size to the passed in time range (for eg, if 1d was
         # the time range, the data for the entire day would be aggregated).

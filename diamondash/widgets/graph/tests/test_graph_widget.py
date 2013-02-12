@@ -11,13 +11,13 @@ from diamondash.tests import helpers
 class GraphWidgetTestCase(unittest.TestCase):
     @staticmethod
     def mk_graph_widget(**kwargs):
-        kwargs = utils.update_dict(kwargs, {
+        kwargs = utils.update_dict({
             'name': 'some-widget',
             'title': 'Some Widget',
             'client_config': {},
             'width': 2,
             'backend': None
-        })
+        }, kwargs)
         return GraphWidget(**kwargs)
 
     def test_parse_config(self):

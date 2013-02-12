@@ -25,12 +25,12 @@ class StubbedDashboard(Dashboard):
 
 
 def mk_dashboard(**kwargs):
-    kwargs = utils.update_dict(kwargs, {
+    kwargs = utils.update_dict({
         'name': 'some-dashboard',
         'title': 'Some Dashboard',
         'widgets': [],
         'client_config': {},
-    })
+    }, kwargs)
     return StubbedDashboard(**kwargs)
 
 

@@ -60,7 +60,7 @@ class Dashboard(Element, ConfigMixin):
         class_defaults = cls.override_class_defaults(
             class_defaults, config.pop('defaults', {}))
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
         name = config.get('name', None)
         if name is None:

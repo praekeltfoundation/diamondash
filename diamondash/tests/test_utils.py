@@ -36,7 +36,7 @@ class UtilsTestCase(unittest.TestCase):
         original = {'a': 1}
         defaults = {'a': 0, 'b': 2}
         self.assertEqual(
-            utils.update_dict(original, defaults), {'a': 1, 'b': 2})
+            utils.update_dict(defaults, original), {'a': 1, 'b': 2})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults, {'a': 0, 'b': 2})
 
@@ -44,7 +44,7 @@ class UtilsTestCase(unittest.TestCase):
         defaults1 = {'a': 0, 'b': 2}
         defaults2 = {'b': 3, 'c': 4}
         self.assertEqual(
-            utils.update_dict(original, defaults1, defaults2),
+            utils.update_dict(defaults1, defaults2, original),
             {'a': 1, 'b': 3, 'c': 4})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults1, {'a': 0, 'b': 2})

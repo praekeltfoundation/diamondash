@@ -14,12 +14,12 @@ from diamondash.tests import helpers
 def mk_graphite_metric(target='some.target', **kwargs):
     wrapped_target = (
         'alias(summarize(%s, "3600s", "avg"), "%s")' % (target, target))
-    kwargs = utils.update_dict(kwargs, {
+    kwargs = utils.update_dict({
         'target': target,
         'wrapped_target': wrapped_target,
         'null_filter': 'zeroize',
         'metadata': {},
-    })
+    }, kwargs)
     return GraphiteMetric(**kwargs)
 
 
@@ -58,11 +58,11 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.stub_getPage()
 
     def mk_graphite_backend(self, **kwargs):
-        kwargs = utils.update_dict(kwargs, {
+        kwargs = utils.update_dict({
             'from_time': 3600,
             'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [self.m1, self.m2],
-        })
+        }, kwargs)
         backend = GraphiteBackend(**kwargs)
         return backend
 

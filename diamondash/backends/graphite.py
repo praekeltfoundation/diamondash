@@ -31,7 +31,7 @@ class GraphiteBackend(Backend):
         config = super(GraphiteBackend, cls).parse_config(
             config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
         config['from_time'] = utils.parse_interval(config['from_time'])
         config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
@@ -160,7 +160,7 @@ class GraphiteMetric(ConfigMixin):
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
         target = config.get('target')
         if target is None:

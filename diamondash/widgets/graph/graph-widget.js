@@ -59,8 +59,8 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
 });
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({
-  svgHeight: 180,
-  axisHeight: 12,
+  svgHeight: 194,
+  axisHeight: 24,
   timeMarkerWidth: 132,
   margin: {top: 4, right: 4, bottom: 4, left: 4},
 
@@ -117,7 +117,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
 
     this.xAxisLine = svg.append("g")
       .attr('class', 'x axis')
-      .attr('transform', "translate(0," + (svgHeight - axisHeight - 12) + ")")
+      .attr('transform', "translate(0," + (svgHeight - axisHeight) + ")")
       .call(xAxis);
 
     // Legend Setup
