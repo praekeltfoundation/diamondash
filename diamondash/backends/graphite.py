@@ -12,10 +12,7 @@ from diamondash.backends import Backend
 class GraphiteBackend(Backend):
     """Abstract widget for displaying metric data from graphite."""
 
-    __DEFAULTS = {
-        'graphite_url': 'http://127.0.0.1:8080',
-        'from_time': '1d',
-    }
+    __DEFAULTS = {'from_time': '1d'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
 
     def __init__(self, graphite_url, from_time, metrics=[]):
@@ -32,6 +29,10 @@ class GraphiteBackend(Backend):
             config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
         config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+
+        if 'graphite_url' not in config:
+            raise ConfigError(
+                "GraphiteBackend needs a 'graphite_url' config field.")
 
         config['from_time'] = utils.parse_interval(config['from_time'])
         config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)

@@ -89,6 +89,10 @@ class GraphiteBackendTestCase(unittest.TestCase):
                 ('fake-metric-2', class_defaults)]
         })
 
+    def test_parse_config_for_no_graphite_url(self):
+        self.assertRaises(
+            ConfigError, GraphiteBackend.parse_config, {'from_time': '1h'})
+
     def test_build_request_url(self):
         """
         Should build a render request url that can be used to get metric data
