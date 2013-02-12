@@ -13,9 +13,9 @@ class TextWidget(Widget):
     MIN_COLUMN_SPAN = 2
     STYLESHEETS = ('text/style.css',)
 
-    def __init__(self, **kwargs):
+    def __init__(self, text, **kwargs):
         super(TextWidget, self).__init__(**kwargs)
-        self.text = kwargs['text']
+        self.text = text
 
     @renderer
     def text_renderer(self, request, tag):

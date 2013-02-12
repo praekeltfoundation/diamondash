@@ -12648,12 +12648,17 @@ diamondash.DashboardController = (function() {
       });
     };
 
+    var fetchModel = function(model) { return model.fetch(); };
+
     DashboardController.prototype = {
+      fetch: function() { this.widgets.forEach(fetchModel); },
       start: function() {
         var self = this;
-        var fetch = function(model) { return model.fetch(); };
-        setInterval(function() { self.widgets.forEach(fetch); },
-                    this.requestInterval);
+
+        self.fetch();
+        setInterval(
+          function() { self.fetch.call(self); },
+          this.requestInterval);
       }
     };
 

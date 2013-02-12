@@ -19,30 +19,30 @@ class GraphWidget(Widget):
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
 
-    def __init__(self, **kwargs):
+    def __init__(self, backend, **kwargs):
         super(GraphWidget, self).__init__(**kwargs)
-        self.backend = kwargs['backend']
+        self.backend = backend
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         config = super(GraphWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
-        metric_configs = config.get('metrics')
+        metric_configs = config.pop('metrics', None)
         if metric_configs is None:
             raise ConfigError(
                 'Graph Widget "%s" needs metrics.' % config['name'])
 
-        metric_defaults = config.get('metric_defaults', {})
-        metric_defaults['bucket_size'] = config['bucket_size']
+        metric_defaults = config.pop('metric_defaults', {})
+        metric_defaults['bucket_size'] = config.pop('bucket_size')
         metric_configs = [cls.parse_metric_config(m, metric_defaults)
                           for m in metric_configs]
 
         # We have this set to use the Graphite backend for now, but the type of
         # backend could be made configurable in future
         config['backend'] = GraphiteBackend.from_config({
-            'from_time': config['time_range'],
+            'from_time': config.pop('time_range'),
             'metrics': metric_configs
         }, class_defaults)
 
@@ -57,7 +57,7 @@ class GraphWidget(Widget):
         Parses a metric config given in a graph config into a config useable by
         the backend.
         """
-        config = utils.setdefaults(config, metric_defaults)
+        config = utils.update_dict(config, metric_defaults)
 
         name = config.pop('name')
         if name is None:

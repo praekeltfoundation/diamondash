@@ -26,7 +26,7 @@ class ToyWidget(Widget):
 
 class DashboardTestCase(unittest.TestCase):
     def mk_dashboard(self, **kwargs):
-        kwargs = utils.setdefaults(kwargs, {
+        kwargs = utils.update_dict(kwargs, {
             'name': 'some-dashboard',
             'title': 'Some Dashboard',
             'widgets': [],

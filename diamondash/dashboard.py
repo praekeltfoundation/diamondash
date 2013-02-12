@@ -29,12 +29,13 @@ class Dashboard(Element, ConfigMixin):
     # the max number of columns allowed by Bootstrap's grid system
     MAX_WIDTH = 12
 
-    def __init__(self, **kwargs):
-        self.name = kwargs['name']
-        self.title = kwargs['title']
-        self.share_id = kwargs.get('share_id')
+    def __init__(self, name, title, client_config, share_id=None, widgets=[],
+                 template_filepath=None):
+        self.name = name
+        self.title = title
+        self.share_id = share_id
 
-        self.client_config = kwargs['client_config']
+        self.client_config = client_config
         self.client_config.setdefault('widgets', [])
 
         self.widgets = []
@@ -45,12 +46,12 @@ class Dashboard(Element, ConfigMixin):
         self.stylesheets = set()
         self.javascripts = set()
 
-        template_filepath = kwargs.get('template_filepath')
+        template_filepath = template_filepath
         if template_filepath is None:
             template_filepath = self.DEFAULT_TEMPLATE_FILEPATH
         self.loader = XMLString(open(template_filepath).read())
 
-        for widget in kwargs.get('widgets', []):
+        for widget in widgets:
             self.add_widget(widget)
 
     @classmethod
@@ -59,7 +60,7 @@ class Dashboard(Element, ConfigMixin):
         class_defaults = cls.override_class_defaults(
             class_defaults, config.pop('defaults', {}))
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
         name = config.get('name', None)
         if name is None:
@@ -74,7 +75,7 @@ class Dashboard(Element, ConfigMixin):
         config['client_config'] = {
             'name': name,
             'requestInterval': (
-                utils.parse_interval(config['request_interval']) * 1000),
+                utils.parse_interval(config.pop('request_interval')) * 1000),
         }
 
         if 'widgets' not in config:

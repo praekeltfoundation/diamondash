@@ -22,16 +22,16 @@ class LValueWidget(Widget):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
-    def __init__(self, **kwargs):
+    def __init__(self, backend, time_range, **kwargs):
         super(LValueWidget, self).__init__(**kwargs)
-        self.backend = kwargs['backend']
-        self.time_range = kwargs['time_range']
+        self.backend = backend
+        self.time_range = time_range
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         config = super(LValueWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
         # Set the bucket size to the passed in time range (for eg, if 1d was
         # the time range, the data for the entire day would be aggregated).
@@ -49,7 +49,7 @@ class LValueWidget(Widget):
         config['backend'] = GraphiteBackend.from_config({
             'from_time': from_time,
             'metrics': [{
-                'target': config.get('target'),
+                'target': config.pop('target'),
                 'bucket_size': time_range,
                 'null_filter': 'zeroize',
             }]

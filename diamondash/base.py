@@ -23,7 +23,7 @@ class ConfigMixin(object):
         """
         new_class_defaults = {}
         for config_tag, defaults in class_defaults.iteritems():
-            new_class_defaults[config_tag] = utils.setdefaults(
+            new_class_defaults[config_tag] = utils.update_dict(
                 overrides.get(config_tag, {}), defaults)
 
         return new_class_defaults
@@ -40,7 +40,7 @@ class ConfigMixin(object):
     def parse_config(cls, config, class_defaults={}):
         """Parses a config, altering it where necessary."""
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
         return config
 
 

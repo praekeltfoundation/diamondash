@@ -18,20 +18,20 @@ class GraphiteBackend(Backend):
     }
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
 
-    def __init__(self, **kwargs):
-        self.graphite_url = kwargs['graphite_url']
-        self.from_time = kwargs['from_time']
+    def __init__(self, graphite_url, from_time, metrics=[]):
+        self.graphite_url = graphite_url
+        self.from_time = from_time
 
         self.metrics = []
         self.metrics_by_target = {}
-        self.add_metrics(kwargs.get('metrics', []))
+        self.add_metrics(metrics)
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         config = super(GraphiteBackend, cls).parse_config(
             config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
         config['from_time'] = utils.parse_interval(config['from_time'])
         config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
@@ -134,11 +134,11 @@ class GraphiteMetric(ConfigMixin):
     __DEFAULTS = {'null_filter': 'skip'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
 
-    def __init__(self, **kwargs):
-        self.target = kwargs['target']
-        self.wrapped_target = kwargs['wrapped_target']
-        self.set_null_filter(kwargs['null_filter'])
-        self.metadata = kwargs['metadata']
+    def __init__(self, target, wrapped_target, null_filter, metadata):
+        self.target = target
+        self.wrapped_target = wrapped_target
+        self.set_null_filter(null_filter)
+        self.metadata = metadata
 
     def set_null_filter(self, filter_name):
         self.filter_nulls = {
@@ -160,16 +160,15 @@ class GraphiteMetric(ConfigMixin):
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
         target = config.get('target')
         if target is None:
             raise ConfigError("All metrics need a target")
 
-        bucket_size = config.get('bucket_size')
+        bucket_size = config.pop('bucket_size', None)
         if bucket_size is not None:
             bucket_size = utils.parse_interval(bucket_size)
-            config['bucket_size'] = bucket_size
             config['wrapped_target'] = cls.format_metric_target(
                 target, bucket_size)
         else:

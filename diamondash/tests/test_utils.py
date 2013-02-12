@@ -32,48 +32,11 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(7200, utils.parse_interval("2h"))
         self.assertEqual(86400 * 2, utils.parse_interval("2d"))
 
-    def test_set_key_defaults(self):
-        """
-        Should return a dict with the appropriate key's defaults, overidden
-        with the original dict.
-        """
-        config = {'some_config_option': 23}
-        defaults = {
-            'a': {
-                'some_config_option': 42,
-                'some_other_config_option': 182,
-            },
-            'b': {
-                'some_config_option': 22,
-                'another_config_option': 21,
-            },
-        }
-
-        new_config = utils.set_key_defaults('a', config, defaults)
-
-        self.assertEqual(new_config, {
-            'some_config_option': 23,
-            'some_other_config_option': 182,
-        })
-
-        self.assertEqual(config, {'some_config_option': 23})
-
-        self.assertEqual(defaults, {
-            'a': {
-                'some_config_option': 42,
-                'some_other_config_option': 182,
-            },
-            'b': {
-                'some_config_option': 22,
-                'another_config_option': 21,
-            },
-        })
-
-    def test_setdefaults(self):
+    def test_update_dict(self):
         original = {'a': 1}
         defaults = {'a': 0, 'b': 2}
         self.assertEqual(
-            utils.setdefaults(original, defaults), {'a': 1, 'b': 2})
+            utils.update_dict(original, defaults), {'a': 1, 'b': 2})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults, {'a': 0, 'b': 2})
 
@@ -81,27 +44,8 @@ class UtilsTestCase(unittest.TestCase):
         defaults1 = {'a': 0, 'b': 2}
         defaults2 = {'b': 3, 'c': 4}
         self.assertEqual(
-            utils.setdefaults(original, defaults1, defaults2),
+            utils.update_dict(original, defaults1, defaults2),
             {'a': 1, 'b': 3, 'c': 4})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults1, {'a': 0, 'b': 2})
         self.assertEqual(defaults2, {'b': 3, 'c': 4})
-
-    def test_find_dict_by_item(self):
-        def assert_dict(dict_list, key, value, expected_dict):
-            self.assertEqual(utils.find_dict_by_item(dict_list, key, value),
-                             expected_dict)
-
-        assert_dict(
-            [{'a': 1, 'b': 2, 'c': 3},
-             {'a': 2, 'b': 4, 'c': 6},
-             {'a': 3, 'b': 6, 'c': 9}],
-            'b', 4,
-             {'a': 2, 'b': 4, 'c': 6})
-
-        assert_dict(
-            [{'a': 1, 'b': 2, 'c': 3},
-             {'a': 2, 'b': 4, 'c': 6},
-             {'a': 3, 'b': 6, 'c': 9}],
-            'b', 8,
-            None)

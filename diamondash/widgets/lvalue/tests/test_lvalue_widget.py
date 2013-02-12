@@ -11,13 +11,12 @@ from diamondash.tests import helpers
 class LValueWidgetTestCase(unittest.TestCase):
     @staticmethod
     def mk_lvalue_widget(**kwargs):
-        kwargs = utils.setdefaults(kwargs, {
+        kwargs = utils.update_dict(kwargs, {
             'name': 'some-widget',
             'title': 'Some Widget',
             'client_config': {},
             'width': 2,
             'time_range': 3600,
-            'bucket_size': 60,
             'backend': None
         })
         return LValueWidget(**kwargs)

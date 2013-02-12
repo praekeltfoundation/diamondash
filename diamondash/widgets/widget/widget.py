@@ -21,18 +21,17 @@ class Widget(Element, ConfigMixin):
     MODEL = 'WidgetModel'
     VIEW = 'WidgetView'
 
-    def __init__(self, **kwargs):
-        self.name = kwargs['name']
-        self.title = kwargs['title']
-        self.client_config = kwargs['client_config']
-        self.width = kwargs['width']
-        self.backends = kwargs.get('backends')
+    def __init__(self, name, title, client_config, width):
+        self.name = name
+        self.title = title
+        self.client_config = client_config
+        self.width = width
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         """Parses a widget config, altering it where necessary."""
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.setdefaults(config, cls.__DEFAULTS, defaults)
+        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
 
         name = config.get('name', None)
         if name is None:

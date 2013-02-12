@@ -14,7 +14,7 @@ from diamondash.tests import helpers
 def mk_graphite_metric(target='some.target', **kwargs):
     wrapped_target = (
         'alias(summarize(%s, "3600s", "avg"), "%s")' % (target, target))
-    kwargs = utils.setdefaults(kwargs, {
+    kwargs = utils.update_dict(kwargs, {
         'target': target,
         'wrapped_target': wrapped_target,
         'null_filter': 'zeroize',
@@ -58,7 +58,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.stub_getPage()
 
     def mk_graphite_backend(self, **kwargs):
-        kwargs = utils.setdefaults(kwargs, {
+        kwargs = utils.update_dict(kwargs, {
             'from_time': 3600,
             'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [self.m1, self.m2],
@@ -201,7 +201,6 @@ class GraphiteMetricTestCase(unittest.TestCase):
         new_config = GraphiteMetric.parse_config(config, class_defaults)
         self.assertEqual(new_config, {
             'target': 'some.target',
-            'bucket_size': 3600,
             'null_filter': 'zeroize',
             'wrapped_target': ('alias(summarize(some.target, "3600s", "avg"), '
                                '"some.target")'),

@@ -25,7 +25,7 @@ class StubbedDashboard(Dashboard):
 
 
 def mk_dashboard(**kwargs):
-    kwargs = utils.setdefaults(kwargs, {
+    kwargs = utils.update_dict(kwargs, {
         'name': 'some-dashboard',
         'title': 'Some Dashboard',
         'widgets': [],
