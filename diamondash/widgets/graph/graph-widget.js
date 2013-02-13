@@ -37,9 +37,7 @@ var maxColors = 10,
     color = d3.scale.category10().domain(d3.range(maxColors)),
     colorCount = 0;
 
-var nextColor = function() {
-  return color(colorCount++ % maxColors);
-};
+var nextColor = function() { return color(colorCount++ % maxColors); };
 
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',

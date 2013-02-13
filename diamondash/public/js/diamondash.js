@@ -12372,7 +12372,7 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
     this.set({
       metrics: metrics,
       domain: 0,
-      range: 0 
+      range: 0
     });
   },
 
@@ -12391,9 +12391,7 @@ var maxColors = 10,
     color = d3.scale.category10().domain(d3.range(maxColors)),
     colorCount = 0;
 
-var nextColor = function() {
-  return color(colorCount++ % maxColors);
-};
+var nextColor = function() { return color(colorCount++ % maxColors); };
 
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
@@ -12497,7 +12495,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .attr('class', 'legend-item-value-label');
 
     this.formatNumber = d3.format(".3s");
-        
+
     // Model-View Bindings Setup
     // -------------------------
     this.model.on('change', this.render, this);
@@ -12640,7 +12638,7 @@ diamondash.DashboardController = (function() {
 
       return new DashboardController({
         name: dashboardName,
-        widgets: widgets, 
+        widgets: widgets,
         widgetViews: widgetViews,
         requestInterval: requestInterval
       });
