@@ -1,2 +1,6 @@
-graphite_url: http://127.0.0.1:8080
-request_interval: 10 # in seconds
+defaults:
+    diamondash.dashboard.Dashboard:
+        request_interval: '10s'
+
+    diamondash.backends.graphite.GraphiteBackend:
+        graphite_url: "http://127.0.0.1:8080"

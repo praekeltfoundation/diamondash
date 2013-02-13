@@ -1,528 +1,175 @@
-"""Tests for diamondash's server side"""
+"""Tests for diamondash's server"""
 
-import json
-from pkg_resources import resource_stream
+from os import path
+from pkg_resources import resource_filename
 
-from klein.test_resource import requestMock
 from twisted.trial import unittest
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.protocol import Protocol, Factory
 
+from diamondash import utils
 from diamondash import server
-from diamondash.server import DASHBOARD_DEFAULTS, DiamondashServer
-
+from diamondash.widgets.widget import Widget
 from diamondash.dashboard import Dashboard
+from diamondash.server import DiamondashServer, DashboardIndexListItem
+
+_test_data_dir = resource_filename(__name__, 'test_server_data/')
 
 
-class MockGraphiteServerProtocol(Protocol):
-    """A protocol for MockGraphiteServerMixin"""
+class StubbedDashboard(Dashboard):
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+        self.widgets_by_name[widget.name] = widget
 
-    def dataReceived(self, data):
-        response = self.handle_request(data)
-        self.transport.write(response.encode('utf-8'))
-        self.transport.loseConnection()
-
-    def get_request_uri(self, data):
-        return data.split(' ')[1]
-
-    def build_response(self, request_uri):
-        response_data = self.factory.response_data.get(request_uri)
-
-        if response_data is None:
-            raise ValueError("No content stored for URL: %s" % (request_uri,))
-
-        response = [
-            'HTTP/1.1 %s' % (response_data['code'],), '',
-            json.dumps(response_data['body'])]
-
-        return '\r\n'.join(response)
-
-    def handle_request(self, data):
-        request_uri = self.get_request_uri(data)
-        response = self.build_response(request_uri)
-        return response
+    @classmethod
+    def dashboards_from_dir(cls, dashboards_dir, defaults=None):
+        return ['fake-dashboards']
 
 
-class MockGraphiteServerMixin(object):
-    """
-    A mock Graphite server mixin, providing metric data from captured
-    Graphite response data
-    """
-
-    RESPONSE_DATA = json.load(
-        resource_stream(__name__, 'test_server_data/response_data.json'))
-
-    graphite_ws = None
-
-    @inlineCallbacks
-    def start_graphite_ws(self):
-        factory = Factory()
-        factory.protocol = MockGraphiteServerProtocol
-        factory.response_data = self.RESPONSE_DATA
-        self.graphite_ws = yield reactor.listenTCP(0, factory)
-        address = self.graphite_ws.getHost()
-        self.graphite_url = "http://%s:%s" % (address.host, address.port)
-
-    def stop_graphite_ws(self):
-        return self.graphite_ws.loseConnection()
+def mk_dashboard(**kwargs):
+    kwargs = utils.update_dict({
+        'name': 'some-dashboard',
+        'title': 'Some Dashboard',
+        'widgets': [],
+        'client_config': {},
+    }, kwargs)
+    return StubbedDashboard(**kwargs)
 
 
-class MockDashboard:
-    """A mock for the Dashboard class"""
+class ToyWidget(Widget):
+    def handle_render_request(self, request):
+        return '%s -- handled by %s' % (request, self.name)
 
-    def __init__(self, config):
-        self.is_mock = True
-        self.config = config
 
-    def get_widget_config(self, widget_name):
-        return None
+class ServerTestCase(unittest.TestCase):
+
+    def test_handle_render_request(self):
+        """
+        Should route the render request to the appropriate widget on the
+        appropropriate dashboard.
+        """
+        widget = ToyWidget(
+            name='test-widget', title='title', client_config={}, width=2)
+        dashboard = mk_dashboard(widgets=[widget])
+
+        dd_server = DiamondashServer([], None)
+        dd_server.dashboards_by_name['some-dashboard'] = dashboard
+        server.server = dd_server
+
+        result = server.handle_render_request(
+            'fake-render-request', 'some-dashboard', 'test-widget')
+        self.assertEqual(
+            result, "fake-render-request -- handled by test-widget")
+
+    def test_handle_render_for_bad_dashboard_request(self):
+        """
+        Should return an empty JSON object if the dashboard does not exist.
+        """
+        dd_server = DiamondashServer([], None)
+        server.server = dd_server
+
+        result = server.handle_render_request(
+            'fake-render-request', 'some-dashboard', 'test-widget')
+        self.assertEqual(result, "{}")
+
+    def test_handle_render_for_bad_widget_request(self):
+        """
+        Should return an empty JSON object if the widget does not exist.
+        """
+        dashboard = mk_dashboard()
+        dd_server = DiamondashServer([], None)
+        dd_server.dashboards_by_name['some-dashboard'] = dashboard
+        server.server = dd_server
+
+        result = server.handle_render_request(
+            'fake-render-request', 'some-dashboard', 'test-widget')
+        self.assertEqual(result, "{}")
+
+
+class StubbedDiamondashServer(DiamondashServer):
+    ROOT_RESOURCE_DIR = _test_data_dir
+
+    def add_dashboard(self, dashboard):
+        self.dashboards.append(dashboard)
 
 
 class DiamondashServerTestCase(unittest.TestCase):
+    def setUp(self):
+        self.patch(StubbedDiamondashServer, 'create_resources',
+                   staticmethod(lambda *a, **kw: 'created-resources'))
+
+        stubbed_from_config_file = staticmethod(
+            lambda filepath, class_defaults: (filepath, class_defaults))
+        self.patch(Dashboard, 'from_config_file', stubbed_from_config_file)
+
+    def test_from_config_dir(self):
+        """Should create the server from a configuration directory."""
+        config_dir = path.join(_test_data_dir, 'etc')
+        dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
+
+        expected_class_defaults = {
+            'module.path.to.some.Class': {
+                'foo': 'bar',
+                'lerp': 'larp'
+            }
+        }
+        dashboard_path = path.join(config_dir, 'dashboards')
+        expected_dashboard1_path = path.join(dashboard_path, 'dashboard1.yml')
+        expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
+
+        self.assertEqual(
+            dd_server.dashboards,
+            [(expected_dashboard1_path, expected_class_defaults),
+             (expected_dashboard2_path, expected_class_defaults)])
+        self.assertEqual(dd_server.resources, 'created-resources')
 
     def test_add_dashboard(self):
+        """Should add a dashboard to the server."""
+        def stubbed_index_add_dashboard(dashboard):
+            stubbed_index_add_dashboard.called = True
+
+        stubbed_index_add_dashboard.called = False
+
+        dd_server = DiamondashServer([], None)
+        dd_server.index.add_dashboard = stubbed_index_add_dashboard
+        dashboard = mk_dashboard(name='some-dashboard',
+                                 share_id='some-share-id')
+
+        dd_server.add_dashboard(dashboard)
+        self.assertEqual(dd_server.dashboards[-1], dashboard)
+        self.assertEqual(
+            dd_server.dashboards_by_name['some-dashboard'], dashboard)
+        self.assertEqual(
+            dd_server.dashboards_by_share_id['some-share-id'], dashboard)
+        self.assertTrue(stubbed_index_add_dashboard.called)
+
+
+class StubbedDashboardIndexListItem(DashboardIndexListItem):
+    def __init__(self, title, url, shared_url_tag):
+        self.title = title
+        self.url = url
+        self.shared_url_tag = shared_url_tag
+
+
+class DashboardIndexListItemTestCase(unittest.TestCase):
+    def test_from_dashboard(self):
         """
-        Should add a dashboard to the server's dashboard list, as well as the
-        server's name-dashboard and share_id-dashboard lookups.
+        Should create a dashboard index list item from a dashboard instance.
         """
-        dashboard_config = {
-            'name': 'lorem',
-            'share_id': 'ipsum'
-        }
-        mock_dashboard = MockDashboard(dashboard_config)
+        dashboard = mk_dashboard(share_id='test-share-id')
+        item = StubbedDashboardIndexListItem.from_dashboard(dashboard)
 
-        dd_server = DiamondashServer('', [])
-        dd_server.add_dashboard(mock_dashboard)
+        self.assertEqual(item.url, '/some-dashboard')
+        self.assertEqual(item.title, 'Some Dashboard')
 
-        self.assertTrue(dd_server.dashboards[0].is_mock)
-        self.assertTrue(dd_server.dashboards_by_name['lorem'].is_mock)
-        self.assertTrue(dd_server.dashboards_by_share_id['ipsum'].is_mock)
+        expected_shared_url = '/shared/test-share-id'
+        self.assertEqual(item.shared_url_tag.tagName, 'a')
+        self.assertEqual(item.shared_url_tag.children[0], expected_shared_url)
+        self.assertEqual(item.shared_url_tag.attributes['href'],
+                         expected_shared_url)
 
-
-class WebServerTestCase(unittest.TestCase, MockGraphiteServerMixin):
-
-    TEST_DATA = json.load(
-        resource_stream(__name__, 'test_server_data/server_test_data.json'))
-
-    def setUp(self):
-        self.graphite_ws = None
-
-    def tearDown(self):
-        if self.graphite_ws:
-            self.stop_graphite_ws()
-
-    def configure_server(self, dashboard_configs):
+    def test_from_dashboard_for_no_share_id(self):
         """
-        Configures the diamondash server with a single dashboard
+        Should set the dashboard index list item's shared_url tag to an empty
+        string if the dashboard does not have a share id.
         """
-        dashboards = [Dashboard(d_config) for d_config in dashboard_configs]
-        server.server = DiamondashServer(self.graphite_url, dashboards)
-
-    def mock_request(self, input):
-        host = self.graphite_ws.getHost()
-        return requestMock(input, host=host.host, port=host.port)
-
-    def get_test_data_io(self, key):
-        input = self.TEST_DATA[key]['input']
-        output = self.TEST_DATA[key]['output']
-        return input, output
-
-    def assert_response(self, response_data, expected_response):
-        """
-        Asserts whether the response obtained matches
-        the expected response
-        """
-        response = json.loads(response_data)
-        self.assertEqual(response, expected_response)
-
-    def assert_datapoints(self, key, widget_config):
-        input, output = self.get_test_data_io(key)
-        input_str = json.dumps(input)
-        result = server.get_result_datapoints(input_str, widget_config)
-        self.assertEqual(result, output)
-
-    # Render tests
-    # ------------
-
-    def test_render_for_nonexistent_dashboard(self):
-        """
-        Should return an empty json object as a response if the dashboard does
-        not exist
-        """
-        server.server = DiamondashServer('http://someurl.com/', [])
-        response = server.render(None, 'test-dashboard', 'some_metric')
-        self.assertEqual(response, "{}")
-
-    def test_render_for_nonexistent_widget(self):
-        """
-        Should return an empty json object as a response if the dashboard does
-        not exist
-        """
-        dashboard = MockDashboard({'name': 'test-dashboard'})
-        server.server = DiamondashServer('http://someurl.com/', [dashboard])
-        response = server.render(None, 'test-dashboard', 'some_metric')
-        self.assertEqual(response, "{}")
-
-    @inlineCallbacks
-    def assert_render(self, dashboard_config, key, dashboard_name,
-                      widget_name):
-        yield self.start_graphite_ws()
-        self.configure_server([dashboard_config])
-        input, output = self.get_test_data_io(key)
-        request = self.mock_request(input)
-        d = server.render(request, dashboard_name, widget_name)
-        d.addCallback(self.assert_response, output)
-        yield d
-
-    @inlineCallbacks
-    def test_render_for_graph(self):
-        """
-        Should send a request to graphite, apply transformations,
-        and return data useable by the client side for graph widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'random-count-sum',
-                    'time_range': 3600,
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'bucket_size': 300,
-                    'metrics': [
-                        {
-                            'name': 'luke-the-metric',
-                            'title': 'luke the metric',
-                            'target': 'vumi.random.count.sum'
-                        }
-                    ],
-                }
-            ],
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_graph',
-                                 'test-dashboard',
-                                 'random-count-sum')
-
-    @inlineCallbacks
-    def test_render_for_partial_graph_results(self):
-        """
-        Should send a request to graphite, get results for only some of the
-        widget's metrics, set the non-existent metric's datapoints to [], apply
-        transformations, and return data useable by the client side for graph
-        widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'random-count-sum',
-                    'time_range': 3600,
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'bucket_size': 300,
-                    'metrics': [
-                        {
-                            'name': 'luke-the-metric',
-                            'title': 'luke the metric',
-                            'target': 'vumi.random.count.sum'
-                        },
-                        {
-                            'name': 'non-existent-metric',
-                            'title': 'non-existent metric',
-                            'target': 'non.existent'
-                        }
-                    ],
-                }
-            ],
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_partial_graph_results',
-                                 'test-dashboard',
-                                 'random-count-sum')
-
-    @inlineCallbacks
-    def test_render_for_multimetric_graph(self):
-        """
-        Should send a request to graphite, apply transformations,
-        and return data useable by the client side for graph widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'random-count-sum-and-average',
-                    'time_range': 3600,
-                    'title': 'a graph',
-                    'type': 'graph',
-                    'bucket_size': 300,
-                    'metrics': [
-                        {
-                            'name': 'random-count-sum',
-                            'title': 'random-count-sum',
-                            'target': 'vumi.random.count.sum'
-                        },
-                        {
-                            'name': 'random-timer-average',
-                            'title': 'random-timer-average',
-                            'target': 'vumi.random.timer.avg'
-                        }
-                    ],
-                }
-            ]
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_multimetric_graph',
-                                 'test-dashboard',
-                                 'random-count-sum-and-average')
-
-    @inlineCallbacks
-    def test_render_for_lvalue(self):
-        """
-        Should send a request to graphite, apply transformations,
-        and return data useable by the client side for lvalue widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'some-lvalue-widget',
-                    'time_range': '1d',
-                    'type': 'lvalue',
-                    'metrics': ['vumi.random.count.sum'],
-                }
-            ],
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_lvalue',
-                                 'test-dashboard',
-                                 'some-lvalue-widget')
-
-    @inlineCallbacks
-    def test_render_for_partial_lvalue_results(self):
-        """
-        Should send a request to graphite, get results for only some of the
-        widget's metrics, set the non-existent metric's datapoints to [], apply
-        transformations, and return data useable by the client side for lvalue
-        widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'some-lvalue-widget',
-                    'time_range': '1d',
-                    'type': 'lvalue',
-                    'metrics': [
-                        'vumi.random.count.sum',
-                        'non.existent'
-                    ],
-                }
-            ],
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_partial_lvalue_results',
-                                 'test-dashboard',
-                                 'some-lvalue-widget')
-
-    @inlineCallbacks
-    def test_render_for_multimetric_lvalue(self):
-        """
-        Should send a request to graphite, apply transformations,
-        and return data useable by the client side for lvalue widgets
-        """
-        dashboard_config = dict(DASHBOARD_DEFAULTS, **{
-            'name': 'test-dashboard',
-            'widgets': [
-                {
-                    'name': 'some-multimetric-lvalue-widget',
-                    'time_range': '1h',
-                    'type': 'lvalue',
-                    'metrics': ['vumi.random.count.sum',
-                                'vumi.random.timer.sum'],
-                },
-            ]
-        })
-        yield self.assert_render(dashboard_config,
-                                 'test_render_for_multimetric_lvalue',
-                                 'test-dashboard',
-                                 'some-multimetric-lvalue-widget')
-
-    # Purification tests
-    # ------------------
-
-    def test_skip_nulls(self):
-        """
-        Should return datapoints without null values by
-        skipping coordinates withh null x or y values
-        """
-        input, output = self.get_test_data_io('test_skip_nulls')
-        purified = server.skip_nulls(input)
-        self.assertEqual(purified, output)
-
-    def test_zeroize_nulls(self):
-        """
-        Should return datapoints without null values by
-        skipping coordinates with null x or y values
-        """
-        input, output = self.get_test_data_io('test_zeroize_nulls')
-        purified = server.zeroize_nulls(input)
-        self.assertEqual(purified, output)
-
-    # Formatting tests
-    # ----------------
-
-    def test_format_results_for_graph(self):
-        """
-        Should format datapoints in graphite's format to
-        datapoints in rickshaw's format
-        """
-
-        widget_config = {
-            'title': 'a graph',
-            'type': 'graph',
-            'metrics': [
-                {
-                    'name': 'arnold-the-metric',
-                    'target': 'vumi.random.count.sum',
-                }
-            ],
-        }
-
-        input, output = self.get_test_data_io('test_format_results_for_graph')
-        formatted = server.format_results_for_graph(input, widget_config)
-        formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, output)
-
-    def test_format_results_for_multimetric_graph(self):
-        """
-        Should format datapoints in graphite's format to
-        datapoints in rickshaw's format
-        """
-        widget_config = {
-            'title': 'a graph',
-            'type': 'graph',
-            'metrics': [
-                {
-                    'name': 'random-count-sum',
-                    'title': 'random-count-sum',
-                    'target': 'vumi.random.count.sum',
-                },
-                {
-                    'name': 'random-timer-average',
-                    'title': 'random-timer-average',
-                    'target': 'vumi.random.timer.avg',
-                }
-            ],
-        }
-
-        input, output = self.get_test_data_io(
-            'test_format_results_for_multimetric_graph')
-        formatted = server.format_results_for_graph(input, widget_config)
-        formatted_str = json.loads(formatted)
-        self.assertEqual(formatted_str, output)
-
-    def test_format_results_for_lvalue(self):
-        """
-        Should format datapoints in graphite's format to
-        datapoints in a format useable for lvalue widgets
-        """
-        def assert_format(data, config, expected):
-            result = server.format_results_for_lvalue(data, config)
-            self.assertEqual(result, expected)
-
-        data = (3.034992, 2.0, 1341318035)
-        config = {'time_range': 86400}
-        expected = ('{"lvalue": "2", "percentage": "-34%", '
-                    '"from": "2012-07-03 12:20, "diff": -1.035, '
-                    '"to": "2012-07-03 12:20"}')
-        expected = ('{"lvalue": "2", "percentage": "-34%", '
-                    '"from": "2012-07-03 12:20", "diff": "-1.035", '
-                    '"to": "2012-07-04 12:20"}')
-        assert_format(data, config, expected)
-
-        data = (0, 0, 1341318035)
-        config = {'time_range': 86400}
-        expected = ('{"lvalue": "0", "percentage": "0%", '
-                    '"from": "2012-07-03 12:20", "diff": "0", '
-                    '"to": "2012-07-04 12:20"}')
-        assert_format(data, config, expected)
-
-    # Other tests
-    # ------------
-
-    def test_aggregate_results_for_lvalue(self):
-        """
-        Should obtain a tuple consisting of three aggregates accross
-        multiple datapoint lists:
-            - the summed previous y value
-            - the summed last y value
-            - the maximum last x value (latest time)
-        """
-        def assert_aggregation(data, expected):
-            result = server.aggregate_results_for_lvalue(data)
-            self.assertEqual(result, expected)
-
-        data = [[[4, 200],
-                 [-5, 300]],
-                [[3, -1],
-                 [2, 301]]]
-        expected = (7, -3, 301)
-        assert_aggregation(data, expected)
-
-        data = [[[1.0, 1341318015],
-                 [3.0, 1341318020],
-                 [3.0, 1341318025],
-                 [2.0, 1341318030]],
-                [[0.060949, 1341318025],
-                 [0.045992, 1341318030],
-                 [None, 1341318035]]]
-        expected = (3.045992, 2.0, 1341318035)
-        assert_aggregation(data, expected)
-
-    def test_get_result_datapoints(self):
-        """
-        Should obtain a list of datapoint lists, each list
-        corresponding to a metric
-        """
-        widget_config = {
-            'target_keys': [
-                'vumi.random.count.sum',
-                'vumi.random.timer.avg',
-            ]
-        }
-        self.assert_datapoints('test_get_result_datapoints', widget_config)
-
-    def test_get_result_datapoints_for_partial_results(self):
-        widget_config = {
-            'target_keys': [
-                'some-metric-target',
-                'vumi.random.count.sum',
-                'vumi.random.timer.avg',
-                'another-metric-target',
-            ]
-        }
-        self.assert_datapoints(
-            'test_get_result_datapoints_for_partial_results', widget_config)
-
-    def test_format_value(self):
-        def assert_format(input, expected):
-            result = server.format_value(input)
-            self.assertEqual(result, expected)
-
-        assert_format(999999, '999.999K')
-        assert_format(1999999, '2.000M')
-        assert_format(1234123456789, '1.234T')
-        assert_format(123456123456789, '123.456T')
-        assert_format(3.034992, '3.035')
-        assert_format(2, '2')
-        assert_format(2.0, '2')
-
-    def test_format_time(self):
-        def assert_format(input, expected):
-            result = server.format_time(input)
-            self.assertEqual(result, expected)
-
-        assert_format(1341318035, '2012-07-03 12:20')
-        assert_format(1841318020, '2028-05-07 13:13')
+        item = StubbedDashboardIndexListItem.from_dashboard(mk_dashboard())
+        self.assertEqual(item.shared_url_tag, '')

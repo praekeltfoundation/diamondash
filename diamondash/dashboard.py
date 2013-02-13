@@ -2,448 +2,203 @@
 
 """Dashboard functionality for the diamondash web app"""
 
-import re
 import json
-from os import listdir, path
-from urllib import urlencode
-
 import yaml
-from unidecode import unidecode
-from pkg_resources import resource_string
+from pkg_resources import resource_string, resource_filename
+
 from twisted.web.template import Element, renderer, XMLString
 
-from exceptions import ConfigError
-
-# graph widget defaults
-GRAPH_DEFAULTS = {
-    'null_filter': 'skip',
-    'time_range': 3600,
-    'bucket_size': 300,
-    'width': 1,
-}
+from diamondash import utils, ConfigMixin, ConfigError
 
 
-# lvalue widget defaults
-LVALUE_DEFAULTS = {
-    'time_range': 3600,
-}
-
-
-LVALUE_GROUP_CAPACITY = 3
-
-
-MIN_COLUMN_SPAN = 1
-MAX_COLUMN_SPAN = 3
-
-
-LAYOUT_RESERVED_WORDS = ['newrow', 'newcol']
-
-
-def parse_interval(interval):
+class Dashboard(Element, ConfigMixin):
     """
-    Recognise 's', 'm', 'h', 'd' suffixes as seconds, minutes, hours and days.
-    Return integer seconds.
+    Holds a dashboard's configuration data and widget elements.
+
+    Dashboard instances are created when diamondash starts.
     """
-    if not isinstance(interval, basestring):
-        # It isn't a string, so there's nothing to parse
-        return interval
-    suffixes = {
-        's': 1,
-        'm': 60,
-        'h': 3600,
-        'd': 86400,
-    }
-    try:
-        for suffix, multiplier in suffixes.items():
-            if interval.endswith(suffix):
-                return int(interval[:-1]) * multiplier
-        return int(interval)
-    except ValueError:
-        raise ConfigError("%r is not a valid time interval.")
 
+    __DEFAULTS = {'request_interval': '60s'}
+    __CONFIG_TAG = 'diamondash.dashboard.Dashboard'
 
-def parse_graph_width(width):
-    """
-    Wraps the passed in width as an int and
-    clamps the value to the width range
-    """
-    width = int(width)
-    width = max(MIN_COLUMN_SPAN, min(width, MAX_COLUMN_SPAN))
-    return width
+    DEFAULT_TEMPLATE_FILEPATH = resource_filename(
+        __name__, 'views/dashboard_container.xml')
+    DEFAULT_REQUEST_INTERVAL = '60s'
+    LAYOUT_FUNCTIONS = {'newrow': '_new_row'}
 
+    # the max number of columns allowed by Bootstrap's grid system
+    MAX_WIDTH = 12
 
-# Borrowed from the bit of pyparsing, the graphite expression parser uses.
-_quoted_string_re = re.compile(
-    r'''(?:"(?:[^"\n\r\\]|(?:"")|(?:\\x[0-9a-fA-F]+)|(?:\\.))*")|'''
-    r'''(?:'(?:[^'\n\r\\]|(?:'')|(?:\\x[0-9a-fA-F]+)|(?:\\.))*')''')
+    def __init__(self, name, title, client_config, share_id=None, widgets=[],
+                 template_filepath=None):
+        self.name = name
+        self.title = title
+        self.share_id = share_id
 
+        self.client_config = client_config
+        self.client_config.setdefault('widgets', [])
 
-def lex_graphite_expression(expression):
-    tokens = []
+        self.widgets = []
+        self.widgets_by_name = {}
+        self.last_row = WidgetRow()
+        self.rows = [self.last_row]
 
-    while expression:
-        if expression[0] == ')':
-            tokens.append(('endfunc', ''))
-            expression = expression[1:].strip().strip(',').strip()
-            continue
-        match = _quoted_string_re.match(expression)
-        if match:
-            # Throw away the string
-            expression = expression[match.end():].strip().strip(',').strip()
-            continue
+        self.stylesheets = set()
+        self.javascripts = set()
 
-        token, new_expression = (expression.split(',', 1) + [''])[:2]
-        if '(' in token:
-            token, new_expression = expression.split('(', 1)
-            tokens.append(('func', token.strip()))
-        elif ')' in token:
-            token, new_expression = expression.split(')', 1)
-            tokens.append(('item', token.strip()))
-            new_expression = ')' + new_expression
+        template_filepath = template_filepath
+        if template_filepath is None:
+            template_filepath = self.DEFAULT_TEMPLATE_FILEPATH
+        self.loader = XMLString(open(template_filepath).read())
+
+        for widget in widgets:
+            self.add_widget(widget)
+
+    @classmethod
+    def parse_config(cls, config, class_defaults={}):
+        """Parses a Dashboard config."""
+        class_defaults = cls.override_class_defaults(
+            class_defaults, config.pop('defaults', {}))
+        defaults = class_defaults.get(cls.__CONFIG_TAG, {})
+        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+
+        name = config.get('name', None)
+        if name is None:
+            raise ConfigError('Dashboard name not specified.')
+
+        config.setdefault('title', name)
+        name = utils.slugify(name)
+        config['name'] = name
+        config['share_id'] = config.get('share_id')
+
+        # request interval is converted to milliseconds for client side
+        config['client_config'] = {
+            'name': name,
+            'requestInterval': (
+                utils.parse_interval(config.pop('request_interval')) * 1000),
+        }
+
+        if 'widgets' not in config:
+            raise ConfigError('Dashboard %s does not have any widgets' % name)
+
+        widgets = []
+        for widget_config in config['widgets']:
+            if (isinstance(widget_config, str) and
+                widget_config in cls.LAYOUT_FUNCTIONS):
+                widgets.append(widget_config)
+            else:
+                widget_type = widget_config.pop('type', None)
+                widget_class = utils.load_class_by_string(widget_type)
+                widget = widget_class.from_config(
+                    widget_config, class_defaults)
+                widgets.append(widget)
+        config['widgets'] = widgets
+
+        return config
+
+    @classmethod
+    def from_config_file(cls, filename, class_defaults=None):
+        """Loads dashboard config from a config file"""
+        try:
+            config = yaml.safe_load(open(filename))
+        except IOError:
+            raise ConfigError('File %s not found.' % (filename,))
+
+        return cls.from_config(config, class_defaults)
+
+    def _new_row(self):
+        self.last_row = WidgetRow()
+        self.rows.append(self.last_row)
+
+    def add_widget(self, widget):
+        """Adds a widget to the dashboard. """
+
+        if (widget in self.LAYOUT_FUNCTIONS):
+            self.apply_layout_fn(widget)
         else:
-            tokens.append(('item', token.strip()))
-        expression = new_expression.strip()
-    return tokens
+            if self.last_row.width + widget.width > self.MAX_WIDTH:
+                self._new_row()
+
+            self.widgets_by_name[widget.name] = widget
+            self.widgets.append(widget)
+            self.client_config['widgets'].append(widget.client_config)
+
+            # append to the last row
+            self.last_row.add_widget(WidgetContainer(widget))
+
+    def get_widget(self, name):
+        """Returns a widget using the passed in widget name."""
+        return self.widgets_by_name.get(name, None)
+
+    def apply_layout_fn(self, name):
+        return getattr(self, self.LAYOUT_FUNCTIONS[name])()
+
+    @renderer
+    def stylesheets_renderer(self, request, tag):
+        for stylesheet in self.stylesheets:
+            yield tag.clone().fillSlots(stylesheet_href_slot=stylesheet)
+
+    @renderer
+    def widget_row_renderer(self, request, tag):
+        for row in self.rows:
+            yield row
+
+    @renderer
+    def init_script_renderer(self, request, tag):
+        client_config = json.dumps(self.client_config)
+        tag.fillSlots(
+            javascripts_slot=json.dumps(list(self.javascripts)),
+            client_config_slot=client_config)
+        return tag
 
 
-def parse_graphite_func(tokens):
-    results = []
-    while tokens:
-        token, value = tokens.pop(0)
-        if token == 'endfunc':
-            return ([r for r in results if r is not None] + [None])[0]
-        elif token == 'func':
-            if value == 'integral':
-                # Special case.
-                results.append('max')
-            results.append(parse_graphite_func(tokens))
-        elif token == 'item':
-            suffix = value.split('.')[-1]
-            if suffix in ('min', 'max', 'avg', 'sum'):
-                results.append(suffix)
+class WidgetRow(Element):
+    """
+    A row of Widget elements on a dashboard
 
-
-def guess_aggregation_method(target):
-    """Guess aggregation method for a particular metric.
-
-    The result is based on a depth-first search of nested functions for
-    things that look like metric names with suitable aggregation suffixes.
-    All functions are "evaluated" to the aggregation type of the first param
-    that has one. If nothing suitable is found, `None` is returned.
-
-    The "integral()" function is treated as a special case and given an
-    aggregation method of "max".
+    WidgetRow instances are created when diamondash starts.
     """
 
-    tokens = lex_graphite_expression(target)
-    return parse_graphite_func(tokens + [('endfunc', '')])
+    loader = XMLString(resource_string(__name__, 'views/widget_row.xml'))
+
+    def __init__(self):
+        self.width = 0
+        self.widgets = []
+
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+        self.width += widget.width
+
+    @renderer
+    def widget_renderer(self, request, tag):
+        for widget in self.widgets:
+            contained_widget = widget
+            yield contained_widget
 
 
-def format_metric_target(target, bucket_size):
+class WidgetContainer(Element):
     """
-    Formats a metric target to allow aggregation of metric values
-    based on the passed in bucket size
-    """
-    bucket_size = '%ss' % (str(bucket_size),)
-    agg_method = guess_aggregation_method(target)
-    if agg_method is None:
-        # TODO: Log this?
-        agg_method = "avg"
+    Widget container element holding a widget element.
 
-    graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
-        target, bucket_size, agg_method, target)
-    return graphite_target
-
-
-def build_request_url(targets, from_param):
-    """
-    Constructs the graphite render url
-    """
-    params = {
-        'target': targets,
-        'from': '-%ss' % from_param,
-        'format': 'json',
-    }
-    return 'render/?%s' % urlencode(params, True)
-
-
-def parse_graph_config(config, defaults):
-    """
-    Parses a graph widget's config, applying changes
-    where appropriate and returning the resulting config
-    """
-    w_name = config['name']
-
-    for field, default in defaults.items():
-        config.setdefault(field, default)
-
-    for field in ['time_range', 'bucket_size']:
-        config[field] = parse_interval(config[field])
-
-    config['width'] = parse_graph_width(config['width'])
-
-    target_keys = []
-    metric_list = []
-    bucket_size = config['bucket_size']
-    for m_config in config['metrics']:
-        m_name = m_config.get('name', None)
-        if m_name is None:
-            raise ConfigError('Widget "%s" needs a name for all its metrics.'
-                              % w_name)
-
-        target = m_config.get('target', None)
-        if target is None:
-            raise ConfigError('Widget "%s" needs a target for metric "%s".'
-                              % (w_name, m_name))
-
-        wrapped_target = format_metric_target(target, bucket_size)
-        m_config['wrapped_target'] = wrapped_target
-
-        m_config.setdefault('null_filter', config['null_filter'])
-
-        for threshold in ['warning_min_threshold', 'warning_max_threshold']:
-            if threshold in m_config:
-                m_config[threshold] = int(m_config[threshold])
-
-        m_config.setdefault('title', m_name)
-        m_config['name'] = slugify(m_name)
-        metric_list.append(m_config)
-        target_keys.append(target)
-
-    config['metrics'] = metric_list
-    config['target_keys'] = target_keys
-    targets = [metric['wrapped_target'] for metric in metric_list]
-    config['request_url'] = build_request_url(targets, config['time_range'])
-
-    return config
-
-
-def parse_lvalue_config(config, defaults):
-    """
-    Parses an lvalue widget's config, applying changes
-    where appropriate and returning the resulting config
-    """
-    for field, default in defaults.items():
-        config.setdefault(field, default)
-
-    config['time_range'] = parse_interval(config['time_range'])
-
-    metric_list = []
-    target_keys = []
-    for target in config['metrics']:
-        m_config = {}
-
-        # Set the bucket size to the passed in time range
-        # (for eg, if 1d was the time range, the data for the
-        # entire day will be aggregated).
-        bucket_size = config['time_range']
-
-        m_config['target'] = target
-        m_config['wrapped_target'] = format_metric_target(target, bucket_size)
-        metric_list.append(m_config)
-        target_keys.append(target)
-
-    config['metrics'] = metric_list
-    config['target_keys'] = target_keys
-    targets = [metric['wrapped_target'] for metric in metric_list]
-
-    # Set the from param to double the bucket size. As a result, graphite will
-    # return two datapoints for each metric: the previous value and the last
-    # value. The last and previous values will be used to calculate the
-    # percentage increase.
-    from_param = int(config['time_range']) * 2
-
-    config['request_url'] = build_request_url(targets, from_param)
-
-    return config
-
-
-def parse_config(config):
-    """
-    Parses a dashboard config, applying changes
-    where appropriate and returning the resulting config
-    """
-    if 'name' not in config:
-        raise ConfigError('Dashboard name not specified.')
-
-    config['title'] = config['name']
-    config['name'] = slugify(config['name'])
-
-    graph_defaults = config.setdefault('graph_defaults', {})
-    for field, default in GRAPH_DEFAULTS.items():
-        graph_defaults.setdefault(field, default)
-
-    lvalue_defaults = config.setdefault('lvalue_defaults', {})
-    for field, default in LVALUE_DEFAULTS.items():
-        lvalue_defaults.setdefault(field, default)
-
-    config['request_interval'] = parse_interval(config['request_interval'])
-
-    widget_dict = {}
-    widget_list = []
-    for w_config in config['widgets']:
-        if (isinstance(w_config, str) and w_config in LAYOUT_RESERVED_WORDS):
-            widget_list.append({'type': w_config})
-            continue
-
-        if 'name' not in w_config:
-            raise ConfigError('All widgets need a name')
-        w_name = w_config['name']
-
-        if 'metrics' not in w_config:
-            raise ConfigError('Widget "%s" needs metric(s).' % (w_name,))
-
-        w_config.setdefault('title', w_name)
-        w_name = slugify(w_name)
-        w_config['name'] = w_name
-
-        w_config.setdefault('type', config['default_widget_type'])
-
-        if w_config['type'] == 'graph':
-            parse_widget_config = parse_graph_config
-            widget_defaults = graph_defaults
-        elif w_config['type'] == 'lvalue':
-            parse_widget_config = parse_lvalue_config
-            widget_defaults = lvalue_defaults
-
-        w_config = parse_widget_config(w_config, widget_defaults)
-        widget_dict[w_name] = w_config
-        widget_list.append(w_config)
-
-    # update widget dict
-    config['widget_list'] = widget_list
-    config['widgets'] = widget_dict
-
-    return config
-
-
-# metric attributes needed by client
-CLIENT_GRAPH_METRIC_ATTRS = ['name', 'title', 'color', 'warning_max_threshold',
-                             'warning_min_threshold', 'warning_color']
-
-
-def build_client_config(server_config):
-    """
-    Builds a client side dashboard config from the server's
-    dashboard config and returns it in JSON format
-    """
-    config = {}
-    config['name'] = server_config['name']
-
-    # convert the request interval to milliseconds for client side
-    config['request_interval'] = int(server_config['request_interval']) * 1000
-
-    w_configs = config.setdefault('widgets', {})
-    for w_name, w_server_config in server_config['widgets'].items():
-        w_configs[w_name] = {}
-
-        # Add metric attributes for graph widgets
-        if w_server_config['type'] == 'graph':
-            m_configs = w_configs[w_name].setdefault('metrics', [])
-            for m_server_config in w_server_config['metrics']:
-                attrs = dict((k, m_server_config[k])
-                             for k in CLIENT_GRAPH_METRIC_ATTRS
-                             if k in m_server_config)
-                m_configs.append(attrs)
-
-    #serialize client vars into a json string ready for javascript
-    return 'var config = %s;' % (json.dumps(config),)
-
-
-def build_widget_rows(configs):
-    """
-    Generates the widgets on each row. Each iteration,
-    a row of widgets is yielded. Lvalue widgets are
-    grouped together in a top to bottom fashion.
+    WidgetContainer instances are created when diamondash starts.
     """
 
-    # a dict is used as a workaround, python 2 does not allow
-    # assignment to the outer scope's variables
-    ns = {
-        # the current row
-        'row': [],
+    loader = XMLString(resource_string(__name__, 'views/widget_container.xml'))
 
-        # rows already generated
-        'rows': [],
+    def __init__(self, widget):
+        self.widget = widget
+        self.width = widget.width
+        span_class = "span%s" % widget.width
+        self.classes = " ".join(('widget', span_class))
 
-        # the current row's column count
-        'columns': 0,
-
-        # queue of lvalue widgets for the current lvalue grouping
-        'lvqueue': [],
-    }
-
-    def start_new_row():
-        ns['rows'].append(ns['row'])
-        ns['row'] = []
-        ns['columns'] = 0
-
-    def append_to_row(element, span):
-        """
-        Adds an element to the current row, or a new row if the element
-        does not fit on the current row. A new row is then started
-        if the current row is filled after the widget is added.
-        """
-        columns = ns['columns'] + span
-        if (columns > MAX_COLUMN_SPAN):
-            start_new_row()
-
-        ns['row'].append(element)
-        ns['columns'] = columns
-        if (columns >= MAX_COLUMN_SPAN):
-            start_new_row()
-
-    def flush_lvalue_group():
-        if len(ns['lvqueue']) == 0:
-            return
-        append_to_row(LValueGroup(ns['lvqueue']), 1)
-        ns['lvqueue'] = []
-
-    def add_lvalue(config):
-        ns['lvqueue'].append(LValueWidget(config))
-        if len(ns['lvqueue']) == LVALUE_GROUP_CAPACITY:
-            flush_lvalue_group()
-
-    def add_graph(config):
-        # if the lvqueue is not empty, this needs to
-        # be added to the row before the graph is added
-        flush_lvalue_group()
-        element = GraphWidget(config)
-        append_to_row(element, config['width'])
-
-    def add_newrow(config):
-        """'fakes' the row being full"""
-        # flush an lvalue group if the lvalue queue is not empty
-        flush_lvalue_group()
-
-    def add_newcol(config):
-        """'Adds' a column"""
-        # Graphs are added in a new column by default,
-        # Flush any lvalue groups so new lvalues are
-        # added in a new column
-        flush_lvalue_group()
-
-    fn_lookup = {
-        'newcol': add_newcol,
-        'newrow': add_newrow,
-        'graph': add_graph,
-        'lvalue': add_lvalue,
-    }
-
-    # iterate through the widget configs to create a list of rows
-    for config in configs:
-        add_widget = fn_lookup.get(config['type'], lambda x: x)
-        add_widget(config)
-
-    # flush an lvalue group if the lvalue queue is not empty
-    flush_lvalue_group()
-
-    # Append the last row (in the case that
-    # it wasn't completely filled)
-    if len(ns['row']) > 0:
-        ns['rows'].append(ns['row'])
-
-    return ns['rows']
+    @renderer
+    def widget_renderer(self, request, tag):
+        widget = self.widget
+        tag.fillSlots(id_slot=widget.name,
+                      class_slot=self.classes,
+                      title_slot=widget.title,
+                      widget_slot=widget)
+        return tag
 
 
 class DashboardPage(Element):
@@ -453,8 +208,7 @@ class DashboardPage(Element):
     DashboardPage instances are created on page request.
     """
 
-    loader = XMLString(resource_string(__name__,
-                                       'templates/dashboard_page.xml'))
+    loader = XMLString(resource_string(__name__, 'views/dashboard_page.xml'))
 
     def __init__(self, dashboard, is_shared):
         self.dashboard = dashboard
@@ -468,178 +222,8 @@ class DashboardPage(Element):
 
     @renderer
     def dashboard_name_renderer(self, request, tag):
-        return tag(self.dashboard.config['title'])
+        return tag(self.dashboard.title)
 
     @renderer
     def dashboard_container_renderer(self, request, tag):
         return self.dashboard
-
-
-class Dashboard(Element):
-    """
-    Holds a dashboard's configuration data and widget elements.
-
-    Dashboard instances are created when diamondash starts.
-    """
-
-    loader = XMLString(resource_string(__name__,
-                                       'templates/dashboard_container.xml'))
-
-    def __init__(self, config):
-        self.config = parse_config(config)
-        self.client_config = build_client_config(self.config)
-        self.rows = build_widget_rows(self.config['widget_list'])
-
-    @classmethod
-    def dashboards_from_dir(cls, dir, defaults=None):
-        """Gets a list of dashboard configs from a config dir"""
-        dashboards = []
-
-        for filename in listdir(dir):
-            filepath = path.join(dir, filename)
-            dashboard = Dashboard.from_config_file(filepath, defaults)
-            dashboards.append(dashboard)
-
-        return dashboards
-
-    @classmethod
-    def from_config_file(cls, filename, defaults=None):
-        """Loads dashboard config from a config file"""
-        # TODO check and test for invalid config files
-
-        config = {}
-        if defaults is not None:
-            config.update(defaults)
-
-        try:
-            config.update(yaml.safe_load(open(filename)))
-        except IOError:
-            raise ConfigError('File %s not found.' % (filename,))
-
-        return cls(config)
-
-    @classmethod
-    def from_args(cls, **kwargs):
-        """Loads dashboard config from args"""
-
-        config = {}
-        if kwargs is not None:
-            config.update(kwargs)
-
-        return cls(kwargs)
-
-    def get_widget_config(self, w_name):
-        """Returns a widget using the passed in widget name"""
-        return self.config['widgets'].get(w_name, None)
-
-    @renderer
-    def widget_row_renderer(self, request, tag):
-        for row in self.rows:
-            yield WidgetRow(row)
-
-    @renderer
-    def config_script(self, request, tag):
-        if self.client_config is not None:
-            tag.fillSlots(client_config=self.client_config)
-            return tag
-
-
-class WidgetRow(Element):
-    """Graph element that resides in a Dashboard element"""
-
-    loader = XMLString(resource_string(__name__, 'templates/widget_row.xml'))
-
-    def __init__(self, widgets):
-        self.widgets = widgets
-
-    @renderer
-    def widget_renderer(self, request, tag):
-        for widget in self.widgets:
-            yield widget
-
-
-class Widget(Element):
-    """
-    Abstract widget element that resides on a Dashboard.
-    Subclasses need to assign an element to widget_element
-    """
-
-    loader = XMLString(resource_string(__name__, 'templates/widget.xml'))
-
-    def __init__(self, config):
-        self.config = config
-        self.class_attrs = []
-        self.widget_element = None
-
-    @renderer
-    def widget_renderer(self, request, tag):
-        new_tag = tag.clone()
-
-        self.class_attrs.extend(['widget', '%s-widget'
-                                 % (self.config['type'],)])
-        class_attr_str = ' '.join('%s' % attr
-                                  for attr in self.class_attrs)
-
-        new_tag.fillSlots(widget_title_slot=self.config['title'],
-                          widget_class_slot=class_attr_str,
-                          widget_id_slot=self.config['name'],
-                          widget_element_slot=self.widget_element)
-        return new_tag
-
-
-class GraphWidget(Widget):
-    """
-    Graph subclass of Widget, providing a graph
-    widget element from a template file
-    """
-
-    def __init__(self, config):
-        Widget.__init__(self, config)
-        widget_element_loader = XMLString(
-            resource_string(__name__, 'templates/graph_widget.xml'))
-        self.widget_element = Element(loader=widget_element_loader)
-
-        span = {
-            1: 'span4',
-            2: 'span8',
-            3: 'span12',
-        }.get(config['width'], 1)
-        self.class_attrs.append(span)
-
-
-class LValueWidget(Widget):
-    """
-    LValue subclass of Widget, providing a graph
-    widget element from a template file
-    """
-
-    def __init__(self, config):
-        Widget.__init__(self, config)
-        widget_element_loader = XMLString(
-            resource_string(__name__, 'templates/lvalue_widget.xml'))
-        self.widget_element = Element(loader=widget_element_loader)
-
-
-class LValueGroup(Element):
-    """A group of lvalue widgets displayed from top to bottom"""
-
-    loader = XMLString(resource_string(__name__, 'templates/lvalue_group.xml'))
-
-    def __init__(self, lvalue_widgets):
-        self.lvalue_widgets = lvalue_widgets
-
-    @renderer
-    def lvalue_widget_renderer(self, request, tag):
-        for lvalue_widget in self.lvalue_widgets:
-            yield lvalue_widget
-
-
-_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
-
-
-def slugify(text):
-    """Slugifies the passed in text"""
-    result = []
-    for word in _punct_re.split(text.lower()):
-        result.extend(unidecode(word).split())
-    return '-'.join(result)

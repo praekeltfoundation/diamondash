@@ -1,393 +1,174 @@
-# -*- coding: utf-8 -*-
 """Tests for diamondash's dashboard"""
 
-import json
-from os import path
-from copy import deepcopy
-
-from pkg_resources import resource_filename
+from mock import Mock
 from twisted.trial import unittest
 
-from diamondash.dashboard import (
-    slugify, format_metric_target, guess_aggregation_method,
-    parse_interval, parse_graph_width,
-    parse_config, parse_graph_config, parse_lvalue_config,
-    build_client_config, Dashboard, LVALUE_DEFAULTS, GRAPH_DEFAULTS,
-    MIN_COLUMN_SPAN, MAX_COLUMN_SPAN)
-from diamondash.server import DASHBOARD_DEFAULTS
-from diamondash.exceptions import ConfigError
+from diamondash.dashboard import Dashboard, WidgetRow
+from diamondash.widgets.widget import Widget
+from diamondash import utils, ConfigError
 
 
-class DashboardConfigExceptionsTestCase(unittest.TestCase):
-    """
-    Test cases which should raise ConfigError on erroneous config input data
-    """
-
-    def test_from_config_file_not_found(self):
-        """
-        Should assert an error if the dashboard config file is not found
-        """
-        self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/test_dashboard_data/non_existent_file.yml')
-
-    def test_no_dashboard_name(self):
-        """
-        Should assert an error if the dashboard in the config file has no name
-        """
-        self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/test_dashboard_data/no_dashboard_name.yml')
-
-    def test_no_widget_name(self):
-        """Should assert an error if a widget in the config file has no name"""
-        self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/test_dashboard_data/no_widget_name.yml')
-
-    def test_no_widget_metrics(self):
-        """
-        Should assert an error if a widget in the config file
-        has no metrics
-        """
-        self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/test_dashboard_data/no_widget_metrics.yml')
-
-    def test_no_metric_target(self):
-        """
-        Should assert an error if a metric in the config file has no target
-        """
-        self.assertRaises(ConfigError, Dashboard.from_config_file,
-                          'tests/test_dashboard_data/no_metrics_target.yml')
-
-
-def dashboard_config_from_file(filename):
-    filename = path.join('test_dashboard_data', filename)
-    dashboard = Dashboard.from_config_file(
-        resource_filename(__name__, filename),
-        DASHBOARD_DEFAULTS)
-    return dashboard.config
-
-
-class DashboardConfigTestCase(unittest.TestCase):
-    """
-    Test cases which should read in dashboard config
-    data and add, parse, modify and replace the input
-    where applicable
-    """
-    DASHBOARD_DEFAULTS = {
-        'request_interval': 2,
-        'default_widget_type': 'graph',
+class StubbedDashboard(Dashboard):
+    LAYOUT_FUNCTIONS = {
+        'layoutfn1': lambda x: x,
+        'layoutfn2': lambda x: x
     }
 
-    TEST_GRAPH_DEFAULTS = {
-        'null_filter': 'zeroize',
-        'time_range': '1d',
-    }
 
-    TEST_LVALUE_DEFAULTS = {
-        'time_range': '1h',
-    }
+class ToyWidget(Widget):
+    __DEFAULTS = {'some-option': 'some-value'}
+    __CONFIG_TAG = 'diamondash.tests.test_dashboard.ToyWidget'
 
-    TEST_GRAPH_NAME = 'Some graph widget'
-    TEST_GRAPH_NAME_SLUGIFIED = 'some-graph-widget'
-    TEST_GRAPH_CONFIG = {
-        'name': TEST_GRAPH_NAME_SLUGIFIED,
-        'title': TEST_GRAPH_NAME,
-        'type': 'graph',
-        'time_range': '2d',
-        'bucket_size': '1h',
-        'metrics': [
-            {
-                'name': 'sum-of-a-salesman',
-                'title': 'Sum of a salesman',
-                'target': 'foo.sum',
-                'warning_max_threshold': 8,
-                'warning_min_threshold': 7,
-            },
-            {
-                'name': 'average-of-a-salesman',
-                'title': 'parlez',
-                'target': 'foo.avg',
-            }
-        ],
-        'width': 2,
-    }
-    TEST_GRAPH_CONFIG_PARSED = dict(
-        dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS), **{
-            'name': TEST_GRAPH_NAME_SLUGIFIED,
-            'title': TEST_GRAPH_NAME,
-            'type': 'graph',
-            'time_range': 172800,
-            'bucket_size': 3600,
-            'metrics': [
-                {
-                    'name': 'sum-of-a-salesman',
-                    'title': 'Sum of a salesman',
-                    'null_filter': 'zeroize',
-                    'target': 'foo.sum',
-                    'wrapped_target':
-                        'alias(summarize(foo.sum, "3600s", "sum"), "foo.sum")',
-                    'warning_max_threshold': 8,
-                    'warning_min_threshold': 7,
-                },
-                {
-                    'name':
-                    'average-of-a-salesman',
-                    'title': 'parlez',
-                    'null_filter': 'zeroize',
-                    'target': 'foo.avg',
-                    'wrapped_target':
-                        'alias(summarize(foo.avg, "3600s", "avg"), "foo.avg")',
-                },
-            ],
-            'target_keys': ['foo.sum', 'foo.avg'],
-            'request_url': (
-                'render/?from=-172800s&target=alias%28summarize%28foo.sum%2C+'
-                '%223600s%22%2C+%22sum%22%29%2C+%22foo.sum%22%29&target=alias'
-                '%28summarize%28foo.avg%2C+%223600s%22%2C+%22avg%22%29%2C+%22'
-                'foo.avg%22%29&format=json'),
-            'width': 2,
-        })
+    @classmethod
+    def from_config(cls, config, class_defaults):
+        return "%s -- created" % config['name']
 
-    TEST_LVALUE_NAME = 'Some lvalue widget'
-    TEST_LVALUE_NAME_SLUGIFIED = 'some-lvalue-widget'
-    TEST_LVALUE_CONFIG = {
-        'name': TEST_LVALUE_NAME_SLUGIFIED,
-        'title': TEST_LVALUE_NAME,
-        'type': 'lvalue',
-        'time_range': '30m',
-        'metrics': ['foo.sum', 'bar.sum'],
-    }
-    TEST_LVALUE_CONFIG_PARSED = dict(
-        dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS), **{
-            'name': TEST_LVALUE_NAME_SLUGIFIED,
-            'title': TEST_LVALUE_NAME,
-            'type': 'lvalue',
-            'time_range': 1800,
-            'metrics': [
-                {
-                    'target': 'foo.sum',
-                    'wrapped_target':
-                        'alias(summarize(foo.sum, "1800s", "sum"), "foo.sum")',
-                },
 
-                {
-                    'target': 'bar.sum',
-                    'wrapped_target':
-                        'alias(summarize(bar.sum, "1800s", "sum"), "bar.sum")',
-                },
-            ],
-            'target_keys': ['foo.sum', 'bar.sum'],
-            'request_url': (
-                'render/?from=-3600s&target=alias%28summarize%28foo.sum%2C+'
-                '%221800s%22%2C+%22sum%22%29%2C+%22foo.sum%22%29&target=alias'
-                '%28summarize%28bar.sum%2C+%221800s%22%2C+%22sum%22%29%2C+%22'
-                'bar.sum%22%29&format=json'),
-        })
+class DashboardTestCase(unittest.TestCase):
+    def mk_dashboard(self, **kwargs):
+        kwargs = utils.update_dict({
+            'name': 'some-dashboard',
+            'title': 'Some Dashboard',
+            'widgets': [],
+            'client_config': {},
+        }, kwargs)
 
-    TEST_CONFIG = dict(DASHBOARD_DEFAULTS, **{
-        'name': 'A dashboard',
-        'graph_defaults': TEST_GRAPH_DEFAULTS,
-        'lvalue_defaults': TEST_LVALUE_DEFAULTS,
-        'widgets': [TEST_GRAPH_CONFIG, TEST_LVALUE_CONFIG],
-    })
-    TEST_CONFIG_PARSED = dict(DASHBOARD_DEFAULTS, **{
-        'name': 'a-dashboard',
-        'title': 'A dashboard',
-        'graph_defaults': dict(GRAPH_DEFAULTS, **TEST_GRAPH_DEFAULTS),
-        'lvalue_defaults': dict(LVALUE_DEFAULTS, **TEST_LVALUE_DEFAULTS),
-        'widget_list': [TEST_GRAPH_CONFIG_PARSED, TEST_LVALUE_CONFIG_PARSED],
-        'widgets': {
-            TEST_GRAPH_NAME_SLUGIFIED: TEST_GRAPH_CONFIG_PARSED,
-            TEST_LVALUE_NAME_SLUGIFIED: TEST_LVALUE_CONFIG_PARSED,
-        },
-    })
+        return Dashboard(**kwargs)
 
-    TEST_CLIENT_CONFIG_BUILT = 'var config = %s;' % (json.dumps({
-        'name': 'a-dashboard',
-        'request_interval': int(
-            DASHBOARD_DEFAULTS['request_interval']) * 1000,
-        'widgets': {
-            'some-graph-widget': {
-                'metrics': [
-                    {
-                        'name': 'sum-of-a-salesman',
-                        'title': 'Sum of a salesman',
-                        'warning_max_threshold': 8,
-                        'warning_min_threshold': 7,
-                    },
-                    {
-                        'name': 'average-of-a-salesman',
-                        'title': 'parlez',
-                    }
-                ]
-            },
+    def test_new_row(self):
+        """
+        Should append an empty row and set the last row width to 0.
+        """
+        dashboard = self.mk_dashboard()
+        existing_row = dashboard.last_row
+        dashboard._new_row()
+        self.assertEqual(dashboard.rows, [existing_row, dashboard.last_row])
+        self.assertNotEqual(dashboard.last_row, existing_row)
 
-            'some-lvalue-widget': {},
-        },
-    }))
+    def test_add_widget(self):
+        """Should add a widget to the dashboard."""
+
+        dashboard = self.mk_dashboard()
+        widget = ToyWidget(
+            name='toy',
+            title='Toy',
+            client_config='toy_client_config',
+            width=2)
+        dashboard.add_widget(widget)
+
+        self.assertEqual(dashboard.widgets_by_name['toy'], widget)
+        self.assertEqual(dashboard.widgets[0], widget)
+        self.assertEqual(dashboard.rows[0].widgets[0].widget, widget)
+        self.assertEqual(dashboard.last_row.width, 2)
+        self.assertEqual(dashboard.client_config['widgets'][0],
+                         'toy_client_config')
+
+    def test_add_widget_for_layout_fn(self):
+        """
+        Should call the appropriate layout function if the function's name is
+        passed in as a 'widget'.
+        """
+        dashboard = self.mk_dashboard()
+        mock_layoutfn = Mock()
+        dashboard.LAYOUT_FUNCTIONS = {'mock': 'mock_layoutfn'}
+        dashboard.mock_layoutfn = mock_layoutfn
+
+        dashboard.add_widget('mock')
+        self.assertTrue(mock_layoutfn.called)
+
+    def test_add_widget_for_new_row(self):
+        """
+        Should add a new row if there is no space for the widget being added on
+        the current row.
+        """
+        dashboard = self.mk_dashboard()
+        dashboard.last_row = WidgetRow()
+        dashboard.last_row.width = 3
+
+        widget = ToyWidget(name='toy', title='Toy', width=2,
+                           client_config='toy_client_config')
+        self.patch(Dashboard, 'MAX_WIDTH', 4)
+
+        dashboard.add_widget(widget)
+        self.assertEqual(dashboard.last_row.width, 2)
 
     def test_parse_config(self):
         """
-        Should parse a dashboard config,
-        applying changes where appropriate
+        Should create a dashboard from a config dict.
         """
-        config = deepcopy(self.TEST_CONFIG)
-        result = parse_config(config)
-        self.assertEqual(result, self.TEST_CONFIG_PARSED)
+        config = StubbedDashboard.parse_config({
+            'name': u'some dashboard',
+            'title': 'Some Dashboard',
+            'request_interval': '2s',
+            'share_id': 'this-is-a-share-id',
+            'widgets': [
+                'layoutfn1',
+                {
+                    'name': 'widget1',
+                    'type': 'diamondash.tests.test_dashboard.ToyWidget',
+                },
+                'layoutfn2',
+                {
+                    'name': 'widget2',
+                    'type': 'diamondash.tests.test_dashboard.ToyWidget',
+                },
+            ]
+        })
 
-    def test_parse_graph_config(self):
+        self.assertEqual(config['name'], 'some-dashboard')
+        self.assertEqual(config['title'], 'Some Dashboard')
+        self.assertEqual(config['client_config'], {
+            'name': 'some-dashboard',
+            'requestInterval': 2000
+        })
+        self.assertEqual(config['share_id'], 'this-is-a-share-id')
+        self.assertEqual(config['widgets'], [
+            'layoutfn1',
+            'widget1 -- created',
+            'layoutfn2',
+            'widget2 -- created',
+        ])
+
+    def test_parse_config_for_defaults(self):
+        class_defaults = {
+            Dashboard._Dashboard__CONFIG_TAG: {
+                'some-field': 'lerp',
+                'some-other-field': 23,
+            }
+        }
+        config = StubbedDashboard.parse_config({
+            'name': u'Test Dashboard',
+            'widgets': [],
+            'defaults': {
+                Dashboard._Dashboard__CONFIG_TAG: {'some-field': 'larp'}
+            }
+        }, class_defaults)
+        self.assertEqual(config['title'], 'Test Dashboard')
+        self.assertFalse(config.get('defaults'))
+        self.assertEqual(config['some-field'], 'larp')
+        self.assertEqual(config['some-other-field'], 23)
+
+    def test_parse_config_for_no_name(self):
         """
-        Should parse a graph widget config,
-        applying changes where appropriate
+        Should raise an exception when given a dashboard config without a name
+        key.
         """
-        config = deepcopy(self.TEST_GRAPH_CONFIG)
-        result = parse_graph_config(config, self.TEST_GRAPH_DEFAULTS)
+        self.assertRaises(ConfigError, Dashboard.parse_config, {})
 
-        self.assertEqual(result, self.TEST_GRAPH_CONFIG_PARSED)
-
-    def test_parse_lvalue_config(self):
+    def test_parse_config_for_no_title(self):
         """
-        Should parse an lvalue widget config,
-        applying changes where appropriate
+        Should create a dashboard with a title set to the name passed into
+        the config if no title is in the config.
         """
-        config = deepcopy(self.TEST_LVALUE_CONFIG)
-        result = parse_lvalue_config(config, self.TEST_LVALUE_DEFAULTS)
+        config = StubbedDashboard.parse_config({
+            'name': u'Test Dashboard',
+            'widgets': []
+        })
+        self.assertEqual(config['title'], 'Test Dashboard')
 
-        self.assertEqual(result, self.TEST_LVALUE_CONFIG_PARSED)
-
-    def test_build_client_config(self):
+    def test_parse_config_for_no_widgets(self):
         """
-        Should build a json string containing configuration
-        information necessary for the client side
+        Should raise an exception when given a dashboard config without a
+        widgets key.
         """
-        result = build_client_config(self.TEST_CONFIG_PARSED)
-
-        self.assertEqual(result, self.TEST_CLIENT_CONFIG_BUILT)
-
-    def test_guess_aggregation_method(self):
-        """
-        Metric targets should be formatted to be enclosed in a 'summarize()'
-        function with the bucket size and aggregation method as arguments.
-
-        The aggregation method should be determined from the
-        end of the metric target (avg, max, min, sum).
-        """
-        def assert_agg_method(target, expected):
-            result = guess_aggregation_method(target)
-            self.assertEqual(result, expected)
-
-        assert_agg_method("foo.max", "max")
-        assert_agg_method("foo.min", "min")
-        assert_agg_method("integral(foo.sum)", "max")
-        assert_agg_method("sum(foo.min)", "min")
-        assert_agg_method('somefunc("foo.max", foo.min)', "min")
-        assert_agg_method('foo(bar(baz.min), baz.max)', "min")
-        assert_agg_method('foo(bar("baz.min"), baz.max)', "max")
-
-    def test_format_metric_target(self):
-        """
-        Metric targets should be formatted to be enclosed in a 'summarize()'
-        function with the bucket size and aggregation method as arguments.
-
-        The aggregation method should be determined from the
-        end of the metric target (avg, max, min, sum).
-        """
-        def assert_metric_target(target, bucket_size, expected):
-            result = format_metric_target(target, bucket_size)
-            self.assertEqual(result, expected)
-
-        target = 'vumi.random.count.sum'
-        bucket_size = 120
-        expected = (
-            'alias(summarize(vumi.random.count.sum, "120s", "sum"), '
-            '"vumi.random.count.sum")')
-        assert_metric_target(target, bucket_size, expected)
-
-        target = 'vumi.random.count.avg'
-        bucket_size = 620
-        expected = (
-            'alias(summarize(vumi.random.count.avg, "620s", "avg"), '
-            '"vumi.random.count.avg")')
-        assert_metric_target(target, bucket_size, expected)
-
-        target = 'vumi.random.count.max'
-        bucket_size = 120
-        expected = (
-            'alias(summarize(vumi.random.count.max, "120s", "max"), '
-            '"vumi.random.count.max")')
-        assert_metric_target(target, bucket_size, expected)
-
-        target = 'integral(vumi.random.count.sum)'
-        bucket_size = 120
-        expected = (
-            'alias(summarize(integral(vumi.random.count.sum), "120s", "max"), '
-            '"integral(vumi.random.count.sum)")')
-        assert_metric_target(target, bucket_size, expected)
-
-    def test_slugify(self):
-        """Should change 'SomethIng_lIke tHis' to 'something-like-this'"""
-        self.assertEqual(slugify('SoMeThing_liKe!tHis'), 'something-like-this')
-
-    def test_widget_title(self):
-        """
-        Should use the given widget name as the widget title, or set the widget
-        title using a title key if it is explicitly specified, even when the
-        two different conventions are mixed in a config file
-        """
-        config = dashboard_config_from_file('widget_title.yml')
-
-        self.assertEqual(
-            config['widgets']['random-count-sum']['title'], 'random count sum')
-        self.assertEqual(config['widgets']['random-timer-average']['title'],
-                         'this is an explicit title')
-
-    def test_metric_title(self):
-        """
-        Should use the given metric name as the metric title, or set the metric
-        title using a title key if it is explicitly specified, even when the
-        two different conventions are mixed in a config file
-        """
-        config = dashboard_config_from_file('metric_title.yml')
-
-        test_metrics = config['widgets']['test-widget']['metrics']
-        self.assertEqual(test_metrics[0]['title'],
-                         'random count sum')
-        self.assertEqual(test_metrics[1]['title'],
-                         'this is an explicit title')
-
-    def test_parse_interval(self):
-        """
-        Multiplier-suffixed intervals should be turned into integers correctly.
-        """
-        self.assertEqual(2, parse_interval(2))
-        self.assertEqual(2, parse_interval("2"))
-        self.assertEqual(2, parse_interval("2s"))
-        self.assertEqual(120, parse_interval("2m"))
-        self.assertEqual(7200, parse_interval("2h"))
-        self.assertEqual(86400 * 2, parse_interval("2d"))
-
-    def test_parse_graph_width(self):
-        """
-        Multiplier-suffixed intervals should be turned into integers correctly.
-        """
-        min = MIN_COLUMN_SPAN
-        max = MAX_COLUMN_SPAN
-        self.assertEqual(min, parse_graph_width(min - 1))
-        self.assertEqual(max, parse_graph_width(max + 1))
-        self.assertEqual(min + 1, parse_graph_width(min + 1))
-        self.assertEqual(max - 1, parse_graph_width(max - 1))
-
-    def test_graph_time_range(self):
-        """
-        Should use the given time range if one is provided, otherwise the
-        default.
-        """
-        config = dashboard_config_from_file('graph_time_range.yml')
-
-        def assert_time_range(widget_name, time_range):
-            self.assertEqual(
-                config['widgets'][widget_name]['time_range'], time_range)
-
-        assert_time_range('default-time-range',
-                          GRAPH_DEFAULTS['time_range'])
-        assert_time_range('explicit-time-range', 1337)
-        assert_time_range('suffix-time-range', 7200)
+        self.assertRaises(ConfigError, Dashboard.parse_config, {})

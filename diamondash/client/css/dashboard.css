@@ -1,0 +1,14 @@
+.row {
+	margin-bottom: 18px;
+}
+
+.widget-title {
+	background-color: #333;
+	color: #eee;
+	text-align: center;
+	min-height: 30px;
+}
+
+.widget-title h4 {
+	line-height: 30px;
+}
