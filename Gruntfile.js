@@ -36,7 +36,6 @@ module.exports = function(grunt) {
     // excludes
     "!diamondash/**/tests/*",
 
-    "!diamondash/client/js/__append__.js",
     "diamondash/client/js/__append__.js"
   ];
 

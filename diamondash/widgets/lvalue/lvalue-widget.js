@@ -14,19 +14,17 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
   ],
 
   initialize: function(options) {
-    this.model.on('change', this.render, this);
-
     var $el = this.$el,
         $slots = this.$slots = {};
 
-    this.slotSelectors.forEach(
-      function(s) { return $slots[s] = $el.find(s); });
-
+    this.slotSelectors.forEach(function(s) { $slots[s] = $el.find(s); });
     this.$changeEl = $el.find('.lvalue-change');
+
+    this.model.on('change', this.render, this);
   },
 
   formatLValue: d3.format(".2s"),
-  formatDiff: d3.format(".3s"),
+  formatDiff: d3.format("+.3s"),
   formatPercentage: d3.format(".0%"),
 
   _formatTime: d3.time.format("%d-%m-%Y %H:%M"),
