@@ -40,7 +40,7 @@ diamondash.DashboardController = (function() {
 
       return new DashboardController({
         name: dashboardName,
-        widgets: widgets, 
+        widgets: widgets,
         widgetViews: widgetViews,
         requestInterval: requestInterval
       });
