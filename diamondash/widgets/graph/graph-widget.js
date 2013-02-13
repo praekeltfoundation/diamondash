@@ -18,7 +18,7 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
     this.set({
       metrics: metrics,
       domain: 0,
-      range: 0 
+      range: 0
     });
   },
 
@@ -143,7 +143,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .attr('class', 'legend-item-value-label');
 
     this.formatNumber = d3.format(".3s");
-        
+
     // Model-View Bindings Setup
     // -------------------------
     this.model.on('change', this.render, this);
