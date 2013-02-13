@@ -1,3 +1,5 @@
+/ve/
+
 *.py[co]
 
 # Packages
@@ -40,3 +42,6 @@ tmp/
 logs/
 
 .*.swo
+
+# Node stuff (for js tests)
+node_modules

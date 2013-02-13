@@ -1,0 +1,32 @@
+.lvalue-widget-container {
+  padding: 0;
+  text-align: center;
+}
+
+.lvalue-lvalue {
+  margin: 10px auto;
+	font-size: 44px;
+  display: block;
+  text-align: center;
+}
+
+.lvalue-time {
+  margin: 8px auto;
+  margin-right: 12px;
+	font-size: 14px;
+  text-align: right;
+	color: #808080;
+}
+
+.lvalue-change {
+  margin: 8px auto;
+	font-size: 22px;
+	margin-left: 5px;
+}
+
+.lvalue-change div {
+  display: inline-block;
+}
+
+.good-diff { color: #33cc33; }
+.bad-diff { color: #cc3333; }
