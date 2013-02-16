@@ -12563,7 +12563,7 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
 
   formatLValue: d3.format(".2s"),
   formatDiff: d3.format("+.3s"),
-  formatPercentage: d3.format(".0%"),
+  formatPercentage: d3.format(".2%"),
 
   _formatTime: d3.time.format("%d-%m-%Y %H:%M"),
   formatTime: function(t) { return this._formatTime(new Date(t * 1000)); },
