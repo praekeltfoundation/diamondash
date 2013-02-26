@@ -34,8 +34,9 @@ class GraphWidget(Widget):
             raise ConfigError(
                 'Graph Widget "%s" needs metrics.' % config['name'])
 
+        bucket_size = utils.parse_interval(config.pop('bucket_size'))
         metric_defaults = config.pop('metric_defaults', {})
-        metric_defaults['bucket_size'] = config.pop('bucket_size')
+        metric_defaults['bucket_size'] = bucket_size
         metric_configs = [cls.parse_metric_config(m, metric_defaults)
                           for m in metric_configs]
 
@@ -46,8 +47,10 @@ class GraphWidget(Widget):
             'metrics': metric_configs
         }, class_defaults)
 
-        config['client_config']['model']['metrics'] = [
-            m['metadata']['client_config'] for m in metric_configs]
+        config['client_config']['model'].update({
+            'bucketSize': bucket_size,
+            'metrics': [m['metadata']['client_config'] for m in metric_configs]
+        })
 
         return config
 

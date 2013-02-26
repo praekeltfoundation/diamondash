@@ -5867,6 +5867,15 @@ a:hover {
   font-weight: bold;
 }
 
+.ruler-line {
+  background-color: #888;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+}
+
 .lvalue-widget-container {
   padding: 0;
   text-align: center;

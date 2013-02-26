@@ -1,7 +1,7 @@
 var GraphWidgetModel = diamondash.widgets.GraphWidgetModel,
     GraphWidgetView = diamondash.widgets.GraphWidgetView;
 
-describe("GraphWidgetModel", function(){
+describe("GraphWidgetModel", function() {
   describe(".initialize()", function() {
     it("should bind the model's metrics' events to the model correctly",
        function() {
@@ -72,6 +72,16 @@ describe("GraphWidgetModel", function(){
              .get('m2')
              .get('datapoints'),
         [{x: 3, y: 8}, {x: 5, y: 11}]);
+    });
+  });
+
+  describe(".genTickValues()", function() {
+    it("should generate the correct number of tick values", function() {
+      var model = new GraphWidgetModel();
+      var view = new GraphWidgetView({model: model});
+      view.maxTicks = 8;
+      assert.deepEqual(view.genTickValues(2, 96, 5), d3.range(2, 96, 5 * 3));
+      assert.deepEqual(view.genTickValues(3, 98, 5), d3.range(3, 98, 5 * 3));
     });
   });
 });

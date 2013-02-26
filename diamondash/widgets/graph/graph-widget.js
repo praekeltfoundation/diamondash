@@ -4,16 +4,15 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
+    options = options || {};
+
     var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
+        metrics = new widgets.GraphWidgetMetricCollection(
+          options.metrics || []);
 
     metrics
-      .on(
-        'all',
-        function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on(
-        'change',
-        function() { self.trigger('change'); });
+      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
+      .on('change', function() { self.trigger('change'); });
 
     this.set({
       metrics: metrics,
@@ -35,9 +34,8 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
 
 var maxColors = 10,
     color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0;
-
-var nextColor = function() { return color(colorCount++ % maxColors); };
+    colorCount = 0,
+    nextColor = function() { return color(colorCount++ % maxColors); };
 
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
@@ -49,6 +47,10 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
         this.set('color', nextColor());
       }
     }
+  },
+
+  coordsAt: function(i) {
+    return this.get('datapoints')[i] || {x: 0, y: 0};
   }
 });
 
@@ -56,74 +58,70 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel
 });
 
+var _formatTime = d3.time.format("%d-%m %H:%M");
+
 widgets.GraphWidgetView = widgets.WidgetView.extend({
   svgHeight: 194,
   axisHeight: 24,
-  timeMarkerWidth: 132,
+  timeMarkerWidth: 128,
   margin: {top: 4, right: 4, bottom: 4, left: 4},
 
-  initialize: function(options) {
-    var margin = this.margin,
-        width,
-        svgHeight,
-        axisHeight = this.axisHeight,
-        chartWidth, chartHeight,
-        timeMarkerWidth = this.timeMarkerWidth,
-        x, y,
-        xAxis, yAxis,
-        d3el,
-        svg, chart,
-        metrics,
-        legend, legendItem;
+  formatTime: function(x) { return _formatTime(new Date(x * 1000)); },
 
-    metrics = this.model.get('metrics').toJSON();
-    d3el = d3.select(this.el);
-    this.width = width = this.$el.width();
+  initialize: function(options) {
+    var self = this,
+        metrics = this.model.get('metrics').toJSON(),
+        d3el = d3.select(this.el);
 
     // Chart Setup
     // -----------
-    svgHeight = this.svgHeight;
-    chartWidth = width - margin.left - margin.right;
-    chartHeight = svgHeight - axisHeight - margin.top - margin.bottom;
+    this.width = this.$el.width();
 
-    svg = d3el.append('svg')
-        .attr('width', width)
-        .attr('height', svgHeight)
+    var margin = this.margin,
+        chartWidth = this.width - margin.left - margin.right,
+        chartHeight = this.svgHeight
+          - this.axisHeight - margin.top - margin.bottom;
+
+    this.width = this.$el.width();
+
+    var svg = d3el.append('svg')
+        .attr('width', this.width)
+        .attr('height', this.svgHeight)
       .append('g')
         .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
 
+    var x, y;
     this.x = x = d3.time.scale().range([0, chartWidth]);
     this.y = y = d3.scale.linear().range([chartHeight, 0]);
 
-    var timeFormat = d3.time.format("%d-%m %H:%M");
-    var formatTime = function(x) { return timeFormat(new Date(x * 1000)); };
-
-    this.xAxis = xAxis = d3.svg.axis()
+    this.maxTicks = Math.floor(chartWidth / this.timeMarkerWidth);
+    this.xAxis = d3.svg.axis()
       .scale(x)
       .orient('bottom')
-      .tickFormat(formatTime)
-      .ticks(parseInt(chartWidth / timeMarkerWidth, 10));
+      .tickFormat(this.formatTime)
+      .ticks(this.maxTicks);
 
     this.line = d3.svg.line()
       .interpolate("basis")
       .x(function(d) { return x(d.x); })
       .y(function(d) { return y(d.y); });
 
-    this.chart = chart = svg.append('g')
+    var chart = this.chart = svg.append('g')
       .attr('class', 'chart')
       .attr('height', chartHeight);
 
     this.xAxisLine = svg.append("g")
       .attr('class', 'x axis')
-      .attr('transform', "translate(0," + (svgHeight - axisHeight) + ")")
-      .call(xAxis);
+      .attr('transform',
+            "translate(0," + (this.svgHeight - this.axisHeight) + ")")
+      .call(this.xAxis);
 
     // Legend Setup
     // -----------
-    legend = d3el.append('ul')
+    var legend = d3el.append('ul')
       .attr('class', 'legend');
 
-    this.legendItem = legendItem = legend.selectAll('.legend-item')
+    var legendItem = this.legendItem = legend.selectAll('.legend-item')
       .data(metrics, function(d) { return d.name; })
       .enter()
       .append('li')
@@ -147,17 +145,29 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     this.model.on('change', this.render, this);
   },
 
+  genTickValues: function(start, end, step) {
+    var n = (end - start) / step,
+        m = this.maxTicks,
+        i = 1;
+
+    while (Math.floor(n / i) > m) i++;
+    return d3.range(start, end, step * i);
+  },
+
   render: function() {
     var model = this.model,
         line = this.line,
         metrics = model.get('metrics').toJSON(),
         domain = model.get('domain'),
         range = model.get('range'),
+        bucketSize = model.get('bucketSize'),
         formatNumber = this.formatNumber;
 
     this.x.domain(domain);
     this.y.domain(range);
 
+    this.xAxis.tickValues(this.genTickValues.apply(
+      this, domain.concat([bucketSize])));
     this.xAxisLine.call(this.xAxis);
 
     var chartLines = this.chart.selectAll('.line')
@@ -167,8 +177,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .attr('class', 'line')
       .style('stroke', function(d) { return d.color; });
 
-    chartLines
-      .attr('d', function(d) { return line(d.datapoints); });
+    chartLines.attr('d', function(d) { return line(d.datapoints); });
 
     this.legendItemTitleLabel.text(function(d) { return d.title + ": "; });
 
@@ -176,8 +185,9 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     this.legendItemValueLabel.data(metrics, function(d) { return d.name; })
       .text(function(d) {
         var datapoints = d.datapoints;
-        return (datapoints.length > 0 ?
-                formatNumber(datapoints[datapoints.length - 1].y): 0);
+        return datapoints.length > 0
+          ? formatNumber(datapoints[datapoints.length - 1].y)
+          : 0;
     });
   }
 });
