@@ -12452,7 +12452,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     this.xAxis = d3.svg.axis()
       .scale(x)
       .orient('bottom')
-      .tickFormat(this.formatTime)
+      .tickFormat(d3.time.format("%d-%m %H:%M"))
       .ticks(this.maxTicks);
 
     this.line = d3.svg.line()
