@@ -3,7 +3,8 @@
 """Diamondash's web server functionality"""
 
 import yaml
-from os import listdir, path
+from glob import glob
+from os import path
 
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
@@ -105,10 +106,9 @@ class DiamondashServer(object):
     @classmethod
     def dashboards_from_dir(cls, dashboards_dir, class_defaults={}):
         """Creates a list of dashboards from a config dir"""
-        dashboards = []
 
-        for filename in listdir(dashboards_dir):
-            filepath = path.join(dashboards_dir, filename)
+        dashboards = []
+        for filepath in glob(path.join(dashboards_dir, "*.yml")):
             dashboard = Dashboard.from_config_file(filepath, class_defaults)
             dashboards.append(dashboard)
 

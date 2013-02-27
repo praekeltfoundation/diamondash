@@ -95,13 +95,10 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     this.x = x = d3.time.scale().range([0, chartWidth]);
     this.y = y = d3.scale.linear().range([chartHeight, 0]);
 
-    var timeFormat = d3.time.format("%d-%m %H:%M");
-    var formatTime = function(x) { return timeFormat(new Date(x * 1000)); };
-
     this.xAxis = xAxis = d3.svg.axis()
       .scale(x)
       .orient('bottom')
-      .tickFormat(formatTime)
+      .tickFormat(d3.time.format("%d-%m %H:%M"))
       .ticks(parseInt(chartWidth / timeMarkerWidth, 10));
 
     this.line = d3.svg.line()
