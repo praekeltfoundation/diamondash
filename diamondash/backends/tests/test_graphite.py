@@ -31,9 +31,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [0.04924959844054583, 1342386000],
         [0.05052084873949578, 1342389600]]
     M1_PROCESSED_DATAPOINTS = [
-        {'x': 1342382400, 'y': 0},
-        {'x': 1342386000, 'y': 0.04924959844054583},
-        {'x': 1342389600, 'y': 0.05052084873949578}]
+        {'x': 1342382400000, 'y': 0},
+        {'x': 1342386000000, 'y': 0.04924959844054583},
+        {'x': 1342389600000, 'y': 0.05052084873949578}]
 
     M2_TARGET = 'some.other.target'
     M2_METADATA = {'some-field': 'ipsum'}
@@ -42,9 +42,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [1281.0, 1342386000],
         [285.0, 1342389600]]
     M2_PROCESSED_DATAPOINTS = [
-        {'x': 1342382400, 'y': 0},
-        {'x': 1342386000, 'y': 1281.0},
-        {'x': 1342389600, 'y': 285.0}]
+        {'x': 1342382400000, 'y': 0},
+        {'x': 1342386000000, 'y': 1281.0},
+        {'x': 1342389600000, 'y': 285.0}]
 
     RESPONSE_DATA = json.dumps([
         {"target": M1_TARGET, "datapoints": M1_RAW_DATAPOINTS},
@@ -227,9 +227,9 @@ class GraphiteMetricTestCase(unittest.TestCase):
         metric = mk_graphite_metric(null_filter='zeroize')
 
         expected_processed_datapoints = [
-            {'x': 1342382400, 'y': 0},
-            {'x': 1342386000, 'y': 0.04924959844054583},
-            {'x': 1342389600, 'y': 0.05052084873949578}]
+            {'x': 1342382400000, 'y': 0},
+            {'x': 1342386000000, 'y': 0.04924959844054583},
+            {'x': 1342389600000, 'y': 0.05052084873949578}]
         processed_datapoints = metric.process_datapoints(datapoints)
         self.assertEqual(processed_datapoints, expected_processed_datapoints)
 
