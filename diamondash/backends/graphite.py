@@ -203,7 +203,10 @@ class GraphiteMetric(ConfigMixin):
         filtering), and returns the processed datapoints.
         """
         datapoints = self.filter_nulls(datapoints)
-        return [{'x': x, 'y': y} for y, x in datapoints]
+
+        # change datapoints to a list of dicts and convert x values from
+        # seconds to milliseconds
+        return [{'x': x * 1000, 'y': y} for y, x in datapoints]
 
 
 # Borrowed from the bit of pyparsing, the graphite expression parser uses.
