@@ -12480,7 +12480,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
         .attr('width', this.width)
         .attr('height', this.svgHeight)
       .append('g')
-        .attr('transform', "translate("+margin.left+","+margin.top+")");
+        .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
 
     var fx, fy;
     this.fx = fx = d3.time.scale().range([0, this.chartWidth]);
@@ -12504,7 +12504,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
 
     this.axisLine = svg.append("g")
       .attr('class', 'axis')
-      .attr('transform', "translate(0,"+this.axisVPosition+")")
+      .attr('transform', "translate(0, " + this.axisVPosition + ")")
       .call(this.axis);
 
     // Legend Setup
