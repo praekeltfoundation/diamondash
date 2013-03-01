@@ -335,9 +335,6 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       dots
         .attr('cx', function(d) { return fx(d.x); })
         .attr('cy', function(d) { return fy(d.y); });
-
-      //dots.attr('cx', function(d) { return );
-      //    .attr('cy', this.fy);
     }
 
     this.legendItemTitles.text(function(d) { return d.get('title') + ": "; });
