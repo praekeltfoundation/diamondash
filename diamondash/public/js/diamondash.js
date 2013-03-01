@@ -12476,7 +12476,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     // Chart Setup
     // -----------
     var svg = this.svg = d3el.append('svg')
-        .attr('class', 'svg')
+        .attr('class', 'graph-svg')
         .attr('width', this.width)
         .attr('height', this.svgHeight)
       .append('g')
