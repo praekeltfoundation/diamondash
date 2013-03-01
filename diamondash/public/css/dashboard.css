@@ -5825,6 +5825,10 @@ a:hover {
 	line-height: 30px;
 }
 
+.chart *, .axis * {
+  pointer-events: none;
+}
+
 .axis path,
 .axis line {
   fill: none;
@@ -5840,17 +5844,19 @@ a:hover {
 .line {
   fill: none;
   stroke-width: 1.5px;
+  pointer-events: none;
 }
 
 .legend {
-  text-align: center;
+  text-align: left;
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .legend li {
-  display: inline-block;
+  width: 210px;
+  float: left;
   margin: 2px 4px;
 }
 
@@ -5863,18 +5869,37 @@ a:hover {
   border-radius: 4px;
 }
 
-.legend-item-value-label {
-  font-weight: bold;
+.hover-legend-item-value {
+  color: #555;
 }
 
-.ruler-line {
-  background-color: #888;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
+.legend-item-value, .hover-legend-item-value {
+  font-weight: bold;
+  -webkit-transition: all 250ms linear;
+  -moz-transition: all 250ms linear;
+  -o-transition: all 250ms linear;
+  transition: all 250ms linear;
+}
+
+.dot {
+  fill: none;
+  stroke-width: 1.5px;
   pointer-events: none;
 }
+
+.hover-marker line {
+  stroke: #555;
+}
+.hover-marker text {
+  fill: #555;
+}
+
+.axis g {
+  -webkit-transition: fill-opacity 250ms linear;
+  -moz-transition: fill-opacity 250ms linear;
+  -o-transition: fill-opacity 250ms linear;
+  transition: fill-opacity 250ms linear;
+ }
 
 .lvalue-widget-container {
   padding: 0;

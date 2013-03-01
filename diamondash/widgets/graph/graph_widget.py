@@ -48,7 +48,7 @@ class GraphWidget(Widget):
         }, class_defaults)
 
         config['client_config']['model'].update({
-            'bucketSize': bucket_size,
+            'step': bucket_size * 1000,
             'metrics': [m['metadata']['client_config'] for m in metric_configs]
         })
 

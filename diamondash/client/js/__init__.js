@@ -1,8 +1,3 @@
-var root = this,
-    diamondash;
-
-if (typeof exports !== 'undefined') {
-  diamondash = exports;
-} else {
-  diamondash = root.diamondash = {};
-}
+var diamondash = typeof exports !== 'undefined'
+  ? exports
+  : (this.diamondash = {});

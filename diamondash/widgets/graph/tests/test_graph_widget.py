@@ -75,7 +75,7 @@ class GraphWidgetTestCase(unittest.TestCase):
             client_model_config['metrics'],
             [{'name': 'random-sum', 'title': 'random sum'},
              {'name': 'random-avg', 'title': 'random avg'}])
-        self.assertEqual(client_model_config['bucketSize'], 3600)
+        self.assertEqual(client_model_config['step'], 3600000)
 
     def test_parse_config_for_no_metrics(self):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
