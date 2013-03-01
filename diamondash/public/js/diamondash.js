@@ -12644,8 +12644,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
         metrics = model.getMetricModels(),
         domain = model.get('domain'),
         range = model.get('range'),
-        step = model.get('step'),
-        formatValue = this.formatValue;
+        step = model.get('step');
 
     this.fx.domain(domain);
     this.fy.domain(range);
