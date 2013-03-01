@@ -5881,7 +5881,7 @@ a:hover {
   transition: all 250ms linear;
 }
 
-.dot, hover-dot {
+.dot, .hover-dot {
   pointer-events: none;
 }
 
