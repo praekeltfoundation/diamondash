@@ -95,7 +95,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   axisHeight: 24,
   axisMarkerWidth: 128,
   markerCollisionDistance: 60,
-  hoverDotSize: 5,
+  hoverDotSize: 4,
+  dottedHoverDotSize: 5,
   dotSize: 3,
   margin: {top: 4, right: 4, bottom: 0, left: 4},
 
@@ -269,7 +270,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     dots.enter().append('circle')
       .attr('class', 'hover-dot')
       .style('stroke', function(d, i) { return metrics.at(i).get('color'); })
-      .transition().attr('r', this.hoverDotSize);
+      .transition()
+        .attr('r', this.dotted ? this.dottedHoverDotSize : this.hoverDotSize);
 
     dots.attr('cx', svgX)
         .attr('cy', fy);
