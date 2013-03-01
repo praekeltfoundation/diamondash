@@ -95,7 +95,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   axisHeight: 24,
   axisMarkerWidth: 128,
   markerCollisionDistance: 60,
-  hoverDotSize: 4,
+  hoverDotSize: 5,
+  dotSize: 3,
   margin: {top: 4, right: 4, bottom: 0, left: 4},
 
   formatTime: function(t) { return _formatTime(new Date(t)); },
@@ -105,6 +106,13 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     var self = this,
         metrics = this.model.getMetricModels(),
         d3el = d3.select(this.el);
+
+    // Parse Config
+    // ------------
+    if (options.config) {
+      var config = options.config;
+      this.dotted = config.dotted || false;
+    }
 
     // Dimensions Setup
     // -------------
@@ -255,11 +263,11 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .text(this.formatValue);
 
     // draw dots
-    var dots = this.svg.selectAll('.dot')
+    var dots = this.svg.selectAll('.hover-dot')
       .data(_.reject(metricValues, function(d) { return d === null; }));
 
     dots.enter().append('circle')
-      .attr('class', 'dot')
+      .attr('class', 'hover-dot')
       .style('stroke', function(d, i) { return metrics.at(i).get('color'); })
       .transition().attr('r', this.hoverDotSize);
 
@@ -268,7 +276,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   },
 
   unfocus: function() {
-    this.svg.selectAll('.dot, .hover-marker').remove();
+    this.svg.selectAll('.hover-dot, .hover-marker').remove();
     this.axisLine.selectAll('g').style('fill-opacity', 1);
     this.renderLValues();
     this.legendItemValues.attr('class', 'legend-item-value');
@@ -296,20 +304,39 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
         domain = model.get('domain'),
         range = model.get('range'),
         step = model.get('step'),
-        formatValue = this.formatValue;
+        fx = this.fx,
+        fy = this.fy;
 
-    this.fx.domain(domain);
-    this.fy.domain(range);
+    fx.domain(domain);
+    fy.domain(range);
 
     this.axis.tickValues(this.genTickValues.apply(this, domain.concat([step])));
     this.axisLine.call(this.axis);
 
-    var chartLines = this.chart.selectAll('.line')
-      .data(metrics, function(d) { return d.get('name'); });
-    chartLines.enter().append('path')
+    var lines = this.chart.selectAll('.line').data(metrics);
+    lines.enter().append('path')
       .attr('class', 'line')
       .style('stroke', function(d) { return d.get('color'); });
-    chartLines.attr('d', function(d) { return line(d.get('datapoints')); });
+    lines.attr('d', function(d) { return line(d.get('datapoints')); });
+
+    if (this.dotted) {
+      var dotGroups = this.chart.selectAll('.dot-group').data(metrics);
+      dotGroups.enter().append('g')
+        .attr('class', 'dot-group')
+        .style('fill', function(d) { return d.get('color'); });
+
+      var dots = dotGroups.selectAll('.dot')
+        .data(function(d) { return d.get('datapoints'); });
+      dots.enter().append('circle')
+        .attr('class', 'dot')
+        .attr('r', this.dotSize);
+      dots
+        .attr('cx', function(d) { return fx(d.x); })
+        .attr('cy', function(d) { return fy(d.y); });
+
+      //dots.attr('cx', function(d) { return );
+      //    .attr('cy', this.fy);
+    }
 
     this.legendItemTitles.text(function(d) { return d.get('title') + ": "; });
     this.renderLValues();

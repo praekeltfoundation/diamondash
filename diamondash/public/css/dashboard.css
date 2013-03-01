@@ -5881,10 +5881,17 @@ a:hover {
   transition: all 250ms linear;
 }
 
+.dot, hover-dot {
+  pointer-events: none;
+}
+
 .dot {
+  stroke: none;
+}
+
+.hover-dot {
   fill: none;
   stroke-width: 1.5px;
-  pointer-events: none;
 }
 
 .hover-marker line {

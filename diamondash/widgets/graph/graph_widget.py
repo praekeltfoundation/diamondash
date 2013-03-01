@@ -47,10 +47,12 @@ class GraphWidget(Widget):
             'metrics': metric_configs
         }, class_defaults)
 
-        config['client_config']['model'].update({
+        client_config = config['client_config']
+        client_config['model'].update({
             'step': bucket_size * 1000,
             'metrics': [m['metadata']['client_config'] for m in metric_configs]
         })
+        client_config['view'].update({'dotted': config.pop('dotted', False)})
 
         return config
 
