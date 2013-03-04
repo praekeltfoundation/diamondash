@@ -22,9 +22,10 @@ class ConfigMixin(object):
         defaults in `overrides`.
         """
         new_class_defaults = {}
-        for config_tag, defaults in class_defaults.iteritems():
+        for config_tag in set(class_defaults.keys() + overrides.keys()):
             new_class_defaults[config_tag] = utils.update_dict(
-                defaults, overrides.get(config_tag, {}))
+                class_defaults.get(config_tag, {}),
+                overrides.get(config_tag, {}))
 
         return new_class_defaults
 

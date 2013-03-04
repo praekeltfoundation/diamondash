@@ -4,16 +4,15 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
+    options = options || {};
+
     var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
+        metrics = new widgets.GraphWidgetMetricCollection(
+          options.metrics || []);
 
     metrics
-      .on(
-        'all',
-        function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on(
-        'change',
-        function() { self.trigger('change'); });
+      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
+      .on('change', function() { self.trigger('change'); });
 
     this.set({
       metrics: metrics,
@@ -22,33 +21,65 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
     });
   },
 
+  getMetricModels: function() { return this.get('metrics').models; },
+
   parse: function(data) {
     this.set({
       domain: data.domain,
       range: data.range
     }, {silent: true});
 
-    this.get('metrics').update(data.metrics, {merge: true});
+    var metrics = this.get('metrics');
+    
+    data.metrics.forEach(function(d) {
+      var m = metrics.get(d.name);
+      if (typeof m !== 'undefined') {
+        m.set('datapoints', d.datapoints, {silent: true});
+      }
+    });
+
+    this.trigger('change');
   }
 });
 
 
 var maxColors = 10,
     color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0;
-
-var nextColor = function() { return color(colorCount++ % maxColors); };
+    colorCount = 0,
+    nextColor = function() { return color(colorCount++ % maxColors); };
 
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
-    if (typeof options.datapoints === 'undefined') {
+    if (!this.has('datapoints')) {
       this.set('datapoints', []);
-      if (!this.has('color')) {
-        this.set('color', nextColor());
-      }
     }
+
+    if (!this.has('color')) {
+      this.set('color', nextColor());
+    }
+  },
+
+  bisect: d3.bisector(function(d) { return d.x; }).left,
+
+  getLValue: function(x) {
+    var datapoints = this.get('datapoints'),
+        v = (datapoints[datapoints.length - 1] || {}).y;
+
+    return typeof v !== "undefined"
+      ? v
+      : null;
+  },
+
+  getValueAt: function(x) {
+    var datapoints = this.get('datapoints'),
+        i = this.bisect(datapoints, x),
+        d = datapoints[i] || {};
+
+    return x === d.x
+      ? d.y
+      : null;
   }
 });
 
@@ -56,125 +87,230 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel
 });
 
+var _formatTime = d3.time.format("%d-%m %H:%M"),
+    _formatValue = d3.format(".3s");
+
 widgets.GraphWidgetView = widgets.WidgetView.extend({
-  svgHeight: 194,
+  svgHeight: 214,
   axisHeight: 24,
-  timeMarkerWidth: 132,
-  margin: {top: 4, right: 4, bottom: 4, left: 4},
+  axisMarkerWidth: 128,
+  markerCollisionDistance: 60,
+  hoverDotSize: 4,
+  margin: {top: 4, right: 4, bottom: 0, left: 4},
+
+  formatTime: function(t) { return _formatTime(new Date(t)); },
+  formatValue: function(v) { return v !== null ? _formatValue(v) : ''; },
 
   initialize: function(options) {
-    var margin = this.margin,
-        width,
-        svgHeight,
-        axisHeight = this.axisHeight,
-        chartWidth, chartHeight,
-        timeMarkerWidth = this.timeMarkerWidth,
-        x, y,
-        xAxis, yAxis,
-        d3el,
-        svg, chart,
-        metrics,
-        legend, legendItem;
+    var self = this,
+        metrics = this.model.getMetricModels(),
+        d3el = d3.select(this.el);
 
-    metrics = this.model.get('metrics').toJSON();
-    d3el = d3.select(this.el);
-    this.width = width = this.$el.width();
+    // Dimensions Setup
+    // -------------
+    var margin = this.margin;
+    this.width = this.$el.width();
+    this.chartWidth = this.width - margin.left - margin.right;
+    this.chartHeight = this.svgHeight
+          - this.axisHeight - margin.top - margin.bottom;
+    this.axisVPosition = this.svgHeight - this.axisHeight;
 
     // Chart Setup
     // -----------
-    svgHeight = this.svgHeight;
-    chartWidth = width - margin.left - margin.right;
-    chartHeight = svgHeight - axisHeight - margin.top - margin.bottom;
-
-    svg = d3el.append('svg')
-        .attr('width', width)
-        .attr('height', svgHeight)
+    var svg = this.svg = d3el.append('svg')
+        .attr('class', 'svg')
+        .attr('width', this.width)
+        .attr('height', this.svgHeight)
       .append('g')
-        .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
+        .attr('transform', "translate("+margin.left+","+margin.top+")");
 
-    this.x = x = d3.time.scale().range([0, chartWidth]);
-    this.y = y = d3.scale.linear().range([chartHeight, 0]);
+    var fx, fy;
+    this.fx = fx = d3.time.scale().range([0, this.chartWidth]);
+    this.fy = fy = d3.scale.linear().range([this.chartHeight, 0]);
 
-    this.xAxis = xAxis = d3.svg.axis()
-      .scale(x)
+    this.maxTicks = Math.floor(this.chartWidth / this.axisMarkerWidth);
+    this.axis = d3.svg.axis()
+      .scale(fx)
       .orient('bottom')
-      .tickFormat(d3.time.format("%d-%m %H:%M"))
-      .ticks(parseInt(chartWidth / timeMarkerWidth, 10));
+      .tickFormat(this.formatTime)
+      .ticks(this.maxTicks);
 
     this.line = d3.svg.line()
-      .interpolate("basis")
-      .x(function(d) { return x(d.x); })
-      .y(function(d) { return y(d.y); });
+      .interpolate('monotone')
+      .x(function(d) { return fx(d.x); })
+      .y(function(d) { return fy(d.y); });
 
-    this.chart = chart = svg.append('g')
+    var chart = this.chart = svg.append('g')
       .attr('class', 'chart')
-      .attr('height', chartHeight);
+      .attr('height', this.chartHeight);
 
-    this.xAxisLine = svg.append("g")
-      .attr('class', 'x axis')
-      .attr('transform', "translate(0," + (svgHeight - axisHeight) + ")")
-      .call(xAxis);
+    this.axisLine = svg.append("g")
+      .attr('class', 'axis')
+      .attr('transform', "translate(0,"+this.axisVPosition+")")
+      .call(this.axis);
 
     // Legend Setup
     // -----------
-    legend = d3el.append('ul')
+    var legend = d3el.append('ul')
       .attr('class', 'legend');
 
-    this.legendItem = legendItem = legend.selectAll('.legend-item')
-      .data(metrics, function(d) { return d.name; })
+    var legendItem = this.legendItem = legend.selectAll('.legend-item')
+      .data(metrics, function(d) { return d.get('name'); })
       .enter()
       .append('li')
         .attr('class', 'legend-item');
 
     this.legendItemSwatch = legendItem.append('span')
       .attr('class', 'legend-item-swatch')
-      .style('background-color', function(d) { return d.color; });
+      .style('background-color', function(d) { return d.get('color'); });
 
-    this.legendItemTitleLabel = legendItem.append('span')
+    this.legendItemTitles = legendItem.append('span')
       .attr('class', 'legend-item-title-label')
-      .text(function(d) { return d.title; });
+      .text(function(d) { return d.get('title'); });
 
-    this.legendItemValueLabel = legendItem.append('span')
-      .attr('class', 'legend-item-value-label');
+    this.legendItemValues = legendItem.append('text')
+      .attr('class', 'legend-item-value');
 
-    this.formatNumber = d3.format(".3s");
+    // Hover Setup
+    // -----------
+    
+    // create an overlay to catch events
+    this.svg.append('rect')
+      .attr('class', 'event-overlay')
+      .attr('fill-opacity', 0)
+      .attr('width', this.width)
+      .attr('height', this.svgHeight)
+      .on('mousemove',
+          function() { self.focus.call(self, d3.mouse(this)[0]); })
+      .on('mouseout',
+          function() { self.unfocus.call(self); });
 
     // Model-View Bindings Setup
     // -------------------------
     this.model.on('change', this.render, this);
   },
 
+  snapX: function(x) {
+    var start = this.model.get('domain')[0] || 0,
+        step = this.model.get('step'),
+        i = Math.round((x - start) / step);
+
+    return start + (step * i);
+  },
+
+  buildHoverMarker: function(g) {
+    // Replicates the way d3 generates axis time markers.
+    // (cloning of one of one of the axis time markers could be done instead,
+    // but that is not d3-like).
+
+    g.attr('class', 'hover-marker');
+
+    g.append('line')
+      .attr('class', 'tick')
+      .attr('y2', 6)
+      .attr('x2', 0);
+
+    g.append('text')
+      .attr('text-anchor', "middle")
+      .attr('dy', ".71em")
+      .attr('y', 9)
+      .attr('x', 0)
+      .attr('fill-opacity', 0);
+
+    return g;
+  },
+
+  focus: function(svgX) {
+    var fx = this.fx,
+        fy = this.fy;
+  
+    // convert the svg x value to the corresponding time x value, then snap it
+    // to the closest timestep
+    var x = this.snapX(fx.invert(svgX));
+    svgX = fx(x);
+
+    var metrics = this.model.get('metrics');
+    var metricValues = metrics.invoke('getValueAt', x);
+
+    // draw hover marker
+    var hoverMarker = this.axisLine.selectAll('.hover-marker').data([null]);
+    hoverMarker.enter().append('g')
+      .call(this.buildHoverMarker)
+      .transition().select('text').attr('fill-opacity', 1);
+    hoverMarker
+      .attr('transform', "translate(" + svgX + ", 0)")
+      .select('text').text(this.formatTime(x));
+
+    // hide axis markers colliding with hover marker
+    var markerCollisionDistance = this.markerCollisionDistance;
+    this.axisLine.selectAll('g')
+      .style('fill-opacity', function(d) {
+        return Math.abs(fx(d) - svgX) < markerCollisionDistance ? 0 : 1;
+      });
+
+    // change legend values
+    this.legendItemValues
+      .data(metricValues)
+      .attr('class', 'hover-legend-item-value')
+      .text(this.formatValue);
+
+    // draw dots
+    var dots = this.svg.selectAll('.dot')
+      .data(_.reject(metricValues, function(d) { return d === null; }));
+
+    dots.enter().append('circle')
+      .attr('class', 'dot')
+      .style('stroke', function(d, i) { return metrics.at(i).get('color'); })
+      .transition().attr('r', this.hoverDotSize);
+
+    dots.attr('cx', svgX)
+        .attr('cy', fy);
+  },
+
+  unfocus: function() {
+    this.svg.selectAll('.dot, .hover-marker').remove();
+    this.axisLine.selectAll('g').style('fill-opacity', 1);
+    this.renderLValues();
+    this.legendItemValues.attr('class', 'legend-item-value');
+  }, 
+
+  genTickValues: function(start, end, step) {
+    var n = (end - start) / step,
+        m = this.maxTicks,
+        i = 1;
+
+    while (Math.floor(n / i) > m) i++;
+    return d3.range(start, end, step * i);
+  },
+
+  renderLValues: function() {
+    this.legendItemValues
+      .data(this.model.get('metrics').invoke('getLValue'))
+      .text(this.formatValue);
+  },
+
   render: function() {
     var model = this.model,
         line = this.line,
-        metrics = model.get('metrics').toJSON(),
+        metrics = model.getMetricModels(),
         domain = model.get('domain'),
         range = model.get('range'),
-        formatNumber = this.formatNumber;
+        step = model.get('step');
 
-    this.x.domain(domain);
-    this.y.domain(range);
+    this.fx.domain(domain);
+    this.fy.domain(range);
 
-    this.xAxisLine.call(this.xAxis);
+    this.axis.tickValues(this.genTickValues.apply(this, domain.concat([step])));
+    this.axisLine.call(this.axis);
 
     var chartLines = this.chart.selectAll('.line')
-      .data(metrics, function(d) { return d.name; });
-
+      .data(metrics, function(d) { return d.get('name'); });
     chartLines.enter().append('path')
       .attr('class', 'line')
-      .style('stroke', function(d) { return d.color; });
+      .style('stroke', function(d) { return d.get('color'); });
+    chartLines.attr('d', function(d) { return line(d.get('datapoints')); });
 
-    chartLines
-      .attr('d', function(d) { return line(d.datapoints); });
-
-    this.legendItemTitleLabel.text(function(d) { return d.title + ": "; });
-
-    // format the last metric value displayed for each metric
-    this.legendItemValueLabel.data(metrics, function(d) { return d.name; })
-      .text(function(d) {
-        var datapoints = d.datapoints;
-        return (datapoints.length > 0 ?
-                formatNumber(datapoints[datapoints.length - 1].y): 0);
-    });
+    this.legendItemTitles.text(function(d) { return d.get('title') + ": "; });
+    this.renderLValues();
   }
 });

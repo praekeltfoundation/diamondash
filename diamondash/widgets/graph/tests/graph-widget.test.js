@@ -1,7 +1,9 @@
-var GraphWidgetModel = diamondash.widgets.GraphWidgetModel,
-    GraphWidgetView = diamondash.widgets.GraphWidgetView;
+var widgets = diamondash.widgets;
+var GraphWidgetModel = widgets.GraphWidgetModel,
+    GraphWidgetView = widgets.GraphWidgetView,
+    GraphWidgetMetricModel = widgets.GraphWidgetMetricModel;
 
-describe("GraphWidgetModel", function(){
+describe("GraphWidgetModel", function() {
   describe(".initialize()", function() {
     it("should bind the model's metrics' events to the model correctly",
        function() {
@@ -72,6 +74,74 @@ describe("GraphWidgetModel", function(){
              .get('m2')
              .get('datapoints'),
         [{x: 3, y: 8}, {x: 5, y: 11}]);
+    });
+  });
+});
+
+
+describe("GraphWidgetView", function() {
+  describe(".genTickValues()", function() {
+    it("should generate the correct number of tick values", function() {
+      var model = new GraphWidgetModel();
+      var view = new GraphWidgetView({model: model});
+      view.maxTicks = 8;
+      assert.deepEqual(view.genTickValues(2, 96, 5), d3.range(2, 96, 5 * 3));
+      assert.deepEqual(view.genTickValues(3, 98, 5), d3.range(3, 98, 5 * 3));
+    });
+  });
+
+  describe("snapX", function() {
+    it("should snap to the closest x value", function() {
+      var model = new GraphWidgetModel({domain: [10, 30], step: 5});
+      var view = new GraphWidgetView({model: model});
+      assert.equal(view.snapX(12), 10);
+      assert.equal(view.snapX(13), 15);
+      assert.equal(view.snapX(15), 15);
+      assert.equal(view.snapX(17), 15);
+      assert.equal(view.snapX(18), 20);
+    });
+  });
+});
+
+describe("GraphWidgetMetricModel", function() {
+  describe(".getLValue()", function() {
+    it("should return the last value.", function() {
+      var model = new GraphWidgetMetricModel({
+        datapoints: [{x: 0, y: 1}, {x: 1, y: 2}, {x: 3, y: 5}]
+      });
+
+      assert.equal(model.getLValue(), 5);
+    });
+
+    it("should return null for empty datapoints.", function() {
+      var model = new GraphWidgetMetricModel({datapoints: []});
+      assert.equal(model.getLValue(), null);
+    });
+
+    it("should return null on undefined y values.", function() {
+      var model = new GraphWidgetMetricModel({datapoints: [{x: 0}]});
+      assert.equal(model.getLValue(), null);
+    });
+  });
+
+  describe(".getValueAt()", function() {
+    it("should return a value if it exists at x", function() {
+      var model = new GraphWidgetMetricModel({
+        datapoints: [{x: 0, y: 1}, {x: 1, y: 2}, {x: 3, y: 5}]
+      });
+      assert.equal(model.getValueAt(1), 2);
+    });
+
+    it("should return null if no value exists at x", function() {
+      var model = new GraphWidgetMetricModel({
+        datapoints: [{x: 0, y: 1}, {x: 1, y: 2}, {x: 3, y: 5}]
+      });
+      assert.equal(model.getValueAt(2), null);
+    });
+
+    it("should return null for empty datapoints", function() {
+      var model = new GraphWidgetMetricModel({datapoints: []});
+      assert.equal(model.getValueAt(2), null);
     });
   });
 });

@@ -42,7 +42,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {
                     'some_metric_option': 'some-value',
                     'target':'vumi.random.count.sum',
-                    'bucket_size': '1h',
+                    'bucket_size': 3600,
                     'metadata': {
                         'name': 'random-sum',
                         'title': 'random sum',
@@ -55,7 +55,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {
                     'some_metric_option': 'some-value',
                     'target':'vumi.random.timer.avg',
-                    'bucket_size': '1h',
+                    'bucket_size': 3600,
                     'metadata': {
                         'name': 'random-avg',
                         'title': 'random avg',
@@ -69,10 +69,13 @@ class GraphWidgetTestCase(unittest.TestCase):
         }
         self.assertEqual(parsed_config['backend'],
                          (expected_backend_config, class_defaults))
+
+        client_model_config = parsed_config['client_config']['model']
         self.assertEqual(
-            parsed_config['client_config']['model']['metrics'],
+            client_model_config['metrics'],
             [{'name': 'random-sum', 'title': 'random sum'},
              {'name': 'random-avg', 'title': 'random avg'}])
+        self.assertEqual(client_model_config['step'], 3600000)
 
     def test_parse_config_for_no_metrics(self):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
