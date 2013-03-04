@@ -36,7 +36,7 @@ describe("LValueWidgetView", function(){
       view.render();
       assert.equal(view.$('.lvalue-lvalue-slot').text(), "9.2M");
       assert.equal(view.$('.lvalue-diff-slot').text(), "+3.52M");
-      assert.equal(view.$('.lvalue-percentage-slot').text(), "62%");
+      assert.equal(view.$('.lvalue-percentage-slot').text(), "61.80%");
       assert.equal(view.$('.lvalue-from-slot').text(), "28-06-2012 11:33");
       assert.equal(view.$('.lvalue-to-slot').text(), "28-06-2012 12:33");
     });
