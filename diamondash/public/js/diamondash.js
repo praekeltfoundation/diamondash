@@ -12675,12 +12675,14 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       dotGroups.enter().append('g')
         .attr('class', 'dot-group')
         .style('fill', function(d) { return d.get('color'); });
+      dotGroups.exit().remove();
 
       var dots = dotGroups.selectAll('.dot')
         .data(function(d) { return d.get('datapoints'); });
       dots.enter().append('circle')
         .attr('class', 'dot')
         .attr('r', this.dotSize);
+      dots.exit().remove();
       dots
         .attr('cx', function(d) { return fx(d.x); })
         .attr('cy', function(d) { return fy(d.y); });
