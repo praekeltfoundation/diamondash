@@ -24,15 +24,17 @@ diamondash.DashboardController = (function() {
       widgetViews = [];
 
       config.widgets.forEach(function(widgetConfig) {
-        var Model, View, name, model, view, widgetModelConfig;
+        var modelClass = diamondashWidgets[widgetConfig.modelClass];
+        var modelConfig = widgetConfig.model;
+        modelConfig.dashboardName = dashboardName;
+        var model = new modelClass(modelConfig);
 
-        Model = diamondashWidgets[widgetConfig.modelClass];
-        widgetModelConfig = widgetConfig.model;
-        widgetModelConfig.dashboardName = dashboardName;
-        model = new Model(widgetModelConfig);
-
-        View = diamondashWidgets[widgetConfig.viewClass];
-        view = new View({el: $("#" + model.get('name')), model: model});
+        var viewClass = diamondashWidgets[widgetConfig.viewClass];
+        var view = new viewClass({
+          el: $("#" + model.get('name')),
+          model: model,
+          config: widgetConfig.view
+        });
 
         widgetViews.push(view);
         widgets.add(model);

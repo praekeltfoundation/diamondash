@@ -32,6 +32,7 @@ class WidgetTestCase(unittest.TestCase):
             'width': 4,
             'client_config':  {
                 'model': {'name': 'test-widget'},
+                'view': {},
                 'modelClass': 'ToyWidgetModel',
                 'viewClass': 'ToyWidgetView',
             }

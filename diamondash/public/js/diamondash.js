@@ -12445,6 +12445,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   axisMarkerWidth: 128,
   markerCollisionDistance: 60,
   hoverDotSize: 4,
+  dottedHoverDotSize: 5,
+  dotSize: 3,
   margin: {top: 4, right: 4, bottom: 0, left: 4},
 
   formatTime: function(t) { return _formatTime(new Date(t)); },
@@ -12454,6 +12456,13 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     var self = this,
         metrics = this.model.getMetricModels(),
         d3el = d3.select(this.el);
+
+    // Parse Config
+    // ------------
+    if (options.config) {
+      var config = options.config;
+      this.dotted = config.dotted || false;
+    }
 
     // Dimensions Setup
     // -------------
@@ -12467,11 +12476,11 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     // Chart Setup
     // -----------
     var svg = this.svg = d3el.append('svg')
-        .attr('class', 'svg')
+        .attr('class', 'graph-svg')
         .attr('width', this.width)
         .attr('height', this.svgHeight)
       .append('g')
-        .attr('transform', "translate("+margin.left+","+margin.top+")");
+        .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
 
     var fx, fy;
     this.fx = fx = d3.time.scale().range([0, this.chartWidth]);
@@ -12495,7 +12504,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
 
     this.axisLine = svg.append("g")
       .attr('class', 'axis')
-      .attr('transform', "translate(0,"+this.axisVPosition+")")
+      .attr('transform', "translate(0, " + this.axisVPosition + ")")
       .call(this.axis);
 
     // Legend Setup
@@ -12604,20 +12613,21 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .text(this.formatValue);
 
     // draw dots
-    var dots = this.svg.selectAll('.dot')
+    var dots = this.svg.selectAll('.hover-dot')
       .data(_.reject(metricValues, function(d) { return d === null; }));
 
     dots.enter().append('circle')
-      .attr('class', 'dot')
+      .attr('class', 'hover-dot')
       .style('stroke', function(d, i) { return metrics.at(i).get('color'); })
-      .transition().attr('r', this.hoverDotSize);
+      .transition()
+        .attr('r', this.dotted ? this.dottedHoverDotSize : this.hoverDotSize);
 
     dots.attr('cx', svgX)
         .attr('cy', fy);
   },
 
   unfocus: function() {
-    this.svg.selectAll('.dot, .hover-marker').remove();
+    this.svg.selectAll('.hover-dot, .hover-marker').remove();
     this.axisLine.selectAll('g').style('fill-opacity', 1);
     this.renderLValues();
     this.legendItemValues.attr('class', 'legend-item-value');
@@ -12644,20 +12654,39 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
         metrics = model.getMetricModels(),
         domain = model.get('domain'),
         range = model.get('range'),
-        step = model.get('step');
+        step = model.get('step'),
+        fx = this.fx,
+        fy = this.fy;
 
-    this.fx.domain(domain);
-    this.fy.domain(range);
+    fx.domain(domain);
+    fy.domain(range);
 
     this.axis.tickValues(this.genTickValues.apply(this, domain.concat([step])));
     this.axisLine.call(this.axis);
 
-    var chartLines = this.chart.selectAll('.line')
-      .data(metrics, function(d) { return d.get('name'); });
-    chartLines.enter().append('path')
+    var lines = this.chart.selectAll('.line').data(metrics);
+    lines.enter().append('path')
       .attr('class', 'line')
       .style('stroke', function(d) { return d.get('color'); });
-    chartLines.attr('d', function(d) { return line(d.get('datapoints')); });
+    lines.attr('d', function(d) { return line(d.get('datapoints')); });
+
+    if (this.dotted) {
+      var dotGroups = this.chart.selectAll('.dot-group').data(metrics);
+      dotGroups.enter().append('g')
+        .attr('class', 'dot-group')
+        .style('fill', function(d) { return d.get('color'); });
+      dotGroups.exit().remove();
+
+      var dots = dotGroups.selectAll('.dot')
+        .data(function(d) { return d.get('datapoints'); });
+      dots.enter().append('circle')
+        .attr('class', 'dot')
+        .attr('r', this.dotSize);
+      dots.exit().remove();
+      dots
+        .attr('cx', function(d) { return fx(d.x); })
+        .attr('cy', function(d) { return fy(d.y); });
+    }
 
     this.legendItemTitles.text(function(d) { return d.get('title') + ": "; });
     this.renderLValues();
@@ -12750,15 +12779,17 @@ diamondash.DashboardController = (function() {
       widgetViews = [];
 
       config.widgets.forEach(function(widgetConfig) {
-        var Model, View, name, model, view, widgetModelConfig;
+        var modelClass = diamondashWidgets[widgetConfig.modelClass];
+        var modelConfig = widgetConfig.model;
+        modelConfig.dashboardName = dashboardName;
+        var model = new modelClass(modelConfig);
 
-        Model = diamondashWidgets[widgetConfig.modelClass];
-        widgetModelConfig = widgetConfig.model;
-        widgetModelConfig.dashboardName = dashboardName;
-        model = new Model(widgetModelConfig);
-
-        View = diamondashWidgets[widgetConfig.viewClass];
-        view = new View({el: $("#" + model.get('name')), model: model});
+        var viewClass = diamondashWidgets[widgetConfig.viewClass];
+        var view = new viewClass({
+          el: $("#" + model.get('name')),
+          model: model,
+          config: widgetConfig.view
+        });
 
         widgetViews.push(view);
         widgets.add(model);
