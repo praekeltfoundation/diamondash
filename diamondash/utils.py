@@ -1,6 +1,7 @@
 import re
 import sys
 from os import path
+from time import time
 from unidecode import unidecode
 
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
@@ -86,3 +87,16 @@ def update_dict(*dicts):
     for d in dicts:
         new_dict.update(d)
     return new_dict
+
+
+def time_from_now(t):
+    return int(time()) - t
+
+
+class Accessor(object):
+    def __init__(self, fallback=None, **objs):
+        self.objs = objs
+        self.fallback = fallback
+
+    def __call__(self, name):
+        return self.objs.get(name, self.fallback)
