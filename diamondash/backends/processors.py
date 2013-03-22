@@ -80,16 +80,17 @@ class AggregatingSummarizer(Summarizer):
 get_null_filter = utils.Accessor(
     skip=skip_nulls,
     zeroize=zeroize_nulls,
-    fallback=(lambda x: x)
+    fallback=zeroize_nulls
 )
 
 
+avg = (lambda vals: sum(vals) / (len(vals) or 1))
 get_aggregator = utils.Accessor(**{
     'max': max,
     'min': min,
     'sum': sum,
-    'avg': (lambda vals: sum(vals) / len(vals)),
-    'fallback': (lambda x: x),
+    'avg': avg,
+    'fallback': avg,
 })
 
 

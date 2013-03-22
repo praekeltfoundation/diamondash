@@ -1,7 +1,7 @@
 import re
 import sys
+import time
 from os import path
-from time import time
 from unidecode import unidecode
 
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
@@ -89,14 +89,15 @@ def update_dict(*dicts):
     return new_dict
 
 
-def time_from_now(t):
-    return int(time()) - t
+def relative_to_now(t):
+    return int(time.time()) + t
 
 
 class Accessor(object):
     def __init__(self, fallback=None, **objs):
-        self.objs = objs
-        self.fallback = fallback
+        lookup = dict(objs)
+        lookup['fallback'] = fallback
+        self._lookup = lookup
 
     def __call__(self, name):
-        return self.objs.get(name, self.fallback)
+        return self._lookup.get(name, self._lookup['fallback'])
