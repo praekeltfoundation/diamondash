@@ -1,5 +1,3 @@
-import json
-
 from diamondash import utils, ConfigError
 from diamondash.widgets import Widget
 from diamondash.backends.graphite import GraphiteBackend
@@ -91,13 +89,15 @@ class GraphWidget(Widget):
             'datapoints': m['datapoints']
         } for m in metric_data]
 
-        return json.dumps({
+        return {
             'domain': domain,
             'range': range,
             'metrics': output_metric_data,
-        })
+        }
 
-    def handle_render_request(self, request):
+    def get_data(self):
+        data = super(GraphWidget, self).get_data()
         d = self.backend.get_data(from_time=-self.time_range)
         d.addCallback(self.process_backend_response)
+        d.addCallback(utils.update_dict, data)
         return d

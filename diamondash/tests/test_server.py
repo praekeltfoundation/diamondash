@@ -1,9 +1,11 @@
 """Tests for diamondash's server"""
 
+import json
 from os import path
 from pkg_resources import resource_filename
 
 from twisted.trial import unittest
+from twisted.internet.defer import maybeDeferred
 
 from diamondash import utils
 from diamondash import server
@@ -35,53 +37,47 @@ def mk_dashboard(**kwargs):
 
 
 class ToyWidget(Widget):
-    def handle_render_request(self, request):
-        return '%s -- handled by %s' % (request, self.name)
+    def get_data(self):
+        return [self.name]
 
 
 class ServerTestCase(unittest.TestCase):
+    def setUp(self):
+        widget = self.mk_toy_widget()
+        self.dashboard = mk_dashboard(widgets=[widget])
 
-    def test_handle_render_request(self):
-        """
-        Should route the render request to the appropriate widget on the
-        appropropriate dashboard.
-        """
-        widget = ToyWidget(
-            name='test-widget', title='title', client_config={}, width=2)
-        dashboard = mk_dashboard(widgets=[widget])
+        srv = DiamondashServer([], None)
+        srv.dashboards_by_name['some-dashboard'] = self.dashboard
+        server.server = srv
 
-        dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['some-dashboard'] = dashboard
-        server.server = dd_server
+    def mk_toy_widget(self, **kwargs):
+        return ToyWidget(**utils.update_dict({
+            'name': 'some-widget',
+            'title': 'title',
+            'client_config': {},
+            'width': 2
+        }, kwargs))
 
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(
-            result, "fake-render-request -- handled by test-widget")
+    def assert_widget_data_retrieval(self, d_name, w_name, expected):
+        d = maybeDeferred(server.get_widget_data, 'fake-req', d_name, w_name)
 
-    def test_handle_render_for_bad_dashboard_request(self):
-        """
-        Should return an empty JSON object if the dashboard does not exist.
-        """
-        dd_server = DiamondashServer([], None)
-        server.server = dd_server
+        def assert_widget_data_retrieval(result):
+            self.assertEqual(result, expected)
+        d.addCallback(assert_widget_data_retrieval)
 
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(result, "{}")
+        return d
 
-    def test_handle_render_for_bad_widget_request(self):
-        """
-        Should return an empty JSON object if the widget does not exist.
-        """
-        dashboard = mk_dashboard()
-        dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['some-dashboard'] = dashboard
-        server.server = dd_server
+    def test_widget_data_retrieval(self):
+        return self.assert_widget_data_retrieval(
+            'some-dashboard', 'some-widget', json.dumps(['some-widget']))
 
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(result, "{}")
+    def test_widget_data_retrieval_for_bad_dashboard_request(self):
+        return self.assert_widget_data_retrieval(
+            'bad-dashboard', 'some-widget', "{}")
+
+    def test_widget_data_retrieval_for_bad_widget_request(self):
+        return self.assert_widget_data_retrieval(
+            'some-dashboard', 'bad-widget', "{}")
 
 
 class StubbedDiamondashServer(DiamondashServer):

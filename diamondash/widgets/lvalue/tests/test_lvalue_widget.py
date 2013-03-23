@@ -1,5 +1,3 @@
-import json
-
 from twisted.trial import unittest
 
 from diamondash import utils, ConfigError
@@ -13,7 +11,7 @@ class LValueWidgetTestCase(unittest.TestCase):
     def mk_lvalue_widget(**kwargs):
         return LValueWidget(**utils.update_dict({
             'name': 'some-widget',
-            'title': 'Some Widget',
+            'title': 'Some LValue Widget',
             'client_config': {},
             'width': 2,
             'time_range': 3600,
@@ -50,7 +48,7 @@ class LValueWidgetTestCase(unittest.TestCase):
     def test_parse_config_for_no_target(self):
         self.assertRaises(ConfigError, LValueWidget.parse_config, {})
 
-    def test_render_request_handling(self):
+    def test_data_retrieval(self):
         backend = ToyBackend([{
             'target': 'some.target',
             'datapoints': [
@@ -61,18 +59,19 @@ class LValueWidgetTestCase(unittest.TestCase):
                 {'x': 1340875995, 'y': 9227465.0}]
         }])
         widget = self.mk_lvalue_widget(time_range=3600, backend=backend)
-        deferred_result = widget.handle_render_request(None)
+        deferred_result = widget.get_data()
 
-        def assert_handled_render_request(result):
+        def assert_data_retrieval(result):
             self.assertEqual(backend.get_data_calls, [{'from_time': -7200}])
-            self.assertEqual(result, json.dumps({
+            self.assertEqual(result, {
+                'title': 'Some LValue Widget',
                 'lvalue': 9227465.0,
                 'from': 1340875995,
                 'to': 1340875995 + 3600 - 1,
                 'diff': 9227465.0 - 5702887.0,
                 'percentage': 0.61803398874990854,
-            }))
-        deferred_result.addCallback(assert_handled_render_request)
+            })
+        deferred_result.addCallback(assert_data_retrieval)
 
         deferred_result.callback(None)
         return deferred_result

@@ -20,6 +20,7 @@ class Widget(Element, ConfigMixin):
     # backbone model and view classes
     MODEL = 'WidgetModel'
     VIEW = 'WidgetView'
+    TYPE_NAME = "abstract_widget"
 
     def __init__(self, name, title, client_config, width):
         self.name = name
@@ -65,9 +66,10 @@ class Widget(Element, ConfigMixin):
         width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
         return width
 
-    def handle_render_request(self, request):
-        """
-        Handles a 'render' request from the client, where `params` are the
-        request parameters.
-        """
-        raise NotImplementedError()
+    def get_details(self):
+        """Returns data describing the widget."""
+        return {'title': self.title, 'type': self.TYPE_NAME}
+
+    def get_data(self):
+        """Returns the widget's non-static data."""
+        return {'title': self.title}

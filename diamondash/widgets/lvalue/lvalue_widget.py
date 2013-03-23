@@ -1,4 +1,3 @@
-import json
 from pkg_resources import resource_string
 
 from twisted.python import log
@@ -19,6 +18,7 @@ class LValueWidget(Widget):
 
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
+    TYPE_NAME = "lvalue"
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
@@ -58,13 +58,13 @@ class LValueWidget(Widget):
         from_time = last['x']
         to_time = from_time + self.time_range - 1
 
-        return json.dumps({
+        return {
             'lvalue': last_y,
             'from': from_time,
             'to': to_time,
             'diff': diff_y,
             'percentage': percentage,
-        })
+        }
 
     def handle_backend_response(self, metric_data):
         if not metric_data:
@@ -81,7 +81,9 @@ class LValueWidget(Widget):
 
         return self.format_data(*datapoints)
 
-    def handle_render_request(self, request):
+    def get_data(self):
+        data = super(LValueWidget, self).get_data()
         d = self.backend.get_data(from_time=self.time_range * -2)
         d.addCallback(self.handle_backend_response)
+        d.addCallback(utils.update_dict, data)
         return d

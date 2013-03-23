@@ -3,17 +3,17 @@
 """Diamondash's web server functionality"""
 
 import yaml
+import json
 from glob import glob
 from os import path
 
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
+from twisted.internet.defer import maybeDeferred
 from pkg_resources import resource_filename, resource_string
 from klein import route, resource
 
 from dashboard import Dashboard, DashboardPage
-
-SHARED_URL_PREFIX = 'shared'
 
 # We need resource imported for klein magic. This makes pyflakes happy.
 resource = resource
@@ -26,6 +26,9 @@ def configure(config_dir):
     global server
     server = DiamondashServer.from_config_dir(config_dir)
 
+
+# Rendering
+# =========
 
 @route('/')
 def show_index(request):
@@ -50,30 +53,40 @@ def favicon(request):
 
 
 @route('/<string:name>')
-def show_dashboard(request, name):
-    """Show a non-shared dashboard page"""
+def render_dashboard(request, name):
+    """Render a non-shared dashboard page"""
     # TODO handle invalid name references
     name = name.encode('utf-8')
     return DashboardPage(server.dashboards_by_name[name], False)
 
 
-@route('/%s/<string:share_id>' % SHARED_URL_PREFIX)
-def show_shared_dashboard(request, share_id):
-    """Show a shared dashboard page"""
+@route('/shared/<string:share_id>')
+def render_shared_dashboard(request, share_id):
+    """Render a shared dashboard page"""
     # TODO handle invalid share id references
     share_id = share_id.encode('utf-8')
     return DashboardPage(server.dashboards_by_share_id[share_id], True)
 
 
-@route('/render/<string:dashboard_name>/<string:widget_name>')
-def handle_render_request(request, dashboard_name, widget_name):
-    """Routing for client render request"""
+# API
+# ===
+
+# Dashboard API
+# -------------
+
+# TODO
+
+# Widget API
+# -------------
+
+@route('/api/widget/<string:dashboard_name>/<string:widget_name>')
+def get_widget_data(request, dashboard_name, widget_name):
     dashboard_name = dashboard_name.encode('utf-8')
     widget_name = widget_name.encode('utf-8')
 
     # get dashboard or return empty json object if it does not exist
     # TODO log non-existent dashboard requests
-    dashboard = server.dashboards_by_name.get(dashboard_name, None)
+    dashboard = server.dashboards_by_name.get(dashboard_name)
     if dashboard is None:
         return "{}"
 
@@ -83,7 +96,9 @@ def handle_render_request(request, dashboard_name, widget_name):
     if widget is None:
         return "{}"
 
-    return widget.handle_render_request(request)  # return a deferred
+    d = maybeDeferred(widget.get_data)
+    d.addCallback(json.dumps)
+    return d
 
 
 class DiamondashServer(object):
@@ -178,7 +193,7 @@ class DashboardIndexListItem(Element):
 
         share_id = dashboard.share_id
         if share_id is not None:
-            shared_url = '/%s/%s' % (SHARED_URL_PREFIX, share_id)
+            shared_url = '/shared/%s' % share_id
             shared_url_tag = tags.a(shared_url, href=shared_url)
         else:
             shared_url_tag = ''

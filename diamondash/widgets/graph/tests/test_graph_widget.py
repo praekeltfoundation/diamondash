@@ -1,4 +1,3 @@
-import json
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -21,7 +20,7 @@ class GraphWidgetTestCase(unittest.TestCase):
     def mk_graph_widget(**kwargs):
         kwargs = utils.update_dict({
             'name': 'some-widget',
-            'title': 'Some Widget',
+            'title': 'Some Graph Widget',
             'client_config': {},
             'width': 2,
             'backend': None
@@ -89,12 +88,12 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
                           {'name': u'some metric'}, {})
 
-    def assert_handled_render_request(self, result, expected_data):
+    def assert_data_retrieval(self, result, expected_data):
         self.assertEqual(self.backend.get_data_calls,
                          [{'from_time': -self.TIME_RANGE}])
-        self.assertEqual(result, json.dumps(expected_data))
+        self.assertEqual(result, expected_data)
 
-    def test_render_request_handling(self):
+    def test_data_retrieval(self):
         self.backend.response_data = [
             {
                 'metadata': {'name': 'metric-1'},
@@ -111,10 +110,11 @@ class GraphWidgetTestCase(unittest.TestCase):
             }
         ]
 
-        deferred_result = self.widget.handle_render_request(None)
-        deferred_result.addCallback(self.assert_handled_render_request, {
-            'domain': [0, 15],
-            'range': [0, 4],
+        deferred_result = self.widget.get_data()
+        deferred_result.addCallback(self.assert_data_retrieval, {
+            'title': 'Some Graph Widget',
+            'domain': (0, 15),
+            'range': (0, 4),
             'metrics': [
                 {
                     'name': 'metric-1',
@@ -137,16 +137,17 @@ class GraphWidgetTestCase(unittest.TestCase):
         deferred_result.callback(None)
         return deferred_result
 
-    def test_process_backend_response_for_empty_datapoints(self):
+    def test_data_retrieval_for_empty_datapoints(self):
         self.backend.response_data = [
             {'metadata': {'name': 'metric-1'}, 'datapoints': []},
             {'metadata': {'name': 'metric-2'}, 'datapoints': []},
             {'metadata': {'name': 'metric-3'}, 'datapoints': []}]
 
-        deferred_result = self.widget.handle_render_request(None)
-        deferred_result.addCallback(self.assert_handled_render_request, {
-            'domain': [0, 0],
-            'range': [0, 0],
+        deferred_result = self.widget.get_data()
+        deferred_result.addCallback(self.assert_data_retrieval, {
+            'title': 'Some Graph Widget',
+            'domain': (0, 0),
+            'range': (0, 0),
             'metrics': [
                 {'name': 'metric-1', 'datapoints': []},
                 {'name': 'metric-2', 'datapoints': []},
