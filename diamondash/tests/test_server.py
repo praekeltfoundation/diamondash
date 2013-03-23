@@ -8,7 +8,6 @@ from twisted.trial import unittest
 from twisted.internet.defer import maybeDeferred
 
 from diamondash import utils
-from diamondash import server
 from diamondash.widgets.widget import Widget
 from diamondash.dashboard import Dashboard
 from diamondash.server import DiamondashServer, DashboardIndexListItem
@@ -41,45 +40,6 @@ class ToyWidget(Widget):
         return [self.name]
 
 
-class ServerTestCase(unittest.TestCase):
-    def setUp(self):
-        widget = self.mk_toy_widget()
-        self.dashboard = mk_dashboard(widgets=[widget])
-
-        srv = DiamondashServer([], None)
-        srv.dashboards_by_name['some-dashboard'] = self.dashboard
-        server.server = srv
-
-    def mk_toy_widget(self, **kwargs):
-        return ToyWidget(**utils.update_dict({
-            'name': 'some-widget',
-            'title': 'title',
-            'client_config': {},
-            'width': 2
-        }, kwargs))
-
-    def assert_widget_data_retrieval(self, d_name, w_name, expected):
-        d = maybeDeferred(server.get_widget_data, 'fake-req', d_name, w_name)
-
-        def assert_widget_data_retrieval(result):
-            self.assertEqual(result, expected)
-        d.addCallback(assert_widget_data_retrieval)
-
-        return d
-
-    def test_widget_data_retrieval(self):
-        return self.assert_widget_data_retrieval(
-            'some-dashboard', 'some-widget', json.dumps(['some-widget']))
-
-    def test_widget_data_retrieval_for_bad_dashboard_request(self):
-        return self.assert_widget_data_retrieval(
-            'bad-dashboard', 'some-widget', "{}")
-
-    def test_widget_data_retrieval_for_bad_widget_request(self):
-        return self.assert_widget_data_retrieval(
-            'some-dashboard', 'bad-widget', "{}")
-
-
 class StubbedDiamondashServer(DiamondashServer):
     ROOT_RESOURCE_DIR = _test_data_dir
 
@@ -92,9 +52,21 @@ class DiamondashServerTestCase(unittest.TestCase):
         self.patch(StubbedDiamondashServer, 'create_resources',
                    staticmethod(lambda *a, **kw: 'created-resources'))
 
-        stubbed_from_config_file = staticmethod(
-            lambda filepath, class_defaults: (filepath, class_defaults))
-        self.patch(Dashboard, 'from_config_file', stubbed_from_config_file)
+        self.patch(Dashboard, 'from_config_file', staticmethod(
+            lambda filepath, class_defaults: (filepath, class_defaults)))
+
+        widget = self.mk_toy_widget()
+        dashboard = mk_dashboard(widgets=[widget])
+        self.server = DiamondashServer([], None)
+        self.server.add_dashboard(dashboard)
+
+    def mk_toy_widget(self, **kwargs):
+        return ToyWidget(**utils.update_dict({
+            'name': 'some-widget',
+            'title': 'title',
+            'client_config': {},
+            'width': 2
+        }, kwargs))
 
     def test_from_config_dir(self):
         """Should create the server from a configuration directory."""
@@ -136,6 +108,29 @@ class DiamondashServerTestCase(unittest.TestCase):
         self.assertEqual(
             dd_server.dashboards_by_share_id['some-share-id'], dashboard)
         self.assertTrue(stubbed_index_add_dashboard.called)
+
+    def assert_widget_data_retrieval(self, dashboard_name, widget_name,
+                                     expected):
+        d = maybeDeferred(self.server.get_widget_data, 'fake-req',
+                          dashboard_name, widget_name)
+
+        def assert_widget_data_retrieval(result):
+            self.assertEqual(result, expected)
+        d.addCallback(assert_widget_data_retrieval)
+
+        return d
+
+    def test_widget_data_retrieval(self):
+        return self.assert_widget_data_retrieval(
+            'some-dashboard', 'some-widget', json.dumps(['some-widget']))
+
+    def test_widget_data_retrieval_for_nonexistent_dashboard(self):
+        return self.assert_widget_data_retrieval(
+            'bad-dashboard', 'some-widget', "{}")
+
+    def test_widget_data_retrieval_for_nonexistent_widget(self):
+        return self.assert_widget_data_retrieval(
+            'some-dashboard', 'bad-widget', "{}")
 
 
 class StubbedDashboardIndexListItem(DashboardIndexListItem):

@@ -6,103 +6,22 @@ import yaml
 import json
 from glob import glob
 from os import path
+from pkg_resources import resource_filename, resource_string
 
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
 from twisted.internet.defer import maybeDeferred
-from pkg_resources import resource_filename, resource_string
-from klein import route, resource
+from twisted.python import log
+from klein import Klein
 
+from diamondash import utils
 from dashboard import Dashboard, DashboardPage
-
-# We need resource imported for klein magic. This makes pyflakes happy.
-resource = resource
-
-# instance for the server
-server = None
-
-
-def configure(config_dir):
-    global server
-    server = DiamondashServer.from_config_dir(config_dir)
-
-
-# Rendering
-# =========
-
-@route('/')
-def show_index(request):
-    return server.index
-
-
-@route('/css/')
-def serve_css(request):
-    """Routing for all css files"""
-    return server.resources.getChild('css', request)
-
-
-@route('/js/')
-def serve_js(request):
-    """Routing for all js files"""
-    return server.resources.getChild('js', request)
-
-
-@route('/favicon.ico')
-def favicon(request):
-    return File(resource_filename(__name__, 'public/favicon.png'))
-
-
-@route('/<string:name>')
-def render_dashboard(request, name):
-    """Render a non-shared dashboard page"""
-    # TODO handle invalid name references
-    name = name.encode('utf-8')
-    return DashboardPage(server.dashboards_by_name[name], False)
-
-
-@route('/shared/<string:share_id>')
-def render_shared_dashboard(request, share_id):
-    """Render a shared dashboard page"""
-    # TODO handle invalid share id references
-    share_id = share_id.encode('utf-8')
-    return DashboardPage(server.dashboards_by_share_id[share_id], True)
-
-
-# API
-# ===
-
-# Dashboard API
-# -------------
-
-# TODO
-
-# Widget API
-# -------------
-
-@route('/api/widget/<string:dashboard_name>/<string:widget_name>')
-def get_widget_data(request, dashboard_name, widget_name):
-    dashboard_name = dashboard_name.encode('utf-8')
-    widget_name = widget_name.encode('utf-8')
-
-    # get dashboard or return empty json object if it does not exist
-    # TODO log non-existent dashboard requests
-    dashboard = server.dashboards_by_name.get(dashboard_name)
-    if dashboard is None:
-        return "{}"
-
-    # get widget or return empty json object if it does not exist
-    # TODO log non-existent widget requests
-    widget = dashboard.get_widget(widget_name)
-    if widget is None:
-        return "{}"
-
-    d = maybeDeferred(widget.get_data)
-    d.addCallback(json.dumps)
-    return d
 
 
 class DiamondashServer(object):
     """Contains the server's configuration options and dashboards"""
+
+    app = Klein()
 
     ROOT_RESOURCE_DIR = resource_filename(__name__, '')
     CONFIG_FILENAME = 'diamondash.yml'
@@ -146,6 +65,9 @@ class DiamondashServer(object):
         resources = cls.create_resources('public')
         return cls(dashboards, resources)
 
+    def has_dashboard(self, name):
+        return utils.slugify(name) in self.dashboards_by_name
+
     def add_dashboard(self, dashboard):
         """Adds a dashboard to diamondash"""
         self.dashboards.append(dashboard)
@@ -156,6 +78,90 @@ class DiamondashServer(object):
             self.dashboards_by_share_id[share_id] = dashboard
 
         self.index.add_dashboard(dashboard)
+
+    # Rendering
+    # =========
+
+    @app.route('/')
+    def show_index(self, request):
+        return self.index
+
+    @app.route('/css/')
+    def serve_css(self, request):
+        """Routing for all css files"""
+        return self.resources.getChild('css', request)
+
+    @app.route('/js/')
+    def serve_js(self, request):
+        """Routing for all js files"""
+        return self.resources.getChild('js', request)
+
+    @app.route('/favicon.ico')
+    def favicon(self, request):
+        return File(resource_filename(__name__, 'public/favicon.png'))
+
+    @app.route('/<string:name>')
+    def render_dashboard(self, request, name):
+        """Render a non-shared dashboard page"""
+        # TODO handle invalid name references
+        name = name.encode('utf-8')
+        return DashboardPage(self.dashboards_by_name[name], False)
+
+    @app.route('/shared/<string:share_id>')
+    def render_shared_dashboard(self, request, share_id):
+        """Render a shared dashboard page"""
+        # TODO handle invalid share id references
+        share_id = share_id.encode('utf-8')
+        return DashboardPage(self.dashboards_by_share_id[share_id], True)
+
+    # API
+    # ===
+
+    # Dashboard API
+    # -------------
+
+    @app.route('/api/dashboards', methods=['POST'])
+    def create_dashboard(self, request):
+        raw_config = json.loads(request.content.read())
+
+        if 'name' not in raw_config:
+            # TODO
+            return
+
+        if self.has_dashboard(raw_config['name']):
+            # TODO
+            pass
+
+    # Widget API
+    # -------------
+
+    @app.route('/api/widgets/<string:dashboard_name>/<string:widget_name>',
+               methods=['GET'])
+    def get_widget_data(self, request, dashboard_name, widget_name):
+        #request.setHeader('Content-Type', 'application/json')
+
+        dashboard_name = dashboard_name.encode('utf-8')
+        widget_name = widget_name.encode('utf-8')
+
+        # get dashboard or return empty json object if it does not exist
+        dashboard = self.dashboards_by_name.get(dashboard_name)
+        if dashboard is None:
+            # TODO err resp code
+            log.msg("Bad widget API request: Dashboard '%s' does not exist." %
+                    dashboard_name)
+            return "{}"
+
+        # get widget or return empty json object if it does not exist
+        widget = dashboard.get_widget(widget_name)
+        if widget is None:
+            # TODO err resp code
+            log.msg("Bad widget API request: Widget '%s' does not exist." %
+                    widget_name)
+            return "{}"
+
+        d = maybeDeferred(widget.get_data)
+        d.addCallback(json.dumps)
+        return d
 
 
 class Index(Element):
