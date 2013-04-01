@@ -94,10 +94,15 @@ def relative_to_now(t):
 
 
 class Accessor(object):
-    def __init__(self, fallback=None, **objs):
+    def __init__(self, fallback=None, wrapper=None, **objs):
         lookup = dict(objs)
         lookup['fallback'] = fallback
-        self._lookup = lookup
+        self.lookup = lookup
+        self.wrapper = wrapper or self._wrapper
 
-    def __call__(self, name):
-        return self._lookup.get(name, self._lookup['fallback'])
+    def _wrapper(self, name, obj, *args, **kwargs):
+        return obj
+
+    def __call__(self, name, *args, **kwargs):
+        obj = self.lookup.get(name, self.lookup['fallback'])
+        return self.wrapper(name, obj, *args, **kwargs)

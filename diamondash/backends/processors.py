@@ -95,7 +95,8 @@ get_aggregator = utils.Accessor(**{
 
 
 get_summarizer = utils.Accessor(
-    last_datapoint=LastDatapointSummarizer,
-    aggregating=AggregatingSummarizer,
-    fallback=(lambda datapoints, from_time: datapoints)
+    wrapper=lambda agg_method, fn, bucket_size: fn(bucket_size, agg_method),
+    last=lambda bucket_size, agg_method: LastDatapointSummarizer(bucket_size),
+    fallback=lambda bucket_size, agg_method: (
+        AggregatingSummarizer(bucket_size, get_aggregator(agg_method)))
 )

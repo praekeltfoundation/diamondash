@@ -8,9 +8,7 @@ from twisted.python import log
 
 from diamondash import utils, ConfigMixin, ConfigError
 from diamondash.backends import Backend
-from diamondash.backends.processors import (
-    LastDatapointSummarizer, AggregatingSummarizer,
-    get_null_filter, get_summarizer, get_aggregator)
+from diamondash.backends.processors import get_null_filter, get_summarizer
 
 
 class GraphiteBackend(Backend):
@@ -146,14 +144,7 @@ class GraphiteMetric(ConfigMixin):
         if 'bucket_size' in config:
             bucket_size = utils.parse_interval(config.pop('bucket_size'))
             agg_method = guess_aggregation_method(config['target'])
-
-            # TODO make this configureable
-            if agg_method in ['min', 'max']:
-                # metric targets ending in min or max are already aggregated
-                config['summarizer'] = LastDatapointSummarizer(bucket_size)
-            else:
-                config['summarizer'] = AggregatingSummarizer(
-                    bucket_size, get_aggregator(agg_method))
+            config['summarizer'] = get_summarizer(agg_method, bucket_size)
 
         if 'null_filter' in config:
             config['null_filter'] = get_null_filter(config['null_filter'])
@@ -231,7 +222,7 @@ def parse_graphite_func(tokens):
             results.append(parse_graphite_func(tokens))
         elif token == 'item':
             suffix = value.split('.')[-1]
-            if suffix in ('min', 'max', 'avg', 'sum'):
+            if suffix in ('min', 'max', 'avg', 'sum', 'last'):
                 results.append(suffix)
 
 

@@ -201,11 +201,13 @@ class GraphiteMetricTestCase(unittest.TestCase):
             {'target': 'some.target.avg', 'bucket_size': '1h'}, 3600, 'avg')
         assert_agg_summarizer(
             {'target': 'some.target.sum', 'bucket_size': '2h'}, 7200, 'sum')
+        assert_agg_summarizer(
+            {'target': 'some.target.min', 'bucket_size': '1h'}, 3600, 'min')
+        assert_agg_summarizer(
+            {'target': 'some.target.max', 'bucket_size': '2h'}, 7200, 'max')
 
         assert_ldp_summarizer(
-            {'target': 'some.target.min', 'bucket_size': '1h'}, 3600)
-        assert_ldp_summarizer(
-            {'target': 'some.target.max', 'bucket_size': '2h'}, 7200)
+            {'target': 'some.target.last', 'bucket_size': '2h'}, 7200)
 
     def test_parse_config_for_no_target(self):
         self.assertRaises(ConfigError, GraphiteMetric.parse_config, {})
