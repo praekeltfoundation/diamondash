@@ -5,10 +5,18 @@ from diamondash import utils
 from diamondash import ConfigError
 from diamondash.widgets.graph import GraphWidget
 from diamondash.backends.graphite import GraphiteBackend
-from diamondash.tests import helpers
+from diamondash.tests.utils import stub_from_config, ToyBackend
 
 
 class GraphWidgetTestCase(unittest.TestCase):
+    TIME_RANGE = 86400
+
+    def setUp(self):
+        self.backend = ToyBackend()
+        self.widget = self.mk_graph_widget(
+            time_range=self.TIME_RANGE,
+            backend=self.backend)
+
     @staticmethod
     def mk_graph_widget(**kwargs):
         kwargs = utils.update_dict({
@@ -21,7 +29,7 @@ class GraphWidgetTestCase(unittest.TestCase):
         return GraphWidget(**kwargs)
 
     def test_parse_config(self):
-        helpers.stub_from_config(GraphiteBackend)
+        stub_from_config(GraphiteBackend)
 
         config = {
             'name': u'test-graph-widget',
@@ -36,13 +44,14 @@ class GraphWidgetTestCase(unittest.TestCase):
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
 
         parsed_config = GraphWidget.parse_config(config, class_defaults)
+        self.assertEqual(parsed_config['time_range'], 86400)
+
         expected_backend_config = {
-            'from_time': '1d',
+            'bucket_size': 3600,
             'metrics': [
                 {
                     'some_metric_option': 'some-value',
                     'target':'vumi.random.count.sum',
-                    'bucket_size': 3600,
                     'metadata': {
                         'name': 'random-sum',
                         'title': 'random sum',
@@ -55,7 +64,6 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {
                     'some_metric_option': 'some-value',
                     'target':'vumi.random.timer.avg',
-                    'bucket_size': 3600,
                     'metadata': {
                         'name': 'random-avg',
                         'title': 'random avg',
@@ -81,8 +89,13 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
                           {'name': u'some metric'}, {})
 
-    def test_process_backend_response(self):
-        data = [
+    def assert_handled_render_request(self, result, expected_data):
+        self.assertEqual(self.backend.get_data_calls,
+                         [{'from_time': -self.TIME_RANGE}])
+        self.assertEqual(result, json.dumps(expected_data))
+
+    def test_render_request_handling(self):
+        self.backend.response_data = [
             {
                 'metadata': {'name': 'metric-1'},
                 'datapoints': [{'x': 0, 'y': 0},
@@ -97,42 +110,48 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': []
             }
         ]
-        result = self.mk_graph_widget().process_backend_response(data)
 
-        expected_metric_data = [
-            {
-                'name': 'metric-1',
-                'datapoints': [{'x': 0, 'y': 0},
-                               {'x': 2, 'y': 1},
-                               {'x': 3, 'y': 2}]
-            }, {
-                'name': 'metric-2',
-                'datapoints': [{'x': 5, 'y': 4},
-                               {'x':  15, 'y': 1}]
-            }, {
-                'name': 'metric-3',
-                'datapoints': []
-            }
-        ]
-        self.assertEqual(result, json.dumps({
+        deferred_result = self.widget.handle_render_request(None)
+        deferred_result.addCallback(self.assert_handled_render_request, {
             'domain': [0, 15],
             'range': [0, 4],
-            'metrics': expected_metric_data
-        }))
+            'metrics': [
+                {
+                    'name': 'metric-1',
+                    'datapoints': [{'x': 0, 'y': 0},
+                                   {'x': 2, 'y': 1},
+                                   {'x': 3, 'y': 2}]
+                },
+                {
+                    'name': 'metric-2',
+                    'datapoints': [{'x': 5, 'y': 4},
+                                   {'x':  15, 'y': 1}]
+                },
+                {
+                    'name': 'metric-3',
+                    'datapoints': []
+                }
+            ]
+        })
+
+        deferred_result.callback(None)
+        return deferred_result
 
     def test_process_backend_response_for_empty_datapoints(self):
-        data = [
+        self.backend.response_data = [
             {'metadata': {'name': 'metric-1'}, 'datapoints': []},
             {'metadata': {'name': 'metric-2'}, 'datapoints': []},
             {'metadata': {'name': 'metric-3'}, 'datapoints': []}]
-        result = self.mk_graph_widget().process_backend_response(data)
 
-        expected_metric_data = [
-            {'name': 'metric-1', 'datapoints': []},
-            {'name': 'metric-2', 'datapoints': []},
-            {'name': 'metric-3', 'datapoints': []}]
-        self.assertEqual(result, json.dumps({
+        deferred_result = self.widget.handle_render_request(None)
+        deferred_result.addCallback(self.assert_handled_render_request, {
             'domain': [0, 0],
             'range': [0, 0],
-            'metrics': expected_metric_data
-        }))
+            'metrics': [
+                {'name': 'metric-1', 'datapoints': []},
+                {'name': 'metric-2', 'datapoints': []},
+                {'name': 'metric-3', 'datapoints': []}]
+        })
+
+        deferred_result.callback(None)
+        return deferred_result

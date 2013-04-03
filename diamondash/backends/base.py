@@ -18,7 +18,7 @@ class Backend(ConfigMixin):
 
         return config
 
-    def get_data(self, **kwargs):
+    def get_data(self, **params):
         """
         Returns data from the backend according to the backend's configuration
         and the passed in arguments.

@@ -1,5 +1,6 @@
 import re
 import sys
+import time
 from os import path
 from unidecode import unidecode
 
@@ -86,3 +87,22 @@ def update_dict(*dicts):
     for d in dicts:
         new_dict.update(d)
     return new_dict
+
+
+def relative_to_now(t):
+    return int(time.time()) + t
+
+
+class Accessor(object):
+    def __init__(self, fallback=None, wrapper=None, **objs):
+        lookup = dict(objs)
+        lookup['fallback'] = fallback
+        self.lookup = lookup
+        self.wrapper = wrapper or self._wrapper
+
+    def _wrapper(self, name, obj, *args, **kwargs):
+        return obj
+
+    def __call__(self, name, *args, **kwargs):
+        obj = self.lookup.get(name, self.lookup['fallback'])
+        return self.wrapper(name, obj, *args, **kwargs)

@@ -6,7 +6,6 @@ from diamondash.backends.graphite import GraphiteBackend
 
 
 class GraphWidget(Widget):
-
     __DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
@@ -19,9 +18,10 @@ class GraphWidget(Widget):
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
 
-    def __init__(self, backend, **kwargs):
+    def __init__(self, backend, time_range, **kwargs):
         super(GraphWidget, self).__init__(**kwargs)
         self.backend = backend
+        self.time_range = time_range
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -29,21 +29,21 @@ class GraphWidget(Widget):
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
         config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
-        metric_configs = config.pop('metrics', None)
-        if metric_configs is None:
-            raise ConfigError(
-                'Graph Widget "%s" needs metrics.' % config['name'])
+        if 'metrics' not in config:
+            raise ConfigError('Graph Widget "%s" needs metrics.'
+                              % config['name'])
 
-        bucket_size = utils.parse_interval(config.pop('bucket_size'))
         metric_defaults = config.pop('metric_defaults', {})
-        metric_defaults['bucket_size'] = bucket_size
         metric_configs = [cls.parse_metric_config(m, metric_defaults)
-                          for m in metric_configs]
+                          for m in config.pop('metrics')]
+
+        config['time_range'] = utils.parse_interval(config['time_range'])
+        bucket_size = utils.parse_interval(config.pop('bucket_size'))
 
         # We have this set to use the Graphite backend for now, but the type of
         # backend could be made configurable in future
         config['backend'] = GraphiteBackend.from_config({
-            'from_time': config.pop('time_range'),
+            'bucket_size': bucket_size,
             'metrics': metric_configs
         }, class_defaults)
 
@@ -98,6 +98,6 @@ class GraphWidget(Widget):
         })
 
     def handle_render_request(self, request):
-        d = self.backend.get_data()
+        d = self.backend.get_data(from_time=-self.time_range)
         d.addCallback(self.process_backend_response)
         return d

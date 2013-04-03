@@ -1,27 +1,40 @@
 import re
 import json
 from urllib import urlencode
+from urlparse import urljoin
 
 from twisted.web import client
 from twisted.python import log
 
 from diamondash import utils, ConfigMixin, ConfigError
 from diamondash.backends import Backend
+from diamondash.backends.processors import get_null_filter, get_summarizer
 
 
 class GraphiteBackend(Backend):
     """Abstract widget for displaying metric data from graphite."""
 
-    __DEFAULTS = {'from_time': '1d'}
+    __DEFAULTS = {}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
 
-    def __init__(self, graphite_url, from_time, metrics=[]):
+    # Using this for three reasons:
+    # 1. Params such as 'from' are reserved words.
+    # 2. Eventually, if and when we support multiple backends, we will need a
+    # standard set of param names that can be converted to the param names
+    # needed in requests to a particular backend.
+    # 3. Allows params not supported by the backend to be excluded.
+    REQUEST_PARAMS_MAP = {
+        'from_time': 'from',
+        'until_time': 'until',
+    }
+
+    def __init__(self, graphite_url, metrics=[]):
         self.graphite_url = graphite_url
-        self.from_time = from_time
 
         self.metrics = []
         self.metrics_by_target = {}
-        self.add_metrics(metrics)
+        for metric in metrics:
+            self.add_metric(metric)
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -34,66 +47,42 @@ class GraphiteBackend(Backend):
             raise ConfigError(
                 "GraphiteBackend needs a 'graphite_url' config field.")
 
-        config['from_time'] = utils.parse_interval(config['from_time'])
+        metrics = config.get('metrics', [])
+        if 'bucket_size' in config:
+            bucket_size = config.pop('bucket_size')
+            for m in metrics:
+                m['bucket_size'] = bucket_size
+
         config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
-                             for m in config.get('metrics', [])]
+                             for m in metrics]
 
         return config
 
-    @classmethod
-    def build_request_url(cls, graphite_url, from_time, targets):
-        """
-        Constructs the graphite render url
-        """
-        params = [
-            ('from', "-%ss" % from_time),
-            ('target', targets),
-            ('format', 'json')]
-        render_url = "render/?%s" % urlencode(params, True)
-        return '/'.join((graphite_url.strip('/'), render_url))
+    def build_request_params(self, **params):
+        req_params = dict((req_k, params[k])
+            for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
+        req_params.update({
+            'format': 'json',
+            'target': [m.target for m in self.metrics]
+        })
+        return req_params
 
-    def _build_request_url(self, graphite_url, from_time):
-        """
-        Internal method that constructs the graphite request url using the
-        calling instance's metrics' wrapped targets.
-        """
-        wrapped_targets = [m.wrapped_target for m in self.metrics]
-        return self.build_request_url(graphite_url, from_time, wrapped_targets)
+    def build_request_url(self, **params):
+        req_params = self.build_request_params(**params)
+        render_url = "render/?%s" % urlencode(req_params, True)
+        return urljoin(self.graphite_url, render_url)
 
-    def _reset_request_url(self):
-        self.request_url = self._build_request_url(
-            self.graphite_url, self.from_time)
-
-    def _add_metric(self, metric):
-        """
-        Adds a metric to the widget. Used by `add_metric()` and `add_metrics()`
-        to keep things DRY.
-        """
+    def add_metric(self, metric):
         target = metric.target
         if target in self.metrics_by_target:
             log.msg("Metric with target '%s' already exists in "
-                    "Graphite backend." % target)
+                    "Graphite backend." % (target))
             return
 
         self.metrics.append(metric)
         self.metrics_by_target[target] = metric
 
-    def add_metric(self, metric):
-        """
-        Adds a single metric to the widget and rebuilds the request url.
-        """
-        self._add_metric(metric)
-        self._reset_request_url()
-
-    def add_metrics(self, metrics):
-        """
-        Adds a multiple metrics to the widget and rebuilds the request url.
-        """
-        for metric in metrics:
-            self._add_metric(metric)
-        self._reset_request_url()
-
-    def handle_graphite_response(self, data):
+    def handle_backend_response(self, data, **request_params):
         """
         Accepts graphite render response data and processes it into a
         normalized format.
@@ -105,9 +94,9 @@ class GraphiteBackend(Backend):
 
         output = []
         for metric in self.metrics:
-            datapoints = datapoints_by_target.get(metric.target, [])
-            if datapoints:
-                datapoints = metric.process_datapoints(datapoints)
+            datapoints = metric.process_datapoints(
+                datapoints_by_target.get(metric.target, []),
+                **request_params)
             output.append({
                 'datapoints': datapoints,
                 'metadata': metric.metadata
@@ -115,17 +104,20 @@ class GraphiteBackend(Backend):
 
         return output
 
-    def get_data(self, **kwargs):
-        if not kwargs:
-            request_url = self.request_url
-        else:
-            graphite_url = kwargs.get('graphite_url', self.graphite_url)
-            from_time = kwargs.get('from_time', self.from_time)
-            from_time = utils.parse_interval(from_time)
-            request_url = self._build_request_url(graphite_url, from_time)
+    @staticmethod
+    def parse_time(t):
+        return utils.relative_to_now(t) if t < 0 else t
 
+    def get_data(self, **params):
+        if 'from_time' in params:
+            params['from_time'] = self.parse_time(params['from_time'])
+
+        if 'until_time' in params:
+            params['until_time'] = self.parse_time(params['until_time'])
+
+        request_url = self.build_request_url(**params)
         d = client.getPage(request_url)
-        d.addCallback(self.handle_graphite_response)
+        d.addCallback(self.handle_backend_response, **params)
         return d
 
 
@@ -135,78 +127,52 @@ class GraphiteMetric(ConfigMixin):
     __DEFAULTS = {'null_filter': 'skip'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
 
-    def __init__(self, target, wrapped_target, null_filter, metadata):
+    def __init__(self, target, metadata={}, null_filter=None, summarizer=None):
         self.target = target
-        self.wrapped_target = wrapped_target
-        self.set_null_filter(null_filter)
         self.metadata = metadata
-
-    def set_null_filter(self, filter_name):
-        self.filter_nulls = {
-            'skip': self.skip_nulls,
-            'zeroize': self.zeroize_nulls,
-            'noop': lambda x: x
-        }.get(filter_name, self.skip_nulls)
-
-    @classmethod
-    def skip_nulls(cls, datapoints):
-        return [[y, x] for [y, x] in datapoints
-                if (y is not None) and (x is not None)]
-
-    @classmethod
-    def zeroize_nulls(cls, datapoints):
-        return [[y, x] if y is not None else [0, x]
-                for [y, x] in datapoints if x is not None]
+        self.null_filter = null_filter or get_null_filter('fallback')
+        self.summarizer = summarizer or get_summarizer('fallback')
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
         config = utils.update_dict(cls.__DEFAULTS, defaults, config)
 
-        target = config.get('target')
-        if target is None:
+        if 'target' not in config:
             raise ConfigError("All metrics need a target")
 
-        bucket_size = config.pop('bucket_size', None)
-        if bucket_size is not None:
-            bucket_size = utils.parse_interval(bucket_size)
-            config['wrapped_target'] = cls.format_metric_target(
-                target, bucket_size)
-        else:
-            config['wrapped_target'] = target
+        if 'bucket_size' in config:
+            bucket_size = utils.parse_interval(config.pop('bucket_size'))
+            agg_method = guess_aggregation_method(config['target'])
+            config['summarizer'] = get_summarizer(agg_method, bucket_size)
 
-        config.setdefault('metadata', {})
+        if 'null_filter' in config:
+            config['null_filter'] = get_null_filter(config['null_filter'])
 
         return config
 
-    @classmethod
-    def format_metric_target(cls, target, bucket_size):
-        """
-        Formats a metric target to allow aggregation of metric values
-        based on the passed in bucket size
-        """
-        bucket_size = '%ss' % (str(bucket_size),)
-        agg_method = guess_aggregation_method(target)
-        if agg_method is None:
-            # TODO: Log this?
-            agg_method = "avg"
-
-        graphite_target = 'alias(summarize(%s, "%s", "%s"), "%s")' % (
-            target, bucket_size, agg_method, target)
-
-        return graphite_target
-
-    def process_datapoints(self, datapoints):
+    def process_datapoints(self, datapoints, **params):
         """
         Takes in datapoints received from graphite, performs any processing
         that needs to be performed for a particular metric (eg. null
         filtering), and returns the processed datapoints.
         """
-        datapoints = self.filter_nulls(datapoints)
+        # convert to internal format
+        datapoints = [{'x': x, 'y': y} for y, x in datapoints]
+        datapoints = self.null_filter(datapoints)
 
-        # change datapoints to a list of dicts and convert x values from
-        # seconds to milliseconds
-        return [{'x': x * 1000, 'y': y} for y, x in datapoints]
+        if 'from_time' in params:
+            datapoints = self.summarizer(datapoints, params['from_time'])
+
+        for datapoint in datapoints:
+            if isinstance(datapoint['y'], list):
+                print self.summarizer.aggregator
+
+        # convert x values to milliseconds for client
+        for datapoint in datapoints:
+            datapoint['x'] *= 1000
+
+        return datapoints
 
 
 # Borrowed from the bit of pyparsing, the graphite expression parser uses.
@@ -256,7 +222,7 @@ def parse_graphite_func(tokens):
             results.append(parse_graphite_func(tokens))
         elif token == 'item':
             suffix = value.split('.')[-1]
-            if suffix in ('min', 'max', 'avg', 'sum'):
+            if suffix in ('min', 'max', 'avg', 'sum', 'last'):
                 results.append(suffix)
 
 
