@@ -134,6 +134,10 @@ class Dashboard(Element, ConfigMixin):
         return getattr(self, self.LAYOUT_FUNCTIONS[name])()
 
     @renderer
+    def dashboard_title_renderer(self, request, tag):
+        return tag(self.title)
+
+    @renderer
     def stylesheets_renderer(self, request, tag):
         for stylesheet in self.stylesheets:
             yield tag.clone().fillSlots(stylesheet_href_slot=stylesheet)
@@ -219,10 +223,6 @@ class DashboardPage(Element):
         href = '' if self.is_shared else '/'
         tag.fillSlots(brand_href_slot=href)
         return tag
-
-    @renderer
-    def dashboard_name_renderer(self, request, tag):
-        return tag(self.dashboard.title)
 
     @renderer
     def dashboard_container_renderer(self, request, tag):

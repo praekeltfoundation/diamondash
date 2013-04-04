@@ -5800,6 +5800,7 @@ a.badge:hover {
 
 body {
 	padding-top: 60px;
+  background-color: #fdfdfd;
 }
 
 a {
@@ -5808,6 +5809,12 @@ a {
 
 a:hover {
 	color: #333;
+}
+
+.navbar .brand {
+  font-family: georgia;
+  font-size: 21px;
+  color: #ddd;
 }
 
 .row {
@@ -5823,6 +5830,10 @@ a:hover {
 
 .widget-title h4 {
 	line-height: 30px;
+}
+
+.dashboard-title {
+  margin-bottom: 14px;
 }
 
 .chart *, .axis * {
