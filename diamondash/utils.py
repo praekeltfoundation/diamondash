@@ -21,8 +21,9 @@ def isint(n):
 
 def slugify(text):
     """Slugifies the passed in text"""
-    text = unidecode(text).lower()
-    segments = _punct_re.split(text)
+    if isinstance(text, unicode):
+        text = unidecode(text)
+    segments = _punct_re.split(text.lower())
     return '-'.join(word for segment in segments for word in segment.split())
 
 
