@@ -33,12 +33,14 @@ def show_index(request):
 
 
 @route('/css/')
+@route('/shared/css/')
 def serve_css(request):
     """Routing for all css files"""
     return server.resources.getChild('css', request)
 
 
 @route('/js/')
+@route('/shared/js/')
 def serve_js(request):
     """Routing for all js files"""
     return server.resources.getChild('js', request)
