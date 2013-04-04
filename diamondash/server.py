@@ -32,18 +32,11 @@ def show_index(request):
     return server.index
 
 
-@route('/css/')
-@route('/shared/css/')
-def serve_css(request):
+@route('/<any(css, js):res_type>/<string:name>')
+@route('/shared/<any(css, js):res_type>/<string:name>')
+def serve_static_resource(request, res_type, name):
     """Routing for all css files"""
-    return server.resources.getChild('css', request)
-
-
-@route('/js/')
-@route('/shared/js/')
-def serve_js(request):
-    """Routing for all js files"""
-    return server.resources.getChild('js', request)
+    return server.resources.getChild(res_type, request).getChild(name, request)
 
 
 @route('/favicon.ico')
