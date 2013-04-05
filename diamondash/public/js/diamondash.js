@@ -12461,7 +12461,9 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     // ------------
     if (options.config) {
       var config = options.config;
-      this.dotted = config.dotted || false;
+
+      this.dotted = 'dotted' in config ? config.dotted : false;
+      this.smooth = 'smooth' in config ? config.smooth : true;
     }
 
     // Dimensions Setup
@@ -12494,7 +12496,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .ticks(this.maxTicks);
 
     this.line = d3.svg.line()
-      .interpolate('monotone')
+      .interpolate(this.smooth ? 'monotone' : 'linear')
       .x(function(d) { return fx(d.x); })
       .y(function(d) { return fy(d.y); });
 
