@@ -8,8 +8,8 @@ describe("LValueWidgetView", function(){
     model = new LValueWidgetModel({
       'name': 'some-lvalue-widget',
       'lvalue': 9227465.0,
-      'from': 1340875995,
-      'to': 1340875995 + 3600 - 1,
+      'from': 1340875995000,
+      'to': 1340875995000 + 3600000 - 1,
       'diff': 9227465.0 - 5702887.0,
       'percentage': 0.61803398874990854
     });
@@ -37,8 +37,8 @@ describe("LValueWidgetView", function(){
       assert.equal(view.$('.lvalue-lvalue-slot').text(), "9.2M");
       assert.equal(view.$('.lvalue-diff-slot').text(), "+3.52M");
       assert.equal(view.$('.lvalue-percentage-slot').text(), "61.80%");
-      assert.equal(view.$('.lvalue-from-slot').text(), "28-06-2012 11:33");
-      assert.equal(view.$('.lvalue-to-slot').text(), "28-06-2012 12:33");
+      assert.equal(view.$('.lvalue-from-slot').text(), "28-06-2012 09:33");
+      assert.equal(view.$('.lvalue-to-slot').text(), "28-06-2012 10:33");
     });
 
     it("should set the appropriate classes on the change div", function() {

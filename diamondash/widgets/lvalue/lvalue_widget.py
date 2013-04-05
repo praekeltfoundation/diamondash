@@ -51,19 +51,13 @@ class LValueWidget(Widget):
         return config
 
     def format_data(self, prev, last):
-        prev_y, last_y = prev['y'], last['y']
-        diff_y = last_y - prev_y
-        percentage = diff_y / (prev_y or 1)
-
-        from_time = last['x']
-        to_time = from_time + self.time_range - 1
-
+        diff_y = last['y'] - prev['y']
         return json.dumps({
-            'lvalue': last_y,
-            'from': from_time,
-            'to': to_time,
+            'lvalue': last['y'],
+            'from': last['x'],
+            'to': last['x'] + (self.time_range * 1000) - 1,
             'diff': diff_y,
-            'percentage': percentage,
+            'percentage': diff_y / (prev['y'] or 1),
         })
 
     def handle_backend_response(self, metric_data):
