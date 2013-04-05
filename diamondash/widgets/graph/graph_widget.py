@@ -100,5 +100,5 @@ class GraphWidget(DynamicWidget):
     def handle_render_request(self, request):
         d = self.backend.get_data(from_time=-self.time_range)
         d.addCallback(self.process_backend_response)
-        d.addErrback(self.handle_bad_backend_response, request)
+        d.addErrback(self.handle_bad_backend_response)
         return d

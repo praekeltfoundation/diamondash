@@ -13,7 +13,7 @@ class DynamicWidget(Widget):
         self.backend = backend
         self.time_range = time_range
 
-    def handle_bad_backend_response(failure):
+    def handle_bad_backend_response(self, failure):
         failure.trap(BadBackendResponseError)
         log.msg(failure)
         return "{}"
