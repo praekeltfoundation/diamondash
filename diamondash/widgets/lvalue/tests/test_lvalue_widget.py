@@ -1,4 +1,5 @@
 import json
+import time
 
 from twisted.trial import unittest
 
@@ -10,6 +11,9 @@ from diamondash.tests.utils import stub_from_config, ToyBackend
 
 
 class LValueWidgetTestCase(unittest.TestCase):
+    def setUp(self):
+        self.stub_time(1340876002)
+
     @staticmethod
     def mk_lvalue_widget(**kwargs):
         return LValueWidget(**utils.update_dict({
@@ -17,9 +21,12 @@ class LValueWidgetTestCase(unittest.TestCase):
             'title': 'Some Widget',
             'client_config': {},
             'width': 2,
-            'time_range': 3600,
+            'time_range': 5,
             'backend': None,
         }, kwargs))
+
+    def stub_time(self, t):
+        self.patch(time, 'time', lambda: t)
 
     def test_parse_config(self):
         """
@@ -31,13 +38,13 @@ class LValueWidgetTestCase(unittest.TestCase):
         config = {
             'name': u'test-lvalue-widget',
             'target': 'vumi.random.count.sum',
-            'time_range': '1h',
+            'time_range': '5s',
         }
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
 
         parsed_config = LValueWidget.parse_config(config, class_defaults)
         expected_backend_config = {
-            'bucket_size': 3600,
+            'bucket_size': 5,
             'metrics': [{
                 'target': config['target'],
                 'null_filter': 'zeroize',
@@ -45,7 +52,7 @@ class LValueWidgetTestCase(unittest.TestCase):
         }
         self.assertEqual(parsed_config['backend'],
                          (expected_backend_config, class_defaults))
-        self.assertEqual(parsed_config['time_range'], 3600)
+        self.assertEqual(parsed_config['time_range'], 5)
         self.assertTrue('bucket_size' not in parsed_config)
 
     def test_parse_config_for_no_target(self):
@@ -59,17 +66,19 @@ class LValueWidgetTestCase(unittest.TestCase):
                 {'x': 1340875980000, 'y': 2178309.0},
                 {'x': 1340875985000, 'y': 3524578.0},
                 {'x': 1340875990000, 'y': 5702887.0},
-                {'x': 1340875995000, 'y': 9227465.0}]
+                {'x': 1340875995000, 'y': 9227465.0},
+                {'x': 1340876000000, 'y': 0.0}
+            ]
         }])
-        widget = self.mk_lvalue_widget(time_range=3600, backend=backend)
+        widget = self.mk_lvalue_widget(time_range=5, backend=backend)
         deferred_result = widget.handle_render_request(None)
 
         def assert_handled_render_request(result):
-            self.assertEqual(backend.get_data_calls, [{'from_time': -7200}])
+            self.assertEqual(backend.get_data_calls, [{'from_time': -10}])
             self.assertEqual(result, json.dumps({
                 'lvalue': 9227465.0,
                 'from': 1340875995000,
-                'to': 1340875995000 + 3600000 - 1,
+                'to': 1340875995000 + 5000 - 1,
                 'diff': 9227465.0 - 5702887.0,
                 'percentage': 0.61803398874990854,
             }))
@@ -84,7 +93,7 @@ class LValueWidgetTestCase(unittest.TestCase):
                 'target': 'some.target',
                 'datapoints': datapoints
             }])
-            widget = self.mk_lvalue_widget(time_range=3600, backend=backend)
+            widget = self.mk_lvalue_widget(time_range=5, backend=backend)
             d = widget.handle_render_request(None)
             return self.assertFailure(d, BadBackendResponseError)
 

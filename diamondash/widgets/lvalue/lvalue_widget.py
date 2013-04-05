@@ -61,12 +61,19 @@ class LValueWidget(DynamicWidget):
             'percentage': diff_y / (prev['y'] or 1),
         })
 
-    def handle_backend_response(self, metric_data):
+    def handle_backend_response(self, metric_data, from_time):
         if not metric_data:
             raise BadBackendResponseError(
                 "LValueWidget '%s' received empty response from backend")
 
-        datapoints = metric_data[0]['datapoints'][-2:]
+        # convert from_time into the time unit used by the client side
+        from_time = utils.to_client_interval(from_time)
+        datapoints = metric_data[0]['datapoints']
+        for datapoint in reversed(datapoints):
+            if datapoint['x'] > from_time:
+                datapoints.pop()
+        datapoints = datapoints[-2:]
+
         if len(datapoints) < 2:
             length = len(datapoints)
             raise BadBackendResponseError(
@@ -76,7 +83,13 @@ class LValueWidget(DynamicWidget):
         return self.format_data(*datapoints)
 
     def handle_render_request(self, request):
+        # We ask the backend for data since 2 intervals ago so we can obtain
+        # the previous value and calculate the increase/decrease since the
+        # previous interval
         d = self.backend.get_data(from_time=self.time_range * -2)
-        d.addCallback(self.handle_backend_response)
+
+        d.addCallback(self.handle_backend_response,
+                      utils.relative_to_now(-self.time_range))
+
         d.addErrback(self.handle_bad_backend_response)
         return d
