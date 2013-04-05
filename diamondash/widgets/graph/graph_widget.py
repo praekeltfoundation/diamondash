@@ -9,6 +9,8 @@ class GraphWidget(Widget):
     __DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
+        'dotted': False,
+        'smooth': True,
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
@@ -52,7 +54,10 @@ class GraphWidget(Widget):
             'step': bucket_size * 1000,
             'metrics': [m['metadata']['client_config'] for m in metric_configs]
         })
-        client_config['view'].update({'dotted': config.pop('dotted', False)})
+        client_config['view'].update({
+            'dotted': config.pop('dotted'),
+            'smooth': config.pop('smooth'),
+        })
 
         return config
 
