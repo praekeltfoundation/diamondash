@@ -170,7 +170,7 @@ class GraphiteMetric(ConfigMixin):
 
         # convert x values to milliseconds for client
         for datapoint in datapoints:
-            datapoint['x'] *= 1000
+            datapoint['x'] = utils.to_client_interval(datapoint['x'])
 
         return datapoints
 

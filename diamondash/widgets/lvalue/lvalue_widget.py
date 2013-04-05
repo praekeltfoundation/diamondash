@@ -51,19 +51,19 @@ class LValueWidget(Widget):
         return config
 
     def format_data(self, prev, last):
-        prev_y, last_y = prev['y'], last['y']
-        diff_y = last_y - prev_y
-        percentage = diff_y / (prev_y or 1)
+        diff_y = last['y'] - prev['y']
 
-        from_time = last['x']
-        to_time = from_time + self.time_range - 1
-
+        # 'to' gets added the widget's time range converted from its internal
+        # representation (in seconds) to the representation used by the client
+        # side. The received datapoints are already converted by the backend,
+        # so each widget type (lvalue, graph, etc) does not have to worry about
+        # converting the datapoints.
         return json.dumps({
-            'lvalue': last_y,
-            'from': from_time,
-            'to': to_time,
+            'lvalue': last['y'],
+            'from': last['x'],
+            'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
             'diff': diff_y,
-            'percentage': percentage,
+            'percentage': diff_y / (prev['y'] or 1),
         })
 
     def handle_backend_response(self, metric_data):
