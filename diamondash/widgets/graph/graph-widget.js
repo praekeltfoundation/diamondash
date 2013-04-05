@@ -87,7 +87,7 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel
 });
 
-var _formatTime = d3.time.format("%d-%m %H:%M"),
+var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
     _formatValue = d3.format(".3s");
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({

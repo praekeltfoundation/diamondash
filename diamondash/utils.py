@@ -4,6 +4,12 @@ import time
 from os import path
 from unidecode import unidecode
 
+
+# The internal representation of intervals in diamondash is seconds.
+# This multiplier is used to convert the internal interval representation to
+# what is needed by the client side
+CLIENT_INTERVAL_MULTIPLIER = 1000  # seconds -> milliseconds
+
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
 _eps = 0.0001
@@ -92,6 +98,14 @@ def update_dict(*dicts):
 
 def relative_to_now(t):
     return int(time.time()) + t
+
+
+def to_client_interval(t):
+    """
+    Convert time interval from interal representation to representation used by
+    client side
+    """
+    return t * CLIENT_INTERVAL_MULTIPLIER
 
 
 class Accessor(object):
