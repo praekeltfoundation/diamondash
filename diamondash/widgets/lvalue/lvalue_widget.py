@@ -70,10 +70,9 @@ class LValueWidget(DynamicWidget):
         from_time = utils.to_client_interval(from_time)
         datapoints = metric_data[0]['datapoints']
         for datapoint in reversed(datapoints):
-            if datapoint['x'] > from_time:
-                datapoints.pop()
-            else:
+            if datapoint['x'] <= from_time:
                 break
+            datapoints.pop()
         datapoints = datapoints[-2:]
 
         if len(datapoints) < 2:
