@@ -96,8 +96,12 @@ def update_dict(*dicts):
     return new_dict
 
 
+def now():
+    return int(time.time())
+
+
 def relative_to_now(t):
-    return int(time.time()) + t
+    return now() + t
 
 
 def to_client_interval(t):
