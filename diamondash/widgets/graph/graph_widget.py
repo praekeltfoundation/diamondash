@@ -1,11 +1,11 @@
 import json
 
 from diamondash import utils, ConfigError
-from diamondash.widgets import Widget
+from diamondash.widgets.dynamic import DynamicWidget
 from diamondash.backends.graphite import GraphiteBackend
 
 
-class GraphWidget(Widget):
+class GraphWidget(DynamicWidget):
     __DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
@@ -19,11 +19,6 @@ class GraphWidget(Widget):
 
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
-
-    def __init__(self, backend, time_range, **kwargs):
-        super(GraphWidget, self).__init__(**kwargs)
-        self.backend = backend
-        self.time_range = time_range
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -105,4 +100,5 @@ class GraphWidget(Widget):
     def handle_render_request(self, request):
         d = self.backend.get_data(from_time=-self.time_range)
         d.addCallback(self.process_backend_response)
+        d.addErrback(self.handle_bad_backend_response, request)
         return d

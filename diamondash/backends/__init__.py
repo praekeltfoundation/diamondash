@@ -1,3 +1,3 @@
-__all__ = ['Backend']
+from diamondash.backends.base import Backend, BadBackendResponseError
 
-from diamondash.backends.base import Backend
+__all__ = ['Backend', 'BadBackendResponseError']

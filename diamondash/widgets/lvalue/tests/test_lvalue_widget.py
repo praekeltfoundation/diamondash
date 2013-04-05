@@ -4,6 +4,7 @@ from twisted.trial import unittest
 
 from diamondash import utils, ConfigError
 from diamondash.widgets.lvalue import LValueWidget
+from diamondash.backends import BadBackendResponseError
 from diamondash.backends.graphite import GraphiteBackend
 from diamondash.tests.utils import stub_from_config, ToyBackend
 
@@ -76,3 +77,16 @@ class LValueWidgetTestCase(unittest.TestCase):
 
         deferred_result.callback(None)
         return deferred_result
+
+    def test_render_request_handling_for_bad_backend_responses(self):
+        def assert_handled_bad_response(datapoints):
+            backend = ToyBackend([{
+                'target': 'some.target',
+                'datapoints': datapoints
+            }])
+            widget = self.mk_lvalue_widget(time_range=3600, backend=backend)
+            d = widget.handle_render_request(None)
+            return self.assertFailure(d, BadBackendResponseError)
+
+        assert_handled_bad_response([])
+        assert_handled_bad_response([{'x': 0, 'y': 0}])
