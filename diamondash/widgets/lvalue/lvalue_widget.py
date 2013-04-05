@@ -72,6 +72,8 @@ class LValueWidget(DynamicWidget):
         for datapoint in reversed(datapoints):
             if datapoint['x'] > from_time:
                 datapoints.pop()
+            else:
+                break
         datapoints = datapoints[-2:]
 
         if len(datapoints) < 2:
@@ -88,8 +90,6 @@ class LValueWidget(DynamicWidget):
         # previous interval
         d = self.backend.get_data(from_time=self.time_range * -2)
 
-        d.addCallback(self.handle_backend_response,
-                      utils.relative_to_now(-self.time_range))
-
+        d.addCallback(self.handle_backend_response, utils.now())
         d.addErrback(self.handle_bad_backend_response)
         return d

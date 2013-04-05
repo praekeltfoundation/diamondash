@@ -12,7 +12,7 @@ from diamondash.tests.utils import stub_from_config, ToyBackend
 
 class LValueWidgetTestCase(unittest.TestCase):
     def setUp(self):
-        self.stub_time(1340876002)
+        self.stub_time(1340875997)
 
     @staticmethod
     def mk_lvalue_widget(**kwargs):
