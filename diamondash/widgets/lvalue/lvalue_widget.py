@@ -52,6 +52,13 @@ class LValueWidget(Widget):
 
     def format_data(self, prev, last):
         diff_y = last['y'] - prev['y']
+
+        # 'to' gets added the widget's time range multiplied by 1000 to convert
+        # the time range from its internal representation (in seconds) to the
+        # representation used by the client side. The received datapoints are
+        # already converted to milliseconds by the backend, so each widget type
+        # (lvalue, graph, etc) does not have to worry about converting the
+        # datapoints to milliseconds.
         return json.dumps({
             'lvalue': last['y'],
             'from': last['x'],
