@@ -11,6 +11,13 @@ widgets.WidgetModel = Backbone.Model.extend({
     }
   },
 
+  _parse: Backbone.Model.prototype.parse,
+  parse: function(response, options) {
+    if (response && !_.isEmpty(response)) {
+      return this._parse(response, options);
+    }
+  },
+
   urlRoot: function() {
     return '/render/' + this.get('dashboardName');
   }
