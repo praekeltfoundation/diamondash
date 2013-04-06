@@ -154,7 +154,7 @@ class GraphiteMetric(ConfigMixin):
 
     @staticmethod
     def alias_target(target):
-        return "alias(%s, %s)" % (target, target)
+        return "alias(%s, '%s')" % (target, target)
 
     def process_datapoints(self, datapoints, **params):
         """
