@@ -104,7 +104,7 @@ class GraphWidget(DynamicWidget):
 
     def handle_render_request(self, request):
         if self.align_to_start:
-            from_time = utils.floor(utils.now(), self.time_range)
+            from_time = utils.floor_time(utils.now(), self.time_range)
         else:
             from_time = utils.relative_to_now(-self.time_range)
 

@@ -156,6 +156,7 @@ class GraphWidgetTestCase(unittest.TestCase):
         }, 1340789597)
 
     def test_render_request_handling_for_align_to_start(self):
+        self.widget.align_to_start = True
         self.widget.handle_render_request(None)
         self.assertEqual(self.backend.get_data_calls,
-                         [{'from_time': 1340789597}])
+                         [{'from_time': 1340841600}])
