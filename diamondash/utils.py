@@ -2,6 +2,7 @@ import re
 import sys
 import time
 from os import path
+from math import floor
 from unidecode import unidecode
 
 
@@ -102,6 +103,16 @@ def now():
 
 def relative_to_now(t):
     return now() + t
+
+
+def round_time(t, interval):
+    i = int(round(t / float(interval)))
+    return interval * i
+
+
+def floor_time(t, interval):
+    i = int(floor(t / float(interval)))
+    return interval * i
 
 
 def to_client_interval(t):

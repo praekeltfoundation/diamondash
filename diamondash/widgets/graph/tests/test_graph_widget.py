@@ -1,4 +1,6 @@
 import json
+import time
+
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -9,13 +11,15 @@ from diamondash.tests.utils import stub_from_config, ToyBackend
 
 
 class GraphWidgetTestCase(unittest.TestCase):
-    TIME_RANGE = 86400
-
     def setUp(self):
+        self.stub_time(1340875997)
         self.backend = ToyBackend()
         self.widget = self.mk_graph_widget(
-            time_range=self.TIME_RANGE,
+            time_range=86400,
             backend=self.backend)
+
+    def stub_time(self, t):
+        self.patch(time, 'time', lambda: t)
 
     @staticmethod
     def mk_graph_widget(**kwargs):
@@ -89,13 +93,20 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
                           {'name': u'some metric'}, {})
 
-    def assert_handled_render_request(self, result, expected_data):
+    def assert_render_request_handling(self, backend_res, expected_data,
+                                       expected_from_time):
+        self.backend.response_data = backend_res
+        d = self.widget.handle_render_request(None)
+
         self.assertEqual(self.backend.get_data_calls,
-                         [{'from_time': -self.TIME_RANGE}])
-        self.assertEqual(result, json.dumps(expected_data))
+                         [{'from_time': expected_from_time}])
+        d.addCallback(self.assertEqual, json.dumps(expected_data))
+
+        d.callback(None)
+        return d
 
     def test_render_request_handling(self):
-        self.backend.response_data = [
+        return self.assert_render_request_handling([
             {
                 'metadata': {'name': 'metric-1'},
                 'datapoints': [{'x': 0, 'y': 0},
@@ -109,10 +120,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'metadata': {'name': 'metric-3'},
                 'datapoints': []
             }
-        ]
-
-        deferred_result = self.widget.handle_render_request(None)
-        deferred_result.addCallback(self.assert_handled_render_request, {
+        ], {
             'domain': [0, 15],
             'range': [0, 4],
             'metrics': [
@@ -132,26 +140,23 @@ class GraphWidgetTestCase(unittest.TestCase):
                     'datapoints': []
                 }
             ]
-        })
+        }, 1340789597)
 
-        deferred_result.callback(None)
-        return deferred_result
-
-    def test_process_backend_response_for_empty_datapoints(self):
-        self.backend.response_data = [
+    def test_render_request_handling_for_empty_datapoints(self):
+        return self.assert_render_request_handling([
             {'metadata': {'name': 'metric-1'}, 'datapoints': []},
             {'metadata': {'name': 'metric-2'}, 'datapoints': []},
-            {'metadata': {'name': 'metric-3'}, 'datapoints': []}]
-
-        deferred_result = self.widget.handle_render_request(None)
-        deferred_result.addCallback(self.assert_handled_render_request, {
+            {'metadata': {'name': 'metric-3'}, 'datapoints': []}], {
             'domain': [0, 0],
             'range': [0, 0],
             'metrics': [
                 {'name': 'metric-1', 'datapoints': []},
                 {'name': 'metric-2', 'datapoints': []},
                 {'name': 'metric-3', 'datapoints': []}]
-        })
+        }, 1340789597)
 
-        deferred_result.callback(None)
-        return deferred_result
+    def test_render_request_handling_for_align_to_start(self):
+        self.widget.align_to_start = True
+        self.widget.handle_render_request(None)
+        self.assertEqual(self.backend.get_data_calls,
+                         [{'from_time': 1340841600}])
