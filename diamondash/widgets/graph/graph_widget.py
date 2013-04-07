@@ -9,6 +9,7 @@ class GraphWidget(DynamicWidget):
     __DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
+        'align_to_start': False,
         'dotted': False,
         'smooth': True,
     }
@@ -19,6 +20,10 @@ class GraphWidget(DynamicWidget):
 
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
+
+    def __init__(self, align_to_start=False, **kwargs):
+        super(GraphWidget, self).__init__(**kwargs)
+        self.align_to_start = align_to_start
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):

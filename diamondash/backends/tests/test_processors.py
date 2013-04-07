@@ -9,28 +9,6 @@ class SummarizersTestCase(unittest.TestCase):
     def assert_summarizer(self, summarizer, from_time, datapoints, expected):
         self.assertEqual(summarizer(datapoints, from_time), expected)
 
-    def test_time_alignment(self):
-        def assert_alignment(bucket_size, t, expected):
-            summarizer = processors.Summarizer(bucket_size)
-            self.assertEqual(summarizer.align_time(t), expected)
-
-        assert_alignment(5, 2, 0)
-        assert_alignment(5, 3, 5)
-        assert_alignment(5, 5, 5)
-        assert_alignment(5, 6, 5)
-        assert_alignment(5, 7, 5)
-        assert_alignment(5, 8, 10)
-        assert_alignment(5, 9, 10)
-        assert_alignment(5, 10, 10)
-
-        assert_alignment(10, 3, 0)
-        assert_alignment(10, 5, 10)
-        assert_alignment(10, 10, 10)
-        assert_alignment(10, 12, 10)
-        assert_alignment(10, 13, 10)
-        assert_alignment(10, 15, 20)
-        assert_alignment(10, 18, 20)
-
     def test_last_datapoint_summarizer(self):
         self.assert_summarizer(LastDatapointSummarizer(5), 3, [], [])
         self.assert_summarizer(LastDatapointSummarizer(5), 12,
