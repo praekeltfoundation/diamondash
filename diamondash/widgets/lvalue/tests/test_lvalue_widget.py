@@ -47,7 +47,7 @@ class LValueWidgetTestCase(unittest.TestCase):
             'bucket_size': 5,
             'metrics': [{
                 'target': config['target'],
-                'null_filter': 'zeroize',
+                'null_filter': 'skip',
             }]
         }
         self.assertEqual(parsed_config['backend'],
