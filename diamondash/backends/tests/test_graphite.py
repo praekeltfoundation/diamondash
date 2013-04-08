@@ -109,9 +109,12 @@ class GraphiteBackendTestCase(unittest.TestCase):
     def test_parse_config(self):
         stub_from_config(GraphiteMetric)
         config = {
+            'null_filter': 'zeroize',
             'bucket_size': 3600,
             'graphite_url': 'http://some-graphite-url.moc:8080/',
-            'metrics': [{'target': 'a.max'}, {'target': 'b.max'}]
+            'metrics': [
+                {'target': 'a.max'},
+                {'target': 'b.max', 'null_filter': 'skip'}]
         }
         class_defaults = {'SomeType': "some default value"}
 
@@ -119,8 +122,17 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.assertEqual(parsed_config, {
             'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [
-                ({'target': 'a.max', 'bucket_size': 3600}, class_defaults),
-                ({'target': 'b.max', 'bucket_size': 3600}, class_defaults)]
+                ({
+                    'target': 'a.max',
+                    'bucket_size': 3600,
+                    'null_filter': 'zeroize'
+                }, class_defaults),
+                ({
+                    'target': 'b.max',
+                    'bucket_size': 3600,
+                    'null_filter': 'skip'
+                }, class_defaults)
+            ]
         })
 
     def test_parse_config_for_no_graphite_url(self):
