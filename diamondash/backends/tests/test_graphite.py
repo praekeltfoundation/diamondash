@@ -39,8 +39,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [12.0, 7114]]
     M1_PROCESSED_DATAPOINTS = [
         {'x': 3600000, 'y': 0},
+        {'x': 5400000, 'y': 5.0},
         {'x': 5700000, 'y': 10.0},
-        {'x': 7200000, 'y': 12.0}]
+        {'x': 6900000, 'y': 12.0}]
 
     M2_TARGET = 'some.other.target.sum'
     M2_METADATA = {'some-field': 'ipsum'}

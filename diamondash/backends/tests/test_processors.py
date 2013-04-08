@@ -24,10 +24,11 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 28, 'y': 7}
             ],
             [
-                {'x': 5, 'y': 1},
+                {'x': 0, 'y': 1},
+                {'x': 5, 'y': 2},
                 {'x': 10, 'y': 4},
                 {'x': 20, 'y': 6},
-                {'x': 30, 'y': 7}
+                {'x': 25, 'y': 7}
             ])
 
         self.assert_summarizer(LastDatapointSummarizer(5), 8,
@@ -38,6 +39,7 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 22, 'y': 4}
             ],
             [
+                {'x': 5, 'y': 1},
                 {'x': 10, 'y': 2},
                 {'x': 20, 'y': 4}
             ])
@@ -59,10 +61,11 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 28, 'y': 7.0}
             ],
             [
-                {'x': 5, 'y': 1.0},
-                {'x': 10, 'y': 3.0},
+                {'x': 0, 'y': 1.0},
+                {'x': 5, 'y': 2.0},
+                {'x': 10, 'y': 3.5},
                 {'x': 20, 'y': 6.0},
-                {'x': 30, 'y': 7.0}
+                {'x': 25, 'y': 7.0},
             ])
 
         self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 8,
@@ -73,7 +76,8 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 22, 'y': 4.0}
             ],
             [
-                {'x': 10, 'y': 1.5},
+                {'x': 5, 'y': 1.0},
+                {'x': 10, 'y': 2.0},
                 {'x': 20, 'y': 3.5}
             ])
 

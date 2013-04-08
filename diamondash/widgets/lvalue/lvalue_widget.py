@@ -37,7 +37,6 @@ class LValueWidget(DynamicWidget):
         # type of backend could be made configurable in future
         config['backend'] = GraphiteBackend.from_config({
             'bucket_size': config['time_range'],
-            'time_aligner': 'floor',
             'metrics': [{
                 'target': config.pop('target'),
                 'null_filter': 'zeroize',
