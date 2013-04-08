@@ -38,9 +38,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [10.0, 5700],
         [12.0, 7114]]
     M1_PROCESSED_DATAPOINTS = [
-        {'x': 3600000, 'y': 0},
-        {'x': 5700000, 'y': 10.0},
-        {'x': 7200000, 'y': 12.0}]
+        {'x': 3600, 'y': 0},
+        {'x': 5700, 'y': 10.0},
+        {'x': 7200, 'y': 12.0}]
 
     M2_TARGET = 'some.other.target.sum'
     M2_METADATA = {'some-field': 'ipsum'}
@@ -51,9 +51,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [None, 4829],
         [11.0, 6075]]
     M2_PROCESSED_DATAPOINTS = [
-        {'x': 3600000, 'y': 26.0},
-        {'x': 4500000, 'y': 25.0},
-        {'x': 6000000, 'y': 11.0}]
+        {'x': 3600, 'y': 26.0},
+        {'x': 4500, 'y': 25.0},
+        {'x': 6000, 'y': 11.0}]
 
     RESPONSE_DATA = json.dumps([
         {"target": M1_TARGET, "datapoints": M1_RAW_DATAPOINTS},

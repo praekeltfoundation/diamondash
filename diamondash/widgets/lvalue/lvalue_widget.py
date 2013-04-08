@@ -56,8 +56,8 @@ class LValueWidget(DynamicWidget):
         # converting the datapoints.
         return json.dumps({
             'lvalue': last['y'],
-            'from': last['x'],
-            'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
+            'from': utils.to_client_interval(last['x']),
+            'to': utils.to_client_interval(last['x'] - self.time_range - 1),
             'diff': diff_y,
             'percentage': diff_y / (prev['y'] or 1),
         })
@@ -67,29 +67,25 @@ class LValueWidget(DynamicWidget):
             raise BadBackendResponseError(
                 "LValueWidget '%s' received empty response from backend")
 
-        # convert from_time into the time unit used by the client side
-        from_time = utils.to_client_interval(from_time)
         datapoints = metric_data[0]['datapoints']
-        for datapoint in reversed(datapoints):
-            if datapoint['x'] <= from_time:
-                break
-            datapoints.pop()
-        datapoints = datapoints[-2:]
+        last = utils.pop_until(datapoints, lambda d: d['x'] <= from_time)
+        prev = utils.pop_until(
+            datapoints, lambda d: d['x'] <= from_time - self.time_range)
 
-        if len(datapoints) < 2:
-            length = len(datapoints)
+        if last is None or prev is None:
             raise BadBackendResponseError(
-                "LValueWidget '%s' received too few datapoints (%s < 2)"
-                % (self.title, length))
+                "LValueWidget did not receive all the datapoints it needed "
+                "the backend")
 
-        return self.format_data(*datapoints)
+        return self.format_data(prev, last)
 
     def handle_render_request(self, request):
-        # We ask the backend for data since 2 intervals ago so we can obtain
-        # the previous value and calculate the increase/decrease since the
-        # previous interval
-        d = self.backend.get_data(from_time=self.time_range * -2)
+        # We ask the backend for data since the start of yesterday to calculate
+        # the increase or decrease between today and yesterday
+        now = utils.now()
+        from_time = utils.floor_time(now - self.time_range, self.time_range)
+        d = self.backend.get_data(from_time=from_time)
 
-        d.addCallback(self.handle_backend_response, utils.now())
+        d.addCallback(self.handle_backend_response, now)
         d.addErrback(self.handle_bad_backend_response)
         return d

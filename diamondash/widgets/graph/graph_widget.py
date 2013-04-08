@@ -97,9 +97,12 @@ class GraphWidget(DynamicWidget):
         domain = (min(x_vals), max(x_vals))
         range = (min(y_vals), max(y_vals))
 
+        # x values are converted to milliseconds for client
         output_metric_data = [{
             'name': m['metadata']['name'],
-            'datapoints': m['datapoints']
+            'datapoints': [
+                {'x': utils.to_client_interval(d['x']), 'y': d['y']}
+                for d in m['datapoints']]
         } for m in metric_data]
 
         return json.dumps({

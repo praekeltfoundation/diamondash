@@ -63,23 +63,24 @@ class LValueWidgetTestCase(unittest.TestCase):
         backend = ToyBackend([{
             'target': 'some.target',
             'datapoints': [
-                {'x': 1340875975000, 'y': 1346269.0},
-                {'x': 1340875980000, 'y': 2178309.0},
-                {'x': 1340875985000, 'y': 3524578.0},
-                {'x': 1340875990000, 'y': 5702887.0},
-                {'x': 1340875995000, 'y': 9227465.0},
-                {'x': 1340876000000, 'y': 0.0}
+                {'x': 1340875975, 'y': 1346269.0},
+                {'x': 1340875980, 'y': 2178309.0},
+                {'x': 1340875985, 'y': 3524578.0},
+                {'x': 1340875990, 'y': 5702887.0},
+                {'x': 1340875995, 'y': 9227465.0},
+                {'x': 1340876000, 'y': 0.0}
             ]
         }])
         widget = self.mk_lvalue_widget(time_range=5, backend=backend)
         deferred_result = widget.handle_render_request(None)
 
         def assert_handled_render_request(result):
-            self.assertEqual(backend.get_data_calls, [{'from_time': -10}])
+            self.assertEqual(backend.get_data_calls,
+                             [{'from_time': 1340875990}])
             self.assertEqual(result, json.dumps({
                 'lvalue': 9227465.0,
                 'from': 1340875995000,
-                'to': 1340875995000 + 5000 - 1,
+                'to': 1340875989000,
                 'diff': 9227465.0 - 5702887.0,
                 'percentage': 0.61803398874990854,
             }))

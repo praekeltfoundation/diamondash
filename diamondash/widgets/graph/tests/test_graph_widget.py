@@ -130,13 +130,13 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {
                     'name': 'metric-1',
                     'datapoints': [{'x': 0, 'y': 0},
-                                   {'x': 2, 'y': 1},
-                                   {'x': 3, 'y': 2}]
+                                   {'x': 2000, 'y': 1},
+                                   {'x': 3000, 'y': 2}]
                 },
                 {
                     'name': 'metric-2',
-                    'datapoints': [{'x': 5, 'y': 4},
-                                   {'x':  15, 'y': 1}]
+                    'datapoints': [{'x': 5000, 'y': 4},
+                                   {'x':  15000, 'y': 1}]
                 },
                 {
                     'name': 'metric-3',

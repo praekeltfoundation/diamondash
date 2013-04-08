@@ -169,10 +169,6 @@ class GraphiteMetric(ConfigMixin):
         if 'from_time' in params:
             datapoints = self.summarizer(datapoints, params['from_time'])
 
-        # convert x values to milliseconds for client
-        for datapoint in datapoints:
-            datapoint['x'] = utils.to_client_interval(datapoint['x'])
-
         return datapoints
 
 

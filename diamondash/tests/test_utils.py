@@ -86,3 +86,14 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(utils.floor_time(15, 10), 10)
         self.assertEqual(utils.floor_time(18, 10), 10)
         self.assertEqual(utils.floor_time(22, 10), 20)
+
+    def test_pop_until(self):
+        def assert_pop_until(coll, fn, expected_coll, expected_item):
+            item = utils.pop_until(coll, fn)
+            self.assertEqual(coll, expected_coll)
+            self.assertEqual(item, expected_item)
+
+        assert_pop_until([], lambda x: x, [], None)
+        assert_pop_until([1, 2, 3], lambda x: x < 0, [], None)
+        assert_pop_until([1, 2, 3, 4, 5, 6], (lambda a: a < 3), [1, 2], 2)
+        assert_pop_until([4, 1, 2, 3], (lambda a: a % 2 == 0), [4, 1, 2], 2)
