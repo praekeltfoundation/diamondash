@@ -39,7 +39,7 @@ class LValueWidget(DynamicWidget):
             'bucket_size': config['time_range'],
             'metrics': [{
                 'target': config.pop('target'),
-                'null_filter': 'zeroize',
+                'null_filter': 'skip',
             }]
         }, class_defaults)
 
