@@ -21,9 +21,10 @@ class GraphWidget(DynamicWidget):
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
 
-    def __init__(self, align_to_start=False, **kwargs):
+    def __init__(self, align_to_start=False, y_min=None, **kwargs):
         super(GraphWidget, self).__init__(**kwargs)
         self.align_to_start = align_to_start
+        self.y_min = y_min
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -95,7 +96,9 @@ class GraphWidget(DynamicWidget):
         x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
         y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
         domain = (min(x_vals), max(x_vals))
-        range = (min(y_vals), max(y_vals))
+
+        y_min = self.y_min if self.y_min is not None else min(y_vals)
+        range = (y_min, max(y_vals))
 
         output_metric_data = [{
             'name': m['metadata']['name'],
