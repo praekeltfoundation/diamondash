@@ -124,7 +124,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': []
             }
         ], {
-            'domain': [0, 15],
+            'domain': [0, 15000],
             'range': [0, 4],
             'metrics': [
                 {
@@ -136,7 +136,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {
                     'name': 'metric-2',
                     'datapoints': [{'x': 5000, 'y': 4},
-                                   {'x':  15000, 'y': 1}]
+                                   {'x': 15000, 'y': 1}]
                 },
                 {
                     'name': 'metric-3',

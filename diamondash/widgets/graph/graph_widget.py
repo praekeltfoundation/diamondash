@@ -92,6 +92,11 @@ class GraphWidget(DynamicWidget):
         return config
 
     def process_backend_response(self, metric_data):
+        for metric in metric_data:
+            metric['datapoints'] = [
+                {'x': utils.to_client_interval(d['x']), 'y': d['y']}
+                for d in metric['datapoints']]
+
         x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
         y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
         domain = (min(x_vals), max(x_vals))
@@ -100,9 +105,7 @@ class GraphWidget(DynamicWidget):
         # x values are converted to milliseconds for client
         output_metric_data = [{
             'name': m['metadata']['name'],
-            'datapoints': [
-                {'x': utils.to_client_interval(d['x']), 'y': d['y']}
-                for d in m['datapoints']]
+            'datapoints': m['datapoints'],
         } for m in metric_data]
 
         return json.dumps({
