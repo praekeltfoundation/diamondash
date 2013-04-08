@@ -17,8 +17,6 @@ class Summarizer(object):
         self.time_aligner = time_aligner
 
     def align_time(self, t):
-        print t
-        print self.bucket_size
         return self.time_aligner(t, self.bucket_size)
 
     def __call__(self, datapoints, from_time):
