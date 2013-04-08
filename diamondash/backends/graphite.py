@@ -48,13 +48,16 @@ class GraphiteBackend(Backend):
                 "GraphiteBackend needs a 'graphite_url' config field.")
 
         metrics = config.get('metrics', [])
-        if 'bucket_size' in config:
-            bucket_size = config.pop('bucket_size')
-            for m in metrics:
-                m['bucket_size'] = bucket_size
 
-        config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
-                             for m in metrics]
+        metric_underrides = {}
+        if 'bucket_size' in config:
+            metric_underrides['bucket_size'] = config.pop('bucket_size')
+        if 'null_filter' in config:
+            metric_underrides['null_filter'] = config.pop('null_filter')
+        metrics = [utils.update_dict(metric_underrides, m) for m in metrics]
+
+        config['metrics'] = [
+            GraphiteMetric.from_config(m, class_defaults) for m in metrics]
 
         return config
 
@@ -63,7 +66,7 @@ class GraphiteBackend(Backend):
             for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
         req_params.update({
             'format': 'json',
-            'target': [m.target for m in self.metrics]
+            'target': [m.wrapped_target for m in self.metrics]
         })
         return req_params
 
@@ -129,6 +132,7 @@ class GraphiteMetric(ConfigMixin):
 
     def __init__(self, target, metadata={}, null_filter=None, summarizer=None):
         self.target = target
+        self.wrapped_target = self.alias_target(target)
         self.metadata = metadata
         self.null_filter = null_filter or get_null_filter('fallback')
         self.summarizer = summarizer or get_summarizer('fallback')
@@ -150,6 +154,10 @@ class GraphiteMetric(ConfigMixin):
             config['null_filter'] = get_null_filter(config['null_filter'])
 
         return config
+
+    @staticmethod
+    def alias_target(target):
+        return "alias(%s, '%s')" % (target, target)
 
     def process_datapoints(self, datapoints, **params):
         """

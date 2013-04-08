@@ -43,6 +43,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {'name': u'random avg', 'target':'vumi.random.timer.avg'}],
             'time_range': '1d',
             'bucket_size': '1h',
+            'null_filter': 'zeroize',
             'metric_defaults': {'some_metric_option': 'some-value'}
         }
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
@@ -52,6 +53,7 @@ class GraphWidgetTestCase(unittest.TestCase):
 
         expected_backend_config = {
             'bucket_size': 3600,
+            'null_filter': 'zeroize',
             'metrics': [
                 {
                     'some_metric_option': 'some-value',
@@ -81,6 +83,7 @@ class GraphWidgetTestCase(unittest.TestCase):
         }
         self.assertEqual(parsed_config['backend'],
                          (expected_backend_config, class_defaults))
+        self.assertTrue('null_filter' not in parsed_config)
 
         client_model_config = parsed_config['client_config']['model']
         self.assertEqual(

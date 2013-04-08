@@ -42,12 +42,18 @@ class GraphWidget(DynamicWidget):
         config['time_range'] = utils.parse_interval(config['time_range'])
         bucket_size = utils.parse_interval(config.pop('bucket_size'))
 
-        # We have this set to use the Graphite backend for now, but the type of
-        # backend could be made configurable in future
-        config['backend'] = GraphiteBackend.from_config({
+        backend_config = {
             'bucket_size': bucket_size,
             'metrics': metric_configs
-        }, class_defaults)
+        }
+
+        if 'null_filter' in config:
+            backend_config['null_filter'] = config.pop('null_filter')
+
+        # We have this set to use the Graphite backend for now, but the type of
+        # backend could be made configurable in future
+        config['backend'] = GraphiteBackend.from_config(
+            backend_config, class_defaults)
 
         client_config = config['client_config']
         client_config['model'].update({
