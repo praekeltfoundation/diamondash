@@ -12,7 +12,7 @@ def zeroize_nulls(datapoints):
 
 
 class Summarizer(object):
-    def __init__(self, bucket_size, time_aligner=utils.floor_time):
+    def __init__(self, bucket_size, time_aligner=utils.round_time):
         self.bucket_size = bucket_size
         self.time_aligner = time_aligner
 
@@ -68,8 +68,7 @@ class AggregatingSummarizer(Summarizer):
         bucket = []
         for datapoint in datapoints:
             if datapoint['x'] >= pivot:
-                if bucket:
-                    results.append({'x': step, 'y': self.aggregator(bucket)})
+                results.append({'x': step, 'y': self.aggregator(bucket)})
                 bucket = []
                 step = self.align_time(datapoint['x'])
                 pivot = step + pivot_size
