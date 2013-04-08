@@ -14,7 +14,7 @@ from diamondash.backends.processors import get_null_filter, get_summarizer
 class GraphiteBackend(Backend):
     """Abstract widget for displaying metric data from graphite."""
 
-    __DEFAULTS = {'time_aligner': 'round'}
+    __DEFAULTS = {'time_aligner': 'floor'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
 
     METRIC_UNDERRIDE_FIELDS = ['bucket_size', 'null_filter', 'time_aligner']
