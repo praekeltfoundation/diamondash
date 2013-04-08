@@ -101,7 +101,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
     def assert_request_url(self, url, expected_url_params):
         expected_url_params.update({
             'format': ['json'],
-            'target': [self.m1.target, self.m2.target],
+            'target': [self.m1.wrapped_target, self.m2.wrapped_target],
         })
         self.assert_url(url, self.backend.graphite_url, '/render/',
                         **expected_url_params)
