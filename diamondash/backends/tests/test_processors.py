@@ -45,11 +45,11 @@ class SummarizersTestCase(unittest.TestCase):
     def test_aggregating_summarizer(self):
         aggregator = processors.get_aggregator('avg')
 
-        self.assert_summarizer(AggregatingSummarizer(5, aggregator), 3, [], [])
-        self.assert_summarizer(AggregatingSummarizer(5, aggregator), 12,
+        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 3, [], [])
+        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 12,
            [{'x': 12, 'y': 3}], [{'x': 10, 'y': 3}])
 
-        self.assert_summarizer(AggregatingSummarizer(5, aggregator), 3,
+        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 3,
             [
                 {'x': 3, 'y': 1.0},
                 {'x': 8, 'y': 2.0},
@@ -65,7 +65,7 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 30, 'y': 7.0}
             ])
 
-        self.assert_summarizer(AggregatingSummarizer(5, aggregator), 8,
+        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 8,
             [
                 {'x': 8, 'y': 1.0},
                 {'x': 12, 'y': 2.0},

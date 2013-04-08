@@ -71,7 +71,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
             target=self.M2_TARGET,
             metadata=self.M2_METADATA,
             null_filter=get_null_filter('skip'),
-            summarizer=AggregatingSummarizer(self.BUCKET_SIZE, sum_agg))
+            summarizer=AggregatingSummarizer(sum_agg, self.BUCKET_SIZE))
 
         self.backend = GraphiteBackend(
             graphite_url='http://some-graphite-url.moc:8080',
@@ -111,6 +111,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
         config = {
             'null_filter': 'zeroize',
             'bucket_size': 3600,
+            'time_aligner': 'round',
             'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [
                 {'target': 'a.max'},
@@ -125,11 +126,13 @@ class GraphiteBackendTestCase(unittest.TestCase):
                 ({
                     'target': 'a.max',
                     'bucket_size': 3600,
+                    'time_aligner': 'round',
                     'null_filter': 'zeroize'
                 }, class_defaults),
                 ({
                     'target': 'b.max',
                     'bucket_size': 3600,
+                    'time_aligner': 'round',
                     'null_filter': 'skip'
                 }, class_defaults)
             ]

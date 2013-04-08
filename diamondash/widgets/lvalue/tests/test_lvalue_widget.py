@@ -45,6 +45,7 @@ class LValueWidgetTestCase(unittest.TestCase):
         parsed_config = LValueWidget.parse_config(config, class_defaults)
         expected_backend_config = {
             'bucket_size': 5,
+            'time_aligner': 'floor',
             'metrics': [{
                 'target': config['target'],
                 'null_filter': 'zeroize',
