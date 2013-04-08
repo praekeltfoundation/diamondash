@@ -12335,6 +12335,13 @@ widgets.WidgetModel = Backbone.Model.extend({
     }
   },
 
+  _parse: Backbone.Model.prototype.parse,
+  parse: function(response, options) {
+    if (response && !_.isEmpty(response)) {
+      return this._parse(response, options);
+    }
+  },
+
   urlRoot: function() {
     return '/render/' + this.get('dashboardName');
   }
@@ -12436,7 +12443,7 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel
 });
 
-var _formatTime = d3.time.format("%d-%m %H:%M"),
+var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
     _formatValue = d3.format(".3s");
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({
@@ -12461,7 +12468,9 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     // ------------
     if (options.config) {
       var config = options.config;
-      this.dotted = config.dotted || false;
+
+      this.dotted = 'dotted' in config ? config.dotted : false;
+      this.smooth = 'smooth' in config ? config.smooth : true;
     }
 
     // Dimensions Setup
@@ -12494,7 +12503,7 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
       .ticks(this.maxTicks);
 
     this.line = d3.svg.line()
-      .interpolate('monotone')
+      .interpolate(this.smooth ? 'monotone' : 'linear')
       .x(function(d) { return fx(d.x); })
       .y(function(d) { return fy(d.y); });
 
@@ -12722,8 +12731,8 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
   formatDiff: d3.format("+.3s"),
   formatPercentage: d3.format(".2%"),
 
-  _formatTime: d3.time.format("%d-%m-%Y %H:%M"),
-  formatTime: function(t) { return this._formatTime(new Date(t * 1000)); },
+  _formatTime: d3.time.format.utc("%d-%m-%Y %H:%M"),
+  formatTime: function(t) { return this._formatTime(new Date(t)); },
 
   applySlotValues: function(slotValues) {
       var $slots = this.$slots;

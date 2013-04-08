@@ -1,5 +1,6 @@
 body {
 	padding-top: 60px;
+  background-color: #fdfdfd;
 }
 
 a {
@@ -8,4 +9,10 @@ a {
 
 a:hover {
 	color: #333;
+}
+
+.navbar .brand {
+  font-family: georgia;
+  font-size: 21px;
+  color: #ddd;
 }

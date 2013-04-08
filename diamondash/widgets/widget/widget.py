@@ -69,7 +69,3 @@ class Widget(Element, ConfigMixin):
     def get_details(self):
         """Returns data describing the widget."""
         return {'title': self.title, 'type': self.TYPE_NAME}
-
-    def get_data(self):
-        """Returns the widget's non-static data."""
-        return {'title': self.title}

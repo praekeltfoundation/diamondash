@@ -15,17 +15,13 @@ class Summarizer(object):
     def __init__(self, bucket_size):
         self.bucket_size = bucket_size
 
-    def align_time(self, t):
-        i = int(round(t / float(self.bucket_size)))
-        return self.bucket_size * i
-
     def __call__(self, datapoints, from_time):
         raise NotImplementedError()
 
 
 class LastDatapointSummarizer(Summarizer):
     def __call__(self, datapoints, from_time):
-        step = self.align_time(from_time)
+        step = utils.round_time(from_time, self.bucket_size)
         pivot_size = self.bucket_size * 0.5
         pivot = step + pivot_size
 
@@ -38,12 +34,15 @@ class LastDatapointSummarizer(Summarizer):
         for curr in it:
             if curr['x'] >= pivot:
                 results.append({'x': step, 'y': prev['y']})
-                step = self.align_time(curr['x'])
+                step = utils.round_time(curr['x'], self.bucket_size)
                 pivot = step + pivot_size
             prev = curr
 
         # add the last datapoint
-        results.append({'x': self.align_time(prev['x']), 'y': prev['y']})
+        results.append({
+            'x': utils.round_time(prev['x'], self.bucket_size),
+            'y': prev['y']
+        })
 
         return results
 
@@ -54,7 +53,7 @@ class AggregatingSummarizer(Summarizer):
         self.aggregator = aggregator
 
     def __call__(self, datapoints, from_time):
-        step = self.align_time(from_time)
+        step = utils.round_time(from_time, self.bucket_size)
         pivot_size = self.bucket_size * 0.5
         pivot = step + pivot_size
 
@@ -67,7 +66,7 @@ class AggregatingSummarizer(Summarizer):
             if datapoint['x'] >= pivot:
                 results.append({'x': step, 'y': self.aggregator(bucket)})
                 bucket = []
-                step = self.align_time(datapoint['x'])
+                step = utils.round_time(datapoint['x'], self.bucket_size)
                 pivot = step + pivot_size
             bucket.append(datapoint['y'])
 
@@ -95,7 +94,8 @@ get_aggregator = utils.Accessor(**{
 
 
 get_summarizer = utils.Accessor(
-    last_datapoint=LastDatapointSummarizer,
-    aggregating=AggregatingSummarizer,
-    fallback=(lambda datapoints, from_time: datapoints)
+    wrapper=lambda agg_method, fn, bucket_size: fn(bucket_size, agg_method),
+    last=lambda bucket_size, agg_method: LastDatapointSummarizer(bucket_size),
+    fallback=lambda bucket_size, agg_method: (
+        AggregatingSummarizer(bucket_size, get_aggregator(agg_method)))
 )

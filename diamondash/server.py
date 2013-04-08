@@ -96,6 +96,13 @@ class DiamondashServer(object):
         """Routing for all js files"""
         return self.resources.getChild('js', request)
 
+    @app.route('/<any(css, js):res_type>/<string:name>')
+    @app.route('/shared/<any(css, js):res_type>/<string:name>')
+    def serve_static_resource(self, request, res_type, name):
+        """Routing for all css files"""
+        res_dir = self.resources.getChild(res_type, request)
+        return res_dir.getChild(name, request)
+
     @app.route('/favicon.ico')
     def favicon(self, request):
         return File(resource_filename(__name__, 'public/favicon.png'))

@@ -1,3 +1,5 @@
+import time
+
 from twisted.trial import unittest
 
 from diamondash import utils
@@ -8,13 +10,15 @@ from diamondash.tests.utils import stub_from_config, ToyBackend
 
 
 class GraphWidgetTestCase(unittest.TestCase):
-    TIME_RANGE = 86400
-
     def setUp(self):
+        self.stub_time(1340875997)
         self.backend = ToyBackend()
         self.widget = self.mk_graph_widget(
-            time_range=self.TIME_RANGE,
+            time_range=86400,
             backend=self.backend)
+
+    def stub_time(self, t):
+        self.patch(time, 'time', lambda: t)
 
     @staticmethod
     def mk_graph_widget(**kwargs):
@@ -38,6 +42,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {'name': u'random avg', 'target':'vumi.random.timer.avg'}],
             'time_range': '1d',
             'bucket_size': '1h',
+            'null_filter': 'zeroize',
             'metric_defaults': {'some_metric_option': 'some-value'}
         }
         class_defaults = {'SomeWidgetType': "some widget's defaults"}
@@ -47,6 +52,7 @@ class GraphWidgetTestCase(unittest.TestCase):
 
         expected_backend_config = {
             'bucket_size': 3600,
+            'null_filter': 'zeroize',
             'metrics': [
                 {
                     'some_metric_option': 'some-value',
@@ -76,6 +82,7 @@ class GraphWidgetTestCase(unittest.TestCase):
         }
         self.assertEqual(parsed_config['backend'],
                          (expected_backend_config, class_defaults))
+        self.assertTrue('null_filter' not in parsed_config)
 
         client_model_config = parsed_config['client_config']['model']
         self.assertEqual(
@@ -88,13 +95,18 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
                           {'name': u'some metric'}, {})
 
-    def assert_data_retrieval(self, result, expected_data):
+    def assert_data_retrieval(self, backend_res, expected_data,
+                                       expected_from_time):
+        self.backend.response_data = backend_res
+        d = self.widget.get_data()
         self.assertEqual(self.backend.get_data_calls,
-                         [{'from_time': -self.TIME_RANGE}])
-        self.assertEqual(result, expected_data)
+                         [{'from_time': expected_from_time}])
+        d.addCallback(self.assertEqual, expected_data)
+        d.callback(None)
+        return d
 
     def test_data_retrieval(self):
-        self.backend.response_data = [
+        return self.assert_data_retrieval([
             {
                 'metadata': {'name': 'metric-1'},
                 'datapoints': [{'x': 0, 'y': 0},
@@ -108,11 +120,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'metadata': {'name': 'metric-3'},
                 'datapoints': []
             }
-        ]
-
-        deferred_result = self.widget.get_data()
-        deferred_result.addCallback(self.assert_data_retrieval, {
-            'title': 'Some Graph Widget',
+        ], {
             'domain': (0, 15),
             'range': (0, 4),
             'metrics': [
@@ -132,27 +140,23 @@ class GraphWidgetTestCase(unittest.TestCase):
                     'datapoints': []
                 }
             ]
-        })
-
-        deferred_result.callback(None)
-        return deferred_result
+        }, 1340789597)
 
     def test_data_retrieval_for_empty_datapoints(self):
-        self.backend.response_data = [
+        return self.assert_data_retrieval([
             {'metadata': {'name': 'metric-1'}, 'datapoints': []},
             {'metadata': {'name': 'metric-2'}, 'datapoints': []},
-            {'metadata': {'name': 'metric-3'}, 'datapoints': []}]
-
-        deferred_result = self.widget.get_data()
-        deferred_result.addCallback(self.assert_data_retrieval, {
-            'title': 'Some Graph Widget',
+            {'metadata': {'name': 'metric-3'}, 'datapoints': []}], {
             'domain': (0, 0),
             'range': (0, 0),
             'metrics': [
                 {'name': 'metric-1', 'datapoints': []},
                 {'name': 'metric-2', 'datapoints': []},
                 {'name': 'metric-3', 'datapoints': []}]
-        })
+        }, 1340789597)
 
-        deferred_result.callback(None)
-        return deferred_result
+    def test_data_retrieval_for_align_to_start(self):
+        self.widget.align_to_start = True
+        self.widget.get_data()
+        self.assertEqual(self.backend.get_data_calls,
+                         [{'from_time': 1340841600}])

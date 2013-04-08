@@ -2,7 +2,14 @@ import re
 import sys
 import time
 from os import path
+from math import floor
 from unidecode import unidecode
+
+
+# The internal representation of intervals in diamondash is seconds.
+# This multiplier is used to convert the internal interval representation to
+# what is needed by the client side
+CLIENT_INTERVAL_MULTIPLIER = 1000  # seconds -> milliseconds
 
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
@@ -21,8 +28,9 @@ def isint(n):
 
 def slugify(text):
     """Slugifies the passed in text"""
-    text = unidecode(text).lower()
-    segments = _punct_re.split(text)
+    if isinstance(text, unicode):
+        text = unidecode(text)
+    segments = _punct_re.split(text.lower())
     return '-'.join(word for segment in segments for word in segment.split())
 
 
@@ -89,15 +97,42 @@ def update_dict(*dicts):
     return new_dict
 
 
+def now():
+    return int(time.time())
+
+
 def relative_to_now(t):
-    return int(time.time()) + t
+    return now() + t
+
+
+def round_time(t, interval):
+    i = int(round(t / float(interval)))
+    return interval * i
+
+
+def floor_time(t, interval):
+    i = int(floor(t / float(interval)))
+    return interval * i
+
+
+def to_client_interval(t):
+    """
+    Convert time interval from interal representation to representation used by
+    client side
+    """
+    return t * CLIENT_INTERVAL_MULTIPLIER
 
 
 class Accessor(object):
-    def __init__(self, fallback=None, **objs):
+    def __init__(self, fallback=None, wrapper=None, **objs):
         lookup = dict(objs)
         lookup['fallback'] = fallback
-        self._lookup = lookup
+        self.lookup = lookup
+        self.wrapper = wrapper or self._wrapper
 
-    def __call__(self, name):
-        return self._lookup.get(name, self._lookup['fallback'])
+    def _wrapper(self, name, obj, *args, **kwargs):
+        return obj
+
+    def __call__(self, name, *args, **kwargs):
+        obj = self.lookup.get(name, self.lookup['fallback'])
+        return self.wrapper(name, obj, *args, **kwargs)

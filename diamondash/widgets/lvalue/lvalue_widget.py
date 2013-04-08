@@ -1,14 +1,14 @@
 from pkg_resources import resource_string
 
-from twisted.python import log
 from twisted.web.template import XMLString
 
 from diamondash import utils, ConfigError
-from diamondash.widgets import Widget
+from diamondash.widgets.dynamic import DynamicWidget
+from diamondash.backends import BadBackendResponseError
 from diamondash.backends.graphite import GraphiteBackend
 
 
-class LValueWidget(Widget):
+class LValueWidget(DynamicWidget):
 
     __DEFAULTS = {'time_range': '1d'}
     __CONFIG_TAG = 'diamondash.widgets.lvalue.LValueWidget'
@@ -21,11 +21,6 @@ class LValueWidget(Widget):
     TYPE_NAME = "lvalue"
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
-
-    def __init__(self, backend, time_range, **kwargs):
-        super(LValueWidget, self).__init__(**kwargs)
-        self.backend = backend
-        self.time_range = time_range
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -44,46 +39,56 @@ class LValueWidget(Widget):
             'bucket_size': config['time_range'],
             'metrics': [{
                 'target': config.pop('target'),
-                'null_filter': 'zeroize',
+                'null_filter': 'skip',
             }]
         }, class_defaults)
 
         return config
 
     def format_data(self, prev, last):
-        prev_y, last_y = prev['y'], last['y']
-        diff_y = last_y - prev_y
-        percentage = diff_y / (prev_y or 1)
+        diff_y = last['y'] - prev['y']
 
-        from_time = last['x']
-        to_time = from_time + self.time_range - 1
-
+        # 'to' gets added the widget's time range converted from its internal
+        # representation (in seconds) to the representation used by the client
+        # side. The received datapoints are already converted by the backend,
+        # so each widget type (lvalue, graph, etc) does not have to worry about
+        # converting the datapoints.
         return {
-            'lvalue': last_y,
-            'from': from_time,
-            'to': to_time,
+            'lvalue': last['y'],
+            'from': last['x'],
+            'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
             'diff': diff_y,
-            'percentage': percentage,
+            'percentage': diff_y / (prev['y'] or 1),
         }
 
-    def handle_backend_response(self, metric_data):
+    def handle_backend_response(self, metric_data, from_time):
         if not metric_data:
-            log.msg("LValueWidget '%s' received empty response from backend")
-            return self.format_data({'x': 0, 'y': 0}, {'x': 0, 'y': 0})
+            raise BadBackendResponseError(
+                "LValueWidget '%s' received empty response from backend")
 
-        datapoints = metric_data[0]['datapoints'][-2:]
+        # convert from_time into the time unit used by the client side
+        from_time = utils.to_client_interval(from_time)
+        datapoints = metric_data[0]['datapoints']
+        for datapoint in reversed(datapoints):
+            if datapoint['x'] <= from_time:
+                break
+            datapoints.pop()
+        datapoints = datapoints[-2:]
+
         if len(datapoints) < 2:
             length = len(datapoints)
-            log.msg("LValueWidget '%s' received too few datapoints (%s < 2)"
-                    % (self.title, length))
-            return self.format_data(
-                *([{'x': 0, 'y': 0} for i in range(2 - length)] + datapoints))
+            raise BadBackendResponseError(
+                "LValueWidget '%s' received too few datapoints (%s < 2)"
+                % (self.title, length))
 
         return self.format_data(*datapoints)
 
     def get_data(self):
-        data = super(LValueWidget, self).get_data()
+        # We ask the backend for data since 2 intervals ago so we can obtain
+        # the previous value and calculate the increase/decrease since the
+        # previous interval
         d = self.backend.get_data(from_time=self.time_range * -2)
-        d.addCallback(self.handle_backend_response)
-        d.addCallback(utils.update_dict, data)
+
+        d.addCallback(self.handle_backend_response, utils.now())
+        d.addErrback(self.handle_bad_backend_response)
         return d

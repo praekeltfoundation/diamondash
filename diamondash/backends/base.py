@@ -24,3 +24,9 @@ class Backend(ConfigMixin):
         and the passed in arguments.
         """
         raise NotImplementedError()
+
+
+class BadBackendResponseError(Exception):
+    """
+    Should be raised if the backend returns an erroneous response
+    """

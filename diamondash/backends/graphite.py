@@ -8,9 +8,7 @@ from twisted.python import log
 
 from diamondash import utils, ConfigMixin, ConfigError
 from diamondash.backends import Backend
-from diamondash.backends.processors import (
-    LastDatapointSummarizer, AggregatingSummarizer,
-    get_null_filter, get_summarizer, get_aggregator)
+from diamondash.backends.processors import get_null_filter, get_summarizer
 
 
 class GraphiteBackend(Backend):
@@ -50,13 +48,16 @@ class GraphiteBackend(Backend):
                 "GraphiteBackend needs a 'graphite_url' config field.")
 
         metrics = config.get('metrics', [])
-        if 'bucket_size' in config:
-            bucket_size = config.pop('bucket_size')
-            for m in metrics:
-                m['bucket_size'] = bucket_size
 
-        config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
-                             for m in metrics]
+        metric_underrides = {}
+        if 'bucket_size' in config:
+            metric_underrides['bucket_size'] = config.pop('bucket_size')
+        if 'null_filter' in config:
+            metric_underrides['null_filter'] = config.pop('null_filter')
+        metrics = [utils.update_dict(metric_underrides, m) for m in metrics]
+
+        config['metrics'] = [
+            GraphiteMetric.from_config(m, class_defaults) for m in metrics]
 
         return config
 
@@ -65,7 +66,7 @@ class GraphiteBackend(Backend):
             for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
         req_params.update({
             'format': 'json',
-            'target': [m.target for m in self.metrics]
+            'target': [m.wrapped_target for m in self.metrics]
         })
         return req_params
 
@@ -131,6 +132,7 @@ class GraphiteMetric(ConfigMixin):
 
     def __init__(self, target, metadata={}, null_filter=None, summarizer=None):
         self.target = target
+        self.wrapped_target = self.alias_target(target)
         self.metadata = metadata
         self.null_filter = null_filter or get_null_filter('fallback')
         self.summarizer = summarizer or get_summarizer('fallback')
@@ -146,19 +148,16 @@ class GraphiteMetric(ConfigMixin):
         if 'bucket_size' in config:
             bucket_size = utils.parse_interval(config.pop('bucket_size'))
             agg_method = guess_aggregation_method(config['target'])
-
-            # TODO make this configureable
-            if agg_method in ['min', 'max']:
-                # metric targets ending in min or max are already aggregated
-                config['summarizer'] = LastDatapointSummarizer(bucket_size)
-            else:
-                config['summarizer'] = AggregatingSummarizer(
-                    bucket_size, get_aggregator(agg_method))
+            config['summarizer'] = get_summarizer(agg_method, bucket_size)
 
         if 'null_filter' in config:
             config['null_filter'] = get_null_filter(config['null_filter'])
 
         return config
+
+    @staticmethod
+    def alias_target(target):
+        return "alias(%s, '%s')" % (target, target)
 
     def process_datapoints(self, datapoints, **params):
         """
@@ -173,13 +172,9 @@ class GraphiteMetric(ConfigMixin):
         if 'from_time' in params:
             datapoints = self.summarizer(datapoints, params['from_time'])
 
-        for datapoint in datapoints:
-            if isinstance(datapoint['y'], list):
-                print self.summarizer.aggregator
-
         # convert x values to milliseconds for client
         for datapoint in datapoints:
-            datapoint['x'] *= 1000
+            datapoint['x'] = utils.to_client_interval(datapoint['x'])
 
         return datapoints
 
@@ -231,7 +226,7 @@ def parse_graphite_func(tokens):
             results.append(parse_graphite_func(tokens))
         elif token == 'item':
             suffix = value.split('.')[-1]
-            if suffix in ('min', 'max', 'avg', 'sum'):
+            if suffix in ('min', 'max', 'avg', 'sum', 'last'):
                 results.append(suffix)
 
 

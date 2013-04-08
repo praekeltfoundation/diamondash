@@ -1,12 +1,15 @@
 from diamondash import utils, ConfigError
-from diamondash.widgets import Widget
+from diamondash.widgets.dynamic import DynamicWidget
 from diamondash.backends.graphite import GraphiteBackend
 
 
-class GraphWidget(Widget):
+class GraphWidget(DynamicWidget):
     __DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
+        'align_to_start': False,
+        'dotted': False,
+        'smooth': True,
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
@@ -16,10 +19,10 @@ class GraphWidget(Widget):
     MODEL = 'GraphWidgetModel'
     VIEW = 'GraphWidgetView'
 
-    def __init__(self, backend, time_range, **kwargs):
+    def __init__(self, align_to_start=False, y_min=None, **kwargs):
         super(GraphWidget, self).__init__(**kwargs)
-        self.backend = backend
-        self.time_range = time_range
+        self.align_to_start = align_to_start
+        self.y_min = y_min
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -38,19 +41,28 @@ class GraphWidget(Widget):
         config['time_range'] = utils.parse_interval(config['time_range'])
         bucket_size = utils.parse_interval(config.pop('bucket_size'))
 
-        # We have this set to use the Graphite backend for now, but the type of
-        # backend could be made configurable in future
-        config['backend'] = GraphiteBackend.from_config({
+        backend_config = {
             'bucket_size': bucket_size,
             'metrics': metric_configs
-        }, class_defaults)
+        }
+
+        if 'null_filter' in config:
+            backend_config['null_filter'] = config.pop('null_filter')
+
+        # We have this set to use the Graphite backend for now, but the type of
+        # backend could be made configurable in future
+        config['backend'] = GraphiteBackend.from_config(
+            backend_config, class_defaults)
 
         client_config = config['client_config']
         client_config['model'].update({
             'step': bucket_size * 1000,
             'metrics': [m['metadata']['client_config'] for m in metric_configs]
         })
-        client_config['view'].update({'dotted': config.pop('dotted', False)})
+        client_config['view'].update({
+            'dotted': config.pop('dotted'),
+            'smooth': config.pop('smooth'),
+        })
 
         return config
 
@@ -82,7 +94,9 @@ class GraphWidget(Widget):
         x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
         y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
         domain = (min(x_vals), max(x_vals))
-        range = (min(y_vals), max(y_vals))
+
+        y_min = self.y_min if self.y_min is not None else min(y_vals)
+        range = (y_min, max(y_vals))
 
         output_metric_data = [{
             'name': m['metadata']['name'],
@@ -96,8 +110,12 @@ class GraphWidget(Widget):
         }
 
     def get_data(self):
-        data = super(GraphWidget, self).get_data()
-        d = self.backend.get_data(from_time=-self.time_range)
+        if self.align_to_start:
+            from_time = utils.floor_time(utils.now(), self.time_range)
+        else:
+            from_time = utils.relative_to_now(-self.time_range)
+
+        d = self.backend.get_data(from_time=from_time)
         d.addCallback(self.process_backend_response)
-        d.addCallback(utils.update_dict, data)
+        d.addErrback(self.handle_bad_backend_response)
         return d

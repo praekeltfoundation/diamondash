@@ -26,16 +26,6 @@
             </t:attr>
             diamondash
           </a>
-
-          <div class="nav-collapse">
-            <ul class="nav">
-              <li class="active">
-                <a href="#">
-                  <t:transparent t:render="dashboard_name_renderer" />
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

@@ -101,7 +101,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
     def assert_request_url(self, url, expected_url_params):
         expected_url_params.update({
             'format': ['json'],
-            'target': [self.m1.target, self.m2.target],
+            'target': [self.m1.wrapped_target, self.m2.wrapped_target],
         })
         self.assert_url(url, self.backend.graphite_url, '/render/',
                         **expected_url_params)
@@ -109,9 +109,12 @@ class GraphiteBackendTestCase(unittest.TestCase):
     def test_parse_config(self):
         stub_from_config(GraphiteMetric)
         config = {
+            'null_filter': 'zeroize',
             'bucket_size': 3600,
             'graphite_url': 'http://some-graphite-url.moc:8080/',
-            'metrics': [{'target': 'a.max'}, {'target': 'b.max'}]
+            'metrics': [
+                {'target': 'a.max'},
+                {'target': 'b.max', 'null_filter': 'skip'}]
         }
         class_defaults = {'SomeType': "some default value"}
 
@@ -119,8 +122,17 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.assertEqual(parsed_config, {
             'graphite_url': 'http://some-graphite-url.moc:8080/',
             'metrics': [
-                ({'target': 'a.max', 'bucket_size': 3600}, class_defaults),
-                ({'target': 'b.max', 'bucket_size': 3600}, class_defaults)]
+                ({
+                    'target': 'a.max',
+                    'bucket_size': 3600,
+                    'null_filter': 'zeroize'
+                }, class_defaults),
+                ({
+                    'target': 'b.max',
+                    'bucket_size': 3600,
+                    'null_filter': 'skip'
+                }, class_defaults)
+            ]
         })
 
     def test_parse_config_for_no_graphite_url(self):
@@ -201,11 +213,13 @@ class GraphiteMetricTestCase(unittest.TestCase):
             {'target': 'some.target.avg', 'bucket_size': '1h'}, 3600, 'avg')
         assert_agg_summarizer(
             {'target': 'some.target.sum', 'bucket_size': '2h'}, 7200, 'sum')
+        assert_agg_summarizer(
+            {'target': 'some.target.min', 'bucket_size': '1h'}, 3600, 'min')
+        assert_agg_summarizer(
+            {'target': 'some.target.max', 'bucket_size': '2h'}, 7200, 'max')
 
         assert_ldp_summarizer(
-            {'target': 'some.target.min', 'bucket_size': '1h'}, 3600)
-        assert_ldp_summarizer(
-            {'target': 'some.target.max', 'bucket_size': '2h'}, 7200)
+            {'target': 'some.target.last', 'bucket_size': '2h'}, 7200)
 
     def test_parse_config_for_no_target(self):
         self.assertRaises(ConfigError, GraphiteMetric.parse_config, {})
