@@ -141,5 +141,5 @@ def floor_time(t, interval):
 get_time_aligner = Accessor(
     round=round_time,
     floor=floor_time,
-    fallback=floor_time
+    fallback=round_time
 )
