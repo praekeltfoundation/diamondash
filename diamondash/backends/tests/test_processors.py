@@ -3,18 +3,20 @@ from twisted.trial import unittest
 from diamondash.backends import processors
 from diamondash.backends.processors import (LastDatapointSummarizer,
                                             AggregatingSummarizer)
+from diamondash import utils
 
 
 class SummarizersTestCase(unittest.TestCase):
     def assert_summarizer(self, summarizer, from_time, datapoints, expected):
         self.assertEqual(summarizer(datapoints, from_time), expected)
 
-    def test_last_datapoint_summarizer(self):
-        self.assert_summarizer(LastDatapointSummarizer(5), 3, [], [])
-        self.assert_summarizer(LastDatapointSummarizer(5), 12,
+    def test_last_datapoint_summarizer_with_round_alignment(self):
+        align = utils.round_time
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 3, [], [])
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 12,
            [{'x': 12, 'y': 3}], [{'x': 10, 'y': 3}])
 
-        self.assert_summarizer(LastDatapointSummarizer(5), 3,
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 3,
             [
                 {'x': 3, 'y': 1},
                 {'x': 8, 'y': 2},
@@ -30,7 +32,7 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 30, 'y': 7}
             ])
 
-        self.assert_summarizer(LastDatapointSummarizer(5), 8,
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 8,
             [
                 {'x': 8, 'y': 1},
                 {'x': 12, 'y': 2},
@@ -42,14 +44,51 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 20, 'y': 4}
             ])
 
-    def test_aggregating_summarizer(self):
-        aggregator = processors.get_aggregator('avg')
-
-        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 3, [], [])
-        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 12,
+    def test_last_datapoint_summarizer_with_floor_alignment(self):
+        align = utils.floor_time
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 3, [], [])
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 12,
            [{'x': 12, 'y': 3}], [{'x': 10, 'y': 3}])
 
-        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 3,
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 3,
+            [
+                {'x': 3, 'y': 1},
+                {'x': 8, 'y': 2},
+                {'x': 11, 'y': 3},
+                {'x': 12, 'y': 4},
+                {'x': 22, 'y': 6},
+                {'x': 28, 'y': 7}
+            ],
+            [
+                {'x': 0, 'y': 1},
+                {'x': 5, 'y': 2},
+                {'x': 10, 'y': 4},
+                {'x': 20, 'y': 6},
+                {'x': 25, 'y': 7}
+            ])
+
+        self.assert_summarizer(LastDatapointSummarizer(5, align), 8,
+            [
+                {'x': 8, 'y': 1},
+                {'x': 12, 'y': 2},
+                {'x': 21, 'y': 3},
+                {'x': 22, 'y': 4}
+            ],
+            [
+                {'x': 5, 'y': 1},
+                {'x': 10, 'y': 2},
+                {'x': 20, 'y': 4}
+            ])
+
+    def test_aggregating_summarizer_with_round_alignment(self):
+        align = utils.round_time
+        agg = processors.get_aggregator('avg')
+
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 3, [], [])
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 12,
+           [{'x': 12, 'y': 3}], [{'x': 10, 'y': 3}])
+
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 3,
             [
                 {'x': 3, 'y': 1.0},
                 {'x': 8, 'y': 2.0},
@@ -65,7 +104,7 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 30, 'y': 7.0}
             ])
 
-        self.assert_summarizer(AggregatingSummarizer(aggregator, 5), 8,
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 8,
             [
                 {'x': 8, 'y': 1.0},
                 {'x': 12, 'y': 2.0},
@@ -74,6 +113,44 @@ class SummarizersTestCase(unittest.TestCase):
             ],
             [
                 {'x': 10, 'y': 1.5},
+                {'x': 20, 'y': 3.5}
+            ])
+
+    def test_aggregating_summarizer_with_floor_alignment(self):
+        align = utils.floor_time
+        agg = processors.get_aggregator('avg')
+
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 3, [], [])
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 12,
+           [{'x': 12, 'y': 3}], [{'x': 10, 'y': 3}])
+
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 3,
+            [
+                {'x': 3, 'y': 1.0},
+                {'x': 8, 'y': 2.0},
+                {'x': 11, 'y': 3.0},
+                {'x': 12, 'y': 4.0},
+                {'x': 22, 'y': 6.0},
+                {'x': 28, 'y': 7.0}
+            ],
+            [
+                {'x': 0, 'y': 1.0},
+                {'x': 5, 'y': 2.0},
+                {'x': 10, 'y': 3.5},
+                {'x': 20, 'y': 6.0},
+                {'x': 25, 'y': 7.0}
+            ])
+
+        self.assert_summarizer(AggregatingSummarizer(agg, 5, align), 8,
+            [
+                {'x': 8, 'y': 1.0},
+                {'x': 12, 'y': 2.0},
+                {'x': 21, 'y': 3.0},
+                {'x': 22, 'y': 4.0}
+            ],
+            [
+                {'x': 5, 'y': 1.0},
+                {'x': 10, 'y': 2.0},
                 {'x': 20, 'y': 3.5}
             ])
 

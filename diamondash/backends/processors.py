@@ -26,8 +26,6 @@ class Summarizer(object):
 class LastDatapointSummarizer(Summarizer):
     def __call__(self, datapoints, from_time):
         step = self.align_time(from_time)
-        pivot_size = self.bucket_size * 0.5
-        pivot = step + pivot_size
 
         results = []
         if not datapoints:
@@ -36,10 +34,10 @@ class LastDatapointSummarizer(Summarizer):
         it = iter(datapoints)
         prev = next(it)
         for curr in it:
-            if curr['x'] >= pivot:
+            aligned_x = self.align_time(curr['x'])
+            if aligned_x > step:
                 results.append({'x': step, 'y': prev['y']})
-                step = self.align_time(curr['x'])
-                pivot = step + pivot_size
+                step = aligned_x
             prev = curr
 
         # add the last datapoint
@@ -58,8 +56,6 @@ class AggregatingSummarizer(Summarizer):
 
     def __call__(self, datapoints, from_time):
         step = self.align_time(from_time)
-        pivot_size = self.bucket_size * 0.5
-        pivot = step + pivot_size
 
         results = []
         if not datapoints:
@@ -67,11 +63,12 @@ class AggregatingSummarizer(Summarizer):
 
         bucket = []
         for datapoint in datapoints:
-            if datapoint['x'] >= pivot:
-                results.append({'x': step, 'y': self.aggregator(bucket)})
+            aligned_x = self.align_time(datapoint['x'])
+            if aligned_x > step:
+                if bucket:
+                    results.append({'x': step, 'y': self.aggregator(bucket)})
                 bucket = []
-                step = self.align_time(datapoint['x'])
-                pivot = step + pivot_size
+                step = aligned_x
             bucket.append(datapoint['y'])
 
         # add the aggregation result of the last bucket
