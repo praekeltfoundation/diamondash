@@ -48,13 +48,16 @@ class GraphiteBackend(Backend):
                 "GraphiteBackend needs a 'graphite_url' config field.")
 
         metrics = config.get('metrics', [])
-        if 'bucket_size' in config:
-            bucket_size = config.pop('bucket_size')
-            for m in metrics:
-                m['bucket_size'] = bucket_size
 
-        config['metrics'] = [GraphiteMetric.from_config(m, class_defaults)
-                             for m in metrics]
+        metric_underrides = {}
+        if 'bucket_size' in config:
+            metric_underrides['bucket_size'] = config.pop('bucket_size')
+        if 'null_filter' in config:
+            metric_underrides['null_filter'] = config.pop('null_filter')
+        metrics = [utils.update_dict(metric_underrides, m) for m in metrics]
+
+        config['metrics'] = [
+            GraphiteMetric.from_config(m, class_defaults) for m in metrics]
 
         return config
 
