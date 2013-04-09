@@ -80,7 +80,7 @@ class LValueWidgetTestCase(unittest.TestCase):
             self.assertEqual(result, json.dumps({
                 'lvalue': 9227465.0,
                 'from': 1340875995000,
-                'to': 1340875989000,
+                'to': 1340875999000,
                 'diff': 9227465.0 - 5702887.0,
                 'percentage': 0.61803398874990854,
             }))

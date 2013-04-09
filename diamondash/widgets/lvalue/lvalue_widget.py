@@ -57,7 +57,7 @@ class LValueWidget(DynamicWidget):
         return json.dumps({
             'lvalue': last['y'],
             'from': utils.to_client_interval(last['x']),
-            'to': utils.to_client_interval(last['x'] - self.time_range - 1),
+            'to': utils.to_client_interval(last['x'] + self.time_range - 1),
             'diff': diff_y,
             'percentage': diff_y / (prev['y'] or 1),
         })
