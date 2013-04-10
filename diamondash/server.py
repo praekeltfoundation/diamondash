@@ -8,6 +8,7 @@ from glob import glob
 from os import path
 from pkg_resources import resource_filename, resource_string
 
+from twisted.web import http
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
 from twisted.internet.defer import maybeDeferred
@@ -26,13 +27,13 @@ class DiamondashServer(object):
     ROOT_RESOURCE_DIR = resource_filename(__name__, '')
     CONFIG_FILENAME = 'diamondash.yml'
 
-    def __init__(self, dashboards, resources):
+    def __init__(self, index, resources, dashboards):
         self.dashboards = []
         self.dashboards_by_name = {}
         self.dashboards_by_share_id = {}
 
         self.resources = resources
-        self.index = Index()
+        self.index = index
 
         for dashboard in dashboards:
             self.add_dashboard(dashboard)
@@ -63,7 +64,7 @@ class DiamondashServer(object):
         dashboards = cls.dashboards_from_dir(dashboards_dir, class_defaults)
 
         resources = cls.create_resources('public')
-        return cls(dashboards, resources)
+        return cls(Index(), resources, dashboards)
 
     def has_dashboard(self, name):
         return utils.slugify(name) in self.dashboards_by_name
@@ -86,16 +87,6 @@ class DiamondashServer(object):
     def show_index(self, request):
         return self.index
 
-    @app.route('/css/')
-    def serve_css(self, request):
-        """Routing for all css files"""
-        return self.resources.getChild('css', request)
-
-    @app.route('/js/')
-    def serve_js(self, request):
-        """Routing for all js files"""
-        return self.resources.getChild('js', request)
-
     @app.route('/<any(css, js):res_type>/<string:name>')
     @app.route('/shared/<any(css, js):res_type>/<string:name>')
     def serve_static_resource(self, request, res_type, name):
@@ -110,16 +101,20 @@ class DiamondashServer(object):
     @app.route('/<string:name>')
     def render_dashboard(self, request, name):
         """Render a non-shared dashboard page"""
-        # TODO handle invalid name references
-        name = name.encode('utf-8')
-        return DashboardPage(self.dashboards_by_name[name], False)
+        dashboard = self.dashboards_by_name.get(name.encode('utf-8'))
+        if dashboard is None:
+            request.setResponseCode(http.NOT_FOUND)
+            return "Dashboard Not Found"
+        return DashboardPage(dashboard)
 
     @app.route('/shared/<string:share_id>')
     def render_shared_dashboard(self, request, share_id):
         """Render a shared dashboard page"""
-        # TODO handle invalid share id references
-        share_id = share_id.encode('utf-8')
-        return DashboardPage(self.dashboards_by_share_id[share_id], True)
+        dashboard = self.dashboards_by_share_id.get(share_id.encode('utf-8'))
+        if dashboard is None:
+            request.setResponseCode(http.NOT_FOUND)
+            return "Dashboard Not Found"
+        return DashboardPage(dashboard)
 
     # API
     # ===

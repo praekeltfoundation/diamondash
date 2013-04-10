@@ -214,13 +214,12 @@ class DashboardPage(Element):
 
     loader = XMLString(resource_string(__name__, 'views/dashboard_page.xml'))
 
-    def __init__(self, dashboard, is_shared):
+    def __init__(self, dashboard):
         self.dashboard = dashboard
-        self.is_shared = is_shared
 
     @renderer
     def brand_renderer(self, request, tag):
-        href = '' if self.is_shared else '/'
+        href = '' if self.dashboard.share_id is not None else '/'
         tag.fillSlots(brand_href_slot=href)
         return tag
 

@@ -1,18 +1,18 @@
 """Tests for diamondash's server"""
 
-import json
-from os import path
-from pkg_resources import resource_filename
-
+from twisted import web
+from twisted.web import http
 from twisted.trial import unittest
-from twisted.internet.defer import maybeDeferred
+from twisted.web.server import Site
+from twisted.web.resource import Resource
+from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks, gatherResults
+from twisted.web.template import flattenString
 
 from diamondash import utils
 from diamondash.widgets.widget import Widget
-from diamondash.dashboard import Dashboard
+from diamondash.dashboard import Dashboard, DashboardPage
 from diamondash.server import DiamondashServer, DashboardIndexListItem
-
-_test_data_dir = resource_filename(__name__, 'test_server_data/')
 
 
 class StubbedDashboard(Dashboard):
@@ -20,9 +20,25 @@ class StubbedDashboard(Dashboard):
         self.widgets.append(widget)
         self.widgets_by_name[widget.name] = widget
 
-    @classmethod
-    def dashboards_from_dir(cls, dashboards_dir, defaults=None):
-        return ['fake-dashboards']
+
+class MockLeafResource(Resource):
+    isLeaf = True
+
+    def __init__(self, content):
+        self.content = content
+
+    def render(self, request):
+        return self.content
+
+
+class MockDirResource(Resource):
+    isLeaf = False
+
+    def __init__(self, children):
+        self.children = children
+
+    def getChild(self, name, request):
+        return self.children.get(name)
 
 
 def mk_dashboard(**kwargs):
@@ -40,8 +56,10 @@ class ToyWidget(Widget):
         return [self.name]
 
 
-class StubbedDiamondashServer(DiamondashServer):
-    ROOT_RESOURCE_DIR = _test_data_dir
+class MockIndex(MockLeafResource):
+    def __init__(self, dashboards=[]):
+        MockLeafResource.__init__(self, 'mock-index')
+        self.dashboards = dashboards
 
     def add_dashboard(self, dashboard):
         self.dashboards.append(dashboard)
@@ -49,16 +67,43 @@ class StubbedDiamondashServer(DiamondashServer):
 
 class DiamondashServerTestCase(unittest.TestCase):
     def setUp(self):
-        self.patch(StubbedDiamondashServer, 'create_resources',
-                   staticmethod(lambda *a, **kw: 'created-resources'))
-
-        self.patch(Dashboard, 'from_config_file', staticmethod(
-            lambda filepath, class_defaults: (filepath, class_defaults)))
+        js_resources = MockDirResource({
+            'a.js': MockLeafResource('mock-a.js'),
+            'b.js': MockLeafResource('mock-b.js'),
+        })
+        css_resources = MockDirResource({
+            'a.css': MockLeafResource('mock-a.css'),
+            'b.css': MockLeafResource('mock-b.css'),
+        })
+        resources = MockDirResource({
+            'js': js_resources,
+            'css': css_resources,
+        })
 
         widget = self.mk_toy_widget()
-        dashboard = mk_dashboard(widgets=[widget])
-        self.server = DiamondashServer([], None)
-        self.server.add_dashboard(dashboard)
+        self.dashboard1 = mk_dashboard(
+            name='dashboard-1',
+            title='Dashboard 1',
+            share_id='dashboard-1-share-id',
+            widgets=[widget])
+        self.dashboard2 = mk_dashboard(name='dashboard-2', title='Dashboard 2')
+
+        self.server = DiamondashServer(MockIndex(), resources,
+                                       [self.dashboard1, self.dashboard2])
+        return self.start_server()
+
+    def tearDown(self):
+        return self.stop_server()
+
+    @inlineCallbacks
+    def start_server(self):
+        site_factory = Site(self.server.app.resource())
+        self.ws = yield reactor.listenTCP(0, site_factory)
+        addr = self.ws.getHost()
+        self.url = "http://%s:%s" % (addr.host, addr.port)
+
+    def stop_server(self):
+        return self.ws.loseConnection()
 
     def mk_toy_widget(self, **kwargs):
         return ToyWidget(**utils.update_dict({
@@ -68,76 +113,69 @@ class DiamondashServerTestCase(unittest.TestCase):
             'width': 2
         }, kwargs))
 
-    def test_from_config_dir(self):
-        """Should create the server from a configuration directory."""
-        config_dir = path.join(_test_data_dir, 'etc')
-        dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
-
-        expected_class_defaults = {
-            'module.path.to.some.Class': {
-                'foo': 'bar',
-                'lerp': 'larp'
-            }
-        }
-        dashboard_path = path.join(config_dir, 'dashboards')
-        expected_dashboard1_path = path.join(dashboard_path, 'dashboard1.yml')
-        expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
-
-        self.assertEqual(
-            dd_server.dashboards,
-            [(expected_dashboard1_path, expected_class_defaults),
-             (expected_dashboard2_path, expected_class_defaults)])
-        self.assertEqual(dd_server.resources, 'created-resources')
-
-    def test_add_dashboard(self):
-        """Should add a dashboard to the server."""
-        def stubbed_index_add_dashboard(dashboard):
-            stubbed_index_add_dashboard.called = True
-
-        stubbed_index_add_dashboard.called = False
-
-        dd_server = DiamondashServer([], None)
-        dd_server.index.add_dashboard = stubbed_index_add_dashboard
-        dashboard = mk_dashboard(name='some-dashboard',
-                                 share_id='some-share-id')
-
-        dd_server.add_dashboard(dashboard)
-        self.assertEqual(dd_server.dashboards[-1], dashboard)
-        self.assertEqual(
-            dd_server.dashboards_by_name['some-dashboard'], dashboard)
-        self.assertEqual(
-            dd_server.dashboards_by_share_id['some-share-id'], dashboard)
-        self.assertTrue(stubbed_index_add_dashboard.called)
-
-    def assert_widget_data_retrieval(self, dashboard_name, widget_name,
-                                     expected):
-        d = maybeDeferred(self.server.get_widget_data, 'fake-req',
-                          dashboard_name, widget_name)
-
-        def assert_widget_data_retrieval(result):
-            self.assertEqual(result, expected)
-        d.addCallback(assert_widget_data_retrieval)
-
+    def mk_request(self, path, **kwargs):
+        d = utils.http_request("%s%s" % (self.url, path), **kwargs)
         return d
 
-    def test_widget_data_retrieval(self):
-        return self.assert_widget_data_retrieval(
-            'some-dashboard', 'some-widget', json.dumps(['some-widget']))
+    def assert_response(self, response, body, code=http.OK):
+        self.assertEqual(response['status'], str(code))
+        self.assertEqual(response['body'], body)
 
-    def test_widget_data_retrieval_for_nonexistent_dashboard(self):
-        return self.assert_widget_data_retrieval(
-            'bad-dashboard', 'some-widget', "{}")
+    def assert_unhappy_response(self, failure, body, code):
+        failure.trap(web.error.Error)
+        self.assertEqual(failure.value.response, body)
+        self.assertEqual(failure.value.status, str(code))
 
-    def test_widget_data_retrieval_for_nonexistent_widget(self):
-        return self.assert_widget_data_retrieval(
-            'some-dashboard', 'bad-widget', "{}")
+    def assert_rendering(self, response, expected_element):
+        d = flattenString(None, expected_element)
+        d.addCallback(lambda body: self.assert_response(response, body))
+        return d
 
+    def test_index_rendering(self):
+        d = self.mk_request('/')
+        d.addCallback(self.assert_response,  'mock-index')
+        return d
 
-class StubbedDashboardIndexListItem(DashboardIndexListItem):
-    def __init__(self, title, url, shared_url_tag):
-        self.title = title
-        self.url = url
-        self.shared_url_tag = shared_url_tag
+    def test_static_resource_rendering(self):
+        def assert_static_rendering(path, expected):
+            d = self.mk_request(path)
+            d.addCallback(self.assert_response,  expected)
+            return d
+
+        return gatherResults([
+            assert_static_rendering('/js/a.js', 'mock-a.js'),
+            assert_static_rendering('/js/b.js', 'mock-b.js'),
+            assert_static_rendering('/shared/js/a.js', 'mock-a.js'),
+            assert_static_rendering('/shared/js/b.js', 'mock-b.js'),
+            assert_static_rendering('/css/a.css', 'mock-a.css'),
+            assert_static_rendering('/css/b.css', 'mock-b.css'),
+            assert_static_rendering('/shared/css/a.css', 'mock-a.css'),
+            assert_static_rendering('/shared/css/b.css', 'mock-b.css'),
+        ])
+
+    def test_dashboard_rendering(self):
+        d = self.mk_request('/dashboard-1')
+        d.addCallback(self.assert_rendering,
+                      DashboardPage(self.dashboard1))
+        return d
+
+    def test_dashboard_rendering_for_non_existent_dashboards(self):
+        d = self.mk_request('/dashboard-3')
+        d.addErrback(self.assert_unhappy_response,
+                     'Dashboard Not Found', http.NOT_FOUND)
+        return d
+
+    def test_shared_dashboard_rendering(self):
+        d = self.mk_request('/shared/dashboard-1-share-id')
+        d.addCallback(self.assert_rendering,
+                      DashboardPage(self.dashboard1))
+        return d
+
+    def test_shared_dashboard_rendering_for_non_existent_dashboards(self):
+        d = self.mk_request('/shared/dashboard-3-share-id')
+        d.addErrback(self.assert_unhappy_response,
+                     'Dashboard Not Found', http.NOT_FOUND)
+        return d
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
@@ -146,7 +184,7 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should create a dashboard index list item from a dashboard instance.
         """
         dashboard = mk_dashboard(share_id='test-share-id')
-        item = StubbedDashboardIndexListItem.from_dashboard(dashboard)
+        item = DashboardIndexListItem.from_dashboard(dashboard)
 
         self.assertEqual(item.url, '/some-dashboard')
         self.assertEqual(item.title, 'Some Dashboard')
@@ -162,5 +200,5 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should set the dashboard index list item's shared_url tag to an empty
         string if the dashboard does not have a share id.
         """
-        item = StubbedDashboardIndexListItem.from_dashboard(mk_dashboard())
+        item = DashboardIndexListItem.from_dashboard(mk_dashboard())
         self.assertEqual(item.shared_url_tag, '')
