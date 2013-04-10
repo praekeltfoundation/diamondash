@@ -13,12 +13,12 @@ class LValueWidget(DynamicWidget):
     __DEFAULTS = {'time_range': '1d'}
     __CONFIG_TAG = 'diamondash.widgets.lvalue.LValueWidget'
 
+    TYPE_NAME = 'lvalue'
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
-    TYPE_NAME = "lvalue"
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
@@ -83,7 +83,7 @@ class LValueWidget(DynamicWidget):
 
         return self.format_data(*datapoints)
 
-    def get_data(self):
+    def get_snapshot(self):
         # We ask the backend for data since 2 intervals ago so we can obtain
         # the previous value and calculate the increase/decrease since the
         # previous interval

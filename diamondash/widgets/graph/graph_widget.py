@@ -13,6 +13,7 @@ class GraphWidget(DynamicWidget):
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
+    TYPE_NAME = 'graph'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
@@ -109,7 +110,7 @@ class GraphWidget(DynamicWidget):
             'metrics': output_metric_data,
         }
 
-    def get_data(self):
+    def get_snapshot(self):
         if self.align_to_start:
             from_time = utils.floor_time(utils.now(), self.time_range)
         else:

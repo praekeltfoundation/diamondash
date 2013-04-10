@@ -1,5 +1,7 @@
 """Tests for diamondash's server"""
 
+import json
+
 from twisted import web
 from twisted.web import http
 from twisted.trial import unittest
@@ -11,6 +13,7 @@ from twisted.web.template import flattenString
 
 from diamondash import utils
 from diamondash.widgets.widget import Widget
+from diamondash.widgets.dynamic import DynamicWidget
 from diamondash.dashboard import Dashboard, DashboardPage
 from diamondash.server import DiamondashServer, DashboardIndexListItem
 
@@ -51,9 +54,15 @@ def mk_dashboard(**kwargs):
     return StubbedDashboard(**kwargs)
 
 
-class ToyWidget(Widget):
-    def get_data(self):
+class ToyDynamicWidget(DynamicWidget):
+    TYPE_NAME = 'dynamic_toy'
+
+    def get_snapshot(self):
         return [self.name]
+
+
+class ToyStaticWidget(Widget):
+    TYPE_NAME = 'static_toy'
 
 
 class MockIndex(MockLeafResource):
@@ -80,12 +89,17 @@ class DiamondashServerTestCase(unittest.TestCase):
             'css': css_resources,
         })
 
-        widget = self.mk_toy_widget()
+        widget1 = self.mk_dynamic_widget(
+            name='widget-1',
+            title='Widget 1')
+        widget2 = self.mk_static_widget(
+            name='widget-2',
+            title='Widget 2')
         self.dashboard1 = mk_dashboard(
             name='dashboard-1',
             title='Dashboard 1',
             share_id='dashboard-1-share-id',
-            widgets=[widget])
+            widgets=[widget1, widget2])
         self.dashboard2 = mk_dashboard(name='dashboard-2', title='Dashboard 2')
 
         self.server = DiamondashServer(MockIndex(), resources,
@@ -105,25 +119,36 @@ class DiamondashServerTestCase(unittest.TestCase):
     def stop_server(self):
         return self.ws.loseConnection()
 
-    def mk_toy_widget(self, **kwargs):
-        return ToyWidget(**utils.update_dict({
-            'name': 'some-widget',
-            'title': 'title',
-            'client_config': {},
-            'width': 2
+    def mk_dynamic_widget(self, **kwargs):
+        return ToyDynamicWidget(**utils.update_dict({
+            'name': 'some-dynamic-widget',
+            'title': 'Some Dynamic Widget',
+            'backend': None,
+            'time_range': 3600,
+        }, kwargs))
+
+    def mk_static_widget(self, **kwargs):
+        return ToyStaticWidget(**utils.update_dict({
+            'name': 'some-static-widget',
+            'title': 'Some Static Widget',
         }, kwargs))
 
     def mk_request(self, path, **kwargs):
         d = utils.http_request("%s%s" % (self.url, path), **kwargs)
         return d
 
-    def assert_response(self, response, body, code=http.OK):
+    def assert_response(self, response, body, code=http.OK, headers={}):
         self.assertEqual(response['status'], str(code))
         self.assertEqual(response['body'], body)
+        for field, value in headers.iteritems():
+            self.assertEqual(response['headers'][field], value)
 
-    def assert_unhappy_response(self, failure, body, code):
+    def assert_json_response(self, response, data, code=http.OK, headers={}):
+        headers.update({'content-type': ['application/json']})
+        return self.assert_response(response, json.dumps(data), code, headers)
+
+    def assert_unhappy_response(self, failure, code):
         failure.trap(web.error.Error)
-        self.assertEqual(failure.value.response, body)
         self.assertEqual(failure.value.status, str(code))
 
     def assert_rendering(self, response, expected_element):
@@ -155,26 +180,60 @@ class DiamondashServerTestCase(unittest.TestCase):
 
     def test_dashboard_rendering(self):
         d = self.mk_request('/dashboard-1')
-        d.addCallback(self.assert_rendering,
-                      DashboardPage(self.dashboard1))
+        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
         return d
 
     def test_dashboard_rendering_for_non_existent_dashboards(self):
         d = self.mk_request('/dashboard-3')
-        d.addErrback(self.assert_unhappy_response,
-                     'Dashboard Not Found', http.NOT_FOUND)
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
         return d
 
     def test_shared_dashboard_rendering(self):
         d = self.mk_request('/shared/dashboard-1-share-id')
-        d.addCallback(self.assert_rendering,
-                      DashboardPage(self.dashboard1))
+        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
         return d
 
     def test_shared_dashboard_rendering_for_non_existent_dashboards(self):
         d = self.mk_request('/shared/dashboard-3-share-id')
-        d.addErrback(self.assert_unhappy_response,
-                     'Dashboard Not Found', http.NOT_FOUND)
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_widget_details_retrieval(self):
+        d = self.mk_request('/api/widgets/dashboard-1/widget-1')
+        d.addCallback(self.assert_json_response, {
+            'title': 'Widget 1',
+            'type': 'dynamic_toy'
+        })
+        return d
+
+    def test_widget_details_retrieval_for_nonexistent_dashboard(self):
+        d = self.mk_request('/api/widgets/bad-dashboard/widget-1')
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_widget_details_retrieval_for_nonexistent_widget(self):
+        d = self.mk_request('/api/widgets/dashboard-1/bad-widget')
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_widget_snapshot_retrieval(self):
+        d = self.mk_request('/api/widgets/dashboard-1/widget-1/snapshot')
+        d.addCallback(self.assert_json_response, ['widget-1'])
+        return d
+
+    def test_widget_snapshot_retrieval_for_nonexistent_dashboard(self):
+        d = self.mk_request('/api/widgets/bad-dashboard/widget-1/snapshot')
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_widget_snapshot_retrieval_for_nonexistent_widget(self):
+        d = self.mk_request('/api/widgets/dashboard-1/bad-widget/snapshot')
+        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_widget_snapshot_retrieval_for_static_widgets(self):
+        d = self.mk_request('/api/widgets/dashboard-1/widget-2/snapshot')
+        d.addErrback(self.assert_unhappy_response, http.BAD_REQUEST)
         return d
 
 

@@ -12,11 +12,11 @@ from twisted.web import http
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
 from twisted.internet.defer import maybeDeferred
-from twisted.python import log
 from klein import Klein
 
 from diamondash import utils
 from dashboard import Dashboard, DashboardPage
+from diamondash.widgets.dynamic import DynamicWidget
 
 
 class DiamondashServer(object):
@@ -66,6 +66,12 @@ class DiamondashServer(object):
         resources = cls.create_resources('public')
         return cls(Index(), resources, dashboards)
 
+    def get_dashboard(self, name):
+        return self.dashboards_by_name.get(name)
+
+    def get_dashboard_by_share_id(self, share_id):
+        return self.dashboards_by_share_id.get(share_id)
+
     def has_dashboard(self, name):
         return utils.slugify(name) in self.dashboards_by_name
 
@@ -82,6 +88,10 @@ class DiamondashServer(object):
 
     # Rendering
     # =========
+
+    def render_not_found(self, request, description):
+        request.setResponseCode(http.NOT_FOUND)
+        return NotFoundPage(description)
 
     @app.route('/')
     def show_index(self, request):
@@ -101,23 +111,41 @@ class DiamondashServer(object):
     @app.route('/<string:name>')
     def render_dashboard(self, request, name):
         """Render a non-shared dashboard page"""
-        dashboard = self.dashboards_by_name.get(name.encode('utf-8'))
+        dashboard = self.get_dashboard(name.encode('utf-8'))
         if dashboard is None:
-            request.setResponseCode(http.NOT_FOUND)
-            return "Dashboard Not Found"
+            return self.render_not_found(request,
+                "Dashboard '%s' does not exist" % name)
         return DashboardPage(dashboard)
 
     @app.route('/shared/<string:share_id>')
     def render_shared_dashboard(self, request, share_id):
         """Render a shared dashboard page"""
-        dashboard = self.dashboards_by_share_id.get(share_id.encode('utf-8'))
+        dashboard = self.get_dashboard_by_share_id(share_id.encode('utf-8'))
         if dashboard is None:
-            request.setResponseCode(http.NOT_FOUND)
-            return "Dashboard Not Found"
+            return self.render_not_found(request,
+                "Dashboard with share id '%s' does not exist or is not shared"
+                % share_id)
         return DashboardPage(dashboard)
 
     # API
     # ===
+
+    def api_response(self, request, data):
+        request.responseHeaders.setRawHeaders(
+            'Content-Type', ['application/json'])
+        return json.dumps(data)
+
+    def api_error_response(self, request, code, description):
+        request.setResponseCode(code)
+        return self.api_response(request, {
+            'code': code,
+            'description': description,
+        })
+
+    def api_call(self, request, fn, *args, **kwargs):
+        d = maybeDeferred(fn, *args, **kwargs)
+        d.addCallback(lambda data: self.api_response(request, data))
+        return d
 
     # Dashboard API
     # -------------
@@ -139,31 +167,44 @@ class DiamondashServer(object):
 
     @app.route('/api/widgets/<string:dashboard_name>/<string:widget_name>',
                methods=['GET'])
-    def get_widget_data(self, request, dashboard_name, widget_name):
-        #request.setHeader('Content-Type', 'application/json')
-
+    def get_widget_details(self, request, dashboard_name, widget_name):
         dashboard_name = dashboard_name.encode('utf-8')
         widget_name = widget_name.encode('utf-8')
 
-        # get dashboard or return empty json object if it does not exist
-        dashboard = self.dashboards_by_name.get(dashboard_name)
+        dashboard = self.get_dashboard(dashboard_name)
         if dashboard is None:
-            # TODO err resp code
-            log.msg("Bad widget API request: Dashboard '%s' does not exist." %
-                    dashboard_name)
-            return "{}"
+            return self.api_error_response(request, http.NOT_FOUND,
+                "Dashboard '%s' does not exist" % dashboard_name)
 
-        # get widget or return empty json object if it does not exist
         widget = dashboard.get_widget(widget_name)
         if widget is None:
-            # TODO err resp code
-            log.msg("Bad widget API request: Widget '%s' does not exist." %
-                    widget_name)
-            return "{}"
+            return self.api_error_response(request, http.NOT_FOUND,
+                "Widget '%s' does not exist" % widget_name)
 
-        d = maybeDeferred(widget.get_data)
-        d.addCallback(json.dumps)
-        return d
+        return self.api_call(request, widget.get_details)
+
+    @app.route(
+        '/api/widgets/<string:dashboard_name>/<string:widget_name>/snapshot',
+         methods=['GET'])
+    def get_widget_snapshot(self, request, dashboard_name, widget_name):
+        dashboard_name = dashboard_name.encode('utf-8')
+        widget_name = widget_name.encode('utf-8')
+
+        dashboard = self.get_dashboard(dashboard_name)
+        if dashboard is None:
+            return self.api_error_response(request, http.NOT_FOUND,
+                "Dashboard '%s' does not exist" % dashboard_name)
+
+        widget = dashboard.get_widget(widget_name)
+        if widget is None:
+            return self.api_error_response(request, http.NOT_FOUND,
+                "Widget '%s' does not exist" % widget_name)
+
+        if not isinstance(widget, DynamicWidget):
+            return self.api_error_response(request, http.BAD_REQUEST,
+                "Widget '%s' is not dynamic" % widget_name)
+
+        return self.api_call(request, widget.get_snapshot)
 
 
 class Index(Element):
@@ -214,3 +255,29 @@ class DashboardIndexListItem(Element):
                       url_slot=self.url,
                       shared_url_slot=self.shared_url_tag)
         yield tag
+
+
+class ErrorPage(Element):
+    loader = XMLString(resource_string(
+        __name__, 'views/error_page.xml'))
+
+    def __init__(self, title, description):
+        self.title = title
+        self.description = description
+
+    @renderer
+    def header_renderer(self, request, tag):
+        tag.fillSlots(title_slot=self.title, description_slot=self.description)
+        yield tag
+
+
+class NotFoundPage(ErrorPage):
+    def __init__(self, description):
+        self.title = "404 Not Found"
+        self.description = description
+
+
+class BadRequestPage(ErrorPage):
+    def __init__(self, description):
+        self.title = "400 Bad Request"
+        self.description = description

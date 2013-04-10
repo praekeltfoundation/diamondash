@@ -14,15 +14,15 @@ class Widget(Element, ConfigMixin):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
+    TYPE_NAME = 'abstract'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
     # backbone model and view classes
     MODEL = 'WidgetModel'
     VIEW = 'WidgetView'
-    TYPE_NAME = "abstract_widget"
 
-    def __init__(self, name, title, client_config, width):
+    def __init__(self, name, title, client_config={}, width=MIN_COLUMN_SPAN):
         self.name = name
         self.title = title
         self.client_config = client_config

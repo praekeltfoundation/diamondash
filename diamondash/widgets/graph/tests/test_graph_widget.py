@@ -95,18 +95,18 @@ class GraphWidgetTestCase(unittest.TestCase):
         self.assertRaises(ConfigError, GraphWidget.parse_config,
                           {'name': u'some metric'}, {})
 
-    def assert_data_retrieval(self, backend_res, expected_data,
+    def assert_snapshot_retrieval(self, backend_res, expected_data,
                                        expected_from_time):
         self.backend.response_data = backend_res
-        d = self.widget.get_data()
+        d = self.widget.get_snapshot()
         self.assertEqual(self.backend.get_data_calls,
                          [{'from_time': expected_from_time}])
         d.addCallback(self.assertEqual, expected_data)
         d.callback(None)
         return d
 
-    def test_data_retrieval(self):
-        return self.assert_data_retrieval([
+    def test_snapshot_retrieval(self):
+        return self.assert_snapshot_retrieval([
             {
                 'metadata': {'name': 'metric-1'},
                 'datapoints': [{'x': 0, 'y': 0},
@@ -142,8 +142,8 @@ class GraphWidgetTestCase(unittest.TestCase):
             ]
         }, 1340789597)
 
-    def test_data_retrieval_for_empty_datapoints(self):
-        return self.assert_data_retrieval([
+    def test_snapshot_retrieval_for_empty_datapoints(self):
+        return self.assert_snapshot_retrieval([
             {'metadata': {'name': 'metric-1'}, 'datapoints': []},
             {'metadata': {'name': 'metric-2'}, 'datapoints': []},
             {'metadata': {'name': 'metric-3'}, 'datapoints': []}], {
@@ -155,8 +155,8 @@ class GraphWidgetTestCase(unittest.TestCase):
                 {'name': 'metric-3', 'datapoints': []}]
         }, 1340789597)
 
-    def test_data_retrieval_for_align_to_start(self):
+    def test_snapshot_retrieval_for_align_to_start(self):
         self.widget.align_to_start = True
-        self.widget.get_data()
+        self.widget.get_snapshot()
         self.assertEqual(self.backend.get_data_calls,
                          [{'from_time': 1340841600}])

@@ -7,6 +7,7 @@ from diamondash.backends import BadBackendResponseError
 class DynamicWidget(Widget):
     __DEFAULTS = {}
     __CONFIG_TAG = 'diamondash.widgets.dynamic.DynamicWidget'
+    TYPE_NAME = 'dynamic'
 
     def __init__(self, backend, time_range, **kwargs):
         super(DynamicWidget, self).__init__(**kwargs)
@@ -18,6 +19,6 @@ class DynamicWidget(Widget):
         log.msg(failure)
         return "{}"
 
-    def get_data(self):
+    def get_snapshot(self):
         """Returns a snapshot of the widget's non-static data."""
         raise NotImplementedError()

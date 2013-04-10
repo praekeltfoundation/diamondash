@@ -57,7 +57,7 @@ class LValueWidgetTestCase(unittest.TestCase):
     def test_parse_config_for_no_target(self):
         self.assertRaises(ConfigError, LValueWidget.parse_config, {})
 
-    def test_data_retrieval(self):
+    def test_snapshot_retrieval(self):
         backend = ToyBackend([{
             'target': 'some.target',
             'datapoints': [
@@ -70,9 +70,9 @@ class LValueWidgetTestCase(unittest.TestCase):
             ]
         }])
         widget = self.mk_lvalue_widget(time_range=5, backend=backend)
-        deferred_result = widget.get_data()
+        deferred_result = widget.get_snapshot()
 
-        def assert_data_retrieval(result):
+        def assert_snapshot_retrieval(result):
             self.assertEqual(backend.get_data_calls, [{'from_time': -10}])
             self.assertEqual(result, {
                 'lvalue': 9227465.0,
@@ -81,19 +81,19 @@ class LValueWidgetTestCase(unittest.TestCase):
                 'diff': 9227465.0 - 5702887.0,
                 'percentage': 0.61803398874990854,
             })
-        deferred_result.addCallback(assert_data_retrieval)
+        deferred_result.addCallback(assert_snapshot_retrieval)
 
         deferred_result.callback(None)
         return deferred_result
 
-    def test_data_retrieval_for_bad_backend_responses(self):
+    def test_snapshot_retrieval_for_bad_backend_responses(self):
         def assert_handled_bad_response(datapoints):
             backend = ToyBackend([{
                 'target': 'some.target',
                 'datapoints': datapoints
             }])
             widget = self.mk_lvalue_widget(time_range=5, backend=backend)
-            d = widget.get_data()
+            d = widget.get_snapshot()
             return self.assertFailure(d, BadBackendResponseError)
 
         assert_handled_bad_response([])
