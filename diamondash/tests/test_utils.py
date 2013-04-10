@@ -1,9 +1,9 @@
 import json
 from urllib import urlencode
 
+from twisted.web import http
 from twisted.trial import unittest
 from twisted.internet.defer import inlineCallbacks
-from twisted.web.error import Error as WebError
 
 from diamondash import utils
 from diamondash.tests.utils import MockHttpServer
@@ -96,14 +96,27 @@ class UtilsTestCase(unittest.TestCase):
 
 class HttpUtilsTestCase(unittest.TestCase):
     def setUp(self):
-        self.response_body = ""
-        self.response_code = 200
-        self.response_headers = {}
+        self.set_response_data("", http.OK, {})
         self.server = MockHttpServer(handler=self.handle_request)
         return self.server.start()
 
     def tearDown(self):
         return self.server.stop()
+
+    def set_response_data(self, body, code, headers):
+        self.response_body = body
+        self.response_code = code
+        self.response_headers = headers
+
+    @inlineCallbacks
+    def assert_last_request(self, args, data="", headers={}, method='GET'):
+        request = yield self.server.queue.get()
+        self.assertEqual(request.content.read(), data)
+        self.assertEqual(request.method, method)
+        self.assertEqual(request.args, args)
+
+        for k, v in headers.iteritems():
+            self.assertEqual(request.requestHeaders.getRawHeaders(k), v)
 
     def handle_request(self, request):
         request.setResponseCode(self.response_code)
@@ -112,10 +125,8 @@ class HttpUtilsTestCase(unittest.TestCase):
         self.server.queue.put(request)
         return self.response_body
 
-    def assert_http_request_response(self, body, code=200, headers={}):
-        self.response_body = body
-        self.response_code = code
-        self.response_headers = headers
+    def assert_happy_response(self, body, code=http.OK, headers={}):
+        self.set_response_data(body, code, headers)
         d = utils.http_request(self.server.url)
 
         def assert_response(response):
@@ -124,25 +135,27 @@ class HttpUtilsTestCase(unittest.TestCase):
             for k, v in headers.iteritems():
                 self.assertEqual(response['headers'][k], v)
         d.addCallback(assert_response)
-        d.addErrback(lambda failure: failure.trap(WebError))
+        return d
+
+    def assert_response(self, body, code=http.OK, headers={}):
+        self.set_response_data(body, code, headers)
+        d = utils.http_request(self.server.url)
+
+        def got_response(response):
+            self.assertEqual(response['body'], body)
+            self.assertEqual(response['status'], str(code))
+            for k, v in headers.iteritems():
+                self.assertEqual(response['headers'][k], v)
+        d.addCallback(got_response)
         return d
 
     @inlineCallbacks
     def test_http_request_response_handling(self):
-        yield self.assert_http_request_response("")
-        yield self.assert_http_request_response(json.dumps({'a': [1, 2]}))
-        yield self.assert_http_request_response("Not Found", code=404)
-        yield self.assert_http_request_response(
-            "Internal Server Error", code=500, headers={'a': ['b']})
-
-    @inlineCallbacks
-    def assert_last_request(self, args, data="", headers={}, method='GET'):
-        request = yield self.server.queue.get()
-        self.assertEqual(request.method, method)
-        self.assertEqual(request.args, args)
-
-        for k, v in headers.iteritems():
-            self.assertEqual(request.requestHeaders.getRawHeaders(k), v)
+        yield self.assert_response("")
+        yield self.assert_response(
+            json.dumps({'a': [1, 2]}),
+            code=http.CREATED,
+            headers={'luke': ['Skywalker']})
 
     def test_http_request_for_GET(self):
         utils.http_request(
