@@ -12,9 +12,10 @@ from twisted.web import http
 from twisted.web.static import File
 from twisted.web.template import Element, renderer, XMLString, tags
 from twisted.internet.defer import maybeDeferred
+from twisted.python import log
 from klein import Klein
 
-from diamondash import utils
+from diamondash import utils, ConfigError
 from dashboard import Dashboard, DashboardPage
 from diamondash.widgets.dynamic import DynamicWidget
 
@@ -27,13 +28,14 @@ class DiamondashServer(object):
     ROOT_RESOURCE_DIR = resource_filename(__name__, '')
     CONFIG_FILENAME = 'diamondash.yml'
 
-    def __init__(self, index, resources, dashboards):
+    def __init__(self, index, resources, dashboards, class_defaults={}):
         self.dashboards = []
         self.dashboards_by_name = {}
         self.dashboards_by_share_id = {}
 
-        self.resources = resources
         self.index = index
+        self.resources = resources
+        self.class_defaults = class_defaults
 
         for dashboard in dashboards:
             self.add_dashboard(dashboard)
@@ -64,7 +66,7 @@ class DiamondashServer(object):
         dashboards = cls.dashboards_from_dir(dashboards_dir, class_defaults)
 
         resources = cls.create_resources('public')
-        return cls(Index(), resources, dashboards)
+        return cls(Index(), resources, dashboards, class_defaults)
 
     def get_dashboard(self, name):
         return self.dashboards_by_name.get(name)
@@ -89,9 +91,9 @@ class DiamondashServer(object):
     # Rendering
     # =========
 
-    def render_not_found(self, request, description):
-        request.setResponseCode(http.NOT_FOUND)
-        return NotFoundPage(description)
+    def render_error_response(self, request, code, description):
+        request.setResponseCode(code)
+        return ErrorPage(code, description)
 
     @app.route('/')
     def show_index(self, request):
@@ -113,7 +115,7 @@ class DiamondashServer(object):
         """Render a non-shared dashboard page"""
         dashboard = self.get_dashboard(name.encode('utf-8'))
         if dashboard is None:
-            return self.render_not_found(request,
+            return self.render_error_response(request, http.NOT_FOUND,
                 "Dashboard '%s' does not exist" % name)
         return DashboardPage(dashboard)
 
@@ -122,29 +124,43 @@ class DiamondashServer(object):
         """Render a shared dashboard page"""
         dashboard = self.get_dashboard_by_share_id(share_id.encode('utf-8'))
         if dashboard is None:
-            return self.render_not_found(request,
+            return self.render_error_response(request, http.NOT_FOUND,
                 "Dashboard with share id '%s' does not exist or is not shared"
                 % share_id)
         return DashboardPage(dashboard)
 
     # API
-    # ===
+    # ===)
 
-    def api_response(self, request, data):
+    @classmethod
+    def api_response(cls, request, data, code=http.OK, headers={}):
         request.responseHeaders.setRawHeaders(
             'Content-Type', ['application/json'])
+        for field, value in headers.iteritems():
+            request.responseHeaders.setRawHeaders(field, value)
+
+        request.setResponseCode(code)
         return json.dumps(data)
 
-    def api_error_response(self, request, code, description):
-        request.setResponseCode(code)
-        return self.api_response(request, {
+    @classmethod
+    def api_error_response(cls, request, code, description):
+        return cls.api_response(request, code=code, data={
             'code': code,
             'description': description,
         })
 
-    def api_call(self, request, fn, *args, **kwargs):
+    @classmethod
+    def api_call(cls, request, fn, *args, **kwargs):
         d = maybeDeferred(fn, *args, **kwargs)
-        d.addCallback(lambda data: self.api_response(request, data))
+
+        def trap_unhandled_error(f):
+            f.trap(Exception)
+            log.msg("Unhandled error occured during api request: %s" % f.value)
+            return cls.api_error_response(request, http.INTERNAL_SERVER_ERROR,
+                                          "Some unhandled error occurred")
+
+        d.addCallback(lambda data: cls.api_response(request, data))
+        d.addErrback(trap_unhandled_error)
         return d
 
     # Dashboard API
@@ -152,15 +168,25 @@ class DiamondashServer(object):
 
     @app.route('/api/dashboards', methods=['POST'])
     def create_dashboard(self, request):
-        raw_config = json.loads(request.content.read())
+        config = json.loads(request.content.read())
 
-        if 'name' not in raw_config:
-            # TODO
-            return
+        if 'name' not in config:
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Dashboards need a name to be created")
 
-        if self.has_dashboard(raw_config['name']):
-            # TODO
-            pass
+        if self.has_dashboard(config['name']):
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Dashboard with name '%s' already exists")
+
+        try:
+            dashboard = Dashboard.from_config(config, self.class_defaults)
+        except ConfigError as e:
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Error parsing dashboard config: %s" % e.value)
+
+        self.add_dashboard(dashboard)
+        return self.api_response(
+            request, {'name': dashboard.name}, code=http.CREATED)
 
     # Widget API
     # -------------
@@ -261,23 +287,12 @@ class ErrorPage(Element):
     loader = XMLString(resource_string(
         __name__, 'views/error_page.xml'))
 
-    def __init__(self, title, description):
-        self.title = title
+    def __init__(self, code, description):
+        self.title = "(%s) %s" % (
+            code, http.RESPONSES.get(code, "Error with Unknown Code"))
         self.description = description
 
     @renderer
     def header_renderer(self, request, tag):
         tag.fillSlots(title_slot=self.title, description_slot=self.description)
         yield tag
-
-
-class NotFoundPage(ErrorPage):
-    def __init__(self, description):
-        self.title = "404 Not Found"
-        self.description = description
-
-
-class BadRequestPage(ErrorPage):
-    def __init__(self, description):
-        self.title = "400 Bad Request"
-        self.description = description

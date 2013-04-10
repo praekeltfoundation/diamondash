@@ -44,6 +44,10 @@ class MockDirResource(Resource):
         return self.children.get(name)
 
 
+class MockError(Exception):
+    """I am fake"""
+
+
 def mk_dashboard(**kwargs):
     kwargs = utils.update_dict({
         'name': 'some-dashboard',
@@ -76,6 +80,9 @@ class MockIndex(MockLeafResource):
 
 class DiamondashServerTestCase(unittest.TestCase):
     def setUp(self):
+        self.patch(Dashboard, 'from_config', classmethod(
+           lambda cls, config, class_defaults: mk_dashboard(**config)))
+
         js_resources = MockDirResource({
             'a.js': MockLeafResource('mock-a.js'),
             'b.js': MockLeafResource('mock-b.js'),
@@ -133,108 +140,145 @@ class DiamondashServerTestCase(unittest.TestCase):
             'title': 'Some Static Widget',
         }, kwargs))
 
-    def mk_request(self, path, **kwargs):
+    def request(self, path, **kwargs):
         d = utils.http_request("%s%s" % (self.url, path), **kwargs)
         return d
 
-    def assert_response(self, response, body, code=http.OK, headers={}):
-        self.assertEqual(response['status'], str(code))
-        self.assertEqual(response['body'], body)
-        for field, value in headers.iteritems():
-            self.assertEqual(response['headers'][field], value)
+    def assert_response(self, d, body, code=http.OK, headers={}):
+        def got_response(response):
+            self.assertEqual(response['status'], str(code))
+            self.assertEqual(response['body'], body)
+            for field, value in headers.iteritems():
+                self.assertEqual(response['headers'][field], value)
+        d.addCallback(got_response)
+        return d
 
-    def assert_json_response(self, response, data, code=http.OK, headers={}):
+    def assert_json_response(self, d, data, code=http.OK, headers={}):
         headers.update({'content-type': ['application/json']})
-        return self.assert_response(response, json.dumps(data), code, headers)
+        return self.assert_response(d, json.dumps(data), code, headers)
 
-    def assert_unhappy_response(self, failure, code):
-        failure.trap(web.error.Error)
-        self.assertEqual(failure.value.status, str(code))
+    def assert_unhappy_response(self, d, code):
+        def trap_failure(failure):
+            failure.trap(web.error.Error)
+            self.assertEqual(failure.value.status, str(code))
 
-    def assert_rendering(self, response, expected_element):
+        # fail if the failure was not trapped
+        d.addCallback(lambda _: self.fail())
+        d.addErrback(trap_failure)
+        return d
+
+    def assert_rendering(self, deferred_res, expected_element):
         d = flattenString(None, expected_element)
-        d.addCallback(lambda body: self.assert_response(response, body))
+        d.addCallback(lambda body: self.assert_response(deferred_res, body))
         return d
 
     def test_index_rendering(self):
-        d = self.mk_request('/')
-        d.addCallback(self.assert_response,  'mock-index')
-        return d
+        return self.assert_response(self.request('/'), 'mock-index')
 
     def test_static_resource_rendering(self):
-        def assert_static_rendering(path, expected):
-            d = self.mk_request(path)
-            d.addCallback(self.assert_response,  expected)
-            return d
+        def request_and_assert(path, expected):
+            return self.assert_response(self.request(path), expected)
 
         return gatherResults([
-            assert_static_rendering('/js/a.js', 'mock-a.js'),
-            assert_static_rendering('/js/b.js', 'mock-b.js'),
-            assert_static_rendering('/shared/js/a.js', 'mock-a.js'),
-            assert_static_rendering('/shared/js/b.js', 'mock-b.js'),
-            assert_static_rendering('/css/a.css', 'mock-a.css'),
-            assert_static_rendering('/css/b.css', 'mock-b.css'),
-            assert_static_rendering('/shared/css/a.css', 'mock-a.css'),
-            assert_static_rendering('/shared/css/b.css', 'mock-b.css'),
+            request_and_assert('/js/a.js', 'mock-a.js'),
+            request_and_assert('/js/b.js', 'mock-b.js'),
+            request_and_assert('/shared/js/a.js', 'mock-a.js'),
+            request_and_assert('/shared/js/b.js', 'mock-b.js'),
+            request_and_assert('/css/a.css', 'mock-a.css'),
+            request_and_assert('/css/b.css', 'mock-b.css'),
+            request_and_assert('/shared/css/a.css', 'mock-a.css'),
+            request_and_assert('/shared/css/b.css', 'mock-b.css'),
         ])
 
     def test_dashboard_rendering(self):
-        d = self.mk_request('/dashboard-1')
-        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
-        return d
+        return self.assert_rendering(
+            self.request('/dashboard-1'), DashboardPage(self.dashboard1))
 
     def test_dashboard_rendering_for_non_existent_dashboards(self):
-        d = self.mk_request('/dashboard-3')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+        return self.assert_unhappy_response(
+            self.request('/dashboard-3'), http.NOT_FOUND)
 
     def test_shared_dashboard_rendering(self):
-        d = self.mk_request('/shared/dashboard-1-share-id')
-        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
-        return d
+        return self.assert_rendering(
+            self.request('/shared/dashboard-1-share-id'),
+            DashboardPage(self.dashboard1))
 
     def test_shared_dashboard_rendering_for_non_existent_dashboards(self):
-        d = self.mk_request('/shared/dashboard-3-share-id')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+        return self.assert_unhappy_response(
+            self.request('/shared/dashboard-3-share-id'), http.NOT_FOUND)
 
-    def test_widget_details_retrieval(self):
-        d = self.mk_request('/api/widgets/dashboard-1/widget-1')
-        d.addCallback(self.assert_json_response, {
-            'title': 'Widget 1',
-            'type': 'dynamic_toy'
-        })
-        return d
+    def test_unhandled_api_error_trapping(self):
+        def unruly_method():
+            raise MockError()
 
-    def test_widget_details_retrieval_for_nonexistent_dashboard(self):
-        d = self.mk_request('/api/widgets/bad-dashboard/widget-1')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+        @self.server.app.route('/test')
+        def api_method(slf, request):
+            self.server.api_call(request, unruly_method)
 
-    def test_widget_details_retrieval_for_nonexistent_widget(self):
-        d = self.mk_request('/api/widgets/dashboard-1/bad-widget')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+        return self.assert_unhappy_response(self.request('/test'),
+                                            http.INTERNAL_SERVER_ERROR)
 
-    def test_widget_snapshot_retrieval(self):
-        d = self.mk_request('/api/widgets/dashboard-1/widget-1/snapshot')
-        d.addCallback(self.assert_json_response, ['widget-1'])
-        return d
+    @inlineCallbacks
+    def test_api_dashboard_creation(self):
+        yield self.assert_json_response(
+            self.request('/api/dashboards', method='POST', data=json.dumps({
+                'name': 'dashboard-3',
+                'title': 'Dashboard 3',
+                'share_id': 'dashboard-3-share-id',
+            })), code=http.CREATED, data={'name': 'dashboard-3'})
 
-    def test_widget_snapshot_retrieval_for_nonexistent_dashboard(self):
-        d = self.mk_request('/api/widgets/bad-dashboard/widget-1/snapshot')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+        self.assertEqual(
+            self.server.get_dashboard('dashboard-3').title, 'Dashboard 3')
 
-    def test_widget_snapshot_retrieval_for_nonexistent_widget(self):
-        d = self.mk_request('/api/widgets/dashboard-1/bad-widget/snapshot')
-        d.addErrback(self.assert_unhappy_response, http.NOT_FOUND)
-        return d
+    def test_api_dashboard_creation_for_unnamed_dashboards(self):
+        return self.assert_unhappy_response(
+            self.request('/api/dashboards', method='POST', data=json.dumps({
+                'title': 'Dashboard 3',
+                'share_id': 'dashboard-3-share-id',
+            })), code=http.BAD_REQUEST)
 
-    def test_widget_snapshot_retrieval_for_static_widgets(self):
-        d = self.mk_request('/api/widgets/dashboard-1/widget-2/snapshot')
-        d.addErrback(self.assert_unhappy_response, http.BAD_REQUEST)
-        return d
+    def test_api_dashboard_creation_for_already_existing_dashboards(self):
+        return self.assert_unhappy_response(
+            self.request('/api/dashboards', method='POST', data=json.dumps({
+                'name': 'dashboard-1',
+            })), code=http.BAD_REQUEST)
+
+    def test_api_widget_details_retrieval(self):
+        return self.assert_json_response(
+            self.request('/api/widgets/dashboard-1/widget-1'), {
+                'title': 'Widget 1',
+                'type': 'dynamic_toy'
+            })
+
+    def test_api_widget_details_retrieval_for_nonexistent_dashboard(self):
+        return self.assert_unhappy_response(
+            self.request('/api/widgets/bad-dashboard/widget-1'),
+            http.NOT_FOUND)
+
+    def test_api_widget_details_retrieval_for_nonexistent_widget(self):
+        return self.assert_unhappy_response(
+            self.request('/api/widgets/dashboard-1/bad-widget'),
+            http.NOT_FOUND)
+
+    def test_api_widget_snapshot_retrieval(self):
+        return self.assert_json_response(
+            self.request('/api/widgets/dashboard-1/widget-1/snapshot'),
+            ['widget-1'])
+
+    def test_api_widget_snapshot_retrieval_for_nonexistent_dashboard(self):
+        return self.assert_unhappy_response(
+            self.request('/api/widgets/bad-dashboard/widget-1/snapshot'),
+            http.NOT_FOUND)
+
+    def test_api_widget_snapshot_retrieval_for_nonexistent_widget(self):
+        return self.assert_unhappy_response(
+            self.request('/api/widgets/dashboard-1/bad-widget/snapshot'),
+            http.NOT_FOUND)
+
+    def test_api_widget_snapshot_retrieval_for_static_widgets(self):
+        return self.assert_unhappy_response(
+            self.request('/api/widgets/dashboard-1/widget-2/snapshot'),
+            http.BAD_REQUEST)
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
