@@ -7,7 +7,7 @@ describe("LValueWidgetView", function(){
   beforeEach(function() {
     model = new LValueWidgetModel({
       'name': 'some-lvalue-widget',
-      'lvalue': 9227465.0,
+      'value': 9227465.0,
       'from': 1340875995000,
       'to': 1340875995000 + 3600000 - 1,
       'diff': 9227465.0 - 5702887.0,
@@ -17,11 +17,11 @@ describe("LValueWidgetView", function(){
     view = new LValueWidgetView({
       model: model,
       el: $([
-        "<div>",
+        "<div class='lvalue widget-container'>",
           LValueWidgetView.prototype.slotSelectors.map(function(s) {
             return "<span class=" + s.slice(1) + "></span>"; }
           ).join(''),
-          "<span class='lvalue-change'></span>",
+          "<span class='change'></span>",
         "</div>"
       ].join(''))
     });

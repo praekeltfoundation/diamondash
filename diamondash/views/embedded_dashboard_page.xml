@@ -1,0 +1,10 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <link href="css/embed-dashboard.css" rel="stylesheet" type="text/css"/>
+    <script src="js/diamondash.js"></script>
+  </head>
+  <body>
+    <t:transparent t:render="dashboard_container_renderer" />
+  </body>
+</html>

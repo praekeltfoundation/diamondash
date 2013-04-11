@@ -5812,19 +5812,145 @@ a:hover {
   color: #ddd;
 }
 
-body {
-	padding-top: 40px;
-  background-color: #fdfdfd;
+.row {
+	margin-bottom: 18px;
 }
 
-.dashboard-list {
-	list-style-type: none;
+.widget-title {
+	background-color: #333;
+	color: #eee;
+	text-align: center;
+	min-height: 30px;
 }
 
-.dashboard-list-item {
-	margin: 8px 2px;
+.widget-title h4 {
+	line-height: 30px;
 }
 
-.dashboard-list-item a:hover {
-	text-decoration: none;
+.dashboard-title {
+  margin: 14px 0;
+}
+
+
+.graph .chart *, .graph .axis * {
+  pointer-events: none;
+}
+
+.graph .axis path,
+.graph .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.graph .axis text {
+  font-family: sans-serif;
+  font-size: 11px;
+}
+
+.graph .line {
+  fill: none;
+  stroke-width: 1.5px;
+  pointer-events: none;
+}
+
+.graph .legend {
+  text-align: left;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.graph .legend li {
+  width: 210px;
+  float: left;
+  margin: 2px 4px;
+}
+
+.graph .legend-item-swatch {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  margin: 0 4px;
+  border-radius: 4px;
+}
+
+.graph .hover-legend-item-value {
+  color: #555;
+}
+
+.graph .legend-item-value, .hover-legend-item-value {
+  font-weight: bold;
+  -webkit-transition: all 250ms linear;
+  -moz-transition: all 250ms linear;
+  -o-transition: all 250ms linear;
+  transition: all 250ms linear;
+}
+
+.graph .dot, .hover-dot {
+  pointer-events: none;
+}
+
+.graph .dot {
+  stroke: none;
+}
+
+.graph .hover-dot {
+  fill: none;
+  stroke-width: 1.5px;
+}
+
+.graph .hover-marker line {
+  stroke: #555;
+}
+.graph .hover-marker text {
+  fill: #555;
+}
+
+.graph .axis g {
+  -webkit-transition: fill-opacity 250ms linear;
+  -moz-transition: fill-opacity 250ms linear;
+  -o-transition: fill-opacity 250ms linear;
+  transition: fill-opacity 250ms linear;
+ }
+
+.lvalue .widget-container {
+  padding: 0;
+  text-align: center;
+}
+
+.lvalue .value {
+  margin: 10px auto;
+	font-size: 44px;
+  display: block;
+  text-align: center;
+}
+
+.lvalue .time {
+  margin: 8px auto;
+  margin-right: 12px;
+	font-size: 14px;
+  text-align: right;
+	color: #808080;
+}
+
+.lvalue .change {
+  margin: 8px auto;
+	font-size: 20px;
+	margin-left: 5px;
+}
+
+.lvalue .change div {
+  display: inline-block;
+}
+
+.lvalue .good-diff { color: #33cc33; }
+.lvalue .bad-diff { color: #cc3333; }
+
+.text-widget-text {
+    margin: 0 auto;
+    text-align: center;
+    font-size: 55px; 
+    line-height: 60px;
 }

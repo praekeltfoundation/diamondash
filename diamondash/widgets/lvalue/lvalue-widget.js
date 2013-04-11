@@ -6,11 +6,11 @@ widgets.LValueWidgetModel = widgets.WidgetModel.extend({
 
 widgets.LValueWidgetView = widgets.WidgetView.extend({
   slotSelectors: [
-    '.lvalue-lvalue-slot',
-    '.lvalue-diff-slot',
-    '.lvalue-percentage-slot',
-    '.lvalue-from-slot',
-    '.lvalue-to-slot'
+    '.value .slot',
+    '.diff .slot',
+    '.percentage .slot',
+    '.from .slot',
+    '.to .slot'
   ],
 
   initialize: function(options) {
@@ -18,7 +18,7 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
         $slots = this.$slots = {};
 
     this.slotSelectors.forEach(function(s) { $slots[s] = $el.find(s); });
-    this.$changeEl = $el.find('.lvalue-change');
+    this.$changeEl = $el.find('.change');
 
     this.model.on('change', this.render, this);
   },
@@ -41,11 +41,11 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
         $changeEl = this.$changeEl;
 
     this.applySlotValues({
-      '.lvalue-from-slot': this.formatTime(model.get('from')),
-      '.lvalue-to-slot': this.formatTime(model.get('to')),
-      '.lvalue-lvalue-slot': this.formatLValue(model.get('lvalue')),
-      '.lvalue-diff-slot': this.formatDiff(diff),
-      '.lvalue-percentage-slot': this.formatPercentage(model.get('percentage'))
+      '.from .slot': this.formatTime(model.get('from')),
+      '.to .slot': this.formatTime(model.get('to')),
+      '.value .slot': this.formatLValue(model.get('value')),
+      '.diff .slot': this.formatDiff(diff),
+      '.percentage .slot': this.formatPercentage(model.get('percentage'))
     });
 
     if (diff < 0) {

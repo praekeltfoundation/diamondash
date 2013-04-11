@@ -31,7 +31,7 @@ diamondash.DashboardController = (function() {
 
         var viewClass = diamondashWidgets[widgetConfig.viewClass];
         var view = new viewClass({
-          el: $("#" + model.get('name')),
+          el: $("#" + model.get('name') + ' .widget-container'),
           model: model,
           config: widgetConfig.view
         });

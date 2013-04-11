@@ -11,8 +11,9 @@ describe("WidgetModel", function() {
   });
 
   describe(".url()", function() {
-    it("should construct the correct render url.", function() {
-      assert.equal(model.url(), '/render/some-dashboard/some-widget');
+    it("should construct the correct snapshot url.", function() {
+      assert.equal(
+        model.url(), '/api/widgets/some-dashboard/some-widget/snapshot');
     });
   });
 
