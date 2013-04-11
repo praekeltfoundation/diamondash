@@ -5,6 +5,8 @@ from os import path
 from math import floor
 from unidecode import unidecode
 
+from twisted.internet import reactor
+from twisted.web.client import HTTPClientFactory, _parse as parse_url
 
 # The internal representation of intervals in diamondash is seconds.
 # This multiplier is used to convert the internal interval representation to
@@ -136,3 +138,23 @@ class Accessor(object):
     def __call__(self, name, *args, **kwargs):
         obj = self.lookup.get(name, self.lookup['fallback'])
         return self.wrapper(name, obj, *args, **kwargs)
+
+
+def http_request(url, data=None, headers={}, method='GET'):
+    scheme, host, port, path = parse_url(url)
+    factory = HTTPClientFactory(
+        url,
+        postdata=data,
+        method=method,
+        headers=headers)
+    reactor.connectTCP(host, port, factory)
+
+    def got_response(body):
+        return {
+            'body': body,
+            'status': factory.status,
+            'headers': factory.response_headers,
+        }
+
+    factory.deferred.addCallback(got_response)
+    return factory.deferred

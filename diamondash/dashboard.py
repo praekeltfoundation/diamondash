@@ -4,6 +4,8 @@
 
 import json
 import yaml
+from os import path
+from glob import glob
 from pkg_resources import resource_string, resource_filename
 
 from twisted.web.template import Element, renderer, XMLString
@@ -106,6 +108,17 @@ class Dashboard(Element, ConfigMixin):
 
         return cls.from_config(config, class_defaults)
 
+    @classmethod
+    def dashboards_from_dir(cls, dashboards_dir, class_defaults={}):
+        """Creates a list of dashboards from a config dir"""
+
+        dashboards = []
+        for filepath in glob(path.join(dashboards_dir, "*.yml")):
+            dashboard = Dashboard.from_config_file(filepath, class_defaults)
+            dashboards.append(dashboard)
+
+        return dashboards
+
     def _new_row(self):
         self.last_row = WidgetRow()
         self.rows.append(self.last_row)
@@ -129,6 +142,14 @@ class Dashboard(Element, ConfigMixin):
     def get_widget(self, name):
         """Returns a widget using the passed in widget name."""
         return self.widgets_by_name.get(name, None)
+
+    def get_details(self):
+        """Returns data describing the dashboard."""
+        return {
+            'title': self.title,
+            'share_id': self.share_id,
+            'widgets': [widget.get_details() for widget in self.widgets]
+        }
 
     def apply_layout_fn(self, name):
         return getattr(self, self.LAYOUT_FUNCTIONS[name])()
@@ -214,13 +235,12 @@ class DashboardPage(Element):
 
     loader = XMLString(resource_string(__name__, 'views/dashboard_page.xml'))
 
-    def __init__(self, dashboard, is_shared):
+    def __init__(self, dashboard):
         self.dashboard = dashboard
-        self.is_shared = is_shared
 
     @renderer
     def brand_renderer(self, request, tag):
-        href = '' if self.is_shared else '/'
+        href = '' if self.dashboard.share_id is not None else '/'
         tag.fillSlots(brand_href_slot=href)
         return tag
 

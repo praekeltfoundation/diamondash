@@ -1,4 +1,3 @@
-import json
 from pkg_resources import resource_string
 
 from twisted.web.template import XMLString
@@ -14,6 +13,7 @@ class LValueWidget(DynamicWidget):
     __DEFAULTS = {'time_range': '1d'}
     __CONFIG_TAG = 'diamondash.widgets.lvalue.LValueWidget'
 
+    TYPE_NAME = 'lvalue'
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
@@ -53,13 +53,13 @@ class LValueWidget(DynamicWidget):
         # side. The received datapoints are already converted by the backend,
         # so each widget type (lvalue, graph, etc) does not have to worry about
         # converting the datapoints.
-        return json.dumps({
+        return {
             'lvalue': last['y'],
             'from': last['x'],
             'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
             'diff': diff_y,
             'percentage': diff_y / (prev['y'] or 1),
-        })
+        }
 
     def handle_backend_response(self, metric_data, from_time):
         if not metric_data:
@@ -83,7 +83,7 @@ class LValueWidget(DynamicWidget):
 
         return self.format_data(*datapoints)
 
-    def handle_render_request(self, request):
+    def get_snapshot(self):
         # We ask the backend for data since 2 intervals ago so we can obtain
         # the previous value and calculate the increase/decrease since the
         # previous interval

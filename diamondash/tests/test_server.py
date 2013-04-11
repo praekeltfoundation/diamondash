@@ -1,17 +1,22 @@
 """Tests for diamondash's server"""
 
-from os import path
-from pkg_resources import resource_filename
+import json
 
+from twisted import web
+from twisted.web import http
 from twisted.trial import unittest
+from twisted.web.server import Site
+from twisted.web.resource import Resource
+from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks, gatherResults
+from twisted.python.failure import Failure
+from twisted.web.template import flattenString
 
-from diamondash import utils
-from diamondash import server
+from diamondash import utils, ConfigError
 from diamondash.widgets.widget import Widget
-from diamondash.dashboard import Dashboard
-from diamondash.server import DiamondashServer, DashboardIndexListItem
-
-_test_data_dir = resource_filename(__name__, 'test_server_data/')
+from diamondash.widgets.dynamic import DynamicWidget
+from diamondash.dashboard import Dashboard, DashboardPage
+from diamondash.server import DiamondashServer, Index, DashboardIndexListItem
 
 
 class StubbedDashboard(Dashboard):
@@ -19,9 +24,29 @@ class StubbedDashboard(Dashboard):
         self.widgets.append(widget)
         self.widgets_by_name[widget.name] = widget
 
-    @classmethod
-    def dashboards_from_dir(cls, dashboards_dir, defaults=None):
-        return ['fake-dashboards']
+
+class MockLeafResource(Resource):
+    isLeaf = True
+
+    def __init__(self, content):
+        self.content = content
+
+    def render(self, request):
+        return self.content
+
+
+class MockDirResource(Resource):
+    isLeaf = False
+
+    def __init__(self, children):
+        self.children = children
+
+    def getChild(self, name, request):
+        return self.children.get(name)
+
+
+class MockError(Exception):
+    """I am fake"""
 
 
 def mk_dashboard(**kwargs):
@@ -34,119 +59,324 @@ def mk_dashboard(**kwargs):
     return StubbedDashboard(**kwargs)
 
 
-class ToyWidget(Widget):
-    def handle_render_request(self, request):
-        return '%s -- handled by %s' % (request, self.name)
+class ToyDynamicWidget(DynamicWidget):
+    TYPE_NAME = 'dynamic_toy'
+
+    def get_snapshot(self):
+        return [self.name]
 
 
-class ServerTestCase(unittest.TestCase):
-
-    def test_handle_render_request(self):
-        """
-        Should route the render request to the appropriate widget on the
-        appropropriate dashboard.
-        """
-        widget = ToyWidget(
-            name='test-widget', title='title', client_config={}, width=2)
-        dashboard = mk_dashboard(widgets=[widget])
-
-        dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['some-dashboard'] = dashboard
-        server.server = dd_server
-
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(
-            result, "fake-render-request -- handled by test-widget")
-
-    def test_handle_render_for_bad_dashboard_request(self):
-        """
-        Should return an empty JSON object if the dashboard does not exist.
-        """
-        dd_server = DiamondashServer([], None)
-        server.server = dd_server
-
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(result, "{}")
-
-    def test_handle_render_for_bad_widget_request(self):
-        """
-        Should return an empty JSON object if the widget does not exist.
-        """
-        dashboard = mk_dashboard()
-        dd_server = DiamondashServer([], None)
-        dd_server.dashboards_by_name['some-dashboard'] = dashboard
-        server.server = dd_server
-
-        result = server.handle_render_request(
-            'fake-render-request', 'some-dashboard', 'test-widget')
-        self.assertEqual(result, "{}")
+class ToyStaticWidget(Widget):
+    TYPE_NAME = 'static_toy'
 
 
-class StubbedDiamondashServer(DiamondashServer):
-    ROOT_RESOURCE_DIR = _test_data_dir
-
-    def add_dashboard(self, dashboard):
-        self.dashboards.append(dashboard)
+class MockIndex(MockLeafResource, Index):
+    def __init__(self, dashboards=[]):
+        MockLeafResource.__init__(self, 'mock-index')
+        Index.__init__(self, dashboards)
 
 
 class DiamondashServerTestCase(unittest.TestCase):
     def setUp(self):
-        self.patch(StubbedDiamondashServer, 'create_resources',
-                   staticmethod(lambda *a, **kw: 'created-resources'))
+        self.patch(Dashboard, 'from_config', classmethod(
+           lambda cls, config, class_defaults: mk_dashboard(**config)))
 
-        stubbed_from_config_file = staticmethod(
-            lambda filepath, class_defaults: (filepath, class_defaults))
-        self.patch(Dashboard, 'from_config_file', stubbed_from_config_file)
+        js_resources = MockDirResource({
+            'a.js': MockLeafResource('mock-a.js'),
+            'b.js': MockLeafResource('mock-b.js'),
+        })
+        css_resources = MockDirResource({
+            'a.css': MockLeafResource('mock-a.css'),
+            'b.css': MockLeafResource('mock-b.css'),
+        })
+        resources = MockDirResource({
+            'js': js_resources,
+            'css': css_resources,
+        })
 
-    def test_from_config_dir(self):
-        """Should create the server from a configuration directory."""
-        config_dir = path.join(_test_data_dir, 'etc')
-        dd_server = StubbedDiamondashServer.from_config_dir(config_dir)
+        widget1 = self.mk_dynamic_widget(
+            name='widget-1',
+            title='Widget 1')
+        widget2 = self.mk_static_widget(
+            name='widget-2',
+            title='Widget 2')
+        self.dashboard1 = mk_dashboard(
+            name='dashboard-1',
+            title='Dashboard 1',
+            share_id='dashboard-1-share-id',
+            widgets=[widget1, widget2])
+        self.dashboard2 = mk_dashboard(name='dashboard-2', title='Dashboard 2')
 
-        expected_class_defaults = {
-            'module.path.to.some.Class': {
-                'foo': 'bar',
-                'lerp': 'larp'
-            }
-        }
-        dashboard_path = path.join(config_dir, 'dashboards')
-        expected_dashboard1_path = path.join(dashboard_path, 'dashboard1.yml')
-        expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
+        self.server = DiamondashServer(MockIndex(), resources,
+                                       [self.dashboard1, self.dashboard2])
+        return self.start_server()
 
-        self.assertEqual(
-            dd_server.dashboards,
-            [(expected_dashboard1_path, expected_class_defaults),
-             (expected_dashboard2_path, expected_class_defaults)])
-        self.assertEqual(dd_server.resources, 'created-resources')
+    def tearDown(self):
+        return self.stop_server()
 
-    def test_add_dashboard(self):
-        """Should add a dashboard to the server."""
-        def stubbed_index_add_dashboard(dashboard):
-            stubbed_index_add_dashboard.called = True
+    @inlineCallbacks
+    def start_server(self):
+        site_factory = Site(self.server.app.resource())
+        self.ws = yield reactor.listenTCP(0, site_factory)
+        addr = self.ws.getHost()
+        self.url = "http://%s:%s" % (addr.host, addr.port)
 
-        stubbed_index_add_dashboard.called = False
+    def stop_server(self):
+        return self.ws.loseConnection()
 
-        dd_server = DiamondashServer([], None)
-        dd_server.index.add_dashboard = stubbed_index_add_dashboard
-        dashboard = mk_dashboard(name='some-dashboard',
-                                 share_id='some-share-id')
+    def mk_dynamic_widget(self, **kwargs):
+        return ToyDynamicWidget(**utils.update_dict({
+            'name': 'some-dynamic-widget',
+            'title': 'Some Dynamic Widget',
+            'backend': None,
+            'time_range': 3600,
+        }, kwargs))
 
-        dd_server.add_dashboard(dashboard)
-        self.assertEqual(dd_server.dashboards[-1], dashboard)
-        self.assertEqual(
-            dd_server.dashboards_by_name['some-dashboard'], dashboard)
-        self.assertEqual(
-            dd_server.dashboards_by_share_id['some-share-id'], dashboard)
-        self.assertTrue(stubbed_index_add_dashboard.called)
+    def mk_static_widget(self, **kwargs):
+        return ToyStaticWidget(**utils.update_dict({
+            'name': 'some-static-widget',
+            'title': 'Some Static Widget',
+        }, kwargs))
 
+    def request(self, path, **kwargs):
+        d = utils.http_request("%s%s" % (self.url, path), **kwargs)
+        return d
 
-class StubbedDashboardIndexListItem(DashboardIndexListItem):
-    def __init__(self, title, url, shared_url_tag):
-        self.title = title
-        self.url = url
-        self.shared_url_tag = shared_url_tag
+    @staticmethod
+    def raise_error(error_class, *args, **kwargs):
+        raise error_class(*args, **kwargs)
+
+    def mock_dashboard_config_error(self):
+        self.patch(Dashboard, 'from_config', classmethod(
+           lambda *a, **kw: self.raise_error(ConfigError)))
+
+    def assert_response(self, response, body, code=http.OK, headers={}):
+        self.assertEqual(response['status'], str(code))
+        self.assertEqual(response['body'], body)
+        for field, value in headers.iteritems():
+            self.assertEqual(response['headers'][field], value)
+
+    def assert_json_response(self, d, data, code=http.OK, headers={}):
+        headers.update({'content-type': ['application/json']})
+        self.assert_response(d, json.dumps(data), code, headers)
+
+    def assert_unhappy_response(self, failure, code):
+        if not isinstance(failure, Failure):
+            self.fail()  # fail the test if a failure didn't occur
+        failure.trap(web.error.Error)
+        self.assertEqual(failure.value.status, str(code))
+
+    def assert_rendering(self, response, expected_element):
+        d = flattenString(None, expected_element)
+        d.addCallback(lambda body: self.assert_response(response, body))
+        return d
+
+    def test_index_rendering(self):
+        d = self.request('/')
+        d.addCallback(self.assert_response, 'mock-index')
+        return d
+
+    def test_static_resource_rendering(self):
+        def request_and_assert(path, expected):
+            d = self.request(path)
+            d.addCallback(self.assert_response, expected)
+            return d
+
+        return gatherResults([
+            request_and_assert('/js/a.js', 'mock-a.js'),
+            request_and_assert('/js/b.js', 'mock-b.js'),
+            request_and_assert('/shared/js/a.js', 'mock-a.js'),
+            request_and_assert('/shared/js/b.js', 'mock-b.js'),
+            request_and_assert('/css/a.css', 'mock-a.css'),
+            request_and_assert('/css/b.css', 'mock-b.css'),
+            request_and_assert('/shared/css/a.css', 'mock-a.css'),
+            request_and_assert('/shared/css/b.css', 'mock-b.css'),
+        ])
+
+    def test_dashboard_rendering(self):
+        d = self.request('/dashboard-1')
+        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
+        return d
+
+    def test_dashboard_rendering_for_non_existent_dashboards(self):
+        d = self.request('/dashboard-3')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_shared_dashboard_rendering(self):
+        d = self.request('/shared/dashboard-1-share-id')
+        d.addCallback(self.assert_rendering, DashboardPage(self.dashboard1))
+        return d
+
+    def test_shared_dashboard_rendering_for_non_existent_dashboards(self):
+        d = self.request('/shared/dashboard-3-share-id')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_unhandled_api_get_error_trapping(self):
+        @self.server.app.route('/test')
+        def api_method(slf, request):
+            slf.api_get(request, lambda: self.raise_error(MockError))
+
+        d = self.request('/test')
+        d.addBoth(self.assert_unhappy_response, http.INTERNAL_SERVER_ERROR)
+        return d
+
+    def test_api_dashboard_details_retrieval(self):
+        d = self.request('/api/dashboards/dashboard-1')
+        d.addCallback(self.assert_json_response, {
+            'title': 'Dashboard 1',
+            'share_id': 'dashboard-1-share-id',
+            'widgets': [
+                {
+                    'title': 'Widget 1',
+                    'type': 'dynamic_toy'
+                },
+                {
+                    'title': 'Widget 2',
+                    'type': 'static_toy'
+                },
+            ]
+        })
+        return d
+
+    def test_api_dashboard_creation(self):
+        d = self.request('/api/dashboards', method='POST', data=json.dumps({
+            'name': 'dashboard-3',
+            'title': 'Dashboard 3',
+            'share_id': 'dashboard-3-share-id',
+        }))
+
+        d.addCallback(self.assert_json_response, code=http.CREATED,
+                      data={'name': 'dashboard-3', 'status': 'CREATED'})
+        d.addCallback(lambda _: self.assertEqual(
+            self.server.get_dashboard('dashboard-3').title, 'Dashboard 3'))
+        return d
+
+    def test_api_dashboard_creation_for_unnamed_dashboards(self):
+        d = self.request('/api/dashboards', method='POST', data=json.dumps({
+            'title': 'Dashboard 3',
+            'share_id': 'dashboard-3-share-id',
+        }))
+        d.addBoth(self.assert_unhappy_response, code=http.BAD_REQUEST)
+        return d
+
+    def test_api_dashboard_creation_for_already_existing_dashboards(self):
+        d = self.request('/api/dashboards', method='POST',
+                         data=json.dumps({'name': 'dashboard-1'}))
+        d.addBoth(self.assert_unhappy_response, code=http.BAD_REQUEST)
+        return d
+
+    def test_api_dashboard_creation_for_config_error_handling(self):
+        self.mock_dashboard_config_error()
+        d = self.request('/api/dashboards', method='POST',
+                         data=json.dumps({'name': 'some-dashboard'}))
+        d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
+        return d
+
+    def test_api_dashboard_creation_for_bad_config_object_handling(self):
+        def request_and_assert(path, data):
+            d = self.request(path, method='POST', data=data)
+            d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
+            return d
+
+        return gatherResults([
+            request_and_assert('/api/dashboards', ""),
+            request_and_assert('/api/dashboards', "[]"),
+        ])
+
+    def test_api_dashboard_replacement_for_new_dashboards(self):
+        d = self.request('/api/dashboards/dashboard-3', data=json.dumps({
+            'title': 'Dashboard 3',
+            'share_id': 'dashboard-3-share-id',
+        }), method='PUT')
+
+        d.addCallback(self.assert_json_response, {'name': 'dashboard-3'})
+        d.addCallback(lambda _: self.assertEqual(
+            self.server.get_dashboard('dashboard-3').title, 'Dashboard 3'))
+        return d
+
+    def test_api_dashboard_replacement_for_already_existing_dashboards(self):
+        d = self.request('/api/dashboards/dashboard-1', data=json.dumps({
+            'title': 'New Dashboard 1',
+            'share_id': 'dashboard-1-share-id',
+        }), method='PUT')
+
+        d.addCallback(self.assert_json_response, {'name': 'dashboard-1'})
+        d.addCallback(lambda _: self.assertEqual(
+            self.server.get_dashboard('dashboard-1').title, 'New Dashboard 1'))
+        return d
+
+    def test_api_dashboard_replacement_for_config_error_handling(self):
+        self.mock_dashboard_config_error()
+        d = self.request(
+            '/api/dashboards/dashboard-1', method='PUT', data="{}")
+        d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
+        return d
+
+    def test_api_dashboard_replacement_for_bad_config_object_handling(self):
+        def request_and_assert(path, data):
+            d = self.request(path, method='PUT', data=data)
+            d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
+            return d
+
+        return gatherResults([
+            request_and_assert('/api/dashboards/dashboard-1', ""),
+            request_and_assert('/api/dashboards/dashboard-1', "[]"),
+        ])
+
+    def test_api_dashboard_removal(self):
+        d = self.request('/api/dashboards/dashboard-1', method='DELETE')
+        d.addCallback(self.assert_json_response,
+                      data={'name': 'dashboard-1', 'status': 'DELETED'})
+        d.addCallback(lambda _: self.assertFalse(
+            self.server.has_dashboard('dashboard-1')))
+        d.addCallback(lambda _: self.assertFalse(
+            self.server.index.has_dashboard('dashboard-1')))
+        return d
+
+    def test_api_dashboard_removal_for_nonexistent_dashboards(self):
+        d = self.request('/api/dashboards/dashboard-3', method='DELETE')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_api_widget_details_retrieval(self):
+        d = self.request('/api/widgets/dashboard-1/widget-1')
+        d.addCallback(self.assert_json_response, {
+            'title': 'Widget 1',
+            'type': 'dynamic_toy'
+        })
+        return d
+
+    def test_api_widget_details_retrieval_for_nonexistent_dashboard(self):
+        d = self.request('/api/widgets/bad-dashboard/widget-1')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_api_widget_details_retrieval_for_nonexistent_widget(self):
+        d = self.request('/api/widgets/dashboard-1/bad-widget')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_api_widget_snapshot_retrieval(self):
+        d = self.request('/api/widgets/dashboard-1/widget-1/snapshot')
+        d.addCallback(self.assert_json_response, ['widget-1'])
+        return d
+
+    def test_api_widget_snapshot_retrieval_for_nonexistent_dashboard(self):
+        d = self.request('/api/widgets/bad-dashboard/widget-1/snapshot')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_api_widget_snapshot_retrieval_for_nonexistent_widget(self):
+        d = self.request('/api/widgets/dashboard-1/bad-widget/snapshot')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_api_widget_snapshot_retrieval_for_static_widgets(self):
+        d = self.request('/api/widgets/dashboard-1/widget-2/snapshot')
+        d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
+        return d
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):
@@ -155,7 +385,7 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should create a dashboard index list item from a dashboard instance.
         """
         dashboard = mk_dashboard(share_id='test-share-id')
-        item = StubbedDashboardIndexListItem.from_dashboard(dashboard)
+        item = DashboardIndexListItem.from_dashboard(dashboard)
 
         self.assertEqual(item.url, '/some-dashboard')
         self.assertEqual(item.title, 'Some Dashboard')
@@ -171,5 +401,5 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should set the dashboard index list item's shared_url tag to an empty
         string if the dashboard does not have a share id.
         """
-        item = StubbedDashboardIndexListItem.from_dashboard(mk_dashboard())
+        item = DashboardIndexListItem.from_dashboard(mk_dashboard())
         self.assertEqual(item.shared_url_tag, '')

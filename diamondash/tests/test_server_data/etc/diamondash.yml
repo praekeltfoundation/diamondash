@@ -1,4 +1,0 @@
-defaults: 
-  'module.path.to.some.Class':
-    'foo': 'bar'
-    'lerp': 'larp'

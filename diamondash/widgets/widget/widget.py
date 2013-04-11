@@ -14,6 +14,7 @@ class Widget(Element, ConfigMixin):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
+    TYPE_NAME = 'abstract'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
@@ -21,7 +22,7 @@ class Widget(Element, ConfigMixin):
     MODEL = 'WidgetModel'
     VIEW = 'WidgetView'
 
-    def __init__(self, name, title, client_config, width):
+    def __init__(self, name, title, client_config={}, width=MIN_COLUMN_SPAN):
         self.name = name
         self.title = title
         self.client_config = client_config
@@ -65,9 +66,6 @@ class Widget(Element, ConfigMixin):
         width = max(cls.MIN_COLUMN_SPAN, min(width, cls.MAX_COLUMN_SPAN))
         return width
 
-    def handle_render_request(self, request):
-        """
-        Handles a 'render' request from the client, where `params` are the
-        request parameters.
-        """
-        raise NotImplementedError()
+    def get_details(self):
+        """Returns data describing the widget."""
+        return {'title': self.title, 'type': self.TYPE_NAME}

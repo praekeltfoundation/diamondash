@@ -1,5 +1,3 @@
-import json
-
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
 from diamondash.backends.graphite import GraphiteBackend
@@ -15,6 +13,7 @@ class GraphWidget(DynamicWidget):
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
+    TYPE_NAME = 'graph'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
@@ -105,13 +104,13 @@ class GraphWidget(DynamicWidget):
             'datapoints': m['datapoints']
         } for m in metric_data]
 
-        return json.dumps({
+        return {
             'domain': domain,
             'range': range,
             'metrics': output_metric_data,
-        })
+        }
 
-    def handle_render_request(self, request):
+    def get_snapshot(self):
         if self.align_to_start:
             from_time = utils.floor_time(utils.now(), self.time_range)
         else:
