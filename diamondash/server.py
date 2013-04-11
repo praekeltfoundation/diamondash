@@ -4,7 +4,6 @@
 
 import yaml
 import json
-from glob import glob
 from os import path
 from pkg_resources import resource_filename, resource_string
 
@@ -29,7 +28,6 @@ class DiamondashServer(object):
     CONFIG_FILENAME = 'diamondash.yml'
 
     def __init__(self, index, resources, dashboards, class_defaults={}):
-        self.dashboards = []
         self.dashboards_by_name = {}
         self.dashboards_by_share_id = {}
 
@@ -39,17 +37,6 @@ class DiamondashServer(object):
 
         for dashboard in dashboards:
             self.add_dashboard(dashboard)
-
-    @classmethod
-    def dashboards_from_dir(cls, dashboards_dir, class_defaults={}):
-        """Creates a list of dashboards from a config dir"""
-
-        dashboards = []
-        for filepath in glob(path.join(dashboards_dir, "*.yml")):
-            dashboard = Dashboard.from_config_file(filepath, class_defaults)
-            dashboards.append(dashboard)
-
-        return dashboards
 
     @classmethod
     def create_resources(cls, pathname):
@@ -63,8 +50,8 @@ class DiamondashServer(object):
 
         class_defaults = config.get('defaults', {})
         dashboards_dir = path.join(config_dir, "dashboards")
-        dashboards = cls.dashboards_from_dir(dashboards_dir, class_defaults)
-
+        dashboards = Dashboard.dashboards_from_dir(dashboards_dir,
+                                                   class_defaults)
         resources = cls.create_resources('public')
         return cls(Index(), resources, dashboards, class_defaults)
 
@@ -75,11 +62,13 @@ class DiamondashServer(object):
         return self.dashboards_by_share_id.get(share_id)
 
     def has_dashboard(self, name):
-        return utils.slugify(name) in self.dashboards_by_name
+        return name in self.dashboards_by_name
 
-    def add_dashboard(self, dashboard):
+    def add_dashboard(self, dashboard, overwrite=False):
         """Adds a dashboard to diamondash"""
-        self.dashboards.append(dashboard)
+        if not overwrite and self.has_dashboard(dashboard.name):
+            return log.msg("Dashboard '%s' already exists" % dashboard.name)
+
         self.dashboards_by_name[dashboard.name] = dashboard
 
         share_id = dashboard.share_id
@@ -87,6 +76,16 @@ class DiamondashServer(object):
             self.dashboards_by_share_id[share_id] = dashboard
 
         self.index.add_dashboard(dashboard)
+
+    def remove_dashboard(self, name):
+        dashboard = self.get_dashboard(name)
+        if dashboard is None:
+            return None
+
+        self.index.remove_dashboard(name)
+        if dashboard.share_id is not None:
+            del self.dashboards_by_share_id[dashboard.share_id]
+        del self.dashboards_by_name[name]
 
     # Rendering
     # =========
@@ -144,14 +143,19 @@ class DiamondashServer(object):
 
     @classmethod
     def api_error_response(cls, request, code, description):
+        return cls.api_response(request, code=code,
+                                data={'description': description})
+
+    @classmethod
+    def api_status_response(cls, request, name, status, code=http.OK):
         return cls.api_response(request, code=code, data={
-            'code': code,
-            'description': description,
+            'name': name,
+            'status': status,
         })
 
     @classmethod
-    def api_call(cls, request, fn, *args, **kwargs):
-        d = maybeDeferred(fn, *args, **kwargs)
+    def api_get(cls, request, getter, *args, **kwargs):
+        d = maybeDeferred(getter, *args, **kwargs)
 
         def trap_unhandled_error(f):
             f.trap(Exception)
@@ -166,34 +170,83 @@ class DiamondashServer(object):
     # Dashboard API
     # -------------
 
+    @app.route('/api/dashboards/<string:name>', methods=['GET'])
+    def api_get_dashboard_details(self, request, name):
+        dashboard = self.get_dashboard(name.encode('utf-8'))
+        if dashboard is None:
+            return self.render_error_response(request, http.NOT_FOUND,
+                "Dashboard '%s' does not exist" % name)
+        return self.api_get(request, dashboard.get_details)
+
     @app.route('/api/dashboards', methods=['POST'])
-    def create_dashboard(self, request):
-        config = json.loads(request.content.read())
+    def api_create_dashboard(self, request):
+        try:
+            config = json.loads(request.content.read())
+        except:
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Error parsing dashboard config as json object")
+
+        if not isinstance(config, dict):
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Dashboard configs need to be json objects")
 
         if 'name' not in config:
             return self.api_error_response(request, http.BAD_REQUEST,
                "Dashboards need a name to be created")
 
-        if self.has_dashboard(config['name']):
+        if self.has_dashboard(utils.slugify(config['name'])):
             return self.api_error_response(request, http.BAD_REQUEST,
                "Dashboard with name '%s' already exists")
 
         try:
             dashboard = Dashboard.from_config(config, self.class_defaults)
-        except ConfigError as e:
+        except ConfigError:
             return self.api_error_response(request, http.BAD_REQUEST,
-               "Error parsing dashboard config: %s" % e.value)
+               "Error parsing dashboard config")
 
         self.add_dashboard(dashboard)
-        return self.api_response(
-            request, {'name': dashboard.name}, code=http.CREATED)
+        return self.api_status_response(
+            request, dashboard.name, 'CREATED', code=http.CREATED)
+
+    @app.route('/api/dashboards/<string:name>', methods=['PUT'])
+    def api_replace_dashboard(self, request, name):
+        try:
+            config = json.loads(request.content.read())
+        except:
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Error parsing dashboard config as json object")
+
+        if not isinstance(config, dict):
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Dashboard configs need to be json objects")
+
+        config['name'] = name.encode('utf-8')
+
+        try:
+            dashboard = Dashboard.from_config(config, self.class_defaults)
+        except ConfigError:
+            return self.api_error_response(request, http.BAD_REQUEST,
+               "Error parsing dashboard config")
+
+        self.add_dashboard(dashboard, True)
+        return self.api_response(request, {'name': dashboard.name})
+
+    @app.route('/api/dashboards/<string:name>', methods=['DELETE'])
+    def api_remove_dashboard(self, request, name):
+        name = utils.slugify(name.encode('utf-8'))
+        if not self.has_dashboard(name):
+            return self.render_error_response(request, http.NOT_FOUND,
+                "Dashboard '%s' does not exist" % name)
+
+        self.remove_dashboard(name)
+        return self.api_status_response(request, name, 'DELETED')
 
     # Widget API
     # -------------
 
     @app.route('/api/widgets/<string:dashboard_name>/<string:widget_name>',
                methods=['GET'])
-    def get_widget_details(self, request, dashboard_name, widget_name):
+    def api_get_widget_details(self, request, dashboard_name, widget_name):
         dashboard_name = dashboard_name.encode('utf-8')
         widget_name = widget_name.encode('utf-8')
 
@@ -207,12 +260,12 @@ class DiamondashServer(object):
             return self.api_error_response(request, http.NOT_FOUND,
                 "Widget '%s' does not exist" % widget_name)
 
-        return self.api_call(request, widget.get_details)
+        return self.api_get(request, widget.get_details)
 
     @app.route(
         '/api/widgets/<string:dashboard_name>/<string:widget_name>/snapshot',
          methods=['GET'])
-    def get_widget_snapshot(self, request, dashboard_name, widget_name):
+    def api_get_widget_snapshot(self, request, dashboard_name, widget_name):
         dashboard_name = dashboard_name.encode('utf-8')
         widget_name = widget_name.encode('utf-8')
 
@@ -230,7 +283,7 @@ class DiamondashServer(object):
             return self.api_error_response(request, http.BAD_REQUEST,
                 "Widget '%s' is not dynamic" % widget_name)
 
-        return self.api_call(request, widget.get_snapshot)
+        return self.api_get(request, widget.get_snapshot)
 
 
 class Index(Element):
@@ -239,17 +292,28 @@ class Index(Element):
     loader = XMLString(resource_string(__name__, 'views/index.xml'))
 
     def __init__(self, dashboards=[]):
-        self.dashboard_list_items = []
+        self.dashboard_items = {}
         for dashboard in dashboards:
             self.add_dashboard(dashboard)
 
+    def has_dashboard(self, name):
+        return name in self.dashboard_items
+
     def add_dashboard(self, dashboard):
         item = DashboardIndexListItem.from_dashboard(dashboard)
-        self.dashboard_list_items.append(item)
+
+        # we intentionally overwrite existing dashboard items with the same
+        # dashboard name
+        self.dashboard_items[dashboard.name] = item
+
+    def remove_dashboard(self, name):
+        if name not in self.dashboard_items:
+            return None
+        del self.dashboard_items[name]
 
     @renderer
     def dashboard_list_item_renderer(self, request, tag):
-        for item in self.dashboard_list_items:
+        for item in self.dashboard_items.values():
             yield item
 
 

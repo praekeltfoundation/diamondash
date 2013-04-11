@@ -12342,8 +12342,11 @@ widgets.WidgetModel = Backbone.Model.extend({
     }
   },
 
-  urlRoot: function() {
-    return '/render/' + this.get('dashboardName');
+  url: function() {
+    return '/api/widgets/'
+      + this.get('dashboardName') + '/'
+      + this.get('name')
+      + '/snapshot';
   }
 });
 
