@@ -5836,42 +5836,42 @@ body {
   margin: 14px 0;
 }
 
-.chart *, .axis * {
+.graph .chart *, .graph .axis * {
   pointer-events: none;
 }
 
-.axis path,
-.axis line {
+.graph .axis path,
+.graph .axis line {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
 }
 
-.axis text {
+.graph .axis text {
   font-family: sans-serif;
   font-size: 11px;
 }
 
-.line {
+.graph .line {
   fill: none;
   stroke-width: 1.5px;
   pointer-events: none;
 }
 
-.legend {
+.graph .legend {
   text-align: left;
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.legend li {
+.graph .legend li {
   width: 210px;
   float: left;
   margin: 2px 4px;
 }
 
-.legend-item-swatch {
+.graph .legend-item-swatch {
   display: inline-block;
   vertical-align: middle;
   width: 14px;
@@ -5880,11 +5880,11 @@ body {
   border-radius: 4px;
 }
 
-.hover-legend-item-value {
+.graph .hover-legend-item-value {
   color: #555;
 }
 
-.legend-item-value, .hover-legend-item-value {
+.graph .legend-item-value, .hover-legend-item-value {
   font-weight: bold;
   -webkit-transition: all 250ms linear;
   -moz-transition: all 250ms linear;
@@ -5892,46 +5892,46 @@ body {
   transition: all 250ms linear;
 }
 
-.dot, .hover-dot {
+.graph .dot, .hover-dot {
   pointer-events: none;
 }
 
-.dot {
+.graph .dot {
   stroke: none;
 }
 
-.hover-dot {
+.graph .hover-dot {
   fill: none;
   stroke-width: 1.5px;
 }
 
-.hover-marker line {
+.graph .hover-marker line {
   stroke: #555;
 }
-.hover-marker text {
+.graph .hover-marker text {
   fill: #555;
 }
 
-.axis g {
+.graph .axis g {
   -webkit-transition: fill-opacity 250ms linear;
   -moz-transition: fill-opacity 250ms linear;
   -o-transition: fill-opacity 250ms linear;
   transition: fill-opacity 250ms linear;
  }
 
-.lvalue-widget-container {
+.lvalue .widget-container {
   padding: 0;
   text-align: center;
 }
 
-.lvalue-lvalue {
+.lvalue .value {
   margin: 10px auto;
 	font-size: 44px;
   display: block;
   text-align: center;
 }
 
-.lvalue-time {
+.lvalue .time {
   margin: 8px auto;
   margin-right: 12px;
 	font-size: 14px;
@@ -5939,18 +5939,18 @@ body {
 	color: #808080;
 }
 
-.lvalue-change {
+.lvalue .change {
   margin: 8px auto;
 	font-size: 20px;
 	margin-left: 5px;
 }
 
-.lvalue-change div {
+.lvalue .change div {
   display: inline-block;
 }
 
-.good-diff { color: #33cc33; }
-.bad-diff { color: #cc3333; }
+.lvalue .good-diff { color: #33cc33; }
+.lvalue .bad-diff { color: #cc3333; }
 
 .text-widget-text {
     margin: 0 auto;

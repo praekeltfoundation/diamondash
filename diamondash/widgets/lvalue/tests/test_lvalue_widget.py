@@ -75,7 +75,7 @@ class LValueWidgetTestCase(unittest.TestCase):
         def assert_snapshot_retrieval(result):
             self.assertEqual(backend.get_data_calls, [{'from_time': -10}])
             self.assertEqual(result, {
-                'lvalue': 9227465.0,
+                'value': 9227465.0,
                 'from': 1340875995000,
                 'to': 1340875995000 + 5000 - 1,
                 'diff': 9227465.0 - 5702887.0,

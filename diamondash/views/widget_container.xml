@@ -1,4 +1,4 @@
-<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" t:render="widget_renderer">
+<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" t:render="widget_renderer" class="widget-container">
 	<t:attr name="id"><t:slot name="id_slot" /></t:attr>
 	<t:attr name="class"><t:slot name="class_slot" /></t:attr>
 	<div class="widget-title"><h4><t:slot name="title_slot"/></h4></div>

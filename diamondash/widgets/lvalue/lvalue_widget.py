@@ -54,7 +54,7 @@ class LValueWidget(DynamicWidget):
         # so each widget type (lvalue, graph, etc) does not have to worry about
         # converting the datapoints.
         return {
-            'lvalue': last['y'],
+            'value': last['y'],
             'from': last['x'],
             'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
             'diff': diff_y,
