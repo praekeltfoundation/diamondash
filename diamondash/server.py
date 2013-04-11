@@ -15,7 +15,7 @@ from twisted.python import log
 from klein import Klein
 
 from diamondash import utils, ConfigError
-from dashboard import Dashboard, DashboardPage
+from dashboard import Dashboard, DashboardPage, EmbeddedDashboardPage
 from diamondash.widgets.dynamic import DynamicWidget
 
 
@@ -100,6 +100,7 @@ class DiamondashServer(object):
 
     @app.route('/<any(css, js):res_type>/<string:name>')
     @app.route('/shared/<any(css, js):res_type>/<string:name>')
+    @app.route('/embed/<any(css, js):res_type>/<string:name>')
     def serve_static_resource(self, request, res_type, name):
         """Routing for all css files"""
         res_dir = self.resources.getChild(res_type, request)
@@ -127,6 +128,15 @@ class DiamondashServer(object):
                 "Dashboard with share id '%s' does not exist or is not shared"
                 % share_id)
         return DashboardPage(dashboard)
+
+    @app.route('/embed/<string:name>')
+    def render_embedded_dashboard(self, request, name):
+        """Render a shared dashboard page"""
+        dashboard = self.get_dashboard(name.encode('utf-8'))
+        if dashboard is None:
+            return self.render_error_response(request, http.NOT_FOUND,
+                "Dashboard '%s' does not exist" % name)
+        return EmbeddedDashboardPage(dashboard)
 
     # API
     # ===)

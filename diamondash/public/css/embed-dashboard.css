@@ -5812,11 +5812,6 @@ a:hover {
   color: #ddd;
 }
 
-body {
-	padding-top: 40px;
-  background-color: #fdfdfd;
-}
-
 .row {
 	margin-bottom: 18px;
 }
@@ -5835,6 +5830,7 @@ body {
 .dashboard-title {
   margin: 14px 0;
 }
+
 
 .chart *, .axis * {
   pointer-events: none;

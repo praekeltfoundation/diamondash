@@ -6,6 +6,7 @@ module.exports = function(grunt) {
   ];
 
   var indexStylesheets = [].concat(globalStylesheets, [
+    "diamondash/client/css/page.css",
     "diamondash/client/css/index.css"
   ]);
 
@@ -14,7 +15,14 @@ module.exports = function(grunt) {
   ]);
 
   var dashboardStylesheets = [].concat(globalStylesheets, [
+    "diamondash/client/css/page.css",
     "diamondash/client/css/dashboard.css",
+    "diamondash/widgets/**/*.css"
+  ]);
+
+  var embeddedDashboardStylesheets = [].concat(globalStylesheets, [
+    "diamondash/client/css/dashboard.css",
+    "diamondash/client/css/embed-dashboard.css",
     "diamondash/widgets/**/*.css"
   ]);
 
@@ -56,6 +64,10 @@ module.exports = function(grunt) {
       "dashboard.css": {
         src: dashboardStylesheets,
         dest: "diamondash/public/css/dashboard.css"
+      },
+      "embed-dashboard.css": {
+        src: embeddedDashboardStylesheets,
+        dest: "diamondash/public/css/embed-dashboard.css"
       },
       "diamondash.js": {
         src: diamondashModules,

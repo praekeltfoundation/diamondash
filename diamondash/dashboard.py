@@ -247,3 +247,21 @@ class DashboardPage(Element):
     @renderer
     def dashboard_container_renderer(self, request, tag):
         return self.dashboard
+
+
+class EmbeddedDashboardPage(Element):
+    """
+    An element for displaying an actual dashboard page.
+
+    DashboardPage instances are created on page request.
+    """
+
+    loader = XMLString(resource_string(__name__,
+        'views/embedded_dashboard_page.xml'))
+
+    def __init__(self, dashboard):
+        self.dashboard = dashboard
+
+    @renderer
+    def dashboard_container_renderer(self, request, tag):
+        return self.dashboard

@@ -15,7 +15,8 @@ from twisted.web.template import flattenString
 from diamondash import utils, ConfigError
 from diamondash.widgets.widget import Widget
 from diamondash.widgets.dynamic import DynamicWidget
-from diamondash.dashboard import Dashboard, DashboardPage
+from diamondash.dashboard import (
+    Dashboard, DashboardPage, EmbeddedDashboardPage)
 from diamondash.server import DiamondashServer, Index, DashboardIndexListItem
 
 
@@ -210,6 +211,17 @@ class DiamondashServerTestCase(unittest.TestCase):
 
     def test_shared_dashboard_rendering_for_non_existent_dashboards(self):
         d = self.request('/shared/dashboard-3-share-id')
+        d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
+        return d
+
+    def test_embedded_dashboard_rendering(self):
+        d = self.request('/embed/dashboard-1')
+        d.addCallback(self.assert_rendering,
+                      EmbeddedDashboardPage(self.dashboard1))
+        return d
+
+    def test_embedded_dashboard_rendering_for_non_existent_dashboards(self):
+        d = self.request('/embed/dashboard-3')
         d.addBoth(self.assert_unhappy_response, http.NOT_FOUND)
         return d
 
