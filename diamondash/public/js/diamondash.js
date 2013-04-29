@@ -12431,9 +12431,10 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
 
 widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel,
+  initialize: function() { this.colorIdx = 0; },
 
   _color: d3.scale.category10().domain(10),
-  color: function() { return this._color(this.models.length); }
+  color: function() { return this._color(this.colorIdx++); }
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
