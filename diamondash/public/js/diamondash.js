@@ -12363,8 +12363,8 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
     options = options || {};
 
     var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(
-          options.metrics || []);
+        metrics =
+          new widgets.GraphWidgetMetricCollection(options.metrics || []);
 
     metrics
       .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
@@ -12399,22 +12399,12 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
 });
 
 
-var maxColors = 10,
-    color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0,
-    nextColor = function() { return color(colorCount++ % maxColors); };
-
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
-    if (!this.has('datapoints')) {
-      this.set('datapoints', []);
-    }
-
-    if (!this.has('color')) {
-      this.set('color', nextColor());
-    }
+    if (!this.has('datapoints')) { this.set('datapoints', []); }
+    if (!this.has('color')) { this.set('color', this.collection.color()); }
   },
 
   bisect: d3.bisector(function(d) { return d.x; }).left,
@@ -12440,7 +12430,10 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
 });
 
 widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
-  model: widgets.GraphWidgetMetricModel
+  model: widgets.GraphWidgetMetricModel,
+
+  _color: d3.scale.category10().domain(10),
+  color: function() { return this._color(this.models.length); }
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
