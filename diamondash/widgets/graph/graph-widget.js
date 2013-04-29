@@ -77,7 +77,8 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
   model: widgets.GraphWidgetMetricModel,
   initialize: function() { this.colorIdx = 0; },
 
-  _color: d3.scale.category10().domain(10),
+  maxColors: 10,
+  _color: d3.scale.category10().domain(d3.range(0, this.maxColors)),
   color: function() { return this._color(this.colorIdx++); }
 });
 
