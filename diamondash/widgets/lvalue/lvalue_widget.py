@@ -40,7 +40,7 @@ class LValueWidget(DynamicWidget):
             'time_aligner': 'floor',
             'metrics': [{
                 'target': config.pop('target'),
-                'null_filter': 'zeroize',
+                'null_filter': 'skip',
             }]
         }, class_defaults)
 

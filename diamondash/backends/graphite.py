@@ -66,7 +66,7 @@ class GraphiteBackend(Backend):
             for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
         req_params.update({
             'format': 'json',
-            'target': [m.target for m in self.metrics]
+            'target': [m.wrapped_target for m in self.metrics]
         })
         return req_params
 
@@ -132,6 +132,7 @@ class GraphiteMetric(ConfigMixin):
 
     def __init__(self, target, null_filter, summarizer,  metadata={}):
         self.target = target
+        self.wrapped_target = self.alias_target(target)
         self.metadata = metadata
         self.null_filter = null_filter
         self.summarizer = summarizer
@@ -155,6 +156,10 @@ class GraphiteMetric(ConfigMixin):
             config['null_filter'] = get_null_filter(config['null_filter'])
 
         return config
+
+    @staticmethod
+    def alias_target(target):
+        return "alias(%s, '%s')" % (target, target)
 
     def process_datapoints(self, datapoints, **params):
         """

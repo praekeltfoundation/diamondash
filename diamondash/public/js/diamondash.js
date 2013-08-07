@@ -12360,15 +12360,18 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
-    options = options || {};
+    options = _(options || {}).defaults({metrics: []});
+    var metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
 
-    var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(
-          options.metrics || []);
-
-    metrics
-      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on('change', function() { self.trigger('change'); });
+    this
+      .listenTo(
+        metrics,
+        'all',
+        function(eventName) { this.trigger(eventName + ':metrics'); })
+      .listenTo(
+        metrics,
+        'change',
+        function() { this.trigger('change'); });
 
     this.set({
       metrics: metrics,
@@ -12399,22 +12402,12 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
 });
 
 
-var maxColors = 10,
-    color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0,
-    nextColor = function() { return color(colorCount++ % maxColors); };
-
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
-    if (!this.has('datapoints')) {
-      this.set('datapoints', []);
-    }
-
-    if (!this.has('color')) {
-      this.set('color', nextColor());
-    }
+    if (!this.has('datapoints')) { this.set('datapoints', []); }
+    if (!this.has('color')) { this.set('color', this.collection.color()); }
   },
 
   bisect: d3.bisector(function(d) { return d.x; }).left,
@@ -12440,7 +12433,12 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
 });
 
 widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
-  model: widgets.GraphWidgetMetricModel
+  model: widgets.GraphWidgetMetricModel,
+  initialize: function() { this.colorIdx = 0; },
+
+  maxColors: 10,
+  _color: d3.scale.category10().domain(d3.range(0, this.maxColors)),
+  color: function() { return this._color(this.colorIdx++); }
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
@@ -12774,34 +12772,31 @@ diamondash.DashboardController = (function() {
 
     DashboardController.fromConfig = function(config) {
       var diamondashWidgets = diamondash.widgets,
-          dashboardName,
-          requestInterval,
-          widgets,
-          widgetViews;
+          dashboardName = config.name;
 
-      dashboardName = config.name;
+      var widgets = new diamondashWidgets.WidgetCollection(),
+          widgetViews = [];
 
-      requestInterval = (config.requestInterval ||
-                         DashboardController.DEFAULT_REQUEST_INTERVAL);
-
-      widgets = new diamondashWidgets.WidgetCollection();
-      widgetViews = [];
+      var requestInterval = config.requestInterval
+                         || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
       config.widgets.forEach(function(widgetConfig) {
         var modelClass = diamondashWidgets[widgetConfig.modelClass];
-        var modelConfig = widgetConfig.model;
-        modelConfig.dashboardName = dashboardName;
-        var model = new modelClass(modelConfig);
+
+        var model = new modelClass(
+          _({dashboardName: dashboardName}).extend(widgetConfig.model),
+          {collection: widgets});
 
         var viewClass = diamondashWidgets[widgetConfig.viewClass];
+
         var view = new viewClass({
           el: $("#" + model.get('name')),
           model: model,
           config: widgetConfig.view
         });
 
-        widgetViews.push(view);
         widgets.add(model);
+        widgetViews.push(view);
       });
 
       return new DashboardController({

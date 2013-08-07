@@ -48,7 +48,7 @@ class LValueWidgetTestCase(unittest.TestCase):
             'time_aligner': 'floor',
             'metrics': [{
                 'target': config['target'],
-                'null_filter': 'zeroize',
+                'null_filter': 'skip',
             }]
         }
         self.assertEqual(parsed_config['backend'],
