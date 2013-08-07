@@ -2,7 +2,8 @@ var LValueWidgetView = diamondash.widgets.LValueWidgetView,
     LValueWidgetModel = diamondash.widgets.LValueWidgetModel;
 
 describe("LValueWidgetView", function(){
-  var model, view;
+  var model,
+      view;
 
   beforeEach(function() {
     model = new LValueWidgetModel({
@@ -14,48 +15,37 @@ describe("LValueWidgetView", function(){
       'percentage': 0.61803398874990854
     });
 
-    view = new LValueWidgetView({
-      model: model,
-      el: $([
-        "<div>",
-          LValueWidgetView.prototype.slotSelectors.map(function(s) {
-            return "<span class=" + s.slice(1) + "></span>"; }
-          ).join(''),
-          "<span class='lvalue-change'></span>",
-        "</div>"
-      ].join(''))
-    });
-  });
-
-  afterEach(function() {
-    $('body').html("");
+    view = new LValueWidgetView({model: model});
   });
 
   describe(".render()", function() {
-    it("should apply appropriate values to the slots", function() {
+    it("should display the appropriate values", function() {
       view.render();
-      assert.equal(view.$('.lvalue-lvalue-slot').text(), "9.2M");
-      assert.equal(view.$('.lvalue-diff-slot').text(), "+3.52M");
-      assert.equal(view.$('.lvalue-percentage-slot').text(), "61.80%");
-      assert.equal(view.$('.lvalue-from-slot').text(), "28-06-2012 09:33");
-      assert.equal(view.$('.lvalue-to-slot').text(), "28-06-2012 10:33");
+      assert.equal(view.$('.value').text(), "9.2M");
+      assert.equal(view.$('.diff').text(), "+3.52M");
+      assert.equal(view.$('.percentage').text(), "61.80%");
+      assert.equal(view.$('.from').text(), "from 28-06-2012 09:33");
+      assert.equal(view.$('.to').text(), "to 28-06-2012 10:33");
     });
 
-    it("should set the appropriate classes on the change div", function() {
+    it("should set the appropriate classes on the change sub-element", function() {
       model.set('diff', 1);
       view.render();
-      assert(view.$('.lvalue-change').hasClass('good-diff'));
-      assert(!view.$('.lvalue-change').hasClass('bad-diff'));
+      assert(view.$('.good.change').length);
+      assert(!view.$('.bad.change').length);
+      assert(!view.$('.no.change').length);
 
       model.set('diff', -1);
       view.render();
-      assert(!view.$('.lvalue-change').hasClass('good-diff'));
-      assert(view.$('.lvalue-change').hasClass('bad-diff'));
+      assert(view.$('.bad.change').length);
+      assert(!view.$('.good.change').length);
+      assert(!view.$('.no.change').length);
 
       model.set('diff', 0);
       view.render();
-      assert(!view.$('.lvalue-change').hasClass('good-diff'));
-      assert(!view.$('.lvalue-change').hasClass('bad-diff'));
+      assert(view.$('.no.change').length);
+      assert(!view.$('.good.change').length);
+      assert(!view.$('.bad.change').length);
     });
   });
 });

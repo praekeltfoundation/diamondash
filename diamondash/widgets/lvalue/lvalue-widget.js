@@ -5,22 +5,20 @@ widgets.LValueWidgetModel = widgets.WidgetModel.extend({
 });
 
 widgets.LValueWidgetView = widgets.WidgetView.extend({
-  slotSelectors: [
-    '.lvalue-lvalue-slot',
-    '.lvalue-diff-slot',
-    '.lvalue-percentage-slot',
-    '.lvalue-from-slot',
-    '.lvalue-to-slot'
-  ],
-
+  jst: _.template([
+    '<h1 class="value"><%= value %></h1>',
+    '<div class="<%= change %> change">',
+      '<div class="diff"><%= diff %></div>',
+      '<div class="percentage"><%= percentage %></div>',
+    '</div>',
+    '<div class="time">',
+      '<div class="from">from <%= from %></div>',
+      '<div class="to">to <%= to %><div>',
+    '</div>'
+  ].join('')),
+ 
   initialize: function(options) {
-    var $el = this.$el,
-        $slots = this.$slots = {};
-
-    this.slotSelectors.forEach(function(s) { $slots[s] = $el.find(s); });
-    this.$changeEl = $el.find('.lvalue-change');
-
-    this.model.on('change', this.render, this);
+    this.listenTo(this.model, 'change', this.render);
   },
 
   formatLValue: d3.format(".2s"),
@@ -30,30 +28,22 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
   _formatTime: d3.time.format.utc("%d-%m-%Y %H:%M"),
   formatTime: function(t) { return this._formatTime(new Date(t)); },
 
-  applySlotValues: function(slotValues) {
-      var $slots = this.$slots;
-      for(var s in slotValues) { $slots[s].text(slotValues[s]); }
-  },
-
   render: function() {
     var model = this.model,
-        diff= model.get('diff'),
-        $changeEl = this.$changeEl;
+        diff = model.get('diff'),
+        change;
 
-    this.applySlotValues({
-      '.lvalue-from-slot': this.formatTime(model.get('from')),
-      '.lvalue-to-slot': this.formatTime(model.get('to')),
-      '.lvalue-lvalue-slot': this.formatLValue(model.get('lvalue')),
-      '.lvalue-diff-slot': this.formatDiff(diff),
-      '.lvalue-percentage-slot': this.formatPercentage(model.get('percentage'))
-    });
+    if (diff > 0) { change = 'good'; }
+    else if (diff < 0) { change = 'bad'; }
+    else { change = 'no'; }
 
-    if (diff < 0) {
-      $changeEl.removeClass('good-diff').addClass('bad-diff');
-    } else if (diff > 0) {
-      $changeEl.removeClass('bad-diff').addClass('good-diff');
-    } else {
-      $changeEl.removeClass('bad-diff').removeClass('good-diff');
-    }
+    this.$el.html(this.jst({
+      from: this.formatTime(model.get('from')),
+      to: this.formatTime(model.get('to')),
+      value: this.formatLValue(model.get('lvalue')),
+      diff: this.formatDiff(diff),
+      percentage: this.formatPercentage(model.get('percentage')),
+      change: change
+    }));
   }
 });

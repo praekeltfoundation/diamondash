@@ -1,11 +1,2 @@
 <div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class='lvalue-widget-container'>
-	<h1 class='lvalue-lvalue'><span class='lvalue-lvalue-slot'/></h1>
-	<div class='lvalue-change'>
-		<div class='lvalue-diff'><span class='lvalue-diff-slot'/></div> 
-		<div class='lvalue-percentage'>(<span class='lvalue-percentage-slot'/>)</div> 
-	</div>
-	<div class='lvalue-time'>
-		<div class='lvalue-from'>from <span class='lvalue-from-slot'/></div> 
-    <div class='lvalue-to'>to <span class='lvalue-to-slot'/></div> 
-	</div>
 </div>

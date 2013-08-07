@@ -3,14 +3,14 @@
   text-align: center;
 }
 
-.lvalue-lvalue {
+.lvalue .lvalue {
   margin: 10px auto;
 	font-size: 44px;
   display: block;
   text-align: center;
 }
 
-.lvalue-time {
+.lvalue .time {
   margin: 8px auto;
   margin-right: 12px;
 	font-size: 14px;
@@ -18,15 +18,15 @@
 	color: #808080;
 }
 
-.lvalue-change {
+.lvalue .change {
   margin: 8px auto;
 	font-size: 20px;
 	margin-left: 5px;
 }
 
-.lvalue-change div {
+.lvalue .change div {
   display: inline-block;
 }
 
-.good-diff { color: #33cc33; }
-.bad-diff { color: #cc3333; }
+.good.change { color: #33cc33; }
+.bad.change { color: #cc3333; }
