@@ -94,9 +94,11 @@ class GraphWidget(DynamicWidget):
 
     def process_backend_response(self, metric_data):
         for metric in metric_data:
-            metric['datapoints'] = [
-                {'x': utils.to_client_interval(d['x']), 'y': d['y']}
-                for d in metric['datapoints']]
+            # x values are converted to milliseconds for client
+            metric['datapoints'] = [{
+                'x': utils.to_client_interval(d['x']),
+                'y': d['y']
+            } for d in metric['datapoints']]
 
         x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
         y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
@@ -105,7 +107,6 @@ class GraphWidget(DynamicWidget):
         y_min = self.y_min if self.y_min is not None else min(y_vals)
         range = (y_min, max(y_vals))
 
-        # x values are converted to milliseconds for client
         output_metric_data = [{
             'name': m['metadata']['name'],
             'datapoints': m['datapoints'],

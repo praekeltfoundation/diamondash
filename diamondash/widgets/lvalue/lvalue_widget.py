@@ -51,10 +51,8 @@ class LValueWidget(DynamicWidget):
         diff_y = last['y'] - prev['y']
 
         # 'to' gets added the widget's time range converted from its internal
-        # representation (in seconds) to the representation used by the client
-        # side. The received datapoints are already converted by the backend,
-        # so each widget type (lvalue, graph, etc) does not have to worry about
-        # converting the datapoints.
+        # representation (seconds) to the representation used by the client
+        # side (milliseconds).
         return json.dumps({
             'lvalue': last['y'],
             'from': utils.to_client_interval(last['x']),
