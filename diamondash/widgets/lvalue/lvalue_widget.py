@@ -1,5 +1,6 @@
 import json
 from pkg_resources import resource_string
+from itertools import takewhile
 
 from twisted.web.template import XMLString
 
@@ -68,9 +69,15 @@ class LValueWidget(DynamicWidget):
                 "LValueWidget '%s' received empty response from backend")
 
         datapoints = metric_data[0]['datapoints']
-        last = utils.pop_until(datapoints, lambda d: d['x'] <= from_time)
-        prev = utils.pop_until(
-            datapoints, lambda d: d['x'] <= from_time - self.time_range)
+        prev_time = from_time - self.time_range
+
+        prev = None
+        for n in takewhile(lambda d: d['x'] <= prev_time, datapoints):
+            prev = n
+
+        last = None
+        for n in takewhile(lambda d: d['x'] <= from_time, datapoints):
+            last = n
 
         if last is None or prev is None:
             raise BadBackendResponseError(

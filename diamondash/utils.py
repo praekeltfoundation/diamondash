@@ -143,18 +143,3 @@ get_time_aligner = Accessor(
     floor=floor_time,
     fallback=round_time
 )
-
-
-def pop_until(collection, condition_fn):
-    """
-    Pops from a list until a condition is met and returns the first list item
-    that meets the condition.
-    """
-
-    if not collection:
-        return None
-
-    for item in reversed(collection):
-        if condition_fn(item):
-            return item
-        collection.pop()
