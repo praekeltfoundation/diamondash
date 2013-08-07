@@ -21,12 +21,14 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
     this.listenTo(this.model, 'change', this.render);
   },
 
-  formatLValue: d3.format(".2s"),
-  formatDiff: d3.format("+.3s"),
-  formatPercentage: d3.format(".2%"),
+  format: {
+    value: d3.format(".2s"),
+    diff: d3.format("+.3s"),
+    percentage: d3.format(".2%"),
 
-  _formatTime: d3.time.format.utc("%d-%m-%Y %H:%M"),
-  formatTime: function(t) { return this._formatTime(new Date(t)); },
+    _time: d3.time.format.utc("%d-%m-%Y %H:%M"),
+    time: function(t) { return this._time(new Date(t)); },
+  },
 
   render: function() {
     var model = this.model,
@@ -38,11 +40,11 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
     else { change = 'no'; }
 
     this.$el.html(this.jst({
-      from: this.formatTime(model.get('from')),
-      to: this.formatTime(model.get('to')),
-      value: this.formatLValue(model.get('lvalue')),
-      diff: this.formatDiff(diff),
-      percentage: this.formatPercentage(model.get('percentage')),
+      from: this.format.time(model.get('from')),
+      to: this.format.time(model.get('to')),
+      value: this.format.value(model.get('lvalue')),
+      diff: this.format.diff(diff),
+      percentage: this.format.percentage(model.get('percentage')),
       change: change
     }));
   }
