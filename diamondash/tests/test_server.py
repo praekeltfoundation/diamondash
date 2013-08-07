@@ -116,7 +116,7 @@ class DiamondashServerTestCase(unittest.TestCase):
         expected_dashboard2_path = path.join(dashboard_path, 'dashboard2.yml')
 
         self.assertEqual(
-            dd_server.dashboards,
+            sorted(dd_server.dashboards),
             [(expected_dashboard1_path, expected_class_defaults),
              (expected_dashboard2_path, expected_class_defaults)])
         self.assertEqual(dd_server.resources, 'created-resources')
