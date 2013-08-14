@@ -5930,11 +5930,11 @@ a:hover {
 	height: 44px;
 }
 
-.lvalue .short.value {
+.lvalue .short.last {
 	font-size: 44px;
 }
 
-.lvalue .long.value {
+.lvalue .long.last {
 	font-size: 24px;
 	color: #555;
 }

@@ -12763,6 +12763,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
         widget: this,
         model: this.model
       });
+
+      this.mouseIsOver = false;
     },
 
     format: {
@@ -12794,16 +12796,17 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
 
       this.last
         .setElement(this.$('.last'))
-        .render(this.$el.is(':hover'));
+        .render(this.mouseIsOver);
     },
 
     events: {
       'mouseenter': function() {
-        var self = this;
+        this.mouseIsOver = true;
         this.last.render(true);
       },
 
       'mouseleave': function() {
+        this.mouseIsOver = false;
         this.last.render(false);
       }
     }
