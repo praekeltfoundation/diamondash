@@ -17,6 +17,7 @@ class LValueWidget(DynamicWidget):
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
+    TYPE_NAME = 'lvalue'
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
 
