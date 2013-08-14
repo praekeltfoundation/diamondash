@@ -15,7 +15,46 @@ describe("LValueWidgetView", function(){
       'percentage': 0.61803398874990854
     });
 
-    view = new LValueWidgetView({model: model});
+    view = new LValueWidgetView({
+      model: model,
+      el: $('<div>').append(
+        $('<div>').addClass('widget-container'))
+    });
+
+    view.value.fadeDuration = 0;
+  });
+
+  afterEach(function() {
+    view.remove();
+  });
+
+  describe("when it is hovered over", function() {
+    beforeEach(function() {
+      view.render();
+    });
+
+    it("should display the long format of the last value", function() {
+      view.$el.mouseenter();
+      assert.equal(view.$('.value').text(), "9,227,465");
+
+      assert(view.$('.value').hasClass('long'));
+      assert(!view.$('.value').hasClass('short'));
+    });
+  });
+
+  describe("when it is no longer hovered over", function() {
+    beforeEach(function() {
+      view.render();
+      view.$el.mouseenter();
+    });
+
+    it("should display the short format of the last value", function() {
+      view.$el.mouseleave();
+      assert.equal(view.$('.value').text(), "9.2M");
+
+      assert(view.$('.value').hasClass('short'));
+      assert(!view.$('.value').hasClass('long'));
+    });
   });
 
   describe(".render()", function() {
@@ -31,21 +70,21 @@ describe("LValueWidgetView", function(){
     it("should set the appropriate classes on the change sub-element", function() {
       model.set('diff', 1);
       view.render();
-      assert(view.$('.good.change').length);
-      assert(!view.$('.bad.change').length);
-      assert(!view.$('.no.change').length);
+      assert(view.$('.change').hasClass('good'));
+      assert(!view.$('.change').hasClass('bad'));
+      assert(!view.$('.change').hasClass('no'));
 
       model.set('diff', -1);
       view.render();
-      assert(view.$('.bad.change').length);
-      assert(!view.$('.good.change').length);
-      assert(!view.$('.no.change').length);
+      assert(view.$('.change').hasClass('bad'));
+      assert(!view.$('.change').hasClass('good'));
+      assert(!view.$('.change').hasClass('no'));
 
       model.set('diff', 0);
       view.render();
-      assert(view.$('.no.change').length);
-      assert(!view.$('.good.change').length);
-      assert(!view.$('.bad.change').length);
+      assert(view.$('.change').hasClass('no'));
+      assert(!view.$('.change').hasClass('good'));
+      assert(!view.$('.change').hasClass('bad'));
     });
   });
 });

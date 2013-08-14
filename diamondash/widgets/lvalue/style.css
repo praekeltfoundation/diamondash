@@ -1,13 +1,21 @@
-.lvalue-widget-container {
+.widget-container {
   padding: 0;
   text-align: center;
 }
 
 .lvalue .value {
   margin: 10px auto;
-	font-size: 44px;
-  display: block;
   text-align: center;
+	height: 44px;
+}
+
+.lvalue .short.value {
+	font-size: 44px;
+}
+
+.lvalue .long.value {
+	font-size: 24px;
+	color: #555;
 }
 
 .lvalue .time {

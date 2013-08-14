@@ -1,7 +1,4 @@
 import json
-from pkg_resources import resource_string
-
-from twisted.web.template import XMLString
 
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
@@ -20,8 +17,6 @@ class LValueWidget(DynamicWidget):
     TYPE_NAME = 'lvalue'
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
-
-    loader = XMLString(resource_string(__name__, 'template.xml'))
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
