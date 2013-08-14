@@ -5924,7 +5924,7 @@ a:hover {
   text-align: center;
 }
 
-.lvalue .value {
+.lvalue .last {
   margin: 10px auto;
   text-align: center;
 	height: 44px;

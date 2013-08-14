@@ -5,7 +5,7 @@
     isStatic: false
   });
 
-  var ValueView = Backbone.View.extend({
+  var LastValueView = Backbone.View.extend({
     fadeDuration: 200,
 
     initialize: function(options) {
@@ -30,12 +30,12 @@
           this.$el
             .addClass('long')
             .removeClass('short')
-            .text(this.format.long(this.model.get('lvalue')));
+            .text(this.format.long(this.model.get('last')));
         } else {
           this.$el
             .addClass('short')
             .removeClass('long')
-            .text(this.format.short(this.model.get('lvalue')));
+            .text(this.format.short(this.model.get('last')));
         }
       });
     }
@@ -43,7 +43,7 @@
 
   widgets.LValueWidgetView = widgets.WidgetView.extend({
     jst: _.template([
-      '<h1 class="value"></h1>',
+      '<h1 class="last"></h1>',
       '<div class="<%= change %> change">',
         '<div class="diff"><%= diff %></div>',
         '<div class="percentage"><%= percentage %></div>',
@@ -57,7 +57,7 @@
     initialize: function(options) {
       this.listenTo(this.model, 'change', this.render);
 
-      this.value = new ValueView({
+      this.last = new LastValueView({
         widget: this,
         model: this.model
       });
@@ -72,9 +72,11 @@
     },
 
     render: function() {
-      var model = this.model;
+      var model = this.model,
+          last = model.get('last'),
+          prev = model.get('prev'),
+          diff = last - prev;
 
-      var diff = model.get('diff');
       var change;
       if (diff > 0) { change = 'good'; }
       else if (diff < 0) { change = 'bad'; }
@@ -84,23 +86,23 @@
         from: this.format.time(model.get('from')),
         to: this.format.time(model.get('to')),
         diff: this.format.diff(diff),
-        percentage: this.format.percentage(model.get('percentage')),
         change: change,
+        percentage: this.format.percentage(diff / (prev || 1))
       }));
 
-      this.value
-        .setElement(this.$('.value'))
+      this.last
+        .setElement(this.$('.last'))
         .render(this.$el.is(':hover'));
     },
 
     events: {
       'mouseenter': function() {
         var self = this;
-        this.value.render(true);
+        this.last.render(true);
       },
 
       'mouseleave': function() {
-        this.value.render(false);
+        this.last.render(false);
       }
     }
   });
