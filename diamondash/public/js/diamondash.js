@@ -12741,7 +12741,7 @@ widgets.LValueWidgetView = widgets.WidgetView.extend({
     else if (diff < 0) { change = 'bad'; }
     else { change = 'no'; }
 
-    this.$el.html(this.jst({
+    this.$('.lvalue-widget-container').html(this.jst({
       from: this.format.time(model.get('from')),
       to: this.format.time(model.get('to')),
       value: this.format.value(model.get('lvalue')),

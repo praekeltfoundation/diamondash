@@ -5924,7 +5924,7 @@ a:hover {
   text-align: center;
 }
 
-.lvalue .lvalue {
+.lvalue .value {
   margin: 10px auto;
 	font-size: 44px;
   display: block;
@@ -5934,7 +5934,7 @@ a:hover {
 .lvalue .time {
   margin: 8px auto;
   margin-right: 12px;
-	font-size: 14px;
+	font-size: 12px;
   text-align: right;
 	color: #808080;
 }
