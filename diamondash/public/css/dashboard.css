@@ -5947,6 +5947,10 @@ a:hover {
 	color: #808080;
 }
 
+.lvalue .time .from, .lvalue .time .to {
+  display: block;
+}
+
 .lvalue .change {
   margin: 8px auto;
 	font-size: 20px;
