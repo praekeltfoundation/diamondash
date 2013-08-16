@@ -10,34 +10,31 @@ diamondash.DashboardController = (function() {
 
     DashboardController.fromConfig = function(config) {
       var diamondashWidgets = diamondash.widgets,
-          dashboardName,
-          requestInterval,
-          widgets,
-          widgetViews;
+          dashboardName = config.name;
 
-      dashboardName = config.name;
+      var widgets = new diamondashWidgets.WidgetCollection(),
+          widgetViews = [];
 
-      requestInterval = (config.requestInterval ||
-                         DashboardController.DEFAULT_REQUEST_INTERVAL);
-
-      widgets = new diamondashWidgets.WidgetCollection();
-      widgetViews = [];
+      var requestInterval = config.requestInterval
+                         || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
       config.widgets.forEach(function(widgetConfig) {
         var modelClass = diamondashWidgets[widgetConfig.modelClass];
-        var modelConfig = widgetConfig.model;
-        modelConfig.dashboardName = dashboardName;
-        var model = new modelClass(modelConfig);
+
+        var model = new modelClass(
+          _({dashboardName: dashboardName}).extend(widgetConfig.model),
+          {collection: widgets});
 
         var viewClass = diamondashWidgets[widgetConfig.viewClass];
+
         var view = new viewClass({
           el: $("#" + model.get('name')),
           model: model,
           config: widgetConfig.view
         });
 
-        widgetViews.push(view);
         widgets.add(model);
+        widgetViews.push(view);
       });
 
       return new DashboardController({

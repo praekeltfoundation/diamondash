@@ -4,15 +4,18 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
-    options = options || {};
+    options = _(options || {}).defaults({metrics: []});
+    var metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
 
-    var self = this,
-        metrics =
-          new widgets.GraphWidgetMetricCollection(options.metrics || []);
-
-    metrics
-      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on('change', function() { self.trigger('change'); });
+    this
+      .listenTo(
+        metrics,
+        'all',
+        function(eventName) { this.trigger(eventName + ':metrics'); })
+      .listenTo(
+        metrics,
+        'change',
+        function() { this.trigger('change'); });
 
     this.set({
       metrics: metrics,
