@@ -1,7 +1,4 @@
 import json
-from pkg_resources import resource_string
-
-from twisted.web.template import XMLString
 
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
@@ -17,10 +14,9 @@ class LValueWidget(DynamicWidget):
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
+    TYPE_NAME = 'lvalue'
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
-
-    loader = XMLString(resource_string(__name__, 'template.xml'))
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -46,19 +42,16 @@ class LValueWidget(DynamicWidget):
         return config
 
     def format_data(self, prev, last):
-        diff_y = last['y'] - prev['y']
-
         # 'to' gets added the widget's time range converted from its internal
         # representation (in seconds) to the representation used by the client
         # side. The received datapoints are already converted by the backend,
         # so each widget type (lvalue, graph, etc) does not have to worry about
         # converting the datapoints.
         return json.dumps({
-            'lvalue': last['y'],
             'from': last['x'],
             'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
-            'diff': diff_y,
-            'percentage': diff_y / (prev['y'] or 1),
+            'last': last['y'],
+            'prev': prev['y'],
         })
 
     def handle_backend_response(self, metric_data, from_time):

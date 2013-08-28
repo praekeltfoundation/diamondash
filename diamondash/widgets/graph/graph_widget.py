@@ -15,6 +15,7 @@ class GraphWidget(DynamicWidget):
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
+    TYPE_NAME = 'graph'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 

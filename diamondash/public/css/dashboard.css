@@ -5919,38 +5919,50 @@ a:hover {
   transition: fill-opacity 250ms linear;
  }
 
-.lvalue-widget-container {
+.widget-container {
   padding: 0;
   text-align: center;
 }
 
-.lvalue-lvalue {
+.lvalue .last {
   margin: 10px auto;
-	font-size: 44px;
-  display: block;
   text-align: center;
+	height: 44px;
 }
 
-.lvalue-time {
+.lvalue .short.last {
+	font-size: 44px;
+}
+
+.lvalue .long.last {
+	font-size: 24px;
+	color: #555;
+}
+
+.lvalue .time {
   margin: 8px auto;
   margin-right: 12px;
-	font-size: 14px;
+	font-size: 12px;
   text-align: right;
 	color: #808080;
 }
 
-.lvalue-change {
+.lvalue .time .from, .lvalue .time .to {
+  display: block;
+}
+
+.lvalue .change {
   margin: 8px auto;
 	font-size: 20px;
 	margin-left: 5px;
 }
 
-.lvalue-change div {
+.lvalue .change div {
   display: inline-block;
 }
 
-.good-diff { color: #33cc33; }
-.bad-diff { color: #cc3333; }
+.good.change { color: #33cc33; }
+.bad.change { color: #cc3333; }
 
 .text-widget-text {
     margin: 0 auto;
