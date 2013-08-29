@@ -5957,10 +5957,6 @@ a:hover {
 	margin-left: 5px;
 }
 
-.lvalue .change div {
-  display: inline-block;
-}
-
 .good.change { color: #33cc33; }
 .bad.change { color: #cc3333; }
 

@@ -12747,8 +12747,8 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
     jst: _.template([
       '<h1 class="last"></h1>',
       '<div class="<%= change %> change">',
-        '<span class="diff"><%= diff %></span>',
-        '<span class="percentage"><%= percentage %></span>',
+        '<span class="diff"><%= diff %></span> ',
+        '<span class="percentage">(<%= percentage %>)</span>',
       '</div>',
       '<div class="time">',
         '<span class="from">from <%= from %></span>',
