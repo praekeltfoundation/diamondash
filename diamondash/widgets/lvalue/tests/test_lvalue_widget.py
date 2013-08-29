@@ -78,11 +78,10 @@ class LValueWidgetTestCase(unittest.TestCase):
             self.assertEqual(backend.get_data_calls,
                              [{'from_time': 1340875990}])
             self.assertEqual(result, json.dumps({
-                'lvalue': 9227465.0,
                 'from': 1340875995000,
                 'to': 1340875999000,
-                'diff': 9227465.0 - 5702887.0,
-                'percentage': 0.61803398874990854,
+                'last': 9227465.0,
+                'prev': 5702887.0,
             }))
         deferred_result.addCallback(assert_handled_render_request)
 

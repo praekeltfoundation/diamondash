@@ -12442,7 +12442,7 @@ widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
-    _formatValue = d3.format(".3s");
+    _formatValue = d3.format(",f");
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({
   svgHeight: 214,
@@ -12700,65 +12700,118 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   }
 });
 
-var widgets = diamondash.widgets;
+(function() {
+  var widgets = diamondash.widgets;
 
-widgets.LValueWidgetModel = widgets.WidgetModel.extend({
-  isStatic: false
-});
+  widgets.LValueWidgetModel = widgets.WidgetModel.extend({
+    isStatic: false
+  });
 
-widgets.LValueWidgetView = widgets.WidgetView.extend({
-  slotSelectors: [
-    '.lvalue-lvalue-slot',
-    '.lvalue-diff-slot',
-    '.lvalue-percentage-slot',
-    '.lvalue-from-slot',
-    '.lvalue-to-slot'
-  ],
+  var LastValueView = Backbone.View.extend({
+    fadeDuration: 200,
 
-  initialize: function(options) {
-    var $el = this.$el,
-        $slots = this.$slots = {};
+    initialize: function(options) {
+      this.widget = options.widget;
+    },
 
-    this.slotSelectors.forEach(function(s) { $slots[s] = $el.find(s); });
-    this.$changeEl = $el.find('.lvalue-change');
+    format: {
+      short: d3.format(".2s"),
+      long: d3.format(",f")
+    },
 
-    this.model.on('change', this.render, this);
-  },
+    blink: function(fn) {
+      this.$el.fadeOut(this.fadeDuration, function() {
+        fn.call(this);
+        this.$el.fadeIn(this.fadeDuration);
+      }.bind(this));
+    },
 
-  formatLValue: d3.format(".2s"),
-  formatDiff: d3.format("+.3s"),
-  formatPercentage: d3.format(".2%"),
-
-  _formatTime: d3.time.format.utc("%d-%m-%Y %H:%M"),
-  formatTime: function(t) { return this._formatTime(new Date(t)); },
-
-  applySlotValues: function(slotValues) {
-      var $slots = this.$slots;
-      for(var s in slotValues) { $slots[s].text(slotValues[s]); }
-  },
-
-  render: function() {
-    var model = this.model,
-        diff= model.get('diff'),
-        $changeEl = this.$changeEl;
-
-    this.applySlotValues({
-      '.lvalue-from-slot': this.formatTime(model.get('from')),
-      '.lvalue-to-slot': this.formatTime(model.get('to')),
-      '.lvalue-lvalue-slot': this.formatLValue(model.get('lvalue')),
-      '.lvalue-diff-slot': this.formatDiff(diff),
-      '.lvalue-percentage-slot': this.formatPercentage(model.get('percentage'))
-    });
-
-    if (diff < 0) {
-      $changeEl.removeClass('good-diff').addClass('bad-diff');
-    } else if (diff > 0) {
-      $changeEl.removeClass('bad-diff').addClass('good-diff');
-    } else {
-      $changeEl.removeClass('bad-diff').removeClass('good-diff');
+    render: function(longMode) {
+      this.blink(function() {
+        if (longMode) {
+          this.$el
+            .addClass('long')
+            .removeClass('short')
+            .text(this.format.long(this.model.get('last')));
+        } else {
+          this.$el
+            .addClass('short')
+            .removeClass('long')
+            .text(this.format.short(this.model.get('last')));
+        }
+      });
     }
-  }
-});
+  });
+
+  widgets.LValueWidgetView = widgets.WidgetView.extend({
+    jst: _.template([
+      '<h1 class="last"></h1>',
+      '<div class="<%= change %> change">',
+        '<span class="diff"><%= diff %></span>',
+        '<span class="percentage"><%= percentage %></span>',
+      '</div>',
+      '<div class="time">',
+        '<span class="from">from <%= from %></span>',
+        '<span class="to">to <%= to %><span>',
+      '</div>'
+    ].join('')),
+   
+    initialize: function(options) {
+      this.listenTo(this.model, 'change', this.render);
+
+      this.last = new LastValueView({
+        widget: this,
+        model: this.model
+      });
+
+      this.mouseIsOver = false;
+    },
+
+    format: {
+      diff: d3.format("+.3s"),
+      percentage: d3.format(".2%"),
+
+      _time: d3.time.format.utc("%d-%m-%Y %H:%M"),
+      time: function(t) { return this._time(new Date(t)); },
+    },
+
+    render: function() {
+      var model = this.model,
+          last = model.get('last'),
+          prev = model.get('prev'),
+          diff = last - prev;
+
+      var change;
+      if (diff > 0) { change = 'good'; }
+      else if (diff < 0) { change = 'bad'; }
+      else { change = 'no'; }
+
+      this.$('.widget-container').html(this.jst({
+        from: this.format.time(model.get('from')),
+        to: this.format.time(model.get('to')),
+        diff: this.format.diff(diff),
+        change: change,
+        percentage: this.format.percentage(diff / (prev || 1))
+      }));
+
+      this.last
+        .setElement(this.$('.last'))
+        .render(this.mouseIsOver);
+    },
+
+    events: {
+      'mouseenter': function() {
+        this.mouseIsOver = true;
+        this.last.render(true);
+      },
+
+      'mouseleave': function() {
+        this.mouseIsOver = false;
+        this.last.render(false);
+      }
+    }
+  });
+}).call(this);
 
 diamondash.DashboardController = (function() {
     function DashboardController(args) {

@@ -10,6 +10,7 @@ class TextWidget(Widget):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
+    TYPE_NAME = 'text'
     MIN_COLUMN_SPAN = 2
     STYLESHEETS = ('text/style.css',)
 
