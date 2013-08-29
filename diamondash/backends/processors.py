@@ -12,8 +12,12 @@ def zeroize_nulls(datapoints):
 
 
 class Summarizer(object):
-    def __init__(self, bucket_size):
+    def __init__(self, bucket_size, time_aligner=utils.round_time):
         self.bucket_size = bucket_size
+        self.time_aligner = time_aligner
+
+    def align_time(self, t):
+        return self.time_aligner(t, self.bucket_size)
 
     def __call__(self, datapoints, from_time):
         raise NotImplementedError()
@@ -21,9 +25,7 @@ class Summarizer(object):
 
 class LastDatapointSummarizer(Summarizer):
     def __call__(self, datapoints, from_time):
-        step = utils.round_time(from_time, self.bucket_size)
-        pivot_size = self.bucket_size * 0.5
-        pivot = step + pivot_size
+        step = self.align_time(from_time)
 
         results = []
         if not datapoints:
@@ -32,15 +34,15 @@ class LastDatapointSummarizer(Summarizer):
         it = iter(datapoints)
         prev = next(it)
         for curr in it:
-            if curr['x'] >= pivot:
+            aligned_x = self.align_time(curr['x'])
+            if aligned_x > step:
                 results.append({'x': step, 'y': prev['y']})
-                step = utils.round_time(curr['x'], self.bucket_size)
-                pivot = step + pivot_size
+                step = aligned_x
             prev = curr
 
         # add the last datapoint
         results.append({
-            'x': utils.round_time(prev['x'], self.bucket_size),
+            'x': self.align_time(prev['x']),
             'y': prev['y']
         })
 
@@ -48,14 +50,12 @@ class LastDatapointSummarizer(Summarizer):
 
 
 class AggregatingSummarizer(Summarizer):
-    def __init__(self, bucket_size, aggregator):
-        self.bucket_size = bucket_size
+    def __init__(self, aggregator, *args, **kwargs):
+        super(AggregatingSummarizer, self).__init__(*args, **kwargs)
         self.aggregator = aggregator
 
     def __call__(self, datapoints, from_time):
-        step = utils.round_time(from_time, self.bucket_size)
-        pivot_size = self.bucket_size * 0.5
-        pivot = step + pivot_size
+        step = self.align_time(from_time)
 
         results = []
         if not datapoints:
@@ -63,11 +63,12 @@ class AggregatingSummarizer(Summarizer):
 
         bucket = []
         for datapoint in datapoints:
-            if datapoint['x'] >= pivot:
-                results.append({'x': step, 'y': self.aggregator(bucket)})
+            aligned_x = self.align_time(datapoint['x'])
+            if aligned_x > step:
+                if bucket:
+                    results.append({'x': step, 'y': self.aggregator(bucket)})
                 bucket = []
-                step = utils.round_time(datapoint['x'], self.bucket_size)
-                pivot = step + pivot_size
+                step = aligned_x
             bucket.append(datapoint['y'])
 
         # add the aggregation result of the last bucket
@@ -94,8 +95,8 @@ get_aggregator = utils.Accessor(**{
 
 
 get_summarizer = utils.Accessor(
-    wrapper=lambda agg_method, fn, bucket_size: fn(bucket_size, agg_method),
-    last=lambda bucket_size, agg_method: LastDatapointSummarizer(bucket_size),
-    fallback=lambda bucket_size, agg_method: (
-        AggregatingSummarizer(bucket_size, get_aggregator(agg_method)))
+    wrapper=lambda agg_method, fn, *a, **kw: fn(agg_method, *a, **kw),
+    last=lambda agg_method, *a, **kw: LastDatapointSummarizer(*a, **kw),
+    fallback=lambda agg_method, *a, **kw: (
+        AggregatingSummarizer(get_aggregator(agg_method), *a, **kw))
 )
