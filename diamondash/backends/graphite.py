@@ -14,8 +14,10 @@ from diamondash.backends.processors import get_null_filter, get_summarizer
 class GraphiteBackend(Backend):
     """Abstract widget for displaying metric data from graphite."""
 
-    __DEFAULTS = {}
+    __DEFAULTS = {'time_aligner': 'round'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
+
+    METRIC_UNDERRIDE_FIELDS = ['bucket_size', 'null_filter', 'time_aligner']
 
     # Using this for three reasons:
     # 1. Params such as 'from' are reserved words.
@@ -49,11 +51,9 @@ class GraphiteBackend(Backend):
 
         metrics = config.get('metrics', [])
 
-        metric_underrides = {}
-        if 'bucket_size' in config:
-            metric_underrides['bucket_size'] = config.pop('bucket_size')
-        if 'null_filter' in config:
-            metric_underrides['null_filter'] = config.pop('null_filter')
+        metric_underrides = dict(
+            (k, config.pop(k))
+            for k in cls.METRIC_UNDERRIDE_FIELDS if k in config)
         metrics = [utils.update_dict(metric_underrides, m) for m in metrics]
 
         config['metrics'] = [
@@ -130,12 +130,12 @@ class GraphiteMetric(ConfigMixin):
     __DEFAULTS = {'null_filter': 'skip'}
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
 
-    def __init__(self, target, metadata={}, null_filter=None, summarizer=None):
+    def __init__(self, target, null_filter, summarizer,  metadata={}):
         self.target = target
         self.wrapped_target = self.alias_target(target)
         self.metadata = metadata
-        self.null_filter = null_filter or get_null_filter('fallback')
-        self.summarizer = summarizer or get_summarizer('fallback')
+        self.null_filter = null_filter
+        self.summarizer = summarizer
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -148,7 +148,9 @@ class GraphiteMetric(ConfigMixin):
         if 'bucket_size' in config:
             bucket_size = utils.parse_interval(config.pop('bucket_size'))
             agg_method = guess_aggregation_method(config['target'])
-            config['summarizer'] = get_summarizer(agg_method, bucket_size)
+            aligner = utils.get_time_aligner(config.pop('time_aligner', None))
+            config['summarizer'] = get_summarizer(
+                agg_method, bucket_size, aligner)
 
         if 'null_filter' in config:
             config['null_filter'] = get_null_filter(config['null_filter'])
@@ -171,10 +173,6 @@ class GraphiteMetric(ConfigMixin):
 
         if 'from_time' in params:
             datapoints = self.summarizer(datapoints, params['from_time'])
-
-        # convert x values to milliseconds for client
-        for datapoint in datapoints:
-            datapoint['x'] = utils.to_client_interval(datapoint['x'])
 
         return datapoints
 
