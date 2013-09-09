@@ -9,6 +9,10 @@ module.exports = function(grunt) {
     "diamondash/client/css/index.css"
   ]);
 
+  var errorStylesheets = [].concat(globalStylesheets, [
+    "diamondash/client/css/error.css"
+  ]);
+
   var dashboardStylesheets = [].concat(globalStylesheets, [
     "diamondash/client/css/dashboard.css",
     "diamondash/widgets/**/*.css"
@@ -45,6 +49,10 @@ module.exports = function(grunt) {
         src: indexStylesheets,
         dest: "diamondash/public/css/index.css"
       },
+      "error.css": {
+        src: errorStylesheets,
+        dest: "diamondash/public/css/error.css"
+      },
       "dashboard.css": {
         src: dashboardStylesheets,
         dest: "diamondash/public/css/dashboard.css"
@@ -58,6 +66,10 @@ module.exports = function(grunt) {
       "index.css": {
         files: indexStylesheets,
         tasks: ["concat:index.css"]
+      },
+      "error.css": {
+        files: errorStylesheets,
+        tasks: ["concat:error.css"]
       },
       "dashboard.css": {
         files: dashboardStylesheets,

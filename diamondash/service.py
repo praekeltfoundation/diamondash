@@ -2,7 +2,7 @@ from twisted.web import server
 from twisted.python import usage
 from twisted.application import service, strports
 
-import diamondash.server as webserver
+from diamondash.server import DiamondashServer
 
 DEFAULT_PORT = '8080'
 DEFAULT_CONFIG_DIR = 'etc'
@@ -18,9 +18,9 @@ class Options(usage.Options):
 
 
 def makeService(options):
-    webserver.configure(options['config_dir'])
+    srv = DiamondashServer.from_config_dir(options['config_dir'])
     diamondash_service = service.MultiService()
-    site = server.Site(webserver.resource())
+    site = server.Site(srv.app.resource())
     strports_service = strports.service(options['port'], site)
     strports_service.setServiceParent(diamondash_service)
     return diamondash_service
