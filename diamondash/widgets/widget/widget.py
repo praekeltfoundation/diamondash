@@ -14,7 +14,7 @@ class Widget(Element, ConfigMixin):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
-    TYPE_NAME = 'abstract'
+    TYPE_NAME = 'widget'
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 

@@ -79,7 +79,7 @@ class MockIndex(MockLeafResource, Index):
 class DiamondashServerTestCase(unittest.TestCase):
     def setUp(self):
         self.patch(Dashboard, 'from_config', classmethod(
-           lambda cls, config, class_defaults: mk_dashboard(**config)))
+            lambda cls, config, class_defaults: mk_dashboard(**config)))
 
         js_resources = MockDirResource({
             'a.js': MockLeafResource('mock-a.js'),
@@ -107,8 +107,10 @@ class DiamondashServerTestCase(unittest.TestCase):
             widgets=[widget1, widget2])
         self.dashboard2 = mk_dashboard(name='dashboard-2', title='Dashboard 2')
 
-        self.server = DiamondashServer(MockIndex(), resources,
-                                       [self.dashboard1, self.dashboard2])
+        self.server = DiamondashServer(
+            MockIndex(),
+            resources,
+            [self.dashboard1, self.dashboard2])
         return self.start_server()
 
     def tearDown(self):
@@ -148,7 +150,7 @@ class DiamondashServerTestCase(unittest.TestCase):
 
     def mock_dashboard_config_error(self):
         self.patch(Dashboard, 'from_config', classmethod(
-           lambda *a, **kw: self.raise_error(ConfigError)))
+            lambda *a, **kw: self.raise_error(ConfigError)))
 
     def assert_response(self, response, body, code=http.OK, headers={}):
         self.assertEqual(response['status'], str(code))
@@ -377,6 +379,31 @@ class DiamondashServerTestCase(unittest.TestCase):
         d = self.request('/api/widgets/dashboard-1/widget-2/snapshot')
         d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
         return d
+
+    def test_add_dashboard(self):
+        """Should add a dashboard to the server."""
+        def stubbed_index_add_dashboard(dashboard):
+            stubbed_index_add_dashboard.called = True
+
+        stubbed_index_add_dashboard.called = False
+
+        self.server.index.add_dashboard = stubbed_index_add_dashboard
+        dashboard = mk_dashboard(name='some-dashboard',
+                                 share_id='some-share-id')
+
+        self.server.add_dashboard(dashboard)
+        self.assertEqual(
+            self.server.dashboards_by_name['some-dashboard'], dashboard)
+        self.assertEqual(
+            self.server.dashboards_by_share_id['some-share-id'], dashboard)
+        self.assertTrue(stubbed_index_add_dashboard.called)
+
+
+class StubbedDashboardIndexListItem(DashboardIndexListItem):
+    def __init__(self, title, url, shared_url_tag):
+        self.title = title
+        self.url = url
+        self.shared_url_tag = shared_url_tag
 
 
 class DashboardIndexListItemTestCase(unittest.TestCase):

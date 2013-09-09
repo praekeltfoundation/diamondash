@@ -12363,15 +12363,18 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
-    options = options || {};
+    options = _(options || {}).defaults({metrics: []});
+    var metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
 
-    var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(
-          options.metrics || []);
-
-    metrics
-      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on('change', function() { self.trigger('change'); });
+    this
+      .listenTo(
+        metrics,
+        'all',
+        function(eventName) { this.trigger(eventName + ':metrics'); })
+      .listenTo(
+        metrics,
+        'change',
+        function() { this.trigger('change'); });
 
     this.set({
       metrics: metrics,
@@ -12402,22 +12405,12 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
 });
 
 
-var maxColors = 10,
-    color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0,
-    nextColor = function() { return color(colorCount++ % maxColors); };
-
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
-    if (!this.has('datapoints')) {
-      this.set('datapoints', []);
-    }
-
-    if (!this.has('color')) {
-      this.set('color', nextColor());
-    }
+    if (!this.has('datapoints')) { this.set('datapoints', []); }
+    if (!this.has('color')) { this.set('color', this.collection.color()); }
   },
 
   bisect: d3.bisector(function(d) { return d.x; }).left,
@@ -12443,11 +12436,16 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
 });
 
 widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
-  model: widgets.GraphWidgetMetricModel
+  model: widgets.GraphWidgetMetricModel,
+  initialize: function() { this.colorIdx = 0; },
+
+  maxColors: 10,
+  _color: d3.scale.category10().domain(d3.range(0, this.maxColors)),
+  color: function() { return this._color(this.colorIdx++); }
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
-    _formatValue = d3.format(".3s");
+    _formatValue = d3.format(",f");
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({
   svgHeight: 214,
@@ -12705,65 +12703,118 @@ widgets.GraphWidgetView = widgets.WidgetView.extend({
   }
 });
 
-var widgets = diamondash.widgets;
+(function() {
+  var widgets = diamondash.widgets;
 
-widgets.LValueWidgetModel = widgets.WidgetModel.extend({
-  isStatic: false
-});
+  widgets.LValueWidgetModel = widgets.WidgetModel.extend({
+    isStatic: false
+  });
 
-widgets.LValueWidgetView = widgets.WidgetView.extend({
-  slotSelectors: [
-    '.lvalue-lvalue-slot',
-    '.lvalue-diff-slot',
-    '.lvalue-percentage-slot',
-    '.lvalue-from-slot',
-    '.lvalue-to-slot'
-  ],
+  var LastValueView = Backbone.View.extend({
+    fadeDuration: 200,
 
-  initialize: function(options) {
-    var $el = this.$el,
-        $slots = this.$slots = {};
+    initialize: function(options) {
+      this.widget = options.widget;
+    },
 
-    this.slotSelectors.forEach(function(s) { $slots[s] = $el.find(s); });
-    this.$changeEl = $el.find('.lvalue-change');
+    format: {
+      short: d3.format(".2s"),
+      long: d3.format(",f")
+    },
 
-    this.model.on('change', this.render, this);
-  },
+    blink: function(fn) {
+      this.$el.fadeOut(this.fadeDuration, function() {
+        fn.call(this);
+        this.$el.fadeIn(this.fadeDuration);
+      }.bind(this));
+    },
 
-  formatLValue: d3.format(".2s"),
-  formatDiff: d3.format("+.3s"),
-  formatPercentage: d3.format(".2%"),
-
-  _formatTime: d3.time.format.utc("%d-%m-%Y %H:%M"),
-  formatTime: function(t) { return this._formatTime(new Date(t)); },
-
-  applySlotValues: function(slotValues) {
-      var $slots = this.$slots;
-      for(var s in slotValues) { $slots[s].text(slotValues[s]); }
-  },
-
-  render: function() {
-    var model = this.model,
-        diff= model.get('diff'),
-        $changeEl = this.$changeEl;
-
-    this.applySlotValues({
-      '.lvalue-from-slot': this.formatTime(model.get('from')),
-      '.lvalue-to-slot': this.formatTime(model.get('to')),
-      '.lvalue-lvalue-slot': this.formatLValue(model.get('lvalue')),
-      '.lvalue-diff-slot': this.formatDiff(diff),
-      '.lvalue-percentage-slot': this.formatPercentage(model.get('percentage'))
-    });
-
-    if (diff < 0) {
-      $changeEl.removeClass('good-diff').addClass('bad-diff');
-    } else if (diff > 0) {
-      $changeEl.removeClass('bad-diff').addClass('good-diff');
-    } else {
-      $changeEl.removeClass('bad-diff').removeClass('good-diff');
+    render: function(longMode) {
+      this.blink(function() {
+        if (longMode) {
+          this.$el
+            .addClass('long')
+            .removeClass('short')
+            .text(this.format.long(this.model.get('last')));
+        } else {
+          this.$el
+            .addClass('short')
+            .removeClass('long')
+            .text(this.format.short(this.model.get('last')));
+        }
+      });
     }
-  }
-});
+  });
+
+  widgets.LValueWidgetView = widgets.WidgetView.extend({
+    jst: _.template([
+      '<h1 class="last"></h1>',
+      '<div class="<%= change %> change">',
+        '<span class="diff"><%= diff %></span> ',
+        '<span class="percentage">(<%= percentage %>)</span>',
+      '</div>',
+      '<div class="time">',
+        '<span class="from">from <%= from %></span>',
+        '<span class="to">to <%= to %><span>',
+      '</div>'
+    ].join('')),
+   
+    initialize: function(options) {
+      this.listenTo(this.model, 'change', this.render);
+
+      this.last = new LastValueView({
+        widget: this,
+        model: this.model
+      });
+
+      this.mouseIsOver = false;
+    },
+
+    format: {
+      diff: d3.format("+.3s"),
+      percentage: d3.format(".2%"),
+
+      _time: d3.time.format.utc("%d-%m-%Y %H:%M"),
+      time: function(t) { return this._time(new Date(t)); },
+    },
+
+    render: function() {
+      var model = this.model,
+          last = model.get('last'),
+          prev = model.get('prev'),
+          diff = last - prev;
+
+      var change;
+      if (diff > 0) { change = 'good'; }
+      else if (diff < 0) { change = 'bad'; }
+      else { change = 'no'; }
+
+      this.$('.widget-container').html(this.jst({
+        from: this.format.time(model.get('from')),
+        to: this.format.time(model.get('to')),
+        diff: this.format.diff(diff),
+        change: change,
+        percentage: this.format.percentage(diff / (prev || 1))
+      }));
+
+      this.last
+        .setElement(this.$('.last'))
+        .render(this.mouseIsOver);
+    },
+
+    events: {
+      'mouseenter': function() {
+        this.mouseIsOver = true;
+        this.last.render(true);
+      },
+
+      'mouseleave': function() {
+        this.mouseIsOver = false;
+        this.last.render(false);
+      }
+    }
+  });
+}).call(this);
 
 diamondash.DashboardController = (function() {
     function DashboardController(args) {
@@ -12777,34 +12828,31 @@ diamondash.DashboardController = (function() {
 
     DashboardController.fromConfig = function(config) {
       var diamondashWidgets = diamondash.widgets,
-          dashboardName,
-          requestInterval,
-          widgets,
-          widgetViews;
+          dashboardName = config.name;
 
-      dashboardName = config.name;
+      var widgets = new diamondashWidgets.WidgetCollection(),
+          widgetViews = [];
 
-      requestInterval = (config.requestInterval ||
-                         DashboardController.DEFAULT_REQUEST_INTERVAL);
-
-      widgets = new diamondashWidgets.WidgetCollection();
-      widgetViews = [];
+      var requestInterval = config.requestInterval
+                         || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
       config.widgets.forEach(function(widgetConfig) {
         var modelClass = diamondashWidgets[widgetConfig.modelClass];
-        var modelConfig = widgetConfig.model;
-        modelConfig.dashboardName = dashboardName;
-        var model = new modelClass(modelConfig);
+
+        var model = new modelClass(
+          _({dashboardName: dashboardName}).extend(widgetConfig.model),
+          {collection: widgets});
 
         var viewClass = diamondashWidgets[widgetConfig.viewClass];
+
         var view = new viewClass({
           el: $("#" + model.get('name')),
           model: model,
           config: widgetConfig.view
         });
 
-        widgetViews.push(view);
         widgets.add(model);
+        widgetViews.push(view);
       });
 
       return new DashboardController({

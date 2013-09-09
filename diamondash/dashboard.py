@@ -214,7 +214,7 @@ class WidgetContainer(Element):
         self.widget = widget
         self.width = widget.width
         span_class = "span%s" % widget.width
-        self.classes = " ".join(('widget', span_class))
+        self.classes = " ".join(('widget', widget.TYPE_NAME, span_class))
 
     @renderer
     def widget_renderer(self, request, tag):

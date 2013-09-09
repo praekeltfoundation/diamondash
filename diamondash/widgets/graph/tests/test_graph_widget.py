@@ -38,8 +38,8 @@ class GraphWidgetTestCase(unittest.TestCase):
             'name': u'test-graph-widget',
             'graphite_url': 'fake_graphite_url',
             'metrics': [
-                {'name': u'random sum', 'target':'vumi.random.count.sum'},
-                {'name': u'random avg', 'target':'vumi.random.timer.avg'}],
+                {'name': u'random sum', 'target': 'vumi.random.count.sum'},
+                {'name': u'random avg', 'target': 'vumi.random.timer.avg'}],
             'time_range': '1d',
             'bucket_size': '1h',
             'null_filter': 'zeroize',
@@ -56,7 +56,7 @@ class GraphWidgetTestCase(unittest.TestCase):
             'metrics': [
                 {
                     'some_metric_option': 'some-value',
-                    'target':'vumi.random.count.sum',
+                    'target': 'vumi.random.count.sum',
                     'metadata': {
                         'name': 'random-sum',
                         'title': 'random sum',
@@ -68,7 +68,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                 },
                 {
                     'some_metric_option': 'some-value',
-                    'target':'vumi.random.timer.avg',
+                    'target': 'vumi.random.timer.avg',
                     'metadata': {
                         'name': 'random-avg',
                         'title': 'random avg',
@@ -96,7 +96,7 @@ class GraphWidgetTestCase(unittest.TestCase):
                           {'name': u'some metric'}, {})
 
     def assert_snapshot_retrieval(self, backend_res, expected_data,
-                                       expected_from_time):
+                                  expected_from_time):
         self.backend.response_data = backend_res
         d = self.widget.get_snapshot()
         self.assertEqual(self.backend.get_data_calls,
@@ -121,19 +121,19 @@ class GraphWidgetTestCase(unittest.TestCase):
                 'datapoints': []
             }
         ], {
-            'domain': (0, 15),
+            'domain': (0, 15000),
             'range': (0, 4),
             'metrics': [
                 {
                     'name': 'metric-1',
                     'datapoints': [{'x': 0, 'y': 0},
-                                   {'x': 2, 'y': 1},
-                                   {'x': 3, 'y': 2}]
+                                   {'x': 2000, 'y': 1},
+                                   {'x': 3000, 'y': 2}]
                 },
                 {
                     'name': 'metric-2',
-                    'datapoints': [{'x': 5, 'y': 4},
-                                   {'x':  15, 'y': 1}]
+                    'datapoints': [{'x': 5000, 'y': 4},
+                                   {'x': 15000, 'y': 1}]
                 },
                 {
                     'name': 'metric-3',

@@ -313,7 +313,7 @@ class Index(Element):
 
     @renderer
     def dashboard_list_item_renderer(self, request, tag):
-        for item in self.dashboard_items.values():
+        for item in sorted(self.dashboard_items.values()):
             yield item
 
 

@@ -1,6 +1,4 @@
-from pkg_resources import resource_string
-
-from twisted.web.template import XMLString
+from itertools import takewhile
 
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
@@ -17,10 +15,9 @@ class LValueWidget(DynamicWidget):
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
+    TYPE_NAME = 'lvalue'
     MODEL = 'LValueWidgetModel'
     VIEW = 'LValueWidgetView'
-
-    loader = XMLString(resource_string(__name__, 'template.xml'))
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):
@@ -37,6 +34,7 @@ class LValueWidget(DynamicWidget):
         # type of backend could be made configurable in future
         config['backend'] = GraphiteBackend.from_config({
             'bucket_size': config['time_range'],
+            'time_aligner': 'floor',
             'metrics': [{
                 'target': config.pop('target'),
                 'null_filter': 'skip',
@@ -46,19 +44,14 @@ class LValueWidget(DynamicWidget):
         return config
 
     def format_data(self, prev, last):
-        diff_y = last['y'] - prev['y']
-
         # 'to' gets added the widget's time range converted from its internal
-        # representation (in seconds) to the representation used by the client
-        # side. The received datapoints are already converted by the backend,
-        # so each widget type (lvalue, graph, etc) does not have to worry about
-        # converting the datapoints.
+        # representation (seconds) to the representation used by the client
+        # side (milliseconds).
         return {
-            'lvalue': last['y'],
-            'from': last['x'],
-            'to': last['x'] + utils.to_client_interval(self.time_range) - 1,
-            'diff': diff_y,
-            'percentage': diff_y / (prev['y'] or 1),
+            'from': utils.to_client_interval(last['x']),
+            'to': utils.to_client_interval(last['x'] + self.time_range - 1),
+            'last': last['y'],
+            'prev': prev['y'],
         }
 
     def handle_backend_response(self, metric_data, from_time):
@@ -66,29 +59,29 @@ class LValueWidget(DynamicWidget):
             raise BadBackendResponseError(
                 "LValueWidget '%s' received empty response from backend")
 
-        # convert from_time into the time unit used by the client side
-        from_time = utils.to_client_interval(from_time)
         datapoints = metric_data[0]['datapoints']
-        for datapoint in reversed(datapoints):
-            if datapoint['x'] <= from_time:
-                break
-            datapoints.pop()
-        datapoints = datapoints[-2:]
+        prev_time = from_time - self.time_range
 
-        if len(datapoints) < 2:
-            length = len(datapoints)
+        prev = None
+        for n in takewhile(lambda d: d['x'] <= prev_time, datapoints):
+            prev = n
+
+        last = None
+        for n in takewhile(lambda d: d['x'] <= from_time, datapoints):
+            last = n
+
+        if last is None or prev is None:
             raise BadBackendResponseError(
-                "LValueWidget '%s' received too few datapoints (%s < 2)"
-                % (self.title, length))
+                "LValueWidget did not receive all the datapoints it needed "
+                "the backend")
 
-        return self.format_data(*datapoints)
+        return self.format_data(prev, last)
 
     def get_snapshot(self):
-        # We ask the backend for data since 2 intervals ago so we can obtain
-        # the previous value and calculate the increase/decrease since the
-        # previous interval
-        d = self.backend.get_data(from_time=self.time_range * -2)
+        now = utils.now()
+        from_time = utils.floor_time(now - self.time_range, self.time_range)
 
-        d.addCallback(self.handle_backend_response, utils.now())
+        d = self.backend.get_data(from_time=from_time)
+        d.addCallback(self.handle_backend_response, now)
         d.addErrback(self.handle_bad_backend_response)
         return d

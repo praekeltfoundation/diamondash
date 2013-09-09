@@ -4,9 +4,10 @@ import time
 from os import path
 from math import floor
 from unidecode import unidecode
+from urlparse import urlparse
 
 from twisted.internet import reactor
-from twisted.web.client import HTTPClientFactory, _parse as parse_url
+from twisted.web.client import HTTPClientFactory
 
 # The internal representation of intervals in diamondash is seconds.
 # This multiplier is used to convert the internal interval representation to
@@ -16,6 +17,21 @@ CLIENT_INTERVAL_MULTIPLIER = 1000  # seconds -> milliseconds
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
 _eps = 0.0001
+
+
+class Accessor(object):
+    def __init__(self, fallback=None, wrapper=None, **objs):
+        lookup = dict(objs)
+        lookup['fallback'] = fallback
+        self.lookup = lookup
+        self.wrapper = wrapper or self._wrapper
+
+    def _wrapper(self, name, obj, *args, **kwargs):
+        return obj
+
+    def __call__(self, name, *args, **kwargs):
+        obj = self.lookup.get(name, self.lookup['fallback'])
+        return self.wrapper(name, obj, *args, **kwargs)
 
 
 def isint(n):
@@ -107,16 +123,6 @@ def relative_to_now(t):
     return now() + t
 
 
-def round_time(t, interval):
-    i = int(round(t / float(interval)))
-    return interval * i
-
-
-def floor_time(t, interval):
-    i = int(floor(t / float(interval)))
-    return interval * i
-
-
 def to_client_interval(t):
     """
     Convert time interval from interal representation to representation used by
@@ -125,15 +131,9 @@ def to_client_interval(t):
     return t * CLIENT_INTERVAL_MULTIPLIER
 
 
-class Accessor(object):
-    def __init__(self, fallback=None, wrapper=None, **objs):
-        lookup = dict(objs)
-        lookup['fallback'] = fallback
-        self.lookup = lookup
-        self.wrapper = wrapper or self._wrapper
-
-    def _wrapper(self, name, obj, *args, **kwargs):
-        return obj
+def round_time(t, interval):
+    i = int(round(t / float(interval)))
+    return interval * i
 
     def __call__(self, name, *args, **kwargs):
         obj = self.lookup.get(name, self.lookup['fallback'])
@@ -141,13 +141,13 @@ class Accessor(object):
 
 
 def http_request(url, data=None, headers={}, method='GET'):
-    scheme, host, port, path = parse_url(url)
+    parsed_url = urlparse(url)
     factory = HTTPClientFactory(
         url,
         postdata=data,
         method=method,
         headers=headers)
-    reactor.connectTCP(host, port, factory)
+    reactor.connectTCP(parsed_url.hostname, parsed_url.port, factory)
 
     def got_response(body):
         return {
@@ -158,3 +158,15 @@ def http_request(url, data=None, headers={}, method='GET'):
 
     factory.deferred.addCallback(got_response)
     return factory.deferred
+
+
+def floor_time(t, interval):
+    i = int(floor(t / float(interval)))
+    return interval * i
+
+
+get_time_aligner = Accessor(
+    round=round_time,
+    floor=floor_time,
+    fallback=round_time
+)

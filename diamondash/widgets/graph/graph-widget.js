@@ -4,15 +4,18 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
   isStatic: false,
 
   initialize: function(options) {
-    options = options || {};
+    options = _(options || {}).defaults({metrics: []});
+    var metrics = new widgets.GraphWidgetMetricCollection(options.metrics);
 
-    var self = this,
-        metrics = new widgets.GraphWidgetMetricCollection(
-          options.metrics || []);
-
-    metrics
-      .on('all', function(eventName) { self.trigger(eventName + ':metrics'); })
-      .on('change', function() { self.trigger('change'); });
+    this
+      .listenTo(
+        metrics,
+        'all',
+        function(eventName) { this.trigger(eventName + ':metrics'); })
+      .listenTo(
+        metrics,
+        'change',
+        function() { this.trigger('change'); });
 
     this.set({
       metrics: metrics,
@@ -43,22 +46,12 @@ widgets.GraphWidgetModel = widgets.WidgetModel.extend({
 });
 
 
-var maxColors = 10,
-    color = d3.scale.category10().domain(d3.range(maxColors)),
-    colorCount = 0,
-    nextColor = function() { return color(colorCount++ % maxColors); };
-
 widgets.GraphWidgetMetricModel = Backbone.Model.extend({
   idAttribute: 'name',
 
   initialize: function(options) {
-    if (!this.has('datapoints')) {
-      this.set('datapoints', []);
-    }
-
-    if (!this.has('color')) {
-      this.set('color', nextColor());
-    }
+    if (!this.has('datapoints')) { this.set('datapoints', []); }
+    if (!this.has('color')) { this.set('color', this.collection.color()); }
   },
 
   bisect: d3.bisector(function(d) { return d.x; }).left,
@@ -84,11 +77,16 @@ widgets.GraphWidgetMetricModel = Backbone.Model.extend({
 });
 
 widgets.GraphWidgetMetricCollection = Backbone.Collection.extend({
-  model: widgets.GraphWidgetMetricModel
+  model: widgets.GraphWidgetMetricModel,
+  initialize: function() { this.colorIdx = 0; },
+
+  maxColors: 10,
+  _color: d3.scale.category10().domain(d3.range(0, this.maxColors)),
+  color: function() { return this._color(this.colorIdx++); }
 });
 
 var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
-    _formatValue = d3.format(".3s");
+    _formatValue = d3.format(",f");
 
 widgets.GraphWidgetView = widgets.WidgetView.extend({
   svgHeight: 214,
