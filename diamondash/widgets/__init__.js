@@ -1,1 +1,0 @@
-diamondash.widgets = {};

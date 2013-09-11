@@ -19,28 +19,18 @@ module.exports = function(grunt) {
   ]);
 
   var diamondashModules = [
-    "diamondash/client/js/__prepend__.js",
-
     // vendor modules
     "diamondash/client/vendor/jquery.js",
     "diamondash/client/vendor/underscore.js",
     "diamondash/client/vendor/backbone.js",
     "diamondash/client/vendor/d3.js",
 
-    // __init__ modules
-    "diamondash/client/js/__init__.js",
-    "diamondash/widgets/**/__init__.js",
-
-    // src
-    "diamondash/widgets/widget/*.js",
-    "diamondash/widgets/graph/*.js",
-    "diamondash/widgets/lvalue/*.js",
+    "diamondash/client/js/index.js",
+    "diamondash/widgets/index.js",
+    "diamondash/widgets/widget/widget.js",
+    "diamondash/widgets/graph/graph.js",
+    "diamondash/widgets/lvalue/lvalue.js",
     "diamondash/client/js/dashboard.js",
-
-    // excludes
-    "!diamondash/**/tests/*",
-
-    "diamondash/client/js/__append__.js"
   ];
 
   grunt.initConfig({
