@@ -1,4 +1,3 @@
-import json
 from itertools import takewhile
 
 from diamondash import utils, ConfigError
@@ -12,6 +11,7 @@ class LValueWidget(DynamicWidget):
     __DEFAULTS = {'time_range': '1d'}
     __CONFIG_TAG = 'diamondash.widgets.lvalue.LValueWidget'
 
+    TYPE_NAME = 'lvalue'
     MIN_COLUMN_SPAN = 2
     MAX_COLUMN_SPAN = 2
 
@@ -47,12 +47,12 @@ class LValueWidget(DynamicWidget):
         # 'to' gets added the widget's time range converted from its internal
         # representation (seconds) to the representation used by the client
         # side (milliseconds).
-        return json.dumps({
+        return {
             'from': utils.to_client_interval(last['x']),
             'to': utils.to_client_interval(last['x'] + self.time_range - 1),
             'last': last['y'],
             'prev': prev['y'],
-        })
+        }
 
     def handle_backend_response(self, metric_data, from_time):
         if not metric_data:
@@ -77,13 +77,11 @@ class LValueWidget(DynamicWidget):
 
         return self.format_data(prev, last)
 
-    def handle_render_request(self, request):
-        # We ask the backend for data since the start of yesterday to calculate
-        # the increase or decrease between today and yesterday
+    def get_snapshot(self):
         now = utils.now()
         from_time = utils.floor_time(now - self.time_range, self.time_range)
-        d = self.backend.get_data(from_time=from_time)
 
+        d = self.backend.get_data(from_time=from_time)
         d.addCallback(self.handle_backend_response, now)
         d.addErrback(self.handle_bad_backend_response)
         return d
