@@ -1,3 +1,3 @@
 __all__ = ['TextWidget']
 
-from diamondash.widgets.text.text_widget import TextWidget
+from diamondash.widgets.text.text import TextWidget
