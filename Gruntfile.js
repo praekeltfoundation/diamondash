@@ -26,7 +26,7 @@ module.exports = function(grunt) {
     "diamondash/client/vendor/d3.js",
 
     "diamondash/client/js/index.js",
-    "diamondash/widgets/index.js",
+    "diamondash/client/js/widgets.js",
     "diamondash/widgets/widget/widget.js",
     "diamondash/widgets/graph/graph.js",
     "diamondash/widgets/lvalue/lvalue.js",
