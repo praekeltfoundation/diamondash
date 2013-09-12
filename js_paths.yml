@@ -1,0 +1,37 @@
+client:
+  js:
+    vendor:
+      src:
+        - 'diamondash/client/vendor/jquery.js'
+        - 'diamondash/client/vendor/underscore.js'
+        - 'diamondash/client/vendor/backbone.js'
+        - 'diamondash/client/vendor/d3.js'
+      dest: 'diamondash/public/js/vendor.js'
+    diamondash:
+      src:
+        - 'diamondash/client/js/index.js'
+        - 'diamondash/widgets/index.js'
+        - 'diamondash/widgets/widget/widget.js'
+        - 'diamondash/widgets/graph/graph.js'
+        - 'diamondash/widgets/lvalue/lvalue.js'
+        - 'diamondash/client/js/dashboard.js'
+      dest: 'diamondash/public/js/diamondash.js'
+  css:
+    vendor:
+      src:
+        - 'diamondash/client/vendor/bootstrap/css/bootstrap.css'
+      dest: 'diamondash/public/css/vendor.css'
+    diamondash:
+      src:
+        - 'diamondash/client/css/*.css'
+        - "diamondash/widgets/**/*.css"
+      dest: 'diamondash/public/css/diamondash.css'
+
+tests:
+  client:
+    vendor:
+      -
+    spec:
+      # - 'diamondash/client/tests/init.js'
+      - 'diamondash/client/tests/**/*.test.js'
+      - 'diamondash/widgets/**/*.test.js'

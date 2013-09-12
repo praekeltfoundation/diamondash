@@ -7,9 +7,10 @@ window = document.createWindow();
 navigator = window.navigator;
 
 $ = require('jquery');
-_ = require('../diamondash/client/vendor/underscore');
-Backbone = require('../diamondash/client/vendor/backbone');
+_ = require('../vendor/underscore');
+Backbone = require('../vendor/backbone');
 Backbone.$ = $;
 
 window = global;
-require('../diamondash/public/js/diamondash');
+require('../../public/js/vendor');
+require('../../public/js/diamondash');

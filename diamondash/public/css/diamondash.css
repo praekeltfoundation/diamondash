@@ -1,0 +1,217 @@
+.row {
+	margin-bottom: 18px;
+}
+
+.widget-title {
+	background-color: #333;
+	color: #eee;
+	text-align: center;
+	min-height: 30px;
+}
+
+.widget-title h4 {
+	line-height: 30px;
+}
+
+.dashboard-title {
+  margin-bottom: 14px;
+}
+
+.error-header {
+  margin: auto 0;
+  text-align: center;
+}
+
+.error-header * {
+  padding: 16px 2px;
+}
+
+.error-header #brand * {
+  color: #222;
+  font-weight: normal;
+  font-family: georgia;
+  font-size: 34px;
+  line-height: 120px;
+}
+
+.error-details {
+  background-color: #222;
+  color: #fdfdfd;
+}
+
+.error-header #brand a {
+}
+
+.error-header #title {
+  font-size: 80px;
+  line-height: 80px;
+  font-family: "Lucida Console", Monaco, monospace;
+}
+
+.error-header #description {
+  font-size: 22px;
+  line-height: 21px;
+  font-family: "Trebuchet MS", Helvetica, sans-serif
+}
+
+.dashboard-list {
+	list-style-type: none;
+}
+
+.dashboard-list-item {
+	margin: 8px 2px;
+}
+
+.dashboard-list-item a:hover {
+	text-decoration: none;
+}
+
+body {
+	padding-top: 60px;
+  background-color: #fdfdfd;
+}
+
+a {
+	color: #555;
+}
+
+a:hover {
+	color: #333;
+}
+
+.navbar .brand {
+  font-family: georgia;
+  font-size: 21px;
+  color: #ddd;
+}
+
+.chart *, .axis * {
+  pointer-events: none;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  font-family: sans-serif;
+  font-size: 11px;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.5px;
+  pointer-events: none;
+}
+
+.legend {
+  text-align: left;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend li {
+  width: 275px;
+  float: left;
+  margin: 2px 4px;
+}
+
+.legend-item-swatch {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  margin: 0 4px;
+  border-radius: 4px;
+}
+
+.hover-legend-item-value {
+  color: #555;
+}
+
+.legend-item-value, .hover-legend-item-value {
+  font-weight: bold;
+  -webkit-transition: all 250ms linear;
+  -moz-transition: all 250ms linear;
+  -o-transition: all 250ms linear;
+  transition: all 250ms linear;
+}
+
+.dot, .hover-dot {
+  pointer-events: none;
+}
+
+.dot {
+  stroke: none;
+}
+
+.hover-dot {
+  fill: none;
+  stroke-width: 1.5px;
+}
+
+.hover-marker line {
+  stroke: #555;
+}
+.hover-marker text {
+  fill: #555;
+}
+
+.axis g {
+  -webkit-transition: fill-opacity 250ms linear;
+  -moz-transition: fill-opacity 250ms linear;
+  -o-transition: fill-opacity 250ms linear;
+  transition: fill-opacity 250ms linear;
+ }
+
+.widget-container {
+  padding: 0;
+  text-align: center;
+}
+
+.lvalue .last {
+  margin: 10px auto;
+  text-align: center;
+	height: 44px;
+}
+
+.lvalue .short.last {
+	font-size: 44px;
+}
+
+.lvalue .long.last {
+	font-size: 24px;
+	color: #555;
+}
+
+.lvalue .time {
+  margin: 8px auto;
+  margin-right: 12px;
+	font-size: 12px;
+  text-align: right;
+	color: #808080;
+}
+
+.lvalue .time .from, .lvalue .time .to {
+  display: block;
+}
+
+.lvalue .change {
+  margin: 8px auto;
+	font-size: 20px;
+	margin-left: 5px;
+}
+
+.good.change { color: #33cc33; }
+.bad.change { color: #cc3333; }
+
+.text-widget-text {
+    margin: 0 auto;
+    text-align: center;
+    font-size: 55px; 
+    line-height: 60px;
+}

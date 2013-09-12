@@ -1,83 +1,48 @@
+require('js-yaml');
+
 module.exports = function(grunt) {
-  var globalStylesheets = [
-    "diamondash/client/vendor/bootstrap/css/bootstrap.css",
-    "diamondash/client/vendor/bootstrap/css/bootstrap-responsive.css",
-    "diamondash/client/css/style.css"
-  ];
-
-  var indexStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/index.css"
-  ]);
-
-  var errorStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/error.css"
-  ]);
-
-  var dashboardStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/dashboard.css",
-    "diamondash/widgets/**/*.css"
-  ]);
-
-  var diamondashModules = [
-    // vendor modules
-    "diamondash/client/vendor/jquery.js",
-    "diamondash/client/vendor/underscore.js",
-    "diamondash/client/vendor/backbone.js",
-    "diamondash/client/vendor/d3.js",
-
-    // src
-    "diamondash/client/js/index.js",
-    "diamondash/widgets/index.js",
-    "diamondash/widgets/widget/widget.js",
-    "diamondash/widgets/graph/graph.js",
-    "diamondash/widgets/lvalue/lvalue.js",
-    "diamondash/client/js/dashboard.js",
-  ];
-
   grunt.initConfig({
+    paths: require('./js_paths.yml'),
     concat: {
-      "index.css": {
-        src: indexStylesheets,
-        dest: "diamondash/public/css/index.css"
+      'vendor.css': {
+        src: ['<%= paths.client.css.vendor.src %>'],
+        dest: '<%= paths.client.css.vendor.dest %>'
       },
-      "error.css": {
-        src: errorStylesheets,
-        dest: "diamondash/public/css/error.css"
+      'diamondash.css': {
+        src: ['<%= paths.client.css.diamondash.src %>'],
+      dest: '<%= paths.client.css.diamondash.dest %>'
       },
-      "dashboard.css": {
-        src: dashboardStylesheets,
-        dest: "diamondash/public/css/dashboard.css"
+      'vendor.js': {
+        src: ['<%= paths.client.js.vendor.src %>'],
+        dest: '<%= paths.client.js.vendor.dest %>'
       },
-      "diamondash.js": {
-        src: diamondashModules,
-        dest: "diamondash/public/js/diamondash.js"
+      'diamondash.js': {
+        src: ['<%= paths.client.js.diamondash.src %>'],
+        dest: '<%= paths.client.js.diamondash.dest %>'
       }
     },
     watch: {
-      "index.css": {
-        files: indexStylesheets,
-        tasks: ["concat:index.css"]
+      'vendor.css': {
+        files: ['<%= paths.client.css.vendor.src %>'],
+        tasks: ["concat:vendor.css"]
       },
-      "error.css": {
-        files: errorStylesheets,
-        tasks: ["concat:error.css"]
+      'diamondash.css': {
+        files: ['<%= paths.client.css.diamondash.src %>'],
+        tasks: ["concat:diamondash.css"]
       },
-      "dashboard.css": {
-        files: dashboardStylesheets,
-        tasks: ["concat:dashboard.css"]
+      'vendor.js': {
+        files: ['<%= paths.client.js.vendor.src %>'],
+        tasks: ["concat:vendor.js"]
       },
-      "diamondash.js": {
-        files: diamondashModules,
+      'diamondash.js': {
+        files: ['<%= paths.client.js.diamondash.src %>'],
         tasks: ["concat:diamondash.js"]
       }
     },
     mocha: {
-      "diamondash.js": {
-        tests: [
-          "diamondash/client/**/*.test.js",
-          "diamondash/widgets/**/*.test.js"
-        ],
-        requires: ["utils/client-test-helper.js"]
+      client: {
+        tests: ['<%= paths.tests.client.spec %>'],
+        requires: ['diamondash/client/tests/init.js']
       }
     }
   });
