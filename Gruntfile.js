@@ -25,6 +25,7 @@ module.exports = function(grunt) {
     "diamondash/client/vendor/backbone.js",
     "diamondash/client/vendor/d3.js",
 
+    // src
     "diamondash/client/js/index.js",
     "diamondash/client/js/widgets.js",
     "diamondash/widgets/widget/widget.js",
