@@ -30,6 +30,7 @@ module.exports = function(grunt) {
     "diamondash/widgets/widget/widget.js",
     "diamondash/widgets/graph/graph.js",
     "diamondash/widgets/lvalue/lvalue.js",
+    "diamondash/widgets/text/text.js",
     "diamondash/client/js/dashboard.js",
   ];
 

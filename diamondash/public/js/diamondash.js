@@ -12363,7 +12363,7 @@ diamondash.widgets.widget = function() {
 
   var WidgetModel = Backbone.Model.extend({
     idAttribute: 'name',
-    isStatic: true,
+    isStatic: false,
 
     _fetch: Backbone.Model.prototype.fetch,
     fetch: function() {
@@ -12881,6 +12881,20 @@ diamondash.widgets.lvalue = function() {
     LValueModel: LValueModel,
     LastValueView: LastValueView,
     LValueView: LValueView 
+  };
+}.call(this);
+
+diamondash.widgets.text = function() {
+  var widgets = diamondash.widgets;
+
+  var TextModel = widgets.widget.WidgetModel.extend({
+    isStatic: true
+  });
+
+  widgets.registry.add('text', {model: TextModel});
+
+  return {
+    TextModel: TextModel
   };
 }.call(this);
 
