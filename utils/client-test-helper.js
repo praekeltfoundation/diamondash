@@ -11,4 +11,5 @@ _ = require('../diamondash/client/vendor/underscore');
 Backbone = require('../diamondash/client/vendor/backbone');
 Backbone.$ = $;
 
-diamondash = require('../diamondash/public/js/diamondash');
+window = global;
+require('../diamondash/public/js/diamondash');

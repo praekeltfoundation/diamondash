@@ -9,8 +9,6 @@ class DynamicWidget(Widget):
     __CONFIG_TAG = 'diamondash.widgets.dynamic.DynamicWidget'
     TYPE_NAME = 'dynamic'
 
-    TYPE_NAME = 'dynamic'
-
     def __init__(self, backend, time_range, **kwargs):
         super(DynamicWidget, self).__init__(**kwargs)
         self.backend = backend

@@ -16,8 +16,8 @@ class LValueWidget(DynamicWidget):
     MAX_COLUMN_SPAN = 2
 
     TYPE_NAME = 'lvalue'
-    MODEL = 'LValueWidgetModel'
-    VIEW = 'LValueWidgetView'
+    MODEL = 'LValueModel'
+    VIEW = 'LValueView'
 
     @classmethod
     def parse_config(cls, config, class_defaults={}):

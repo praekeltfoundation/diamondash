@@ -1,34 +1,42 @@
-var widgets = diamondash.widgets;
+diamondash.widgets.widget = function() {
+  var widgets = diamondash.widgets;
 
-widgets.WidgetModel = Backbone.Model.extend({
-  idAttribute: 'name',
-  isStatic: true,
+  var WidgetModel = Backbone.Model.extend({
+    idAttribute: 'name',
+    isStatic: true,
 
-  _fetch: Backbone.Model.prototype.fetch,
-  fetch: function() {
-    if (!this.isStatic) {
-      this._fetch();
+    _fetch: Backbone.Model.prototype.fetch,
+    fetch: function() {
+      if (!this.isStatic) {
+        this._fetch();
+      }
+    },
+
+    _parse: Backbone.Model.prototype.parse,
+    parse: function(response, options) {
+      if (response && !_.isEmpty(response)) {
+        return this._parse(response, options);
+      }
+    },
+
+    url: function() {
+      return '/api/widgets/'
+        + this.get('dashboardName') + '/'
+        + this.get('name')
+        + '/snapshot';
     }
-  },
+  });
 
-  _parse: Backbone.Model.prototype.parse,
-  parse: function(response, options) {
-    if (response && !_.isEmpty(response)) {
-      return this._parse(response, options);
-    }
-  },
+  var WidgetCollection = Backbone.Collection.extend({
+    model: WidgetModel
+  });
 
-  url: function() {
-    return '/api/widgets/'
-      + this.get('dashboardName') + '/'
-      + this.get('name')
-      + '/snapshot';
-  }
-});
+  var WidgetView = Backbone.View.extend({
+  });
 
-widgets.WidgetCollection = Backbone.Collection.extend({
-  model: widgets.WidgetModel
-});
-
-widgets.WidgetView = Backbone.View.extend({
-});
+  return {
+    WidgetModel: WidgetModel,
+    WidgetCollection: WidgetCollection,
+    WidgetView: WidgetView
+  };
+}.call(this);

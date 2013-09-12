@@ -52,6 +52,7 @@ class Widget(Element, ConfigMixin):
             'view': {},
             'modelClass': cls.MODEL,
             'viewClass': cls.VIEW,
+            'typeName': cls.TYPE_NAME,
         }
 
         return config
