@@ -1,7 +1,7 @@
-(function() {
+diamondash.widgets.lvalue = function() {
   var widgets = diamondash.widgets;
 
-  widgets.LValueWidgetModel = widgets.WidgetModel.extend({
+  var LValueModel = widgets.widget.WidgetModel.extend({
     isStatic: false
   });
 
@@ -41,7 +41,7 @@
     }
   });
 
-  widgets.LValueWidgetView = widgets.WidgetView.extend({
+  var LValueView = widgets.widget.WidgetView.extend({
     jst: _.template([
       '<h1 class="last"></h1>',
       '<div class="<%= change %> change">',
@@ -109,4 +109,10 @@
       }
     }
   });
-}).call(this);
+
+  return {
+    LValueModel: LValueModel,
+    LastValueView: LastValueView,
+    LValueView: LValueView 
+  };
+}.call(this);
