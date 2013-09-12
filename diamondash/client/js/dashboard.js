@@ -20,13 +20,15 @@ diamondash.dashboard = function() {
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var widget = diamondash.widgets.registry.get(widgetConfig.typeName);
+      var widgetType = diamondash.widgets.registry.get(widgetConfig.typeName);
 
-      widgets.add(new widget.model(
+      var model = new widgetType.model(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
-        {collection: widgets}));
+        {collection: widgets});
 
-      widgetViews.push(new widget.view({
+      widgets.add(model);
+
+      widgetViews.push(new widgetType.view({
         el: $("#" + model.get('name')),
         model: model,
         config: widgetConfig.view
