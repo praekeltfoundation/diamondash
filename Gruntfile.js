@@ -27,10 +27,11 @@ module.exports = function(grunt) {
 
     // src
     "diamondash/client/js/index.js",
-    "diamondash/widgets/index.js",
+    "diamondash/client/js/widgets.js",
     "diamondash/widgets/widget/widget.js",
     "diamondash/widgets/graph/graph.js",
     "diamondash/widgets/lvalue/lvalue.js",
+    "diamondash/widgets/text/text.js",
     "diamondash/client/js/dashboard.js",
   ];
 

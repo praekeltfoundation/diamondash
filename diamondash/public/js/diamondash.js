@@ -12320,7 +12320,41 @@ window.diamondash = function() {
 }.call(this);
 
 diamondash.widgets = function() {
+  function WidgetRegistry(widgets) {
+    this.widgets = {};
+    
+    _(widgets || {}).each(function(options, name) {
+      this.add(name, options);
+    }, this);
+  };
+
+  WidgetRegistry.prototype = {
+    add: function(name, options) {
+      if (name in this.widgets) {
+        throw new Error("Widget type '" + name + "' already exists.");
+      }
+
+      options = options || {};
+      this.widgets[name] = {
+        view: options.view || diamondash.widgets.widget.WidgetView,
+        model: options.model || diamondash.widgets.widget.WidgetModel
+      };
+    },
+
+    get: function(name) {
+      return this.widgets[name];
+    },
+
+    remove: function(name) {
+      var widget = this.get(name);
+      delete this.widgets[name];
+      return widget;
+    }
+  };
+
   return {
+    registry: new WidgetRegistry(),
+    WidgetRegistry: WidgetRegistry
   };
 }.call(this);
 
@@ -12329,7 +12363,7 @@ diamondash.widgets.widget = function() {
 
   var WidgetModel = Backbone.Model.extend({
     idAttribute: 'name',
-    isStatic: true,
+    isStatic: false,
 
     _fetch: Backbone.Model.prototype.fetch,
     fetch: function() {
@@ -12713,6 +12747,11 @@ diamondash.widgets.graph = function() {
     }
   });
 
+  widgets.registry.add('graph', {
+    model: GraphModel,
+    view: GraphView
+  });
+
   return {
     GraphModel: GraphModel,
     GraphMetricModel: GraphMetricModel,
@@ -12833,10 +12872,29 @@ diamondash.widgets.lvalue = function() {
     }
   });
 
+  widgets.registry.add('lvalue', {
+    model: LValueModel,
+    view: LValueView
+  });
+
   return {
     LValueModel: LValueModel,
     LastValueView: LastValueView,
     LValueView: LValueView 
+  };
+}.call(this);
+
+diamondash.widgets.text = function() {
+  var widgets = diamondash.widgets;
+
+  var TextModel = widgets.widget.WidgetModel.extend({
+    isStatic: true
+  });
+
+  widgets.registry.add('text', {model: TextModel});
+
+  return {
+    TextModel: TextModel
   };
 }.call(this);
 
@@ -12862,22 +12920,19 @@ diamondash.dashboard = function() {
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var module = diamondash.widgets[widgetConfig.typeName];
-      var modelClass = module[widgetConfig.modelClass];
-      var viewClass = module[widgetConfig.viewClass];
+      var widgetType = diamondash.widgets.registry.get(widgetConfig.typeName);
 
-      var model = new modelClass(
+      var model = new widgetType.model(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
         {collection: widgets});
 
-      var view = new viewClass({
+      widgets.add(model);
+
+      widgetViews.push(new widgetType.view({
         el: $("#" + model.get('name')),
         model: model,
         config: widgetConfig.view
-      });
-
-      widgets.add(model);
-      widgetViews.push(view);
+      }));
     });
 
     return new DashboardController({
