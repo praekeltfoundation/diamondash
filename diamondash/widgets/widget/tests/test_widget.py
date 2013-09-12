@@ -34,8 +34,6 @@ class WidgetTestCase(unittest.TestCase):
                 'model': {'name': 'test-widget'},
                 'view': {},
                 'typeName': 'widget',
-                'modelClass': 'ToyWidgetModel',
-                'viewClass': 'ToyWidgetView',
             }
         })
 

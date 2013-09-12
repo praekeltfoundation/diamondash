@@ -50,8 +50,6 @@ class Widget(Element, ConfigMixin):
         config['client_config'] = {
             'model': {'name': name},
             'view': {},
-            'modelClass': cls.MODEL,
-            'viewClass': cls.VIEW,
             'typeName': cls.TYPE_NAME,
         }
 
