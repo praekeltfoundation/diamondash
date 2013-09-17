@@ -3,7 +3,7 @@
 
   <t:transparent t:render="widget_row_renderer"/>
   <script t:render="init_script_renderer">
-    var controller = new diamondash.DashboardController.fromConfig(<t:slot name="client_config_slot"/>);
+    var controller = new diamondash.dashboard.DashboardController.fromConfig(<t:slot name="client_config_slot"/>);
     controller.start();
   </script>
 </div>
