@@ -5,12 +5,12 @@ module.exports = function(config) {
 
   config.set({
     files: [].concat(
-      paths.client.css.vendor.src,
-      paths.client.css.diamondash.src,
-      paths.client.js.vendor.src,
-      paths.client.js.diamondash.src,
-      paths.tests.client.vendor,
-      paths.tests.client.spec
+      paths.vendor.css.src,
+      paths.diamondash.css.src,
+      paths.vendor.js.src,
+      paths.diamondash.js.src,
+      paths.tests.vendor,
+      paths.tests.spec
     ),
 
     browsers: ['PhantomJS'],

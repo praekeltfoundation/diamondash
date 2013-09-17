@@ -9,37 +9,37 @@ module.exports = function(grunt) {
     paths: require('./js_paths.yml'),
     concat: {
       'vendor.css': {
-        src: ['<%= paths.client.css.vendor.src %>'],
-        dest: '<%= paths.client.css.vendor.dest %>'
+        src: ['<%= paths.vendor.css.src %>'],
+        dest: '<%= paths.vendor.css.dest %>'
       },
       'diamondash.css': {
-        src: ['<%= paths.client.css.diamondash.src %>'],
-      dest: '<%= paths.client.css.diamondash.dest %>'
+        src: ['<%= paths.diamondash.css.src %>'],
+      dest: '<%= paths.diamondash.css.dest %>'
       },
       'vendor.js': {
-        src: ['<%= paths.client.js.vendor.src %>'],
-        dest: '<%= paths.client.js.vendor.dest %>'
+        src: ['<%= paths.vendor.js.src %>'],
+        dest: '<%= paths.vendor.js.dest %>'
       },
       'diamondash.js': {
-        src: ['<%= paths.client.js.diamondash.src %>'],
-        dest: '<%= paths.client.js.diamondash.dest %>'
+        src: ['<%= paths.diamondash.js.src %>'],
+        dest: '<%= paths.diamondash.js.dest %>'
       }
     },
     watch: {
       'vendor.css': {
-        files: ['<%= paths.client.css.vendor.src %>'],
+        files: ['<%= paths.vendor.css.src %>'],
         tasks: ['concat:vendor.css']
       },
       'diamondash.css': {
-        files: ['<%= paths.client.css.diamondash.src %>'],
+        files: ['<%= paths.diamondash.css.src %>'],
         tasks: ['concat:diamondash.css']
       },
       'vendor.js': {
-        files: ['<%= paths.client.js.vendor.src %>'],
+        files: ['<%= paths.vendor.js.src %>'],
         tasks: ['concat:vendor.js']
       },
       'diamondash.js': {
-        files: ['<%= paths.client.js.diamondash.src %>'],
+        files: ['<%= paths.diamondash.js.src %>'],
         tasks: ['concat:diamondash.js']
       }
     },
