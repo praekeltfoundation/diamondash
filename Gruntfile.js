@@ -1,6 +1,10 @@
 require('js-yaml');
 
 module.exports = function(grunt) {
+  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-karma');
+
   grunt.initConfig({
     paths: require('./js_paths.yml'),
     concat: {
@@ -24,59 +28,40 @@ module.exports = function(grunt) {
     watch: {
       'vendor.css': {
         files: ['<%= paths.client.css.vendor.src %>'],
-        tasks: ["concat:vendor.css"]
+        tasks: ['concat:vendor.css']
       },
       'diamondash.css': {
         files: ['<%= paths.client.css.diamondash.src %>'],
-        tasks: ["concat:diamondash.css"]
+        tasks: ['concat:diamondash.css']
       },
       'vendor.js': {
         files: ['<%= paths.client.js.vendor.src %>'],
-        tasks: ["concat:vendor.js"]
+        tasks: ['concat:vendor.js']
       },
       'diamondash.js': {
         files: ['<%= paths.client.js.diamondash.src %>'],
-        tasks: ["concat:diamondash.js"]
+        tasks: ['concat:diamondash.js']
       }
     },
-    mocha: {
-      client: {
-        tests: ['<%= paths.tests.client.spec %>'],
-        requires: ['diamondash/client/tests/init.js']
+    karma: {
+      dev: {
+        singleRun: true,
+        reporters: ['dots'],
+        configFile: 'karma.conf.js'
       }
     }
   });
 
-  grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.registerTask('build', [
+    'concat'
+  ]);
 
-  grunt.registerTask("default", ["concat"]);
-  grunt.registerTask("test", ["mocha"]);
+  grunt.registerTask('default', [
+    'build',
+    'test'
+  ]);
 
-  grunt.registerMultiTask("mocha", "Mocha", function () {
-    var exec = require('child_process').exec,
-        callback = this.async(),
-        requires,
-        tests,
-        cmd;
-
-      requires = grunt.file.expand(this.data.requires || []).map(
-        function(file) { return "--require " + file; });
-
-      tests = grunt.file.expand(this.data.tests || []);
-
-      cmd = [].concat([
-        "NODE_ENV=test",
-        "./node_modules/mocha/bin/mocha",
-        "--reporter", this.data.reporter || "spec",
-        "--ui", this.data.ui || "bdd",
-        "--colors"
-      ], requires, tests).join(" ");
-
-    exec(cmd, function(err, output) {
-      if (err !== null) { throw(err); }
-      console.log(output);
-      callback();
-    });
-  });
+  grunt.registerTask('test', [
+    'karma'
+  ]);
 };
