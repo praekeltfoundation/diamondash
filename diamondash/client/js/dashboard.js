@@ -20,7 +20,7 @@ diamondash.dashboard = function() {
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var module = diamondash.widgets[widgetConfig.typeName];
+      var module = diamondash.widgets[widgetConfig.typeName] || diamondash.widgets.widget;
       var modelClass = module[widgetConfig.modelClass];
       var viewClass = module[widgetConfig.viewClass];
 
