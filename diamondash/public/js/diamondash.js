@@ -425,10 +425,12 @@ diamondash.widgets.lvalue = function() {
     },
 
     blink: function(fn) {
+      var self = this;
+
       this.$el.fadeOut(this.fadeDuration, function() {
-        fn.call(this);
-        this.$el.fadeIn(this.fadeDuration);
-      }.bind(this));
+        fn.call(self);
+        self.$el.fadeIn(self.fadeDuration);
+      });
     },
 
     render: function(longMode) {
