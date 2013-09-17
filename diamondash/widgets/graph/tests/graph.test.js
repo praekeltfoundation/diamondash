@@ -47,34 +47,34 @@ describe("diamondash.widgets.graph", function() {
         {collection: collection});
     });
 
-    describe(".getLValue()", function() {
+    describe(".lastValue()", function() {
       it("should return the last value.", function() {
-        assert.equal(model.getLValue(), 5);
+        assert.equal(model.lastValue(), 5);
       });
 
       it("should return null for empty datapoints.", function() {
         model.set('datapoints', []);
-        assert.equal(model.getLValue(), null);
+        assert.equal(model.lastValue(), null);
       });
 
       it("should return null on undefined y values.", function() {
         model.set('datapoints', [{x: 0}]);
-        assert.equal(model.getLValue(), null);
+        assert.equal(model.lastValue(), null);
       });
     });
 
-    describe(".getValueAt()", function() {
+    describe(".valueAt()", function() {
       it("should return a value if it exists at x", function() {
-        assert.equal(model.getValueAt(1), 2);
+        assert.equal(model.valueAt(1), 2);
       });
 
       it("should return null if no value exists at x", function() {
-        assert.equal(model.getValueAt(2), null);
+        assert.equal(model.valueAt(2), null);
       });
 
       it("should return null for empty datapoints", function() {
         model.set('datapoints', []);
-        assert.equal(model.getValueAt(2), null);
+        assert.equal(model.valueAt(2), null);
       });
     });
   });

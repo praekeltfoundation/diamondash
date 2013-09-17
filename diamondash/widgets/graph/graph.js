@@ -4,11 +4,6 @@ diamondash.widgets.graph = function() {
   var GraphMetricModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
 
-    initialize: function(options) {
-      if (!this.has('datapoints')) { this.set('datapoints', []); }
-      if (!this.has('color')) { this.set('color', this.collection.color()); }
-    },
-
     defaults: function() {
       return {
         'datapoints': [],
@@ -16,23 +11,25 @@ diamondash.widgets.graph = function() {
       };
     },
 
-    bisect: d3.bisector(function(d) { return d.x; }).left,
+    bisect: d3
+      .bisector(function(d) { return d.x; })
+      .left,
 
-    getLValue: function(x) {
+    lastValue: function(x) {
       var datapoints = this.get('datapoints'),
-          v = (datapoints[datapoints.length - 1] || {}).y;
+          d = datapoints[datapoints.length - 1];
 
-      return typeof v !== "undefined"
-        ? v
+      return d && typeof d.y !== 'undefined'
+        ? d.y
         : null;
     },
 
-    getValueAt: function(x) {
+    valueAt: function(x) {
       var datapoints = this.get('datapoints'),
-          i = this.bisect(datapoints, x),
-          d = datapoints[i] || {};
+          i = this.bisect(datapoints, x);
+          d = datapoints[i];
 
-      return x === d.x
+      return d && x === d.x
         ? d.y
         : null;
     }
@@ -53,7 +50,8 @@ diamondash.widgets.graph = function() {
     relations: [{
       type: Backbone.HasMany,
       key: 'metrics',
-      relatedModel: GraphMetricModel
+      relatedModel: GraphMetricModel,
+      collectionType: GraphMetricCollection
     }],
 
     defaults: {
@@ -217,7 +215,7 @@ diamondash.widgets.graph = function() {
       svgX = fx(x);
 
       var metrics = this.model.get('metrics');
-      var metricValues = metrics.invoke('getValueAt', x);
+      var metricValues = metrics.invoke('valueAt', x);
 
       // draw hover marker
       var hoverMarker = this.axisLine.selectAll('.hover-marker').data([null]);
@@ -273,7 +271,7 @@ diamondash.widgets.graph = function() {
 
     renderLValues: function() {
       this.legendItemValues
-        .data(this.model.get('metrics').invoke('getLValue'))
+        .data(this.model.get('metrics').invoke('lastValue'))
         .text(this.formatValue);
     },
 
