@@ -1,0 +1,6 @@
+<t:transparent xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+  <link href="css/vendor.css" rel="stylesheet"/>
+  <link href="css/diamondash.css" rel="stylesheet"/>
+  <script src="js/vendor.js"/>
+  <script src="js/diamondash.js"/>
+</t:transparent>
