@@ -1,4 +1,10 @@
 describe("diamondash.widgets.lvalue", function(){
+  var utils = diamondash.test.utils;
+
+  afterEach(function() {
+    utils.unregisterModels();
+  });
+
   describe("LValueView", function(){
     var LValueView = diamondash.widgets.lvalue.LValueView,
         LValueModel = diamondash.widgets.lvalue.LValueModel;

@@ -1,5 +1,10 @@
 describe("diamondash.widgets", function() {
-  var widget = diamondash.widgets.widget;
+  var widget = diamondash.widgets.widget,
+      utils = diamondash.test.utils;
+
+  afterEach(function() {
+    utils.unregisterModels();
+  });
 
   describe("WidgetModel", function() {
     var WidgetModel = widget.WidgetModel;

@@ -12,7 +12,8 @@
     "underscore": "~1.5.2",
     "d3": "~3.3.3",
     "bootstrap": "~3.0.0",
-    "jquery": "~2.0.3"
+    "jquery": "~2.0.3",
+    "backbone-relational": "~0.8.6"
   },
   "devDependencies": {
     "chai": "~1.7.2",

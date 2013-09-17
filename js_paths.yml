@@ -4,6 +4,7 @@ vendor:
       - 'bower_components/jquery/jquery.js'
       - 'bower_components/underscore/underscore.js'
       - 'bower_components/backbone/backbone.js'
+      - 'bower_components/backbone-relational/backbone-relational.js'
       - 'bower_components/d3/d3.js'
     dest: 'diamondash/public/js/vendor.js'
   css:
@@ -37,5 +38,6 @@ tests:
     - 'bower_components/chai/chai.js'
   spec:
     - 'diamondash/client/tests/init.js'
+    - 'diamondash/client/tests/utils.js'
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'

@@ -1,12 +1,19 @@
 diamondash.widgets.graph = function() {
   var widgets = diamondash.widgets;
 
-  var GraphMetricModel = Backbone.Model.extend({
+  var GraphMetricModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
 
     initialize: function(options) {
       if (!this.has('datapoints')) { this.set('datapoints', []); }
       if (!this.has('color')) { this.set('color', this.collection.color()); }
+    },
+
+    defaults: function() {
+      return {
+        'datapoints': [],
+        'color': this.collection.color()
+      };
     },
 
     bisect: d3.bisector(function(d) { return d.x; }).left,
@@ -43,46 +50,17 @@ diamondash.widgets.graph = function() {
   var GraphModel = widgets.widget.WidgetModel.extend({
     isStatic: false,
 
-    initialize: function(options) {
-      options = _(options || {}).defaults({metrics: []});
-      var metrics = new GraphMetricCollection(options.metrics);
+    relations: [{
+      type: Backbone.HasMany,
+      key: 'metrics',
+      relatedModel: GraphMetricModel
+    }],
 
-      this
-        .listenTo(
-          metrics,
-          'all',
-          function(eventName) { this.trigger(eventName + ':metrics'); })
-        .listenTo(
-          metrics,
-          'change',
-          function() { this.trigger('change'); });
-
-      this.set({
-        metrics: metrics,
-        domain: 0,
-        range: 0
-      });
+    defaults: {
+      'domain': 0,
+      'range': 0,
+      'metrics': []
     },
-
-    getMetricModels: function() { return this.get('metrics').models; },
-
-    parse: function(data) {
-      this.set({
-        domain: data.domain,
-        range: data.range
-      }, {silent: true});
-
-      var metrics = this.get('metrics');
-      
-      data.metrics.forEach(function(d) {
-        var m = metrics.get(d.name);
-        if (typeof m !== 'undefined') {
-          m.set('datapoints', d.datapoints, {silent: true});
-        }
-      });
-
-      this.trigger('change');
-    }
   });
 
   var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
@@ -103,7 +81,7 @@ diamondash.widgets.graph = function() {
 
     initialize: function(options) {
       var self = this,
-          metrics = this.model.getMetricModels(),
+          metrics = this.model.get('metrics').models,
           d3el = d3.select(this.el);
 
       // Parse Config
