@@ -3,10 +3,13 @@ require('js-yaml');
 module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-exec');
   grunt.loadNpmTasks('grunt-karma');
 
+  var paths = require('./js_paths.yml');
+
   grunt.initConfig({
-    paths: require('./js_paths.yml'),
+    paths: paths,
     concat: {
       'vendor.css': {
         src: ['<%= paths.vendor.css.src %>'],
@@ -43,6 +46,11 @@ module.exports = function(grunt) {
         tasks: ['concat:diamondash.js']
       }
     },
+    exec: {
+      'vendor.fonts': {
+        cmd: 'cp <%= paths.vendor.fonts.src %> <%= paths.vendor.fonts.dest %>'
+      }
+    },
     karma: {
       dev: {
         singleRun: true,
@@ -53,6 +61,7 @@ module.exports = function(grunt) {
   });
 
   grunt.registerTask('build', [
+    'exec:vendor.fonts',
     'concat'
   ]);
 
