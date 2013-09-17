@@ -427,17 +427,7 @@ diamondash.widgets.lvalue = function() {
   });
 
   var LValueView = widgets.widget.WidgetView.extend({
-    jst: _.template([
-      '<h1 class="last"></h1>',
-      '<div class="<%= change %> change">',
-        '<span class="diff"><%= diff %></span> ',
-        '<span class="percentage">(<%= percentage %>)</span>',
-      '</div>',
-      '<div class="time">',
-        '<span class="from">from <%= from %></span>',
-        '<span class="to">to <%= to %><span>',
-      '</div>'
-    ].join('')),
+    jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
       this.listenTo(this.model, 'change', this.render);

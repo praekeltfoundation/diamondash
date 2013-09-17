@@ -26,6 +26,10 @@ diamondash:
       - 'diamondash/widgets/lvalue/lvalue.js'
       - 'diamondash/client/js/dashboard.js'
     dest: 'diamondash/public/js/diamondash.js'
+  jst:
+    src:
+      - 'diamondash/widgets/lvalue/lvalue.jst'
+    dest: 'diamondash/public/js/templates.js'
   css:
     src:
       - 'diamondash/client/css/*.css'
