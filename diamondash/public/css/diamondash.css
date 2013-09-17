@@ -79,10 +79,19 @@ a:hover {
 	color: #333;
 }
 
+.navbar {
+  background: #222;
+}
+
 .navbar .brand {
   font-family: georgia;
   font-size: 21px;
   color: #ddd;
+  line-height: 46px;
+}
+
+.navbar .brand:hover {
+  text-decoration: none;
 }
 
 .chart *, .axis * {

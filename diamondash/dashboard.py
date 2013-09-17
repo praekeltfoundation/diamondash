@@ -213,7 +213,7 @@ class WidgetContainer(Element):
     def __init__(self, widget):
         self.widget = widget
         self.width = widget.width
-        span_class = "span%s" % widget.width
+        span_class = "col-md-%s" % widget.width
         self.classes = " ".join(('widget', widget.TYPE_NAME, span_class))
 
     @renderer
