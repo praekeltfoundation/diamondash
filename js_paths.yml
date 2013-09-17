@@ -20,6 +20,7 @@ diamondash:
   js:
     src:
       - 'diamondash/client/js/index.js'
+      - 'diamondash/client/js/utils.js'
       - 'diamondash/widgets/index.js'
       - 'diamondash/widgets/widget/widget.js'
       - 'diamondash/widgets/graph/graph.js'
@@ -29,6 +30,7 @@ diamondash:
   jst:
     src:
       - 'diamondash/widgets/lvalue/lvalue.jst'
+      - 'diamondash/widgets/graph/legend.jst'
     dest: 'diamondash/public/js/templates.js'
   css:
     src:
