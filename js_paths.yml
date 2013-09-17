@@ -2,10 +2,10 @@ client:
   js:
     vendor:
       src:
-        - 'diamondash/client/vendor/jquery.js'
-        - 'diamondash/client/vendor/underscore.js'
-        - 'diamondash/client/vendor/backbone.js'
-        - 'diamondash/client/vendor/d3.js'
+        - 'bower_components/jquery/jquery.js'
+        - 'bower_components/underscore/underscore.js'
+        - 'bower_components/backbone/backbone.js'
+        - 'bower_components/d3/d3.js'
       dest: 'diamondash/public/js/vendor.js'
     diamondash:
       src:
@@ -19,18 +19,23 @@ client:
   css:
     vendor:
       src:
-        - 'diamondash/client/vendor/bootstrap/css/bootstrap.css'
+        - 'bower_components/bootstrap/dist/css/bootstrap.css'
       dest: 'diamondash/public/css/vendor.css'
     diamondash:
       src:
         - 'diamondash/client/css/*.css'
         - "diamondash/widgets/**/*.css"
       dest: 'diamondash/public/css/diamondash.css'
-
+  fonts:
+    vendor:
+      src:
+        - 'bower_components/bootstrap/dist/fonts/*'
+      dest: 'diamondash/public/fonts/'
 tests:
   client:
     vendor:
-      -
+      - 'bower_components/sinon/index.js'
+      - 'bower_components/chai/chai.js'
     spec:
       # - 'diamondash/client/tests/init.js'
       - 'diamondash/client/tests/**/*.test.js'

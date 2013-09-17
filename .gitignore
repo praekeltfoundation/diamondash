@@ -25,7 +25,7 @@ pip-log.txt
 #Translations
 *.mo
 
-#Mr Developer
+# Mr Developer
 .mr.developer.cfg
 
 *.pyc
@@ -43,5 +43,6 @@ logs/
 
 .*.swo
 
-# Node stuff (for js tests)
+# js stuff
 node_modules
+bower_components
