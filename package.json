@@ -1,6 +1,9 @@
 {
   "name": "diamondash",
   "version": "0.1.0",
+  "scripts": {
+    "install": "./utils/npm-post-install.sh"
+  },
   "devDependencies": {
     "grunt": ">=0.4.x",
     "grunt-cli": ">=0.1.6",
