@@ -46,17 +46,22 @@ To run (client and server)-side tests:
 To run client-side tests:
 
 `
-./utils/grunt test
+grunt test
 `
 
 For client-side development, a build step is required. To watch and build on changes:
 
 `
-./utils/grunt watch
+grunt watch
 `
 
 Alternatively, building can be done manually with:
 
 `
-./utils/grunt
+grunt build
 `
+
+
+Attributions
+------------
+Thank you to [GLYPHICONS](http://glyphicons.com) for allowing use of GYPHICONS Halflings in [Bootstrap](http://getbootstrap.com), which diamondash uses :)

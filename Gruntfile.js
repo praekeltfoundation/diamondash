@@ -7,10 +7,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-exec');
   grunt.loadNpmTasks('grunt-karma');
 
-  var paths = require('./js_paths.yml');
-
   grunt.initConfig({
-    paths: paths,
+    paths: require('./js_paths.yml'),
     concat: {
       'vendor.css': {
         src: ['<%= paths.vendor.css.src %>'],

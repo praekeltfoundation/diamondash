@@ -17,9 +17,6 @@ class GraphWidget(DynamicWidget):
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
-    MODEL = 'GraphModel'
-    VIEW = 'GraphView'
-
     def __init__(self, align_to_start=False, y_min=None, **kwargs):
         super(GraphWidget, self).__init__(**kwargs)
         self.align_to_start = align_to_start

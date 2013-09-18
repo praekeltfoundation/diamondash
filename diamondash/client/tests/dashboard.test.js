@@ -13,27 +13,28 @@ describe("diamondash.dashboard", function(){
       var dashboard, config;
       
       before(function() {
-        widgets.toy = {};
-
-        widgets.toy.ToyWidgetModelA = widgets.widget.WidgetModel.extend({
-          type: 'ToyWidgetModelA'
+        widgets.registry.add('toyA', {
+          model: widgets.widget.WidgetModel.extend({
+            type: 'ToyWidgetModelA'
+          }),
+          view:  widgets.widget.WidgetView.extend({
+            type: 'ToyWidgetViewA'
+          })
         });
 
-        widgets.toy.ToyWidgetModelB = widgets.widget.WidgetModel.extend({
-          type: 'ToyWidgetModelB'
-        });
-
-        widgets.toy.ToyWidgetViewA = widgets.widget.WidgetView.extend({
-          type: 'ToyWidgetViewA'
-        });
-
-        widgets.toy.ToyWidgetViewB = widgets.widget.WidgetView.extend({
-          type: 'ToyWidgetViewB'
+        widgets.registry.add('toyB', {
+          model: widgets.widget.WidgetModel.extend({
+            type: 'ToyWidgetModelB'
+          }),
+          view:  widgets.widget.WidgetView.extend({
+            type: 'ToyWidgetViewB'
+          })
         });
       });
 
       after(function() {
-        delete widgets.toy;
+        widgets.registry.remove('toyA');
+        widgets.registry.remove('toyB');
       });
 
       beforeEach(function() {
@@ -42,14 +43,12 @@ describe("diamondash.dashboard", function(){
           requestInterval: 10,
           widgets: [{
             model: {name: 'anakin-the-widget'},
-            typeName: "toy",
-            modelClass: "ToyWidgetModelA",
-            viewClass: "ToyWidgetViewA"
+            typeName: "toyA"
           }, {
             model: {name: 'qui-gon-the-widget'},
-            typeName: "toy",
-            modelClass: "ToyWidgetModelB",
-            viewClass:"ToyWidgetViewB"}]};
+            typeName: "toyB",
+          }]
+        };
       });
 
       it("should create the widget model collection correctly", function() {

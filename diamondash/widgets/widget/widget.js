@@ -3,7 +3,7 @@ diamondash.widgets.widget = function() {
 
   var WidgetModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
-    isStatic: true,
+    isStatic: false,
 
     _fetch: Backbone.Model.prototype.fetch,
     fetch: function() {
