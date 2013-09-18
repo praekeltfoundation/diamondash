@@ -60,3 +60,8 @@ Alternatively, building can be done manually with:
 `
 grunt build
 `
+
+
+Attributions
+------------
+Thank you to [GLYPHICONS](http://glyphicons.com) for allowing use of GYPHICONS Halflings in [Bootstrap](http://getbootstrap.com), which diamondash uses :)
