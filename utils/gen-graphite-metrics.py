@@ -6,8 +6,8 @@ import random
 from twisted.python import usage
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.basic import LineReceiver
-from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
+from twisted.internet.task import LoopingCall, react
+from twisted.internet.defer import Deferred
 
 
 class Options(usage.Options):
@@ -72,16 +72,15 @@ def maker():
     }
 
 
-def main(argv):
+def main(reactor, *argv):
     options = Options()
     options.parseOptions(argv)
 
     factory = MetricSendingClientFactory(maker, options['interval'])
     reactor.connectTCP(options['host'], options['port'], factory)
-    reactor.run()
+    return Deferred()
 
 
 if __name__ == '__main__':
     import sys
-
-    exit(main(sys.argv[1:]))
+    react(main, sys.argv[1:])
