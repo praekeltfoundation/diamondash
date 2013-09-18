@@ -14,7 +14,7 @@ from twisted.internet.defer import maybeDeferred
 from twisted.python import log
 from klein import Klein
 
-from diamondash import utils, ConfigError
+from diamondash import utils, ConfigError, PageElement
 from dashboard import Dashboard, DashboardPage
 from diamondash.widgets.dynamic import DynamicWidget
 
@@ -286,7 +286,7 @@ class DiamondashServer(object):
         return self.api_get(request, widget.get_snapshot)
 
 
-class Index(Element):
+class Index(PageElement):
     """Index element with links to dashboards"""
 
     loader = XMLString(resource_string(__name__, 'views/index.xml'))
@@ -347,7 +347,7 @@ class DashboardIndexListItem(Element):
         yield tag
 
 
-class ErrorPage(Element):
+class ErrorPage(PageElement):
     loader = XMLString(resource_string(
         __name__, 'views/error_page.xml'))
 
