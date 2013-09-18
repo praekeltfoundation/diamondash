@@ -1,118 +1,74 @@
+require('js-yaml');
+
 module.exports = function(grunt) {
-  var globalStylesheets = [
-    "diamondash/client/vendor/bootstrap/css/bootstrap.css",
-    "diamondash/client/vendor/bootstrap/css/bootstrap-responsive.css",
-    "diamondash/client/css/style.css"
-  ];
-
-  var indexStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/index.css"
-  ]);
-
-  var errorStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/error.css"
-  ]);
-
-  var dashboardStylesheets = [].concat(globalStylesheets, [
-    "diamondash/client/css/dashboard.css",
-    "diamondash/widgets/**/*.css"
-  ]);
-
-  var diamondashModules = [
-    // vendor modules
-    "diamondash/client/vendor/jquery.js",
-    "diamondash/client/vendor/underscore.js",
-    "diamondash/client/vendor/backbone.js",
-    "diamondash/client/vendor/d3.js",
-
-    // src
-    "diamondash/client/js/index.js",
-    "diamondash/client/js/widgets.js",
-    "diamondash/widgets/widget/widget.js",
-    "diamondash/widgets/graph/graph.js",
-    "diamondash/widgets/lvalue/lvalue.js",
-    "diamondash/widgets/text/text.js",
-    "diamondash/client/js/dashboard.js",
-  ];
+  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-exec');
+  grunt.loadNpmTasks('grunt-karma');
 
   grunt.initConfig({
+    paths: require('./js_paths.yml'),
     concat: {
-      "index.css": {
-        src: indexStylesheets,
-        dest: "diamondash/public/css/index.css"
+      'vendor.css': {
+        src: ['<%= paths.vendor.css.src %>'],
+        dest: '<%= paths.vendor.css.dest %>'
       },
-      "error.css": {
-        src: errorStylesheets,
-        dest: "diamondash/public/css/error.css"
+      'diamondash.css': {
+        src: ['<%= paths.diamondash.css.src %>'],
+      dest: '<%= paths.diamondash.css.dest %>'
       },
-      "dashboard.css": {
-        src: dashboardStylesheets,
-        dest: "diamondash/public/css/dashboard.css"
+      'vendor.js': {
+        src: ['<%= paths.vendor.js.src %>'],
+        dest: '<%= paths.vendor.js.dest %>'
       },
-      "diamondash.js": {
-        src: diamondashModules,
-        dest: "diamondash/public/js/diamondash.js"
+      'diamondash.js': {
+        src: ['<%= paths.diamondash.js.src %>'],
+        dest: '<%= paths.diamondash.js.dest %>'
       }
     },
     watch: {
-      "index.css": {
-        files: indexStylesheets,
-        tasks: ["concat:index.css"]
+      'vendor.css': {
+        files: ['<%= paths.vendor.css.src %>'],
+        tasks: ['concat:vendor.css']
       },
-      "error.css": {
-        files: errorStylesheets,
-        tasks: ["concat:error.css"]
+      'diamondash.css': {
+        files: ['<%= paths.diamondash.css.src %>'],
+        tasks: ['concat:diamondash.css']
       },
-      "dashboard.css": {
-        files: dashboardStylesheets,
-        tasks: ["concat:dashboard.css"]
+      'vendor.js': {
+        files: ['<%= paths.vendor.js.src %>'],
+        tasks: ['concat:vendor.js']
       },
-      "diamondash.js": {
-        files: diamondashModules,
-        tasks: ["concat:diamondash.js"]
+      'diamondash.js': {
+        files: ['<%= paths.diamondash.js.src %>'],
+        tasks: ['concat:diamondash.js']
       }
     },
-    mocha: {
-      "diamondash.js": {
-        tests: [
-          "diamondash/client/**/*.test.js",
-          "diamondash/widgets/**/*.test.js"
-        ],
-        requires: ["utils/client-test-helper.js"]
+    exec: {
+      'vendor.fonts': {
+        cmd: 'cp <%= paths.vendor.fonts.src %> <%= paths.vendor.fonts.dest %>'
+      }
+    },
+    karma: {
+      dev: {
+        singleRun: true,
+        reporters: ['dots'],
+        configFile: 'karma.conf.js'
       }
     }
   });
 
-  grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.registerTask('build', [
+    'exec:vendor.fonts',
+    'concat'
+  ]);
 
-  grunt.registerTask("default", ["concat"]);
-  grunt.registerTask("test", ["mocha"]);
+  grunt.registerTask('default', [
+    'build',
+    'test'
+  ]);
 
-  grunt.registerMultiTask("mocha", "Mocha", function () {
-    var exec = require('child_process').exec,
-        callback = this.async(),
-        requires,
-        tests,
-        cmd;
-
-      requires = grunt.file.expand(this.data.requires || []).map(
-        function(file) { return "--require " + file; });
-
-      tests = grunt.file.expand(this.data.tests || []);
-
-      cmd = [].concat([
-        "NODE_ENV=test",
-        "./node_modules/mocha/bin/mocha",
-        "--reporter", this.data.reporter || "spec",
-        "--ui", this.data.ui || "bdd",
-        "--colors"
-      ], requires, tests).join(" ");
-
-    exec(cmd, function(err, output) {
-      if (err !== null) { throw(err); }
-      console.log(output);
-      callback();
-    });
-  });
+  grunt.registerTask('test', [
+    'karma'
+  ]);
 };

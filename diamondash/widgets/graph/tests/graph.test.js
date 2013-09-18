@@ -19,7 +19,7 @@ describe("diamondash.widgets.graph", function() {
 
         model.on('change', function() { modelChanged = true; });
         model.on('change:metrics', function() { metricsChanged = true; });
-        metrics.update({name: 'm1', title: 'aaah'});
+        metrics.set({name: 'm1', title: 'aaah'});
         assert(modelChanged);
         assert(metricsChanged);
 
