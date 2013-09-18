@@ -33,18 +33,17 @@ describe("diamondash.widgets.graph", function() {
   });
 
   describe("GraphMetricModel", function() {
-    var GraphMetricModel = diamondash.widgets.graph.GraphMetricModel,
-        GraphMetricCollection = diamondash.widgets.graph.GraphMetricCollection;
+    var GraphMetricModel = diamondash.widgets.graph.GraphMetricModel;
 
-    var model,
-        collection;
+    var model;
 
     beforeEach(function() {
-      collection = new GraphMetricCollection();
-
-      model = new GraphMetricModel(
-        {datapoints: [{x: 0, y: 1}, {x: 1, y: 2}, {x: 3, y: 5}]},
-        {collection: collection});
+      model = new GraphMetricModel({
+        datapoints: [
+          {x: 0, y: 1},
+          {x: 1, y: 2},
+          {x: 3, y: 5}]
+      });
     });
 
     describe(".lastValue()", function() {
@@ -75,6 +74,27 @@ describe("diamondash.widgets.graph", function() {
       it("should return null for empty datapoints", function() {
         model.set('datapoints', []);
         assert.equal(model.valueAt(2), null);
+      });
+    });
+  });
+
+  describe("GraphMetricCollection", function() {
+    var GraphMetricCollection = diamondash.widgets.graph.GraphMetricCollection;
+
+    var collection;
+
+    beforeEach(function() {
+      collection = new GraphMetricCollection();
+    });
+
+    describe("when a metric is added", function() {
+      it("should assign it a color", function(done) {
+        collection.on('add', function(metric) {
+          assert.equal(metric.get('color'), '#1f77b4');
+          done();
+        });
+
+        collection.add({name: 'foo'});
       });
     });
   });

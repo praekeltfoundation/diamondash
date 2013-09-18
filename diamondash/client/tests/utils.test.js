@@ -1,4 +1,4 @@
-describe.only("diamondash.utils", function() {
+describe("diamondash.utils", function() {
   var utils = diamondash.utils;
 
   describe(".objectByName()", function() {

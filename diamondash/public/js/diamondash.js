@@ -3,6 +3,50 @@ window.diamondash = function() {
   };
 }.call(this);
 
+diamondash.utils = function() {
+  function objectByName(name, that) {
+    return _(name.split( '.' )).reduce(
+      function(obj, propName) { return obj[propName]; },
+      that || this);
+  }
+
+  function bindEvents(events, that) {
+    that = that || this;
+
+    _(events).each(function(fn, e) {
+      var parts = e.split(' '),
+          event = parts[0],
+          entity = parts[1];
+
+      if (entity) { that.listenTo(objectByName(entity, that), event, fn); }
+      else { that.on(event, fn); }
+    });
+  }
+
+  function ColorMaker(options) {
+    options = _({}).defaults(options, this.defaults);
+    this.colors = options.scale.domain(d3.range(0, options.n));
+    this.i = 0;
+  }
+
+  ColorMaker.prototype = {
+    defaults: {
+      scale: d3.scale.category10(),
+      n: 10
+    },
+
+    next: function() {
+      return this.colors(this.i++);
+    }
+  };
+
+  return {
+    objectByName: objectByName,
+    bindEvents: bindEvents,
+    ColorMaker: ColorMaker
+  };
+}.call(this);
+
 diamondash.widgets = function() {
   return {
   };
@@ -52,16 +96,14 @@ diamondash.widgets.widget = function() {
 }.call(this);
 
 diamondash.widgets.graph = function() {
-  var widgets = diamondash.widgets;
+  var utils = diamondash.utils,
+      widgets = diamondash.widgets;
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
 
-    defaults: function() {
-      return {
-        'datapoints': [],
-        'color': this.collection.color()
-      };
+    defaults: {
+      'datapoints': [],
     },
 
     bisect: d3
@@ -89,12 +131,21 @@ diamondash.widgets.graph = function() {
   });
 
   var GraphMetricCollection = Backbone.Collection.extend({
-    model: GraphMetricModel,
-    initialize: function() { this.colorIdx = 0; },
+    colorOptions: {
+      n: 10,
+      scale: d3.scale.category10()
+    },
 
-    maxColors: 10,
-    _color: d3.scale.category10().domain(d3.range(0, this.maxColors)),
-    color: function() { return this._color(this.colorIdx++); }
+    initialize: function() {
+      this.colors = new utils.ColorMaker(this.colorOptions);
+      utils.bindEvents(this.bindings, this);
+    },
+
+    bindings: {
+      'add': function(metric) {
+        metric.set('color', this.colors.next());
+      }
+    }
   });
 
   var GraphModel = widgets.widget.WidgetModel.extend({
@@ -114,8 +165,54 @@ diamondash.widgets.graph = function() {
     },
   });
 
-  var _formatTime = d3.time.format.utc("%d-%m %H:%M"),
-      _formatValue = d3.format(",f");
+  var GraphLegendView = Backbone.View.extend({
+    jst: JST['diamondash/widgets/graph/legend.jst'],
+
+    initialize: function(options) {
+      this.graph = options.graph;
+      this.model = this.graph.model;
+      utils.bindEvents(this.bindings, this);
+    },
+
+    format: function() {
+      var format = d3.format(",f");
+
+      return function(v) {
+        return v !== null
+          ? format(v)
+          : '';
+      };
+    }(),
+
+    render: function(x) {
+      this.$el.html(this.jst({
+        self: this,
+        x: x
+      }));
+
+      var metrics = this.model.get('metrics');
+      this.$('.legend-item').each(function() {
+        var $el = $(this),
+            name = $el.attr('data-name');
+
+        $el.css('background', metrics.get('color'));
+      });
+
+      return this;
+    },
+
+    bindings: {
+      'hover graph': function() {
+        this.$el.addClass('hover');
+        return this.render(x);
+      },
+
+      'unhover graph': function() {
+        this.$el.removeClass('hover');
+        return this.render();
+      }
+    }
+  });
 
   var GraphView = widgets.widget.WidgetView.extend({
     svgHeight: 214,
@@ -127,8 +224,10 @@ diamondash.widgets.graph = function() {
     dotSize: 3,
     margin: {top: 4, right: 4, bottom: 0, left: 4},
 
-    formatTime: function(t) { return _formatTime(new Date(t)); },
-    formatValue: function(v) { return v !== null ? _formatValue(v) : ''; },
+    formatTime: function() {
+      var format = d3.time.format.utc("%d-%m %H:%M");
+      return function(t) { return format(new Date(t)); };
+    }(),
 
     initialize: function(options) {
       var self = this,
@@ -189,25 +288,7 @@ diamondash.widgets.graph = function() {
 
       // Legend Setup
       // -----------
-      var legend = d3el.append('ul')
-        .attr('class', 'legend');
-
-      var legendItem = this.legendItem = legend.selectAll('.legend-item')
-        .data(metrics, function(d) { return d.get('name'); })
-        .enter()
-        .append('li')
-          .attr('class', 'legend-item');
-
-      this.legendItemSwatch = legendItem.append('span')
-        .attr('class', 'legend-item-swatch')
-        .style('background-color', function(d) { return d.get('color'); });
-
-      this.legendItemTitles = legendItem.append('span')
-        .attr('class', 'legend-item-title-label')
-        .text(function(d) { return d.get('title'); });
-
-      this.legendItemValues = legendItem.append('text')
-        .attr('class', 'legend-item-value');
+      this.legend = new GraphLegendView({graph: this});
 
       // Hover Setup
       // -----------
@@ -286,12 +367,6 @@ diamondash.widgets.graph = function() {
           return Math.abs(fx(d) - svgX) < markerCollisionDistance ? 0 : 1;
         });
 
-      // change legend values
-      this.legendItemValues
-        .data(metricValues)
-        .attr('class', 'hover-legend-item-value')
-        .text(this.formatValue);
-
       // draw dots
       var dots = this.svg.selectAll('.hover-dot')
         .data(_.reject(metricValues, function(d) { return d === null; }));
@@ -304,13 +379,13 @@ diamondash.widgets.graph = function() {
 
       dots.attr('cx', svgX)
           .attr('cy', fy);
+
+      return this;
     },
 
     unfocus: function() {
       this.svg.selectAll('.hover-dot, .hover-marker').remove();
       this.axisLine.selectAll('g').style('fill-opacity', 1);
-      this.renderLValues();
-      this.legendItemValues.attr('class', 'legend-item-value');
     }, 
 
     genTickValues: function(start, end, step) {
@@ -322,16 +397,10 @@ diamondash.widgets.graph = function() {
       return d3.range(start, end, step * i);
     },
 
-    renderLValues: function() {
-      this.legendItemValues
-        .data(this.model.get('metrics').invoke('lastValue'))
-        .text(this.formatValue);
-    },
-
     render: function() {
       var model = this.model,
           line = this.line,
-          metrics = model.getMetricModels(),
+          metrics = model.get('metrics').models,
           domain = model.get('domain'),
           range = model.get('range'),
           step = model.get('step'),
@@ -368,8 +437,7 @@ diamondash.widgets.graph = function() {
           .attr('cy', function(d) { return fy(d.y); });
       }
 
-      this.legendItemTitles.text(function(d) { return d.get('title') + ": "; });
-      this.renderLValues();
+      this.legend.render();
     }
   });
 

@@ -19,3 +19,24 @@ __p += '<h1 class="last"></h1>\n<div class="' +
 }
 return __p
 };
+
+this["JST"]["diamondash/widgets/graph/legend.jst"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
+function print() { __p += __j.call(arguments, '') }
+with (obj) {
+
+ self.model.get('metrics').each(function(m) { ;
+__p += '\n<li class="legend-item" data-name="' +
+((__t = ( m.get('name') )) == null ? '' : __t) +
+'">\n  <span class="swatch"></span>\n  <span class="title">' +
+((__t = ( m.get('title') )) == null ? '' : __t) +
+'</span>\n  <span class="value">' +
+((__t = ( self.format(x ? m.valueAt(x) : m.lastValue()) )) == null ? '' : __t) +
+'</span>\n</li>\n';
+ }); ;
+__p += '\n';
+
+}
+return __p
+};

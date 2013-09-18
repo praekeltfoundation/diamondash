@@ -33,7 +33,7 @@
   margin: 2px 4px;
 }
 
-.legend-item-swatch {
+.legend-item .swatch {
   display: inline-block;
   vertical-align: middle;
   width: 14px;
@@ -42,11 +42,11 @@
   border-radius: 4px;
 }
 
-.hover-legend-item-value {
+.hover.legend-item-value {
   color: #555;
 }
 
-.legend-item-value, .hover-legend-item-value {
+.legend-item .value {
   font-weight: bold;
   -webkit-transition: all 250ms linear;
   -moz-transition: all 250ms linear;
