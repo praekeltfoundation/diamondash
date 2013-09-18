@@ -20,22 +20,19 @@ diamondash.dashboard = function() {
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var module = diamondash.widgets[widgetConfig.typeName] || diamondash.widgets.widget;
-      var modelClass = module[widgetConfig.modelClass];
-      var viewClass = module[widgetConfig.viewClass];
+      var widgetType = diamondash.widgets.registry.get(widgetConfig.typeName);
 
-      var model = new modelClass(
+      var model = new widgetType.model(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
         {collection: widgets});
 
-      var view = new viewClass({
+      widgets.add(model);
+
+      widgetViews.push(new widgetType.view({
         el: $("#" + model.get('name')),
         model: model,
         config: widgetConfig.view
-      });
-
-      widgets.add(model);
-      widgetViews.push(view);
+      }));
     });
 
     return new DashboardController({

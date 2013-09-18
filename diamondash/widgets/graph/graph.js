@@ -344,6 +344,11 @@ diamondash.widgets.graph = function() {
     }
   });
 
+  widgets.registry.add('graph', {
+    model: GraphModel,
+    view: GraphView
+  });
+
   return {
     GraphModel: GraphModel,
     GraphMetricModel: GraphMetricModel,
