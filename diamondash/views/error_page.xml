@@ -1,7 +1,7 @@
 <html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-    <link href="css/error.css" rel="stylesheet" type="text/css"/>
+    <t:transparent t:render="resources_renderer"/>
   </head>
   <body>
       <header t:render="header_renderer" class="error-header">

@@ -10,7 +10,7 @@ from pkg_resources import resource_string, resource_filename
 
 from twisted.web.template import Element, renderer, XMLString
 
-from diamondash import utils, ConfigMixin, ConfigError
+from diamondash import utils, ConfigMixin, ConfigError, PageElement
 
 
 class Dashboard(Element, ConfigMixin):
@@ -213,7 +213,7 @@ class WidgetContainer(Element):
     def __init__(self, widget):
         self.widget = widget
         self.width = widget.width
-        span_class = "span%s" % widget.width
+        span_class = "col-md-%s" % widget.width
         self.classes = " ".join(('widget', widget.TYPE_NAME, span_class))
 
     @renderer
@@ -226,7 +226,7 @@ class WidgetContainer(Element):
         return tag
 
 
-class DashboardPage(Element):
+class DashboardPage(PageElement):
     """
     An element for displaying an actual dashboard page.
 
