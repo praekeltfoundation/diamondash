@@ -1,34 +1,117 @@
 name: 'Test Dashboard'
 
-widgets:
-    - name: 'Text Widget'
-      type: diamondash.widgets.text.TextWidget
-      text: 'This is text!'
-      width: 2
-
-    - name: 'lvalue widget'
-      type: diamondash.widgets.lvalue.LValueWidget
-      target: carbon.agents.howard-a.cpuUsage
-
-    - name: 'graph widget'
-      time_range: '30d'
-      bucket_size: '1d'
-      type: diamondash.widgets.graph.GraphWidget
-      width: 8
-      metric_defaults:
-          null_filter: 'zeroize'
-      metrics: 
-          - name: 'random sum of count'
-            target: vumi.random.count.sum
-          - name: 'random avg of value'
-            target: vumi.random.value.avg
-
-    - name: 'another graph widget'
+defaults:
+  diamondash.widgets.lvalue.LValueWidget:
       time_range: '1h'
-      bucket_size: '1m'
-      type: diamondash.widgets.graph.GraphWidget
-      width: 12
-      metrics: 
-          - name: 'cpu usage'
-            target: carbon.agents.howard-a.cpuUsage
 
+widgets:
+    - name: 'Big A Hourly'
+      time_range: '1h'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.big.a.last
+
+    - name: 'Big B Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.big.b.last
+
+    - name: 'Big C Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.big.c.last
+
+    - name: 'Big D Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.big.d.last
+
+    - name: 'Big E Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.big.e.last
+
+    - 'newrow'
+
+    - name: 'Small A Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.small.a.last
+
+    - name: 'Small B Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.small.b.last
+
+    - name: 'Small C Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.small.c.last
+
+    - name: 'Small D Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.small.d.last
+
+    - name: 'Small E Hourly'
+      type: diamondash.widgets.lvalue.LValueWidget
+      target: diamondash.test.small.e.last
+
+    - name: 'Big Metrics Hourly'
+      time_range: '1h'
+      bucket_size: '5m'
+      type: diamondash.widgets.graph.GraphWidget
+      width: 6
+      metrics: 
+          - name: 'Big A'
+            target: diamondash.test.big.a.last
+          - name: 'Big B'
+            target: diamondash.test.big.b.last
+          - name: 'Big C'
+            target: diamondash.test.big.c.last
+          - name: 'Big D'
+            target: diamondash.test.big.d.last
+          - name: 'Big E'
+            target: diamondash.test.big.e.last
+
+    - name: 'Big Metrics Daily'
+      time_range: '1d'
+      bucket_size: '1h'
+      type: diamondash.widgets.graph.GraphWidget
+      width: 6
+      metrics: 
+          - name: 'Big A'
+            target: diamondash.test.big.a.last
+          - name: 'Big B'
+            target: diamondash.test.big.b.last
+          - name: 'Big C'
+            target: diamondash.test.big.c.last
+          - name: 'Big D'
+            target: diamondash.test.big.d.last
+          - name: 'Big E'
+            target: diamondash.test.big.e.last
+
+    - name: 'Small Metrics Hourly'
+      time_range: '1h'
+      bucket_size: '5m'
+      type: diamondash.widgets.graph.GraphWidget
+      width: 6
+      metrics: 
+          - name: 'Small A'
+            target: diamondash.test.small.a.last
+          - name: 'Small B'
+            target: diamondash.test.small.b.last
+          - name: 'Small C'
+            target: diamondash.test.small.c.last
+          - name: 'Small D'
+            target: diamondash.test.small.d.last
+          - name: 'Small E'
+            target: diamondash.test.small.e.last
+
+    - name: 'Small Metrics Daily'
+      time_range: '1d'
+      bucket_size: '1h'
+      type: diamondash.widgets.graph.GraphWidget
+      width: 6
+      metrics: 
+          - name: 'Small A'
+            target: diamondash.test.small.a.last
+          - name: 'Small B'
+            target: diamondash.test.small.b.last
+          - name: 'Small C'
+            target: diamondash.test.small.c.last
+          - name: 'Small D'
+            target: diamondash.test.small.d.last
+          - name: 'Small E'
+            target: diamondash.test.small.e.last
