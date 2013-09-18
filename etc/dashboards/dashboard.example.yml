@@ -6,7 +6,6 @@ defaults:
 
 widgets:
     - name: 'Big A Hourly'
-      time_range: '1h'
       type: diamondash.widgets.lvalue.LValueWidget
       target: diamondash.test.big.a.last
 
