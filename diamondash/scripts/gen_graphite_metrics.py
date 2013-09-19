@@ -75,7 +75,7 @@ class MetricSendingClientFactory(ReconnectingClientFactory):
 
 class MetricSendingClientServiceMaker(object):
     implements(IServiceMaker, IPlugin)
-    tapname = "gen_graphite_metrics"
+    tapname = "gen-graphite-metrics"
     description = 'Generate graphite metrics'
     options = Options
 
