@@ -1,7 +1,7 @@
 diamondash.widgets = function() {
-  var utils = diamondash.utils;
+  var structures = diamondash.components.structures;
 
-  var WidgetRegistry = utils.Registry.extend({
+  var WidgetRegistry = structures.Registry.extend({
     processAdd: function(name, options) {
       return _({}).defaults(options, {
         view: diamondash.widgets.widget.WidgetView,

@@ -21,6 +21,8 @@ diamondash:
     src:
       - 'diamondash/client/js/index.js'
       - 'diamondash/client/js/utils.js'
+      - 'diamondash/client/js/components/index.js'
+      - 'diamondash/client/js/components/structures.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
       - 'diamondash/widgets/graph/graph.js'
@@ -46,6 +48,5 @@ tests:
     - 'diamondash/client/tests/init.js'
     - 'diamondash/client/tests/utils.js'
     - 'diamondash/widgets/**/fixtures.js'
-    - 'diamondash/client/tests/**/fixtures.js'
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'

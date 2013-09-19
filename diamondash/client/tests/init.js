@@ -1,7 +1,8 @@
 diamondash.test = function() {
-  var utils = diamondash.utils;
+  var structures = diamondash.components.structures,
+      utils = diamondash.utils;
 
-  var FixtureRegistry = utils.Registry.extend({
+  var FixtureRegistry = structures.Registry.extend({
     processAdd: function(name, data) {
       return utils.functor(data);
     },

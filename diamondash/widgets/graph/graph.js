@@ -1,5 +1,6 @@
 diamondash.widgets.graph = function() {
   var utils = diamondash.utils,
+      structures = diamondash.components.structures,
       widgets = diamondash.widgets;
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
@@ -40,7 +41,7 @@ diamondash.widgets.graph = function() {
     },
 
     initialize: function() {
-      this.colors = new utils.ColorMaker(this.colorOptions);
+      this.colors = new structures.ColorMaker(this.colorOptions);
       utils.bindEvents(this.bindings, this);
     },
 
