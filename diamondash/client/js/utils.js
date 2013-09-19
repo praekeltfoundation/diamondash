@@ -5,6 +5,12 @@ diamondash.utils = function() {
       that || this);
   }
 
+  function functor(obj) {
+    return !_.isFunction(obj)
+      ? function() { return obj; }
+      : obj;
+  }
+
   function bindEvents(events, that) {
     that = that || this;
 
@@ -18,13 +24,16 @@ diamondash.utils = function() {
     });
   }
 
-  function ColorMaker(options) {
-    options = _({}).defaults(options, this.defaults);
-    this.colors = options.scale.domain(d3.range(0, options.n));
-    this.i = 0;
-  }
+  function Extendable() {}
+  Extendable.extend = Backbone.Model.extend;
 
-  ColorMaker.prototype = {
+  var ColorMaker = Extendable.extend({
+    constructor: function(options) {
+      options = _({}).defaults(options, this.defaults);
+      this.colors = options.scale.domain(d3.range(0, options.n));
+      this.i = 0;
+    },
+
     defaults: {
       scale: d3.scale.category10(),
       n: 10
@@ -33,11 +42,49 @@ diamondash.utils = function() {
     next: function() {
       return this.colors(this.i++);
     }
-  };
+  });
+
+  Registry = Extendable.extend({
+    constructor: function(items) {
+      this.items = {};
+      
+      _(items || {}).each(function(data, name) {
+        this.add(name, data);
+      }, this);
+    },
+
+    processAdd: function(name, data) {
+      return data;
+    },
+
+    processGet: function(name, data) {
+      return data;
+    },
+
+    add: function(name, data) {
+      if (name in this.items) {
+        throw new Error("'" + name + "' is already registered.");
+      }
+
+      this.items[name] = this.processAdd(name, data);
+    },
+
+    get: function(name) {
+      return this.processGet(name, this.items[name]);
+    },
+
+    remove: function(name) {
+      var item = this.items[name];
+      delete this.items[name];
+      return item;
+    }
+  });
 
   return {
+    functor: functor,
     objectByName: objectByName,
     bindEvents: bindEvents,
+    Registry: Registry,
     ColorMaker: ColorMaker
   };
 }.call(this);

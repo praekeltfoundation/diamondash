@@ -42,4 +42,53 @@ describe("diamondash.utils", function() {
       thing.subthing.subsubthing.trigger('fire');
     });
   });
+
+  describe(".functor()", function() {
+    it("should return the function if it was passed in", function() {
+      var fn = function() {};
+      assert.equal(utils.functor(fn), fn);
+    });
+
+    it("should wrap a non-function as a function", function() {
+      assert.equal(utils.functor(3)(), 3);
+    });
+  });
+
+  describe(".Registry", function() {
+    var registry;
+
+    beforeEach(function() {
+      registry = new utils.Registry({
+        a: 'foo',
+      });
+    });
+
+    describe(".add", function() {
+      it("should register a widget type", function() {
+        registry.add('b', 'bar');
+        assert.equal(registry.items.b, 'bar');
+      });
+
+      it("should throw an error if the widget type already exists",
+      function() {
+        assert.throws(function() {
+          registry.add('a', 'baz');
+        }, /'a' is already registered/);
+      });
+    });
+
+    describe(".get", function() {
+      it("should retrieve the widget type", function() {
+        assert.deepEqual(registry.get('a'), 'foo');
+      });
+    });
+
+    describe(".remove", function() {
+      it("should remove the widget from the registry", function() {
+        assert('a' in registry.items);
+        assert.equal(registry.get('a'), registry.remove('a'));
+        assert(!('a' in registry.items));
+      });
+    });
+  });
 });
