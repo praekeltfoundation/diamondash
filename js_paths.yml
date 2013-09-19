@@ -23,6 +23,7 @@ diamondash:
       - 'diamondash/client/js/utils.js'
       - 'diamondash/client/js/components/index.js'
       - 'diamondash/client/js/components/structures.js'
+      - 'diamondash/client/js/components/charts.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
       - 'diamondash/widgets/graph/graph.js'
