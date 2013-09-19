@@ -69,6 +69,8 @@ diamondash.widgets.graph = function() {
   });
 
   var GraphLegendView = Backbone.View.extend({
+    className: 'legend',
+
     jst: JST['diamondash/widgets/graph/legend.jst'],
 
     initialize: function(options) {
@@ -98,14 +100,16 @@ diamondash.widgets.graph = function() {
         var $el = $(this),
             name = $el.attr('data-name');
 
-        $el.css('background', metrics.get('color'));
+        $el
+          .find('.swatch')
+          .css('background-color', metrics.get(name).get('color'));
       });
 
       return this;
     },
 
     bindings: {
-      'hover graph': function() {
+      'hover graph': function(x) {
         this.$el.addClass('hover');
         return this.render(x);
       },
@@ -283,12 +287,14 @@ diamondash.widgets.graph = function() {
       dots.attr('cx', svgX)
           .attr('cy', fy);
 
+      this.trigger('hover', x);
       return this;
     },
 
     unfocus: function() {
       this.svg.selectAll('.hover-dot, .hover-marker').remove();
       this.axisLine.selectAll('g').style('fill-opacity', 1);
+      this.trigger('unhover');
     }, 
 
     genTickValues: function(start, end, step) {
@@ -341,6 +347,7 @@ diamondash.widgets.graph = function() {
       }
 
       this.legend.render();
+      this.$el.append(this.legend.$el);
     }
   });
 
@@ -350,9 +357,12 @@ diamondash.widgets.graph = function() {
   });
 
   return {
-    GraphModel: GraphModel,
     GraphMetricModel: GraphMetricModel,
     GraphMetricCollection: GraphMetricCollection,
+
+    GraphLegendView: GraphLegendView,
+
+    GraphModel: GraphModel,
     GraphView: GraphView
   };
 }.call(this);

@@ -10,6 +10,12 @@ diamondash.utils = function() {
       that || this);
   }
 
+  function functor(obj) {
+    return !_.isFunction(obj)
+      ? function() { return obj; }
+      : obj;
+  }
+
   function bindEvents(events, that) {
     that = that || this;
 
@@ -23,13 +29,18 @@ diamondash.utils = function() {
     });
   }
 
-  function ColorMaker(options) {
-    options = _({}).defaults(options, this.defaults);
-    this.colors = options.scale.domain(d3.range(0, options.n));
-    this.i = 0;
-  }
+  function Extendable() {}
+  Extendable.extend = Backbone.Model.extend;
 
-  ColorMaker.prototype = {
+  var Eventable = Extendable.extend(Backbone.Events);
+
+  var ColorMaker = Extendable.extend({
+    constructor: function(options) {
+      options = _({}).defaults(options, this.defaults);
+      this.colors = options.scale.domain(d3.range(0, options.n));
+      this.i = 0;
+    },
+
     defaults: {
       scale: d3.scale.category10(),
       n: 10
@@ -38,47 +49,69 @@ diamondash.utils = function() {
     next: function() {
       return this.colors(this.i++);
     }
-  };
+  });
+
+  Registry = Eventable.extend({
+    constructor: function(items) {
+      this.items = {};
+      
+      _(items || {}).each(function(data, name) {
+        this.add(name, data);
+      }, this);
+    },
+
+    processAdd: function(name, data) {
+      return data;
+    },
+
+    processGet: function(name, data) {
+      return data;
+    },
+
+    add: function(name, data) {
+      if (name in this.items) {
+        throw new Error("'" + name + "' is already registered.");
+      }
+
+      data = this.processAdd(name, data);
+      this.trigger('add', name, data);
+      this.items[name] = data;
+    },
+
+    get: function(name) {
+      return this.processGet(name, this.items[name]);
+    },
+
+    remove: function(name) {
+      var data = this.items[name];
+      this.trigger('remove', name, data);
+      delete this.items[name];
+      return data;
+    }
+  });
 
   return {
+    functor: functor,
     objectByName: objectByName,
     bindEvents: bindEvents,
+    Extendable: Extendable,
+    Eventable: Eventable,
+    Registry: Registry,
     ColorMaker: ColorMaker
   };
 }.call(this);
 
 diamondash.widgets = function() {
-  function WidgetRegistry(widgets) {
-    this.widgets = {};
-    
-    _(widgets || {}).each(function(options, name) {
-      this.add(name, options);
-    }, this);
-  };
+  var utils = diamondash.utils;
 
-  WidgetRegistry.prototype = {
-    add: function(name, options) {
-      if (name in this.widgets) {
-        throw new Error("Widget type '" + name + "' already exists.");
-      }
-
-      options = options || {};
-      this.widgets[name] = {
-        view: options.view || diamondash.widgets.widget.WidgetView,
-        model: options.model || diamondash.widgets.widget.WidgetModel
-      };
-    },
-
-    get: function(name) {
-      return this.widgets[name];
-    },
-
-    remove: function(name) {
-      var widget = this.get(name);
-      delete this.widgets[name];
-      return widget;
+  var WidgetRegistry = utils.Registry.extend({
+    processAdd: function(name, options) {
+      return _({}).defaults(options, {
+        view: diamondash.widgets.widget.WidgetView,
+        model: diamondash.widgets.widget.WidgetModel
+      });
     }
-  };
+  });
 
   return {
     registry: new WidgetRegistry(),
@@ -200,6 +233,8 @@ diamondash.widgets.graph = function() {
   });
 
   var GraphLegendView = Backbone.View.extend({
+    className: 'legend',
+
     jst: JST['diamondash/widgets/graph/legend.jst'],
 
     initialize: function(options) {
@@ -229,14 +264,16 @@ diamondash.widgets.graph = function() {
         var $el = $(this),
             name = $el.attr('data-name');
 
-        $el.css('background', metrics.get('color'));
+        $el
+          .find('.swatch')
+          .css('background-color', metrics.get(name).get('color'));
       });
 
       return this;
     },
 
     bindings: {
-      'hover graph': function() {
+      'hover graph': function(x) {
         this.$el.addClass('hover');
         return this.render(x);
       },
@@ -414,12 +451,14 @@ diamondash.widgets.graph = function() {
       dots.attr('cx', svgX)
           .attr('cy', fy);
 
+      this.trigger('hover', x);
       return this;
     },
 
     unfocus: function() {
       this.svg.selectAll('.hover-dot, .hover-marker').remove();
       this.axisLine.selectAll('g').style('fill-opacity', 1);
+      this.trigger('unhover');
     }, 
 
     genTickValues: function(start, end, step) {
@@ -472,6 +511,7 @@ diamondash.widgets.graph = function() {
       }
 
       this.legend.render();
+      this.$el.append(this.legend.$el);
     }
   });
 
@@ -481,9 +521,12 @@ diamondash.widgets.graph = function() {
   });
 
   return {
-    GraphModel: GraphModel,
     GraphMetricModel: GraphMetricModel,
     GraphMetricCollection: GraphMetricCollection,
+
+    GraphLegendView: GraphLegendView,
+
+    GraphModel: GraphModel,
     GraphView: GraphView
   };
 }.call(this);

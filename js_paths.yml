@@ -45,5 +45,7 @@ tests:
   spec:
     - 'diamondash/client/tests/init.js'
     - 'diamondash/client/tests/utils.js'
+    - 'diamondash/widgets/**/fixtures.js'
+    - 'diamondash/client/tests/**/fixtures.js'
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'

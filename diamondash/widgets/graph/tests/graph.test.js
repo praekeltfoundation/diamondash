@@ -1,8 +1,95 @@
 describe("diamondash.widgets.graph", function() {
-  var utils = diamondash.test.utils;
+  var utils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures;
 
   afterEach(function() {
     utils.unregisterModels();
+  });
+
+  describe("GraphLegendView", function() {
+    var GraphModel = diamondash.widgets.graph.GraphModel,
+        GraphView = diamondash.widgets.graph.GraphView,
+        GraphLegendView = diamondash.widgets.graph.GraphLegendView;
+
+    var legend,
+        graph;
+
+    beforeEach(function() {
+      graph = new GraphView({
+        model: new GraphModel(fixtures.get('diamondash.widgets.graph:simple'))
+      });
+
+      legend = new GraphLegendView({graph: graph});
+    });
+
+    describe("when the graph is hovered over", function() {
+      beforeEach(function() {
+        legend.render();
+      });
+
+      it("should add a 'hover' class to the legend", function() {
+        assert(!legend.$el.hasClass('hover'));
+        graph.trigger('hover', 15);
+        assert(legend.$el.hasClass('hover'));
+      });
+
+      it("should display the metric values at the hovered over time interval",
+      function() {
+        assert.equal(
+          legend.$('.legend-item[data-name="foo"] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="bar"] .value').text(),
+          16);
+
+        graph.trigger('hover', 15);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="foo"] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="bar"] .value').text(),
+          22);
+      });
+    });
+
+    describe("when the graph is unhovered", function() {
+      beforeEach(function() {
+        legend.render();
+      });
+
+      it("should remove the 'hover' class from the legend", function() {
+        graph.trigger('hover', 15);
+        assert(legend.$el.hasClass('hover'));
+
+        graph.trigger('unhover');
+        assert(!legend.$el.hasClass('hover'));
+      });
+
+      it("should display the last metric values", function() {
+        graph.trigger('hover', 15);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="foo"] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="bar"] .value').text(),
+          22);
+
+        graph.trigger('unhover');
+
+        assert.equal(
+          legend.$('.legend-item[data-name="foo"] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-name="bar"] .value').text(),
+          16);
+      });
+    });
   });
 
   describe("GraphView", function() {
