@@ -75,6 +75,16 @@ describe("diamondash.utils", function() {
           registry.add('a', 'baz');
         }, /'a' is already registered/);
       });
+
+      it("emit an 'add' event", function(done) {
+        registry.on('add', function(name, data) {
+          assert.equal(name, 'b');
+          assert.equal(data, 'bar');
+          done();
+        });
+
+        registry.add('b', 'bar');
+      });
     });
 
     describe(".get", function() {
@@ -88,6 +98,16 @@ describe("diamondash.utils", function() {
         assert('a' in registry.items);
         assert.equal(registry.get('a'), registry.remove('a'));
         assert(!('a' in registry.items));
+      });
+
+      it("emit a 'remove' event", function(done) {
+        registry.on('remove', function(name, data) {
+          assert.equal(name, 'a');
+          assert.equal(data, 'foo');
+          done();
+        });
+
+        registry.remove('a');
       });
     });
   });

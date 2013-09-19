@@ -27,6 +27,8 @@ diamondash.utils = function() {
   function Extendable() {}
   Extendable.extend = Backbone.Model.extend;
 
+  var Eventable = Extendable.extend(Backbone.Events);
+
   var ColorMaker = Extendable.extend({
     constructor: function(options) {
       options = _({}).defaults(options, this.defaults);
@@ -44,7 +46,7 @@ diamondash.utils = function() {
     }
   });
 
-  Registry = Extendable.extend({
+  Registry = Eventable.extend({
     constructor: function(items) {
       this.items = {};
       
@@ -66,7 +68,9 @@ diamondash.utils = function() {
         throw new Error("'" + name + "' is already registered.");
       }
 
-      this.items[name] = this.processAdd(name, data);
+      data = this.processAdd(name, data);
+      this.trigger('add', name, data);
+      this.items[name] = data;
     },
 
     get: function(name) {
@@ -74,9 +78,10 @@ diamondash.utils = function() {
     },
 
     remove: function(name) {
-      var item = this.items[name];
+      var data = this.items[name];
+      this.trigger('remove', name, data);
       delete this.items[name];
-      return item;
+      return data;
     }
   });
 
@@ -84,6 +89,8 @@ diamondash.utils = function() {
     functor: functor,
     objectByName: objectByName,
     bindEvents: bindEvents,
+    Extendable: Extendable,
+    Eventable: Eventable,
     Registry: Registry,
     ColorMaker: ColorMaker
   };
