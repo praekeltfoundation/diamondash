@@ -5,6 +5,12 @@ diamondash.utils = function() {
       that || this);
   }
 
+  function maybeByName(obj, that) {
+    return _.isString(obj)
+      ? objectByName(obj, that)
+      : obj;
+  }
+
   function functor(obj) {
     return !_.isFunction(obj)
       ? function() { return obj; }
@@ -32,6 +38,7 @@ diamondash.utils = function() {
   return {
     functor: functor,
     objectByName: objectByName,
+    maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap
   };

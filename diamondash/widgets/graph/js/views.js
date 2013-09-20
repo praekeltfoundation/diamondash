@@ -1,75 +1,7 @@
-diamondash.widgets.graph = function() {
+diamondash.widgets.graph.views = function() {
   var utils = diamondash.utils,
       structures = diamondash.components.structures,
-      charts = diamondash.components.charts,
-      widget = diamondash.widgets.widget,
-      widgets = diamondash.widgets;
-
-  var GraphMetricModel = Backbone.RelationalModel.extend({
-    idAttribute: 'name',
-
-    defaults: {
-      'datapoints': [],
-    },
-
-    bisect: d3
-      .bisector(function(d) { return d.x; })
-      .left,
-
-    lastValue: function(x) {
-      var datapoints = this.get('datapoints'),
-          d = datapoints[datapoints.length - 1];
-
-      return d && typeof d.y !== 'undefined'
-        ? d.y
-        : null;
-    },
-
-    valueAt: function(x) {
-      var datapoints = this.get('datapoints'),
-          i = this.bisect(datapoints, x);
-          d = datapoints[i];
-
-      return d && x === d.x
-        ? d.y
-        : null;
-    }
-  });
-
-  var GraphMetricCollection = Backbone.Collection.extend({
-    colorOptions: {
-      n: 10,
-      scale: d3.scale.category10()
-    },
-
-    initialize: function() {
-      this.colors = new structures.ColorMaker(this.colorOptions);
-      utils.bindEvents(this.bindings, this);
-    },
-
-    bindings: {
-      'add': function(metric) {
-        metric.set('color', this.colors.next());
-      }
-    }
-  });
-
-  var GraphModel = widgets.widget.WidgetModel.extend({
-    isStatic: false,
-
-    relations: [{
-      type: Backbone.HasMany,
-      key: 'metrics',
-      relatedModel: GraphMetricModel,
-      collectionType: GraphMetricCollection
-    }],
-
-    defaults: {
-      'domain': 0,
-      'range': 0,
-      'metrics': []
-    },
-  });
+      charts = diamondash.components.charts;
 
   var GraphLegendView = Backbone.View.extend({
     className: 'legend',
@@ -128,7 +60,7 @@ diamondash.widgets.graph = function() {
     collisionDistance: 60,
 
     constructor: function(options) {
-      this.graph = options.chart;
+      this.graph = options.graph;
 
       if ('collisionsDistance' in options) {
         this.collisionDistance = options.collisionDistance;
@@ -195,15 +127,16 @@ diamondash.widgets.graph = function() {
     hoverSize: 3,
 
     constructor: function(options) {
+      this.graph = options.graph;
       if ('size' in options) { this.size = options.size; }
       if ('hoverSize' in options) { this.hoverSize = options.hoverSize; }
       utils.bindEvents(this.bindings, this);
     },
 
     render: function() {
-      var metricDots = this.chart
+      var metricDots = this.graph
         .selectAll('.metric-dots')
-        .data(this.chart.model.get('metrics'));
+        .data(this.graph.model.get('metrics'));
 
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
@@ -222,13 +155,13 @@ diamondash.widgets.graph = function() {
       dot.exit().remove();
 
       dot
-        .attr('cx', this.chart.fx.accessor)
-        .attr('cy', this.chart.fy.accessor);
+        .attr('cx', this.graph.fx.accessor)
+        .attr('cy', this.graph.fy.accessor);
     },
 
     bindings: {
       'hover graph': function(position) {
-        var data = this.chart.model
+        var data = this.graph.model
           .get('metrics')
           .map(function(metric) {
             return {
@@ -253,7 +186,7 @@ diamondash.widgets.graph = function() {
             .attr('r', this.hoverSize);
 
         dot.attr('cx', position.svg.x)
-           .attr('cy', this.chart.fy.accessor);
+           .attr('cy', this.graph.fy.accessor);
       },
 
       'unhover graph': function() {
@@ -266,18 +199,18 @@ diamondash.widgets.graph = function() {
 
   var GraphLine = structures.Eventable.extend({
     constructor: function(options) {
-      this.chart = options.chart;
+      this.graph = options.graph;
 
       this.line = d3.svg.line()
         .interpolate(options.smooth ? 'monotone' : 'linear')
-        .x(this.chart.fx.accessor)
-        .y(this.chart.fy.accessor);
+        .x(this.graph.fx.accessor)
+        .y(this.graph.fy.accessor);
     },
 
     render: function() {
-      var lines = this.chart
+      var lines = this.graph
         .selectAll('.line')
-        .data(this.chart.model.get('metrics'));
+        .data(this.graph.model.get('metrics'));
 
       lines.enter().append('path')
         .attr('class', 'line')
@@ -331,7 +264,7 @@ diamondash.widgets.graph = function() {
         smooth: this.smooth
       });
 
-      this.axis = new charts.Axis({
+      this.axis = new charts.AxisView({
         chart: this,
         scale: this.fx
       });
@@ -348,8 +281,9 @@ diamondash.widgets.graph = function() {
           range = this.model.get('range'),
           step = this.model.get('step');
 
-      this.chart.fx.domain(domain);
-      this.chart.fy.domain(range);
+      this.fx.domain(domain);
+      this.fy.domain(range);
+
       this.line.render();
       this.axis.render(domain[0], domain[1], step);
       this.legend.render();
@@ -388,21 +322,12 @@ diamondash.widgets.graph = function() {
     }
   });
 
-  widgets.registry.add('graph', {
-    model: GraphModel,
-    view: GraphView
-  });
-
   return {
-    GraphMetricModel: GraphMetricModel,
-    GraphMetricCollection: GraphMetricCollection,
-
     GraphLine: GraphLine,
     GraphDots: GraphDots,
     GraphLegendView: GraphLegendView,
     GraphHoverMarker: GraphHoverMarker,
 
-    GraphModel: GraphModel,
     GraphView: GraphView
   };
 }.call(this);

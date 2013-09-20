@@ -17,6 +17,25 @@ describe("diamondash.utils", function() {
     });
   });
 
+  describe(".maybeByName", function() {
+    before(function() {
+      window.thing = {};
+    });
+
+    after(function() {
+      delete window.thing;
+    });
+
+    it("should return the object if it was reference by name", function() {
+      assert.strictEqual(utils.maybeByName('thing'), window.thing);
+    });
+
+    it("should return an object if it was passed in", function() {
+      var thing = {};
+      assert.strictEqual(utils.maybeByName(thing), thing);
+    });
+  });
+
   describe(".bindEvents()", function() {
     var thing;
 

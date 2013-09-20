@@ -1,4 +1,4 @@
-diamondash.test.fixtures.add('diamondash.widgets.graph:simple', {
+diamondash.test.fixtures.add('diamondash.widgets.graph.models.GraphModel:simple', {
   step: 5,
   domain: [10, 30],
   range: [2, 24],
