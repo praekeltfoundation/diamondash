@@ -153,6 +153,8 @@ diamondash.widgets.graph.views = function() {
       dot
         .attr('cx', this.graph.fx.accessor)
         .attr('cy', this.graph.fy.accessor);
+
+      return this;
     },
 
     bindings: {
@@ -293,12 +295,15 @@ diamondash.widgets.graph.views = function() {
       this.fy.domain(range);
 
       this.lines.render();
-      this.axis.render(domain[0], domain[1], step);
-      this.legend.render();
 
       if (this.dots) {
         this.dots.render();
       }
+
+      this.axis.render(domain[0], domain[1], step);
+
+      this.legend.render();
+      this.$el.append(this.legend.$el);
 
       return this;
     },

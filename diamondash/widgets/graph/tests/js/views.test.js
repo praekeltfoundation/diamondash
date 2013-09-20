@@ -301,7 +301,6 @@ describe("diamondash.widgets.graph", function() {
 
     beforeEach(function() {
       graph = new views.GraphView({
-        dotted: true,
         el: $('<div>')
           .width(960)
           .height(64),
@@ -353,6 +352,139 @@ describe("diamondash.widgets.graph", function() {
           metrics
             .get('bar')
             .get('color'));
+      });
+    });
+  });
+
+  describe("GraphLines", function() {
+    var graph;
+
+    function domain() {
+      return graph.fx
+        .domain()
+        .map(function(d) { return d.valueOf(); });
+    }
+
+    function range() {
+      return graph.fy.domain();
+    }
+
+    beforeEach(function() {
+      graph = new views.GraphView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.GraphModel(
+          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
+      });
+    });
+
+    describe(".render()", function() {
+      it("should refresh the graph domain and range", function() {
+        graph.render();
+
+        assert.deepEqual(
+          domain(),
+          [1340875995000, 1340877495000]);
+
+        assert.deepEqual(
+          range(),
+          [2, 24]);
+
+        graph.model.set({
+          range: [3, 25],
+          domain: [1340875998000, 1340877498000]
+        });
+        graph.render();
+
+        assert.deepEqual(
+          domain(),
+          [1340875998000, 1340877498000]);
+
+        assert.deepEqual(
+          range(),
+          [3, 25]);
+      });
+
+      it("draw render its lines", function() {
+        assert.equal(graph.$('.metric-line').length, 0);
+        graph.render();
+        assert.equal(graph.$('.metric-line').length, 2);
+      });
+
+      it("draw render its legend", function() {
+        assert.equal(graph.$('.legend').length, 0);
+        graph.render();
+        assert.equal(graph.$('.legend').length, 1);
+      });
+
+      it("should draw its axis", function() {
+        assert.equal(
+          graph.$('.axis').text(),
+          '01-01 00:00');
+
+        graph.render();
+
+        assert.equal(
+          graph.$('.axis').text(),
+          ['28-06 09:33',
+           '28-06 09:38',
+           '28-06 09:43',
+           '28-06 09:48',
+           '28-06 09:53',
+           '28-06 09:58'].join(''));
+      });
+
+      describe("if the graph is dotted", function() {
+        beforeEach(function() {
+          graph = new views.GraphView({
+            dotted: true,
+            el: $('<div>')
+              .width(960)
+              .height(64),
+            model: new models.GraphModel(
+              fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
+          });
+        });
+
+        it("should draw its dots", function() {
+          assert.equal(graph.$('.metric-dots').length, 0);
+          graph.render();
+          assert.equal(graph.$('.metric-dots').length, 2);
+        });
+      });
+    });
+
+    describe("when the graph is hovered over", function() {
+      var coords;
+
+      beforeEach(function() {
+        sinon.stub(d3, 'mouse', function() {
+          return [1276514232848231, -2311];
+        });
+      });
+
+      afterEach(function() {
+        d3.mouse.restore();
+      });
+
+      it("should trigger an event with the calculated position information",
+      function(done) {
+        graph.on('hover', function(position) {
+          assert.equal(position.x, 1340876295000);
+          assert.equal(position.svg.x, 1276514232840000);
+          assert.equal(position.svg.y, -2311);
+          done();
+        });
+
+        graph.$el.trigger('mouseover', {target: null});
+      });
+    });
+
+    describe("when the graph is unhovered", function() {
+      it("should trigger an event", function(done) {
+        graph.on('unhover', function() { done(); });
+        graph.$el.trigger('mouseout');
       });
     });
   });

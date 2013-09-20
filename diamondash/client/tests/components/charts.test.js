@@ -69,8 +69,7 @@ describe("diamondash.components.charts", function() {
            '28-06 10:03',
            '28-06 10:13',
            '28-06 10:23',
-           '28-06 10:33',
-          ].join(''));
+           '28-06 10:33'].join(''));
       });
     });
   });
