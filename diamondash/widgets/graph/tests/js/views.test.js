@@ -216,7 +216,7 @@ describe("diamondash.widgets.graph", function() {
     var dots,
         graph;
 
-    function toCoords() {
+    function dotToCoords() {
       var el = d3.select(this);
 
       return {
@@ -227,10 +227,10 @@ describe("diamondash.widgets.graph", function() {
 
     function metricDotCoords(name) {
       var selection = graph.svg
-        .selectAll('.metric-dots[data-metric-name=' + name + ']')
+        .select('.metric-dots[data-metric=' + name + ']')
         .selectAll('.dot');
 
-      return utils.d3Map(selection, toCoords);
+      return utils.d3Map(selection, dotToCoords);
     }
 
     beforeEach(function() {
@@ -275,7 +275,7 @@ describe("diamondash.widgets.graph", function() {
         assert.equal(graph.$('.hover-dot').length, 2);
 
         assert.deepEqual(
-          utils.d3Map(graph.svg.selectAll('.hover-dot'), toCoords),
+          utils.d3Map(graph.svg.selectAll('.hover-dot'), dotToCoords),
           [{x: 1340876295000, y: 12},
            {x: 1340876295000, y: 22}]);
       });
@@ -291,6 +291,68 @@ describe("diamondash.widgets.graph", function() {
         assert.equal(graph.$('.hover-dot').length, 2);
         graph.trigger('unhover');
         assert.equal(graph.$('.hover-dot').length, 0);
+      });
+    });
+  });
+
+  describe("GraphLines", function() {
+    var lines,
+        graph;
+
+    beforeEach(function() {
+      graph = new views.GraphView({
+        dotted: true,
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.GraphModel(
+          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
+      });
+
+      lines = graph.lines;
+    });
+
+    describe(".render()", function() {
+      it("should draw a line for each metric", function() {
+        var metrics = graph.model.get('metrics');
+
+        assert.equal(graph.$('.metric-line').length, 0);
+        lines.render();
+        assert.equal(graph.$('.metric-line').length, 2);
+
+        assert.strictEqual(
+          graph.svg
+            .select('.metric-line[data-metric=foo]')
+            .datum(),
+          metrics.get('foo'));
+
+        assert.strictEqual(
+          graph.svg
+            .select('.metric-line[data-metric=bar]')
+            .datum(),
+          metrics.get('bar'));
+      });
+
+      it("should color the lines according to the metrics' colors",
+      function() {
+        var metrics = graph.model.get('metrics');
+        lines.render();
+
+        assert.equal(
+          graph
+            .$('.metric-line[data-metric=foo]')
+            .css('stroke'),
+          metrics
+            .get('foo')
+            .get('color'));
+
+        assert.equal(
+          graph
+            .$('.metric-line[data-metric=bar]')
+            .css('stroke'),
+          metrics
+            .get('bar')
+            .get('color'));
       });
     });
   });

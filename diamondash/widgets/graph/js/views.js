@@ -135,7 +135,7 @@ diamondash.widgets.graph.views = function() {
 
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
-        .attr('data-metric-name', function(d) { return d.get('name'); })
+        .attr('data-metric', function(d) { return d.get('name'); })
         .style('fill', function(d) { return d.get('color'); });
 
       metricDots.exit().remove();
@@ -205,11 +205,12 @@ diamondash.widgets.graph.views = function() {
 
     render: function() {
       var line = this.graph.svg
-        .selectAll('.line')
+        .selectAll('.metric-line')
         .data(this.graph.model.get('metrics').models);
 
       line.enter().append('path')
-        .attr('class', 'line')
+        .attr('class', 'metric-line')
+        .attr('data-metric', function(d) { return d.get('name'); })
         .style('stroke', function(d) { return d.get('color'); });
 
       var self = this;
@@ -254,7 +255,7 @@ diamondash.widgets.graph.views = function() {
 
       this._setupScales();
 
-      this.line = new GraphLines({
+      this.lines = new GraphLines({
         graph: this,
         smooth: this.smooth
       });
@@ -291,7 +292,7 @@ diamondash.widgets.graph.views = function() {
       this.fx.domain(domain);
       this.fy.domain(range);
 
-      this.line.render();
+      this.lines.render();
       this.axis.render(domain[0], domain[1], step);
       this.legend.render();
 
