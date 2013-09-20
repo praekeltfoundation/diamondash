@@ -74,12 +74,34 @@ describe("diamondash.utils", function() {
   });
 
   describe(".snap()", function() {
-      it("should snap the value to the closest step", function() {
-        assert.equal(utils.snap(12, 10, 5), 10);
-        assert.equal(utils.snap(13, 10, 5), 15);
-        assert.equal(utils.snap(15, 10, 5), 15);
-        assert.equal(utils.snap(17, 10, 5), 15);
-        assert.equal(utils.snap(18, 10, 5), 20);
+    it("should snap the value to the closest step", function() {
+      assert.equal(utils.snap(12, 10, 5), 10);
+      assert.equal(utils.snap(13, 10, 5), 15);
+      assert.equal(utils.snap(15, 10, 5), 15);
+      assert.equal(utils.snap(17, 10, 5), 15);
+      assert.equal(utils.snap(18, 10, 5), 20);
+    });
+  });
+
+  describe(".d3Map()", function() {
+    it("should perform a map on the selection using the given function",
+    function() {
+      var stuff = d3.select($('<div>').get(0))
+        .selectAll('.stuff')
+        .data(['a', 'b', 'c']);
+
+      stuff.enter()
+        .append('div')
+        .attr('id', function(d) { return d; });
+
+      var n = 0;
+      var result = utils.d3Map(stuff, function(d, i) {
+        assert.equal(d3.select(this).attr('id'), d);
+        assert.equal(i, n++);
+        return d;
       });
+
+      assert.deepEqual(result, ['a', 'b', 'c']);
+    });
   });
 });

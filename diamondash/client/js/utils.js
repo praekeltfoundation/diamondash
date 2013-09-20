@@ -35,11 +35,22 @@ diamondash.utils = function() {
     return start + (step * i);
   }
 
+  function d3Map(selection, fn) {
+    var values = [];
+
+    selection.each(function(d, i) {
+      values.push(fn.call(this, d, i));
+    });
+
+    return values;
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
-    snap: snap
+    snap: snap,
+    d3Map: d3Map
   };
 }.call(this);

@@ -129,12 +129,13 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
-      var metricDots = this.graph
+      var metricDots = this.graph.svg
         .selectAll('.metric-dots')
-        .data(this.graph.model.get('metrics'));
+        .data(this.graph.model.get('metrics').models);
 
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
+        .attr('data-metric-name', function(d) { return d.get('name'); })
         .style('fill', function(d) { return d.get('color'); });
 
       metricDots.exit().remove();
@@ -168,7 +169,7 @@ diamondash.widgets.graph.views = function() {
             return d.y !== null;
           });
 
-        var dot = this.svg
+        var dot = this.graph.svg
           .selectAll('.hover-dot')
           .data(data);
 
@@ -185,7 +186,7 @@ diamondash.widgets.graph.views = function() {
       },
 
       'unhover graph': function() {
-        this.svg
+        this.graph.svg
           .selectAll('.hover-dot')
           .remove();
       }
@@ -235,6 +236,9 @@ diamondash.widgets.graph.views = function() {
     },
 
     initialize: function(options) {
+      options = options || {};
+      _(options).defaults(options.config);
+
       if ('height' in options) { this.height = options.height; }
       if ('margin' in options) { this.margin = options.margin; }
       if ('dotted' in options) { this.dotted = options.dotted; }
@@ -270,7 +274,7 @@ diamondash.widgets.graph.views = function() {
 
     _setupScales: function() {
       var fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
-      fx.accessor = function(d) { return fy(d.x); };
+      fx.accessor = function(d) { return fx(d.x); };
 
       var fy = d3.scale.linear().range([this.dimensions.innerHeight, 0]);
       fy.accessor = function(d) { return fy(d.y); };

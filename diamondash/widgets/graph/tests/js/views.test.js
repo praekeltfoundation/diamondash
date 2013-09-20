@@ -1,5 +1,6 @@
 describe("diamondash.widgets.graph", function() {
-  var utils = diamondash.test.utils,
+  var utils = diamondash.utils,
+      testUtils = diamondash.test.utils,
       fixtures = diamondash.test.fixtures,
       views = diamondash.widgets.graph.views,
       models = diamondash.widgets.graph.models;
@@ -19,7 +20,7 @@ describe("diamondash.widgets.graph", function() {
   };
 
   afterEach(function() {
-    utils.unregisterModels();
+    testUtils.unregisterModels();
   });
 
   describe("GraphLegendView", function() {
@@ -207,6 +208,89 @@ describe("diamondash.widgets.graph", function() {
           1340877195000: '1',
           1340877495000: '1'
         });
+      });
+    });
+  });
+
+  describe("GraphDots", function() {
+    var dots,
+        graph;
+
+    function toCoords() {
+      var el = d3.select(this);
+
+      return {
+        x: graph.fx.invert(el.attr('cx')).valueOf(),
+        y: Math.floor(graph.fy.invert(el.attr('cy')))
+      };
+    }
+
+    function metricDotCoords(name) {
+      var selection = graph.svg
+        .selectAll('.metric-dots[data-metric-name=' + name + ']')
+        .selectAll('.dot');
+
+      return utils.d3Map(selection, toCoords);
+    }
+
+    beforeEach(function() {
+      graph = new views.GraphView({
+        dotted: true,
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.GraphModel(
+          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
+      });
+
+      dots = graph.dots;
+    });
+
+    describe(".render()", function() {
+      it("should display the dots for each metric's datapoints", function() {
+        var metrics = graph.model.get('metrics');
+
+        assert.equal(graph.$('.metric-dots').length, 0);
+        dots.render();
+        assert.equal(graph.$('.metric-dots').length, 2);
+
+        assert.deepEqual(
+          metrics.get('foo').get('datapoints'),
+          metricDotCoords('foo'));
+
+        assert.deepEqual(
+          metrics.get('bar').get('datapoints'),
+          metricDotCoords('bar'));
+      });
+    });
+
+    describe("when the graph is hovered over", function() {
+      beforeEach(function() {
+        graph.render();
+      });
+      
+      it("should display dots at the hovered over location", function() {
+        assert.equal(graph.$('.hover-dot').length, 0);
+        hover.inverse(graph, {x: 1340876295000});
+        assert.equal(graph.$('.hover-dot').length, 2);
+
+        assert.deepEqual(
+          utils.d3Map(graph.svg.selectAll('.hover-dot'), toCoords),
+          [{x: 1340876295000, y: 12},
+           {x: 1340876295000, y: 22}]);
+      });
+    });
+
+    describe("when the graph is unhovered", function() {
+      beforeEach(function() {
+        graph.render();
+        hover.inverse(graph, {x: 1340876295000});
+      });
+
+      it("should not display any hover dots", function() {
+        assert.equal(graph.$('.hover-dot').length, 2);
+        graph.trigger('unhover');
+        assert.equal(graph.$('.hover-dot').length, 0);
       });
     });
   });
