@@ -14,7 +14,7 @@
   font-size: 11px;
 }
 
-.line {
+.metric-line {
   fill: none;
   stroke-width: 1.5px;
   pointer-events: none;

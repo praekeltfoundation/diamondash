@@ -9,7 +9,7 @@ class GraphWidget(DynamicWidget):
         'bucket_size': '1h',
         'align_to_start': False,
         'dotted': False,
-        'smooth': True,
+        'smooth': False,
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 

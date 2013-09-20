@@ -119,7 +119,7 @@ diamondash.widgets.graph.views = function() {
 
   var GraphDots = structures.Eventable.extend({
     size: 3,
-    hoverSize: 3,
+    hoverSize: 4,
 
     constructor: function(options) {
       this.graph = options.graph;
@@ -146,7 +146,7 @@ diamondash.widgets.graph.views = function() {
 
       dot.enter().append('circle')
         .attr('class', 'dot')
-        .attr('r', this.dotSize);
+        .attr('r', this.size);
 
       dot.exit().remove();
 
@@ -180,6 +180,7 @@ diamondash.widgets.graph.views = function() {
           .style('stroke', function(d) {
             return d.metric.get('color');
           })
+          .attr('r', 0)
           .transition()
             .attr('r', this.hoverSize);
 
@@ -225,11 +226,11 @@ diamondash.widgets.graph.views = function() {
   });
 
   var GraphView = charts.ChartView.extend({
-    dotted: false,
-
+    dotted: true,
     smooth: true,
 
     height: 214,
+    axisHeight: 24,
 
     margin: {
       top: 4,
@@ -242,10 +243,11 @@ diamondash.widgets.graph.views = function() {
       options = options || {};
       _(options).defaults(options.config);
 
-      if ('height' in options) { this.height = options.height; }
       if ('margin' in options) { this.margin = options.margin; }
       if ('dotted' in options) { this.dotted = options.dotted; }
       if ('smooth' in options) { this.smooth = options.smooth; }
+      if ('height' in options) { this.height = options.height; }
+      if ('axisHeight' in options) { this.axisHeight = options.axisHeight; }
 
       GraphView.__super__.initialize.call(this, {
         dimensions: new charts.Dimensions({
@@ -264,22 +266,23 @@ diamondash.widgets.graph.views = function() {
 
       this.axis = new charts.AxisView({
         chart: this,
-        scale: this.fx
+        scale: this.fx,
+        height: this.axisHeight
       });
 
       this.hoverMarker = new GraphHoverMarker({graph: this});
       this.legend = new GraphLegendView({graph: this});
+      this.dots = new GraphDots({graph: this});
 
-      if (options.dotted) {
-        this.dots = new GraphDots({graph: this});
-      }
+      utils.bindEvents(this.bindings, this);
     },
 
     _setupScales: function() {
       var fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
       fx.accessor = function(d) { return fx(d.x); };
 
-      var fy = d3.scale.linear().range([this.dimensions.innerHeight, 0]);
+      var maxY = this.dimensions.innerHeight - this.axisHeight;
+      var fy = d3.scale.linear().range([maxY, 0]);
       fy.accessor = function(d) { return fy(d.y); };
 
       this.fx = fx;
@@ -296,7 +299,7 @@ diamondash.widgets.graph.views = function() {
 
       this.lines.render();
 
-      if (this.dots) {
+      if (this.dotted) {
         this.dots.render();
       }
 
@@ -327,9 +330,9 @@ diamondash.widgets.graph.views = function() {
       return position;
     },
 
-    events: {
-      'mouseover': function(e) {
-        var mouse = d3.mouse(e.target);
+    bindings: {
+      'mousemove': function(target) {
+        var mouse = d3.mouse(target);
 
         this.trigger('hover', this.positionOf({
           x: mouse[0],
@@ -339,6 +342,10 @@ diamondash.widgets.graph.views = function() {
 
       'mouseout': function() {
         this.trigger('unhover');
+      },
+
+      'change model': function() {
+        this.render();
       }
     }
   });

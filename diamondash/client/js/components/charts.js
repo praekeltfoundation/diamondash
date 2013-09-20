@@ -32,16 +32,6 @@ diamondash.components.charts = function() {
     return target;
   };
 
-  components.overlays = {};
-
-  components.overlays.dummy = function(target, dimensions) {
-    return target.append('rect')
-      .attr('class', 'event-overlay')
-      .attr('fill-opacity', 0)
-      .attr('width', dimensions.width)
-      .attr('height', dimensions.height);
-  };
-
   var Dimensions = structures.Extendable.extend({
     height: 0,
     width: 0,
@@ -155,10 +145,18 @@ diamondash.components.charts = function() {
       this.dimensions = options.dimensions;
       this.svg = components.svg(d3.select(this.el), this.dimensions);
 
-      this.overlays = {};
-      this.overlays.events = components.overlays.dummy(
-        this.svg,
-        this.dimensions);
+      self = this;
+      this.overlay = this.svg.append('rect')
+        .attr('class', 'event-overlay')
+        .attr('fill-opacity', 0)
+        .attr('width', this.dimensions.width)
+        .attr('height', this.dimensions.height)
+        .on('mousemove', function() {
+          self.trigger('mousemove', this);
+        })
+        .on('mouseout', function() {
+          self.trigger('mouseout', this);
+        });
     }
   });
 

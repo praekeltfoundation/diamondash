@@ -455,7 +455,7 @@ describe("diamondash.widgets.graph", function() {
       });
     });
 
-    describe("when the graph is hovered over", function() {
+    describe("when the mouse is moved over the graph", function() {
       var coords;
 
       beforeEach(function() {
@@ -477,14 +477,14 @@ describe("diamondash.widgets.graph", function() {
           done();
         });
 
-        graph.$el.trigger('mouseover', {target: null});
+        graph.trigger('mousemove', {});
       });
     });
 
-    describe("when the graph is unhovered", function() {
+    describe("when the mouse is moved away from the graph", function() {
       it("should trigger an event", function(done) {
         graph.on('unhover', function() { done(); });
-        graph.$el.trigger('mouseout');
+        graph.trigger('mouseout');
       });
     });
   });
