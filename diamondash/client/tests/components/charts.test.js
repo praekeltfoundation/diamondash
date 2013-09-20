@@ -46,11 +46,11 @@ describe("diamondash.components.charts", function() {
       it("should generate the correct tick values", function() {
         assert.deepEqual(
           axis.tickValues(2, 96, 5),
-          d3.range(2, 96, 5 * 3));
+          [2, 17, 32, 47, 62, 77, 92, 96]);
 
         assert.deepEqual(
           axis.tickValues(3, 98, 5),
-          d3.range(3, 98, 5 * 3));
+          [3, 18, 33, 48, 63, 78, 93, 98]);
       });
     });
 
@@ -68,7 +68,9 @@ describe("diamondash.components.charts", function() {
            '28-06 09:53',
            '28-06 10:03',
            '28-06 10:13',
-           '28-06 10:23'].join(''));
+           '28-06 10:23',
+           '28-06 10:33',
+          ].join(''));
       });
     });
   });

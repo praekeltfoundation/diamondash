@@ -72,6 +72,7 @@ diamondash.widgets.graph.views = function() {
         .data([null]);
 
       marker.enter().append('g')
+        .attr('class', 'hover-marker')
         .call(charts.components.marker)
         .transition()
           .select('text')
@@ -85,7 +86,9 @@ diamondash.widgets.graph.views = function() {
       this.graph.axis.line
         .selectAll('g')
         .style('fill-opacity', function(tick) {
-          return self.collision(position, tick);
+          return self.collision(position, tick)
+            ? 0
+            : 1;
         });
 
       return this;
@@ -93,7 +96,7 @@ diamondash.widgets.graph.views = function() {
 
     hide: function() {
       this.graph.svg
-        .selectAll('.hover-dot')
+        .selectAll('.hover-marker')
         .remove();
 
       this.graph.axis.line
@@ -189,7 +192,7 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
-  var GraphLine = structures.Eventable.extend({
+  var GraphLines = structures.Eventable.extend({
     constructor: function(options) {
       this.graph = options.graph;
 
@@ -200,16 +203,16 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
-      var lines = this.graph
+      var line = this.graph.svg
         .selectAll('.line')
-        .data(this.graph.model.get('metrics'));
+        .data(this.graph.model.get('metrics').models);
 
-      lines.enter().append('path')
+      line.enter().append('path')
         .attr('class', 'line')
         .style('stroke', function(d) { return d.get('color'); });
 
       var self = this;
-      lines.attr('d', function(d) {
+      line.attr('d', function(d) {
         return self.line(d.get('datapoints'));
       });
 
@@ -245,13 +248,9 @@ diamondash.widgets.graph.views = function() {
         })
       });
 
-      this.fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
-      this.fx.accessor = function(d) { return this(d.x); };
+      this._setupScales();
 
-      this.fy = d3.scale.linear().range([this.dimensions.innerHeight, 0]);
-      this.fy.accessor = function(d) { return this(d.y); };
-
-      this.line = new GraphLine({
+      this.line = new GraphLines({
         graph: this,
         smooth: this.smooth
       });
@@ -267,6 +266,17 @@ diamondash.widgets.graph.views = function() {
       if (options.dotted) {
         this.dots = new GraphDots({graph: this});
       }
+    },
+
+    _setupScales: function() {
+      var fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
+      fx.accessor = function(d) { return fy(d.x); };
+
+      var fy = d3.scale.linear().range([this.dimensions.innerHeight, 0]);
+      fy.accessor = function(d) { return fy(d.y); };
+
+      this.fx = fx;
+      this.fy = fy;
     },
 
     render: function() {
@@ -324,7 +334,7 @@ diamondash.widgets.graph.views = function() {
   });
 
   return {
-    GraphLine: GraphLine,
+    GraphLines: GraphLines,
     GraphDots: GraphDots,
     GraphLegendView: GraphLegendView,
     GraphHoverMarker: GraphHoverMarker,

@@ -28,6 +28,9 @@ describe("diamondash.widgets.graph", function() {
 
     beforeEach(function() {
       graph = new views.GraphView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
@@ -42,7 +45,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should add a 'hover' class to the legend", function() {
         assert(!legend.$el.hasClass('hover'));
-        hover.inverse(graph, {x: 15});
+        hover.inverse(graph, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
       });
 
@@ -56,7 +59,7 @@ describe("diamondash.widgets.graph", function() {
           legend.$('.legend-item[data-name="bar"] .value').text(),
           16);
 
-        hover.inverse(graph, {x: 15});
+        hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-name="foo"] .value').text(),
@@ -74,7 +77,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should remove the 'hover' class from the legend", function() {
-        hover.inverse(graph, {x: 15});
+        hover.inverse(graph, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
 
         graph.trigger('unhover');
@@ -82,7 +85,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should display the last metric values", function() {
-        hover.inverse(graph, {x: 15});
+        hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-name="foo"] .value').text(),
@@ -101,6 +104,109 @@ describe("diamondash.widgets.graph", function() {
         assert.equal(
           legend.$('.legend-item[data-name="bar"] .value').text(),
           16);
+      });
+    });
+  });
+
+  describe("GraphHoverMarker", function() {
+    var marker,
+        graph;
+
+    function markerOpacities() {
+      var opacities = {};
+
+      graph.axis.line
+        .selectAll('g')
+        .each(function(tick) {
+          if (tick) {
+            opacities[tick] = $(this).css('fill-opacity');
+          }
+        });
+
+      return opacities;
+    }
+
+    beforeEach(function() {
+      graph = new views.GraphView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.GraphModel(
+          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
+      });
+
+      marker = graph.hoverMarker;
+    });
+
+    describe("when the graph is hovered over", function() {
+      beforeEach(function() {
+        graph.render();
+      });
+
+      it("should show the marker", function() {
+        assert.equal(graph.$('.hover-marker').length, 0);
+
+        hover.inverse(graph, {x: 1340876295000});
+
+        assert.equal(graph.$('.hover-marker').length, 1);
+        assert.equal(graph.$('.hover-marker').text(), '28-06 09:38');
+      });
+
+      it("should hide nearby axis markers", function() {
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '',
+          1340876295000: '',
+          1340876595000: '',
+          1340876895000: '',
+          1340877195000: '',
+          1340877495000: ''
+        });
+
+        hover.inverse(graph, {x: 1340876295000});
+
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '0',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
+      });
+    });
+
+    describe("when the graph is unhovered", function() {
+      beforeEach(function() {
+        graph.render();
+        hover.inverse(graph, {x: 1340876295000});
+      });
+
+      it("should hide the marker", function() {
+        assert.equal(graph.$('.hover-marker').length, 1);
+        graph.trigger('unhover');
+        assert.equal(graph.$('.hover-marker').length, 0);
+      });
+
+      it("should unhide all axis markers", function() {
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '0',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
+
+        graph.trigger('unhover');
+
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '1',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
       });
     });
   });

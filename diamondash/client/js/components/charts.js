@@ -122,8 +122,10 @@ diamondash.components.charts = function() {
     }(),
 
     tickCount: function() {
-      var width = this.chart.dimensions.innerWidth;
-      return Math.floor(width / this.markerWidth);
+      var width = this.chart.dimensions.innerWidth,
+          count = Math.floor(width / this.markerWidth);
+
+      return Math.max(0, count);
     },
 
     tickValues: function(start, end, step) {
@@ -132,7 +134,11 @@ diamondash.components.charts = function() {
           i = 1;
 
       while (Math.floor(n / i) > m) i++;
-      return d3.range(start, end, step * i);
+
+      var values = d3.range(start, end, step * i);
+      values.push(end);
+
+      return values;
     },
 
     render: function(start, end, step) {
