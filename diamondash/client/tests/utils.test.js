@@ -53,4 +53,14 @@ describe("diamondash.utils", function() {
       assert.equal(utils.functor(3)(), 3);
     });
   });
+
+  describe(".snap()", function() {
+      it("should snap the value to the closest step", function() {
+        assert.equal(utils.snap(12, 10, 5), 10);
+        assert.equal(utils.snap(13, 10, 5), 15);
+        assert.equal(utils.snap(15, 10, 5), 15);
+        assert.equal(utils.snap(17, 10, 5), 15);
+        assert.equal(utils.snap(18, 10, 5), 20);
+      });
+  });
 });

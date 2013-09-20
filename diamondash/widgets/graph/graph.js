@@ -1,6 +1,8 @@
 diamondash.widgets.graph = function() {
   var utils = diamondash.utils,
       structures = diamondash.components.structures,
+      charts = diamondash.components.charts,
+      widget = diamondash.widgets.widget,
       widgets = diamondash.widgets;
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
@@ -122,233 +124,267 @@ diamondash.widgets.graph = function() {
     }
   });
 
-  var GraphView = widgets.widget.WidgetView.extend({
-    svgHeight: 214,
-    axisHeight: 24,
-    axisMarkerWidth: 128,
-    markerCollisionDistance: 60,
-    hoverDotSize: 4,
-    dottedHoverDotSize: 5,
-    dotSize: 3,
-    margin: {top: 4, right: 4, bottom: 0, left: 4},
+  var GraphHoverMarker = structures.Eventable.extend({
+    collisionDistance: 60,
 
-    formatTime: function() {
-      var format = d3.time.format.utc("%d-%m %H:%M");
-      return function(t) { return format(new Date(t)); };
-    }(),
+    constructor: function(options) {
+      this.graph = options.chart;
 
-    initialize: function(options) {
-      var self = this,
-          metrics = this.model.get('metrics').models,
-          d3el = d3.select(this.el);
-
-      // Parse Config
-      // ------------
-      if (options.config) {
-        var config = options.config;
-
-        this.dotted = 'dotted' in config ? config.dotted : false;
-        this.smooth = 'smooth' in config ? config.smooth : true;
+      if ('collisionsDistance' in options) {
+        this.collisionDistance = options.collisionDistance;
       }
 
-      // Dimensions Setup
-      // -------------
-      var margin = this.margin;
-      this.width = this.$el.width();
-      this.chartWidth = this.width - margin.left - margin.right;
-      this.chartHeight = this.svgHeight
-            - this.axisHeight - margin.top - margin.bottom;
-      this.axisVPosition = this.svgHeight - this.axisHeight;
-
-      // Chart Setup
-      // -----------
-      var svg = this.svg = d3el.append('svg')
-          .attr('class', 'graph-svg')
-          .attr('width', this.width)
-          .attr('height', this.svgHeight)
-        .append('g')
-          .attr('transform', "translate(" + margin.left + "," + margin.top + ")");
-
-      var fx, fy;
-      this.fx = fx = d3.time.scale().range([0, this.chartWidth]);
-      this.fy = fy = d3.scale.linear().range([this.chartHeight, 0]);
-
-      this.maxTicks = Math.floor(this.chartWidth / this.axisMarkerWidth);
-      this.axis = d3.svg.axis()
-        .scale(fx)
-        .orient('bottom')
-        .tickFormat(this.formatTime)
-        .ticks(this.maxTicks);
-
-      this.line = d3.svg.line()
-        .interpolate(this.smooth ? 'monotone' : 'linear')
-        .x(function(d) { return fx(d.x); })
-        .y(function(d) { return fy(d.y); });
-
-      var chart = this.chart = svg.append('g')
-        .attr('class', 'chart')
-        .attr('height', this.chartHeight);
-
-      this.axisLine = svg.append("g")
-        .attr('class', 'axis')
-        .attr('transform', "translate(0, " + this.axisVPosition + ")")
-        .call(this.axis);
-
-      // Legend Setup
-      // -----------
-      this.legend = new GraphLegendView({graph: this});
-
-      // Hover Setup
-      // -----------
-      
-      // create an overlay to catch events
-      this.svg.append('rect')
-        .attr('class', 'event-overlay')
-        .attr('fill-opacity', 0)
-        .attr('width', this.width)
-        .attr('height', this.svgHeight)
-        .on('mousemove',
-            function() { self.focus.call(self, d3.mouse(this)[0]); })
-        .on('mouseout',
-            function() { self.unfocus.call(self); });
-
-      // Model-View Bindings Setup
-      // -------------------------
-      this.model.on('change', this.render, this);
+      utils.bindEvents(this.bindings, this);
     },
 
-    snapX: function(x) {
-      var start = this.model.get('domain')[0] || 0,
-          step = this.model.get('step'),
-          i = Math.round((x - start) / step);
-
-      return start + (step * i);
+    collision: function(position, tick) {
+      var d = Math.abs(position.svg.x - this.graph.fx(tick));
+      return d < this.collisionDistance;
     },
 
-    buildHoverMarker: function(g) {
-      // Replicates the way d3 generates axis time markers.
-      // (cloning of one of one of the axis time markers could be done instead,
-      // but that is not d3-like).
+    show: function(position) {
+      var marker = this.graph.axis.line
+        .selectAll('.hover-marker')
+        .data([null]);
 
-      g.attr('class', 'hover-marker');
+      marker.enter().append('g')
+        .call(charts.components.marker)
+        .transition()
+          .select('text')
+          .attr('fill-opacity', 1);
 
-      g.append('line')
-        .attr('class', 'tick')
-        .attr('y2', 6)
-        .attr('x2', 0);
+      marker
+        .attr('transform', "translate(" + position.svg.x + ", 0)")
+        .select('text').text(this.graph.axis.format(position.x));
 
-      g.append('text')
-        .attr('text-anchor', "middle")
-        .attr('dy', ".71em")
-        .attr('y', 9)
-        .attr('x', 0)
-        .attr('fill-opacity', 0);
-
-      return g;
-    },
-
-    focus: function(svgX) {
-      var fx = this.fx,
-          fy = this.fy;
-    
-      // convert the svg x value to the corresponding time x value, then snap it
-      // to the closest timestep
-      var x = this.snapX(fx.invert(svgX));
-      svgX = fx(x);
-
-      var metrics = this.model.get('metrics');
-      var metricValues = metrics.invoke('valueAt', x);
-
-      // draw hover marker
-      var hoverMarker = this.axisLine.selectAll('.hover-marker').data([null]);
-      hoverMarker.enter().append('g')
-        .call(this.buildHoverMarker)
-        .transition().select('text').attr('fill-opacity', 1);
-      hoverMarker
-        .attr('transform', "translate(" + svgX + ", 0)")
-        .select('text').text(this.formatTime(x));
-
-      // hide axis markers colliding with hover marker
-      var markerCollisionDistance = this.markerCollisionDistance;
-      this.axisLine.selectAll('g')
-        .style('fill-opacity', function(d) {
-          return Math.abs(fx(d) - svgX) < markerCollisionDistance ? 0 : 1;
+      var self = this;
+      this.graph.axis.line
+        .selectAll('g')
+        .style('fill-opacity', function(tick) {
+          return self.collision(position, tick);
         });
 
-      // draw dots
-      var dots = this.svg.selectAll('.hover-dot')
-        .data(_.reject(metricValues, function(d) { return d === null; }));
-
-      dots.enter().append('circle')
-        .attr('class', 'hover-dot')
-        .style('stroke', function(d, i) { return metrics.at(i).get('color'); })
-        .transition()
-          .attr('r', this.dotted ? this.dottedHoverDotSize : this.hoverDotSize);
-
-      dots.attr('cx', svgX)
-          .attr('cy', fy);
-
-      this.trigger('hover', x);
       return this;
     },
 
-    unfocus: function() {
-      this.svg.selectAll('.hover-dot, .hover-marker').remove();
-      this.axisLine.selectAll('g').style('fill-opacity', 1);
-      this.trigger('unhover');
-    }, 
+    hide: function() {
+      this.graph.svg
+        .selectAll('.hover-dot')
+        .remove();
 
-    genTickValues: function(start, end, step) {
-      var n = (end - start) / step,
-          m = this.maxTicks,
-          i = 1;
+      this.graph.axis.line
+        .selectAll('g')
+        .style('fill-opacity', 1);
 
-      while (Math.floor(n / i) > m) i++;
-      return d3.range(start, end, step * i);
+      return this;
+    },
+
+    bindings: {
+      'hover graph': function(position) {
+        this.show(position);
+      },
+
+      'unhover graph': function() {
+        this.hide();
+      }
+    }
+  });
+
+  var GraphDots = structures.Eventable.extend({
+    size: 3,
+    hoverSize: 3,
+
+    constructor: function(options) {
+      if ('size' in options) { this.size = options.size; }
+      if ('hoverSize' in options) { this.hoverSize = options.hoverSize; }
+      utils.bindEvents(this.bindings, this);
     },
 
     render: function() {
-      var model = this.model,
-          line = this.line,
-          metrics = model.get('metrics').models,
-          domain = model.get('domain'),
-          range = model.get('range'),
-          step = model.get('step'),
-          fx = this.fx,
-          fy = this.fy;
+      var metricDots = this.chart
+        .selectAll('.metric-dots')
+        .data(this.chart.model.get('metrics'));
 
-      fx.domain(domain);
-      fy.domain(range);
+      metricDots.enter().append('g')
+        .attr('class', 'metric-dots')
+        .style('fill', function(d) { return d.get('color'); });
 
-      this.axis.tickValues(this.genTickValues.apply(this, domain.concat([step])));
-      this.axisLine.call(this.axis);
+      metricDots.exit().remove();
 
-      var lines = this.chart.selectAll('.line').data(metrics);
+      var dot = metricDots
+        .selectAll('.dot')
+        .data(function(d) { return d.get('datapoints'); });
+
+      dot.enter().append('circle')
+        .attr('class', 'dot')
+        .attr('r', this.dotSize);
+
+      dot.exit().remove();
+
+      dot
+        .attr('cx', this.chart.fx.accessor)
+        .attr('cy', this.chart.fy.accessor);
+    },
+
+    bindings: {
+      'hover graph': function(position) {
+        var data = this.chart.model
+          .get('metrics')
+          .map(function(metric) {
+            return {
+              metric: metric,
+              y: metric.valueAt(position.x)
+            };
+          })
+          .filter(function(d) {
+            return d.y !== null;
+          });
+
+        var dot = this.svg
+          .selectAll('.hover-dot')
+          .data(data);
+
+        dot.enter().append('circle')
+          .attr('class', 'hover-dot')
+          .style('stroke', function(d) {
+            return d.metric.get('color');
+          })
+          .transition()
+            .attr('r', this.hoverSize);
+
+        dot.attr('cx', position.svg.x)
+           .attr('cy', this.chart.fy.accessor);
+      },
+
+      'unhover graph': function() {
+        this.svg
+          .selectAll('.hover-dot')
+          .remove();
+      }
+    }
+  });
+
+  var GraphLine = structures.Eventable.extend({
+    constructor: function(options) {
+      this.chart = options.chart;
+
+      this.line = d3.svg.line()
+        .interpolate(options.smooth ? 'monotone' : 'linear')
+        .x(this.chart.fx.accessor)
+        .y(this.chart.fy.accessor);
+    },
+
+    render: function() {
+      var lines = this.chart
+        .selectAll('.line')
+        .data(this.chart.model.get('metrics'));
+
       lines.enter().append('path')
         .attr('class', 'line')
         .style('stroke', function(d) { return d.get('color'); });
-      lines.attr('d', function(d) { return line(d.get('datapoints')); });
 
-      if (this.dotted) {
-        var dotGroups = this.chart.selectAll('.dot-group').data(metrics);
-        dotGroups.enter().append('g')
-          .attr('class', 'dot-group')
-          .style('fill', function(d) { return d.get('color'); });
-        dotGroups.exit().remove();
+      var self = this;
+      lines.attr('d', function(d) {
+        return self.line(d.get('datapoints'));
+      });
 
-        var dots = dotGroups.selectAll('.dot')
-          .data(function(d) { return d.get('datapoints'); });
-        dots.enter().append('circle')
-          .attr('class', 'dot')
-          .attr('r', this.dotSize);
-        dots.exit().remove();
-        dots
-          .attr('cx', function(d) { return fx(d.x); })
-          .attr('cy', function(d) { return fy(d.y); });
+      return this;
+    }
+  });
+
+  var GraphView = charts.ChartView.extend({
+    dotted: false,
+
+    smooth: true,
+
+    height: 214,
+
+    margin: {
+      top: 4,
+      right: 4,
+      left: 4,
+      bottom: 0
+    },
+
+    initialize: function(options) {
+      if ('height' in options) { this.height = options.height; }
+      if ('margin' in options) { this.margin = options.margin; }
+      if ('dotted' in options) { this.dotted = options.dotted; }
+      if ('smooth' in options) { this.smooth = options.smooth; }
+
+      GraphView.__super__.initialize.call(this, {
+        dimensions: new charts.Dimensions({
+          width: this.$el.width(),
+          height: this.height,
+          margin: this.margin
+        })
+      });
+
+      this.fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
+      this.fx.accessor = function(d) { return this(d.x); };
+
+      this.fy = d3.scale.linear().range([this.dimensions.innerHeight, 0]);
+      this.fy.accessor = function(d) { return this(d.y); };
+
+      this.line = new GraphLine({
+        graph: this,
+        smooth: this.smooth
+      });
+
+      this.axis = new charts.Axis({
+        chart: this,
+        scale: this.fx
+      });
+
+      this.legend = new GraphLegendView({graph: this});
+
+      if (options.dotted) {
+        this.dots = new GraphDots({graph: this});
+      }
+    },
+
+    render: function() {
+      var domain = this.model.get('domain'),
+          range = this.model.get('range'),
+          step = this.model.get('step');
+
+      this.chart.fx.domain(domain);
+      this.chart.fy.domain(range);
+      this.line.render();
+      this.axis.render(domain[0], domain[1], step);
+      this.legend.render();
+
+      if (this.dots) {
+        this.dots.render();
       }
 
-      this.legend.render();
-      this.$el.append(this.legend.$el);
+      return this;
+    },
+
+    events: {
+      'mouseover': function(e) {
+        var mouse = d3.mouse(e.target),
+            position = {svg: {}};
+
+        position.svg.x = mouse[0];
+        position.svg.y = mouse[1];
+
+        // convert the svg x value to the corresponding time alue, then snap
+        // it to the closest timestep
+        position.x = utils.snap(
+          this.fx.invert(position.svg.x),
+          this.model.get('domain')[0],
+          this.model.get('step'));
+
+        // shift the svg x value to correspond to the snapped time value
+        position.svg.x = this.fx(position.x);
+        
+        this.trigger('hover', position);
+      },
+
+      'mouseout': function() {
+        this.trigger('unhover');
+      }
     }
   });
 
@@ -361,7 +397,10 @@ diamondash.widgets.graph = function() {
     GraphMetricModel: GraphMetricModel,
     GraphMetricCollection: GraphMetricCollection,
 
+    GraphLine: GraphLine,
+    GraphDots: GraphDots,
     GraphLegendView: GraphLegendView,
+    GraphHoverMarker: GraphHoverMarker,
 
     GraphModel: GraphModel,
     GraphView: GraphView

@@ -24,9 +24,15 @@ diamondash.utils = function() {
     });
   }
 
+  function snap(x, start, step) {
+    var i = Math.round((x - start) / step);
+    return start + (step * i);
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
-    bindEvents: bindEvents
+    bindEvents: bindEvents,
+    snap: snap
   };
 }.call(this);
