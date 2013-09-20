@@ -4,6 +4,20 @@ describe("diamondash.widgets.graph", function() {
       views = diamondash.widgets.graph.views,
       models = diamondash.widgets.graph.models;
 
+  function hover(graph, coords) {
+    coords = _(coords || {}).defaults({x: 0, y: 0});
+    graph.trigger('hover', graph.positionOf(coords));
+  }
+
+  hover.inverse = function(graph, coords) {
+    coords = _(coords || {}).defaults({x: 0, y: 0});
+
+    this(graph, {
+      x: graph.fx(coords.x),
+      y: graph.fy(coords.y)
+    });
+  };
+
   afterEach(function() {
     utils.unregisterModels();
   });
@@ -18,7 +32,7 @@ describe("diamondash.widgets.graph", function() {
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
 
-      legend = new views.GraphLegendView({graph: graph});
+      legend = graph.legend;
     });
 
     describe("when the graph is hovered over", function() {
@@ -28,7 +42,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should add a 'hover' class to the legend", function() {
         assert(!legend.$el.hasClass('hover'));
-        graph.trigger('hover', 15);
+        hover.inverse(graph, {x: 15});
         assert(legend.$el.hasClass('hover'));
       });
 
@@ -42,7 +56,7 @@ describe("diamondash.widgets.graph", function() {
           legend.$('.legend-item[data-name="bar"] .value').text(),
           16);
 
-        graph.trigger('hover', 15);
+        hover.inverse(graph, {x: 15});
 
         assert.equal(
           legend.$('.legend-item[data-name="foo"] .value').text(),
@@ -60,7 +74,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should remove the 'hover' class from the legend", function() {
-        graph.trigger('hover', 15);
+        hover.inverse(graph, {x: 15});
         assert(legend.$el.hasClass('hover'));
 
         graph.trigger('unhover');
@@ -68,7 +82,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should display the last metric values", function() {
-        graph.trigger('hover', 15);
+        hover.inverse(graph, {x: 15});
 
         assert.equal(
           legend.$('.legend-item[data-name="foo"] .value').text(),
@@ -89,8 +103,5 @@ describe("diamondash.widgets.graph", function() {
           16);
       });
     });
-  });
-
-  describe("GraphView", function() {
   });
 });

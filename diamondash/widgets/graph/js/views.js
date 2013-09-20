@@ -14,15 +14,7 @@ diamondash.widgets.graph.views = function() {
       utils.bindEvents(this.bindings, this);
     },
 
-    format: function() {
-      var format = d3.format(",f");
-
-      return function(v) {
-        return v !== null
-          ? format(v)
-          : '';
-      };
-    }(),
+    format: d3.format(",f"),
 
     render: function(x) {
       this.$el.html(this.jst({
@@ -44,9 +36,9 @@ diamondash.widgets.graph.views = function() {
     },
 
     bindings: {
-      'hover graph': function(x) {
+      'hover graph': function(position) {
         this.$el.addClass('hover');
-        return this.render(x);
+        return this.render(position.x);
       },
 
       'unhover graph': function() {
@@ -269,6 +261,7 @@ diamondash.widgets.graph.views = function() {
         scale: this.fx
       });
 
+      this.hoverMarker = new GraphHoverMarker({graph: this});
       this.legend = new GraphLegendView({graph: this});
 
       if (options.dotted) {
@@ -295,25 +288,33 @@ diamondash.widgets.graph.views = function() {
       return this;
     },
 
+    positionOf: function(coords) {
+      var position = {svg: {}};
+
+      position.svg.x = coords.x;
+      position.svg.y = coords.y;
+
+      // convert the svg x value to the corresponding time alue, then snap
+      // it to the closest timestep
+      position.x = utils.snap(
+        this.fx.invert(position.svg.x),
+        this.model.get('domain')[0],
+        this.model.get('step'));
+
+      // shift the svg x value to correspond to the snapped time value
+      position.svg.x = this.fx(position.x);
+
+      return position;
+    },
+
     events: {
       'mouseover': function(e) {
-        var mouse = d3.mouse(e.target),
-            position = {svg: {}};
+        var mouse = d3.mouse(e.target);
 
-        position.svg.x = mouse[0];
-        position.svg.y = mouse[1];
-
-        // convert the svg x value to the corresponding time alue, then snap
-        // it to the closest timestep
-        position.x = utils.snap(
-          this.fx.invert(position.svg.x),
-          this.model.get('domain')[0],
-          this.model.get('step'));
-
-        // shift the svg x value to correspond to the snapped time value
-        position.svg.x = this.fx(position.x);
-        
-        this.trigger('hover', position);
+        this.trigger('hover', this.positionOf({
+          x: mouse[0],
+          y: mouse[1]
+        }));
       },
 
       'mouseout': function() {
