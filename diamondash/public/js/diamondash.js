@@ -282,7 +282,7 @@ diamondash.components.charts = function() {
       this.dimensions = options.dimensions;
       this.svg = components.svg(d3.select(this.el), this.dimensions);
 
-      self = this;
+      var self = this;
       this.overlay = this.svg.append('rect')
         .attr('class', 'event-overlay')
         .attr('fill-opacity', 0)
@@ -641,10 +641,10 @@ diamondash.widgets.graph.views = function() {
 
         dot.enter().append('circle')
           .attr('class', 'hover-dot')
+          .attr('r', 0)
           .style('stroke', function(d) {
             return d.metric.get('color');
           })
-          .attr('r', 0)
           .transition()
             .attr('r', this.hoverSize);
 

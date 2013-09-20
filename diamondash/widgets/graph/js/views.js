@@ -177,10 +177,10 @@ diamondash.widgets.graph.views = function() {
 
         dot.enter().append('circle')
           .attr('class', 'hover-dot')
+          .attr('r', 0)
           .style('stroke', function(d) {
             return d.metric.get('color');
           })
-          .attr('r', 0)
           .transition()
             .attr('r', this.hoverSize);
 

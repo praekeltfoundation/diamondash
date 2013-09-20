@@ -145,7 +145,7 @@ diamondash.components.charts = function() {
       this.dimensions = options.dimensions;
       this.svg = components.svg(d3.select(this.el), this.dimensions);
 
-      self = this;
+      var self = this;
       this.overlay = this.svg.append('rect')
         .attr('class', 'event-overlay')
         .attr('fill-opacity', 0)
