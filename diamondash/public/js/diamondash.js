@@ -288,12 +288,8 @@ diamondash.components.charts = function() {
         .attr('fill-opacity', 0)
         .attr('width', this.dimensions.width)
         .attr('height', this.dimensions.height)
-        .on('mousemove', function() {
-          self.trigger('mousemove', this);
-        })
-        .on('mouseout', function() {
-          self.trigger('mouseout', this);
-        });
+        .on('mousemove', function() { self.trigger('mousemove', this); })
+        .on('mouseout', function() { self.trigger('mouseout', this); });
     }
   });
 
@@ -390,8 +386,6 @@ diamondash.widgets.graph.models = function() {
       utils = diamondash.utils;
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
-    idAttribute: 'name',
-
     defaults: {
       'datapoints': [],
     },
@@ -404,7 +398,7 @@ diamondash.widgets.graph.models = function() {
       var datapoints = this.get('datapoints'),
           d = datapoints[datapoints.length - 1];
 
-      return d && typeof d.y !== 'undefined'
+      return d && (typeof d.y !== 'undefined')
         ? d.y
         : null;
     },
@@ -414,7 +408,7 @@ diamondash.widgets.graph.models = function() {
           i = this.bisect(datapoints, x);
           d = datapoints[i];
 
-      return d && x === d.x
+      return d && (x === d.x)
         ? d.y
         : null;
     }
@@ -489,11 +483,11 @@ diamondash.widgets.graph.views = function() {
       var metrics = this.model.get('metrics');
       this.$('.legend-item').each(function() {
         var $el = $(this),
-            name = $el.attr('data-name');
+            id = $el.attr('data-metric-id');
 
         $el
           .find('.swatch')
-          .css('background-color', metrics.get(name).get('color'));
+          .css('background-color', metrics.get(id).get('color'));
       });
 
       return this;
@@ -599,7 +593,7 @@ diamondash.widgets.graph.views = function() {
 
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
-        .attr('data-metric', function(d) { return d.get('name'); })
+        .attr('data-metric-id', function(d) { return d.get('id'); })
         .style('fill', function(d) { return d.get('color'); });
 
       metricDots.exit().remove();
@@ -677,7 +671,7 @@ diamondash.widgets.graph.views = function() {
 
       line.enter().append('path')
         .attr('class', 'metric-line')
-        .attr('data-metric', function(d) { return d.get('name'); })
+        .attr('data-metric-id', function(d) { return d.get('id'); })
         .style('stroke', function(d) { return d.get('color'); });
 
       var self = this;
@@ -808,7 +802,7 @@ diamondash.widgets.graph.views = function() {
         this.trigger('unhover');
       },
 
-      'change model': function() {
+      'sync model': function() {
         this.render();
       }
     }

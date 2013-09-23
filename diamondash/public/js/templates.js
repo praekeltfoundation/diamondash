@@ -27,8 +27,8 @@ function print() { __p += __j.call(arguments, '') }
 with (obj) {
 
  self.model.get('metrics').each(function(m) { ;
-__p += '\n<li class="legend-item" data-name="' +
-((__t = ( m.get('name') )) == null ? '' : __t) +
+__p += '\n<li class="legend-item" data-metric-id="' +
+((__t = ( m.get('id') )) == null ? '' : __t) +
 '">\n  <span class="swatch"></span>\n  <span class="title">' +
 ((__t = ( m.get('title') )) == null ? '' : __t) +
 '</span>\n  <span class="value">' +

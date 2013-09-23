@@ -4,8 +4,6 @@ diamondash.widgets.graph.models = function() {
       utils = diamondash.utils;
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
-    idAttribute: 'name',
-
     defaults: {
       'datapoints': [],
     },
@@ -18,7 +16,7 @@ diamondash.widgets.graph.models = function() {
       var datapoints = this.get('datapoints'),
           d = datapoints[datapoints.length - 1];
 
-      return d && typeof d.y !== 'undefined'
+      return d && (typeof d.y !== 'undefined')
         ? d.y
         : null;
     },
@@ -28,7 +26,7 @@ diamondash.widgets.graph.models = function() {
           i = this.bisect(datapoints, x);
           d = datapoints[i];
 
-      return d && x === d.x
+      return d && (x === d.x)
         ? d.y
         : null;
     }

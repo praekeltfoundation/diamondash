@@ -151,12 +151,8 @@ diamondash.components.charts = function() {
         .attr('fill-opacity', 0)
         .attr('width', this.dimensions.width)
         .attr('height', this.dimensions.height)
-        .on('mousemove', function() {
-          self.trigger('mousemove', this);
-        })
-        .on('mouseout', function() {
-          self.trigger('mouseout', this);
-        });
+        .on('mousemove', function() { self.trigger('mousemove', this); })
+        .on('mouseout', function() { self.trigger('mouseout', this); });
     }
   });
 
