@@ -40,5 +40,9 @@
   display: block;
 }
 
-.lvalue .good.change { color: #33cc33; }
-.lvalue .bad.change { color: #cc3333; }
+.lvalue .good.change {
+  color: #2ca02c;
+}
+.lvalue .bad.change {
+  color: #d62728;
+}
