@@ -215,8 +215,16 @@ a:hover {
 	margin-left: 5px;
 }
 
-.good.change { color: #33cc33; }
-.bad.change { color: #cc3333; }
+.lvalue .change span {
+  display: block;
+}
+
+.lvalue .good.change {
+  color: #2ca02c;
+}
+.lvalue .bad.change {
+  color: #d62728;
+}
 
 .text-widget-text {
     margin: 0 auto;
