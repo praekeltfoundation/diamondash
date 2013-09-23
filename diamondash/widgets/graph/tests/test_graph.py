@@ -1,9 +1,11 @@
 import time
+from itertools import count
 
 from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash import ConfigError
+from diamondash.widgets.graph import graph
 from diamondash.widgets.graph import GraphWidget
 from diamondash.backends.graphite import GraphiteBackend
 from diamondash.tests.utils import stub_from_config, ToyBackend
@@ -11,6 +13,9 @@ from diamondash.tests.utils import stub_from_config, ToyBackend
 
 class GraphWidgetTestCase(unittest.TestCase):
     def setUp(self):
+        self.uuid_counter = count()
+        self.patch(graph, 'uuid4', lambda: next(self.uuid_counter))
+
         self.stub_time(1340875997)
         self.backend = ToyBackend()
         self.widget = self.mk_graph_widget(
@@ -58,9 +63,11 @@ class GraphWidgetTestCase(unittest.TestCase):
                     'some_metric_option': 'some-value',
                     'target': 'vumi.random.count.sum',
                     'metadata': {
+                        'id': '0',
                         'name': 'random-sum',
                         'title': 'random sum',
                         'client_config': {
+                            'id': '0',
                             'name': 'random-sum',
                             'title': 'random sum',
                         },
@@ -70,9 +77,11 @@ class GraphWidgetTestCase(unittest.TestCase):
                     'some_metric_option': 'some-value',
                     'target': 'vumi.random.timer.avg',
                     'metadata': {
+                        'id': '1',
                         'name': 'random-avg',
                         'title': 'random avg',
                         'client_config': {
+                            'id': '1',
                             'name': 'random-avg',
                             'title': 'random avg',
                         },
@@ -87,8 +96,8 @@ class GraphWidgetTestCase(unittest.TestCase):
         client_model_config = parsed_config['client_config']['model']
         self.assertEqual(
             client_model_config['metrics'],
-            [{'name': 'random-sum', 'title': 'random sum'},
-             {'name': 'random-avg', 'title': 'random avg'}])
+            [{'id': '0', 'name': 'random-sum', 'title': 'random sum'},
+             {'id': '1', 'name': 'random-avg', 'title': 'random avg'}])
         self.assertEqual(client_model_config['step'], 3600000)
 
     def test_parse_config_for_no_metrics(self):
@@ -108,16 +117,16 @@ class GraphWidgetTestCase(unittest.TestCase):
     def test_snapshot_retrieval(self):
         return self.assert_snapshot_retrieval([
             {
-                'metadata': {'name': 'metric-1'},
+                'metadata': {'id': '0'},
                 'datapoints': [{'x': 0, 'y': 0},
                                {'x': 2, 'y': 1},
                                {'x': 3, 'y': 2}]
             }, {
-                'metadata': {'name': 'metric-2'},
+                'metadata': {'id': '1'},
                 'datapoints': [{'x': 5, 'y': 4},
                                {'x':  15, 'y': 1}]
             }, {
-                'metadata': {'name': 'metric-3'},
+                'metadata': {'id': '2'},
                 'datapoints': []
             }
         ], {
@@ -125,18 +134,18 @@ class GraphWidgetTestCase(unittest.TestCase):
             'range': (0, 4),
             'metrics': [
                 {
-                    'name': 'metric-1',
+                    'id': '0',
                     'datapoints': [{'x': 0, 'y': 0},
                                    {'x': 2000, 'y': 1},
                                    {'x': 3000, 'y': 2}]
                 },
                 {
-                    'name': 'metric-2',
+                    'id': '1',
                     'datapoints': [{'x': 5000, 'y': 4},
                                    {'x': 15000, 'y': 1}]
                 },
                 {
-                    'name': 'metric-3',
+                    'id': '2',
                     'datapoints': []
                 }
             ]
@@ -144,15 +153,15 @@ class GraphWidgetTestCase(unittest.TestCase):
 
     def test_snapshot_retrieval_for_empty_datapoints(self):
         return self.assert_snapshot_retrieval([
-            {'metadata': {'name': 'metric-1'}, 'datapoints': []},
-            {'metadata': {'name': 'metric-2'}, 'datapoints': []},
-            {'metadata': {'name': 'metric-3'}, 'datapoints': []}], {
+            {'metadata': {'id': '0'}, 'datapoints': []},
+            {'metadata': {'id': '1'}, 'datapoints': []},
+            {'metadata': {'id': '2'}, 'datapoints': []}], {
             'domain': (0, 0),
             'range': (0, 0),
             'metrics': [
-                {'name': 'metric-1', 'datapoints': []},
-                {'name': 'metric-2', 'datapoints': []},
-                {'name': 'metric-3', 'datapoints': []}]
+                {'id': '0', 'datapoints': []},
+                {'id': '1', 'datapoints': []},
+                {'id': '2', 'datapoints': []}]
         }, 1340789597)
 
     def test_snapshot_retrieval_for_align_to_start(self):

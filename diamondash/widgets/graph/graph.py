@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
@@ -78,7 +78,7 @@ class GraphWidget(DynamicWidget):
         if name is None:
             raise ConfigError('Every graph metric needs a name.')
 
-        id = str(uuid.uuid4())
+        id = str(uuid4())
         title = config.pop('title', name)
         name = utils.slugify(name)
 

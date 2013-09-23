@@ -53,21 +53,21 @@ describe("diamondash.widgets.graph", function() {
       it("should display the metric values at the hovered over time interval",
       function() {
         assert.equal(
-          legend.$('.legend-item[data-name="foo"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
           24);
 
         assert.equal(
-          legend.$('.legend-item[data-name="bar"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           16);
 
         hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
-          legend.$('.legend-item[data-name="foo"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
           12);
 
         assert.equal(
-          legend.$('.legend-item[data-name="bar"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           22);
       });
     });
@@ -89,21 +89,21 @@ describe("diamondash.widgets.graph", function() {
         hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
-          legend.$('.legend-item[data-name="foo"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
           12);
 
         assert.equal(
-          legend.$('.legend-item[data-name="bar"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           22);
 
         graph.trigger('unhover');
 
         assert.equal(
-          legend.$('.legend-item[data-name="foo"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
           24);
 
         assert.equal(
-          legend.$('.legend-item[data-name="bar"] .value').text(),
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           16);
       });
     });
@@ -225,9 +225,9 @@ describe("diamondash.widgets.graph", function() {
       };
     }
 
-    function metricDotCoords(name) {
+    function metricDotCoords(id) {
       var selection = graph.svg
-        .select('.metric-dots[data-metric=' + name + ']')
+        .select('.metric-dots[data-metric-id=' + id + ']')
         .selectAll('.dot');
 
       return utils.d3Map(selection, dotToCoords);
@@ -255,12 +255,12 @@ describe("diamondash.widgets.graph", function() {
         assert.equal(graph.$('.metric-dots').length, 2);
 
         assert.deepEqual(
-          metrics.get('foo').get('datapoints'),
-          metricDotCoords('foo'));
+          metrics.get('metric-a').get('datapoints'),
+          metricDotCoords('metric-a'));
 
         assert.deepEqual(
-          metrics.get('bar').get('datapoints'),
-          metricDotCoords('bar'));
+          metrics.get('metric-b').get('datapoints'),
+          metricDotCoords('metric-b'));
       });
     });
 
@@ -321,15 +321,15 @@ describe("diamondash.widgets.graph", function() {
 
         assert.strictEqual(
           graph.svg
-            .select('.metric-line[data-metric=foo]')
+            .select('.metric-line[data-metric-id=metric-a]')
             .datum(),
-          metrics.get('foo'));
+          metrics.get('metric-a'));
 
         assert.strictEqual(
           graph.svg
-            .select('.metric-line[data-metric=bar]')
+            .select('.metric-line[data-metric-id=metric-b]')
             .datum(),
-          metrics.get('bar'));
+          metrics.get('metric-b'));
       });
 
       it("should color the lines according to the metrics' colors",
@@ -339,18 +339,18 @@ describe("diamondash.widgets.graph", function() {
 
         assert.equal(
           graph
-            .$('.metric-line[data-metric=foo]')
+            .$('.metric-line[data-metric-id=metric-a]')
             .css('stroke'),
           metrics
-            .get('foo')
+            .get('metric-a')
             .get('color'));
 
         assert.equal(
           graph
-            .$('.metric-line[data-metric=bar]')
+            .$('.metric-line[data-metric-id=metric-b]')
             .css('stroke'),
           metrics
-            .get('bar')
+            .get('metric-b')
             .get('color'));
       });
     });
@@ -437,6 +437,8 @@ describe("diamondash.widgets.graph", function() {
 
       describe("if the graph is dotted", function() {
         beforeEach(function() {
+          testUtils.unregisterModels();
+
           graph = new views.GraphView({
             dotted: true,
             el: $('<div>')
