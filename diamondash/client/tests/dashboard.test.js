@@ -1,5 +1,10 @@
 describe("diamondash.dashboard", function(){
-  var widgets = diamondash.widgets;
+  var widgets = diamondash.widgets,
+      utils = diamondash.test.utils;
+
+  afterEach(function() {
+    utils.unregisterModels();
+  });
 
   describe("DashboardController", function(){
     var DashboardController = diamondash.dashboard.DashboardController;
