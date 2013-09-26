@@ -23,9 +23,9 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_setting(self):
         config = ToyConfig()
-        self.assertTrue('foo' not in config.items)
+        self.assertTrue('foo' not in config)
         config['foo'] = 'bar'
-        self.assertEqual(config.items['foo'], 'bar')
+        self.assertEqual(config['foo'], 'bar')
 
     def test_getting(self):
         config = ToyConfig({'foo': 'bar'})
@@ -107,6 +107,28 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config_b['name'], 'anakin')
         self.assertEqual(config_b['title'], 'Anakin')
 
+    def test_to_dict(self):
+        config = ToyConfig({
+            'foo': 'bar',
+            'baz': 'qux'
+        })
+
+        self.assertEqual(config.to_dict(), {
+            'foo': 'bar',
+            'baz': 'qux'
+        })
+
+    def test_to_dict_for_nested_configs(self):
+        config = ToyConfig({
+            'foo': 'bar',
+            'baz': ToyConfig({'lerp': 'larp'}),
+        })
+
+        self.assertEqual(config.to_dict(), {
+            'foo': 'bar',
+            'baz': {'lerp': 'larp'}
+        })
+
     def test_to_json(self):
         config = ToyConfig({
             'foo': 'bar',
@@ -116,4 +138,15 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config.to_json(), json.dumps({
             'foo': 'bar',
             'baz': 'qux'
+        }))
+
+    def test_to_json_for_nested_configs(self):
+        config = ToyConfig({
+            'foo': 'bar',
+            'baz': ToyConfig({'lerp': 'larp'}),
+        })
+
+        self.assertEqual(config.to_json(), json.dumps({
+            'foo': 'bar',
+            'baz': {'lerp': 'larp'}
         }))

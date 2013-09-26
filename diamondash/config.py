@@ -6,6 +6,10 @@ from glob import glob
 from diamondash import utils
 
 
+class ConfigError(Exception):
+    """Raised when there is an error parsing a configuration"""
+
+
 class ConfigRegistry(object):
     def __init__(self):
         self.configs = {}
@@ -39,16 +43,16 @@ class Config(object):
     REGISTRY = ConfigRegistry()
 
     def __init__(self, items=None):
-        self.items = items or {}
+        self._items = items or {}
 
     def __contains__(self, key):
-        return key in self.items
+        return key in self._items
 
     def __getitem__(self, key):
-        return self.items[key]
+        return self._items[key]
 
     def __setitem__(self, key, value):
-        self.items[key] = value
+        self._items[key] = value
 
     @classmethod
     def parse(cls, config_dict):
@@ -95,5 +99,16 @@ class Config(object):
             cls.from_file(filepath, defaults)
             for filepath in glob(path.join(dirname, "*.yml"))]
 
+    def to_dict(self):
+        data = {}
+
+        for key, value in self._items.items():
+            if isinstance(value, Config):
+                data[key] = value.to_dict()
+            else:
+                data[key] = value
+
+        return data
+
     def to_json(self):
-        return json.dumps(self.items)
+        return json.dumps(self.to_dict())
