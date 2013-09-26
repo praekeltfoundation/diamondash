@@ -10,24 +10,10 @@ class ConfigError(Exception):
     """Raised when there is an error parsing a configuration"""
 
 
-class ConfigRegistry(object):
-    def __init__(self):
-        self.configs = {}
-
-    def register(self, config_type):
-        self.configs[config_type.KEY] = config_type
-
-    def unregister(self, config_type):
-        del self.configs[config_type.KEY]
-
-    def __getitem__(self, key):
-        return self.configs[key]
-
-
 class ConfigMetaClass(type):
     def __new__(mcs, name, bases, dict):
         cls = type.__new__(mcs, name, bases, dict)
-        cls.REGISTRY.register(cls)
+        cls.REGISTRY[cls.KEY] = cls
 
         defaults = {}
         for base in bases:
@@ -49,7 +35,7 @@ class Config(object):
 
     DEFAULTS = {}
 
-    REGISTRY = ConfigRegistry()
+    REGISTRY = {}
 
     def __init__(self, items=None):
         self._items = items or {}
