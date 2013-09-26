@@ -4,6 +4,7 @@ vendor:
       - 'bower_components/jquery/jquery.js'
       - 'bower_components/underscore/underscore.js'
       - 'bower_components/backbone/backbone.js'
+      - 'bower_components/backbone-relational/backbone-relational.js'
       - 'bower_components/d3/d3.js'
     dest: 'diamondash/public/js/vendor.js'
   css:
@@ -19,12 +20,23 @@ diamondash:
   js:
     src:
       - 'diamondash/client/js/index.js'
+      - 'diamondash/client/js/utils.js'
+      - 'diamondash/client/js/components/index.js'
+      - 'diamondash/client/js/components/structures.js'
+      - 'diamondash/client/js/components/charts.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
-      - 'diamondash/widgets/graph/graph.js'
+      - 'diamondash/widgets/graph/js/index.js'
+      - 'diamondash/widgets/graph/js/models.js'
+      - 'diamondash/widgets/graph/js/views.js'
       - 'diamondash/widgets/lvalue/lvalue.js'
       - 'diamondash/client/js/dashboard.js'
     dest: 'diamondash/public/js/diamondash.js'
+  jst:
+    src:
+      - 'diamondash/widgets/lvalue/lvalue.jst'
+      - 'diamondash/widgets/graph/legend.jst'
+    dest: 'diamondash/public/js/templates.js'
   css:
     src:
       - 'diamondash/client/css/*.css'
@@ -37,5 +49,7 @@ tests:
     - 'bower_components/chai/chai.js'
   spec:
     - 'diamondash/client/tests/init.js'
+    - 'diamondash/client/tests/utils.js'
+    - 'diamondash/widgets/**/fixtures.js'
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'

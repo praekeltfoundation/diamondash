@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from diamondash import utils, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
 from diamondash.backends.graphite import GraphiteBackend
@@ -8,8 +10,8 @@ class GraphWidget(DynamicWidget):
         'time_range': '1d',
         'bucket_size': '1h',
         'align_to_start': False,
-        'dotted': False,
-        'smooth': True,
+        'dotted': True,
+        'smooth': False,
     }
     __CONFIG_TAG = 'diamondash.widgets.graph.GraphWidget'
 
@@ -76,11 +78,18 @@ class GraphWidget(DynamicWidget):
         if name is None:
             raise ConfigError('Every graph metric needs a name.')
 
+        id = str(uuid4())
         title = config.pop('title', name)
         name = utils.slugify(name)
-        client_config = {'name': name, 'title': title}
+
+        client_config = {
+            'id': id,
+            'name': name,
+            'title': title
+        }
 
         config['metadata'] = {
+            'id': id,
             'name': name,
             'title': title,
             'client_config': client_config
@@ -104,7 +113,7 @@ class GraphWidget(DynamicWidget):
         range = (y_min, max(y_vals))
 
         output_metric_data = [{
-            'name': m['metadata']['name'],
+            'id': m['metadata']['id'],
             'datapoints': m['datapoints'],
         } for m in metric_data]
 

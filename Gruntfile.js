@@ -3,6 +3,7 @@ require('js-yaml');
 module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-jst');
   grunt.loadNpmTasks('grunt-exec');
   grunt.loadNpmTasks('grunt-karma');
 
@@ -42,12 +43,25 @@ module.exports = function(grunt) {
       'diamondash.js': {
         files: ['<%= paths.diamondash.js.src %>'],
         tasks: ['concat:diamondash.js']
+      },
+      'diamondash.jst': {
+        files: ['<%= paths.diamondash.jst.src %>'],
+        tasks: ['jst:diamondash.jst']
       }
     },
     exec: {
       'vendor.fonts': {
         cmd: 'cp <%= paths.vendor.fonts.src %> <%= paths.vendor.fonts.dest %>'
       }
+    },
+    jst: {
+      'diamondash.jst': {
+        files: {
+          '<%= paths.diamondash.jst.dest %>': [
+            '<%= paths.diamondash.jst.src %>'
+          ]
+        }
+      },
     },
     karma: {
       dev: {
@@ -59,6 +73,7 @@ module.exports = function(grunt) {
   });
 
   grunt.registerTask('build', [
+    'jst',
     'exec:vendor.fonts',
     'concat'
   ]);
@@ -69,6 +84,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('test', [
+    'jst',
     'karma'
   ]);
 };

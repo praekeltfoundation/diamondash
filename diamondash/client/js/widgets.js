@@ -1,35 +1,22 @@
 diamondash.widgets = function() {
-  function WidgetRegistry(widgets) {
-    this.widgets = {};
-    
-    _(widgets || {}).each(function(options, name) {
-      this.add(name, options);
-    }, this);
-  };
+  var structures = diamondash.components.structures,
+      utils = diamondash.utils;
 
-  WidgetRegistry.prototype = {
-    add: function(name, options) {
-      if (name in this.widgets) {
-        throw new Error("Widget type '" + name + "' already exists.");
-      }
+  var WidgetRegistry = structures.Registry.extend({
+    processAdd: function(name, options) {
+      return _({}).defaults(options, {
+        view: 'diamondash.widgets.widget.WidgetView',
+        model: 'diamondash.widgets.widget.WidgetModel'
+      });
+    },
 
-      options = options || {};
-      this.widgets[name] = {
-        view: options.view || diamondash.widgets.widget.WidgetView,
-        model: options.model || diamondash.widgets.widget.WidgetModel
+    processGet: function(name, options) {
+      return {
+        view: utils.maybeByName(options.view),
+        model: utils.maybeByName(options.model)
       };
-    },
-
-    get: function(name) {
-      return this.widgets[name];
-    },
-
-    remove: function(name) {
-      var widget = this.get(name);
-      delete this.widgets[name];
-      return widget;
     }
-  };
+  });
 
   return {
     registry: new WidgetRegistry(),
