@@ -72,6 +72,7 @@ class ConfigTestCase(unittest.TestCase):
         filename = os.path.join(
             os.path.dirname(__file__),
             'fixtures',
+            'toy_configs',
             'toy_config.yml')
 
         config = ToyConfig.from_file(
@@ -84,6 +85,27 @@ class ConfigTestCase(unittest.TestCase):
 
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
+
+    def test_configs_from_dir(self):
+        dirname = os.path.join(
+            os.path.dirname(__file__),
+            'fixtures',
+            'toy_configs')
+
+        config_a, config_b = ToyConfig.configs_from_dir(
+            dirname,
+            defaults={'toy': {'baz': 'qux'}})
+
+        self.assertEqual(config_a['foo'], 'bar')
+        self.assertEqual(config_a['baz'], 'qux')
+        self.assertEqual(config_a['lerp'], 'larp')
+        self.assertEqual(config_a['name'], 'luke')
+        self.assertEqual(config_a['title'], 'Luke')
+
+        self.assertEqual(config_b['foo'], 'bar')
+        self.assertEqual(config_b['baz'], 'qux')
+        self.assertEqual(config_b['name'], 'anakin')
+        self.assertEqual(config_b['title'], 'Anakin')
 
     def test_to_json(self):
         config = ToyConfig({

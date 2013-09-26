@@ -1,5 +1,7 @@
 import yaml
 import json
+from os import path
+from glob import glob
 
 from diamondash import utils
 
@@ -86,6 +88,12 @@ class Config(object):
                 defaults)
 
         return cls.from_dict(config_dict)
+
+    @classmethod
+    def configs_from_dir(cls, dirname, defaults=None):
+        return [
+            cls.from_file(filepath, defaults)
+            for filepath in glob(path.join(dirname, "*.yml"))]
 
     def to_json(self):
         return json.dumps(self.items)
