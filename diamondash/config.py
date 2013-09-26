@@ -28,6 +28,15 @@ class ConfigMetaClass(type):
     def __new__(mcs, name, bases, dict):
         cls = type.__new__(mcs, name, bases, dict)
         cls.REGISTRY.register(cls)
+
+        defaults = {}
+        for base in bases:
+            if base is not object:
+                defaults.update(base.DEFAULTS)
+
+        defaults.update(cls.DEFAULTS)
+        cls.DEFAULTS = defaults
+
         return cls
 
 

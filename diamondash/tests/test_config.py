@@ -17,9 +17,29 @@ class ToyConfig(Config):
         return config_dict
 
 
+class ToyAConfig(ToyConfig):
+    KEY = 'toy_a'
+    DEFAULTS = {'spam': 'ham'}
+
+
+class ToyBConfig(ToyConfig):
+    KEY = 'toy_b'
+    DEFAULTS = {'foo': 'larp'}
+
+
 class ConfigTestCase(unittest.TestCase):
-    def test_registry(self):
+    def test_config_type_registration(self):
         self.assertEqual(Config.REGISTRY['toy'], ToyConfig)
+
+    def test_config_type_defaults_inheritance(self):
+        self.assertEqual(ToyAConfig.DEFAULTS, {
+            'foo': 'bar',
+            'spam': 'ham',
+        })
+
+        self.assertEqual(ToyBConfig.DEFAULTS, {
+            'foo': 'larp',
+        })
 
     def test_setting(self):
         config = ToyConfig()
