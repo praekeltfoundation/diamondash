@@ -1,3 +1,6 @@
+import yaml
+import json
+
 from diamondash import utils
 
 
@@ -55,5 +58,13 @@ class Config(object):
         return cls(cls.parse(config_dict))
 
     @classmethod
+    def from_file(cls, filename):
+        config_dict = yaml.safe_load(open(filename))
+        return cls.from_dict(config_dict)
+
+    @classmethod
     def parse(cls, config_dict):
         return config_dict
+
+    def to_json(self):
+        return json.dumps(self.items)
