@@ -47,13 +47,41 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config['name'], 'thing')
         self.assertEqual(config['title'], 'Thing')
 
+    def test_merge_defaults(self):
+        old = {'toy': {'foo': 'bar'}}
+        new = {'toy': {'baz': 'qux'}}
+
+        self.assertEqual(
+            ToyConfig.merge_defaults(old, new),
+            {'toy': {'foo': 'bar', 'baz': 'qux'}})
+
+        self.assertEqual(old, {'toy': {'foo': 'bar'}})
+        self.assertEqual(new, {'toy': {'baz': 'qux'}})
+
+    def test_from_dict_defaults(self):
+        config = ToyConfig.from_dict({
+            'defaults': {
+                'toy': {'name': 'thing'}
+            }
+        })
+
+        self.assertEqual(config['name'], 'thing')
+        self.assertEqual(config['title'], 'Thing')
+
     def test_from_file(self):
-        config = ToyConfig.from_file(os.path.join(
+        filename = os.path.join(
             os.path.dirname(__file__),
             'fixtures',
-            'toy_config.yml'))
+            'toy_config.yml')
+
+        config = ToyConfig.from_file(
+            filename,
+            defaults={'toy': {'baz': 'qux'}})
 
         self.assertEqual(config['foo'], 'bar')
+        self.assertEqual(config['baz'], 'qux')
+        self.assertEqual(config['lerp'], 'larp')
+
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
 

@@ -49,22 +49,43 @@ class Config(object):
         self.items[key] = value
 
     @classmethod
-    def from_args(cls, **kwargs):
-        return cls.from_dict(kwargs)
+    def parse(cls, config_dict):
+        return config_dict
 
     @classmethod
     def from_dict(cls, config_dict):
         config_dict = utils.update_dict(cls.DEFAULTS, config_dict)
+
+        if 'defaults' in config_dict:
+            config_dict.update(config_dict['defaults'].get(cls.KEY, {}))
+
         return cls(cls.parse(config_dict))
 
     @classmethod
-    def from_file(cls, filename):
-        config_dict = yaml.safe_load(open(filename))
-        return cls.from_dict(config_dict)
+    def from_args(cls, **kwargs):
+        return cls.from_dict(kwargs)
+
+    @staticmethod
+    def merge_defaults(old, new):
+        defaults = {}
+
+        for type_key in (set(old.keys()) | set(new.keys())):
+            defaults[type_key] = utils.update_dict(
+                old.get(type_key, {}),
+                new.get(type_key, {}))
+
+        return defaults
 
     @classmethod
-    def parse(cls, config_dict):
-        return config_dict
+    def from_file(cls, filename, defaults=None):
+        config_dict = yaml.safe_load(open(filename))
+
+        if defaults is not None:
+            config_dict['defaults'] = cls.merge_defaults(
+                config_dict.get('defaults', {}),
+                defaults)
+
+        return cls.from_dict(config_dict)
 
     def to_json(self):
         return json.dumps(self.items)
