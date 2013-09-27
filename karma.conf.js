@@ -8,6 +8,7 @@ module.exports = function(config) {
       paths.vendor.css.src,
       paths.diamondash.css.src,
       paths.vendor.js.src,
+      paths.diamondash.jst.dest,
       paths.diamondash.js.src,
       paths.tests.vendor,
       paths.tests.spec
