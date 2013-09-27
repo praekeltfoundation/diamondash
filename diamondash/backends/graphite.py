@@ -7,8 +7,7 @@ from twisted.web import client
 from twisted.python import log
 
 from diamondash import utils, ConfigMixin, ConfigError
-from diamondash.backends import Backend
-from diamondash.backends.processors import get_null_filter, get_summarizer
+from diamondash.backends import processors, Backend
 
 
 class GraphiteBackend(Backend):
@@ -62,7 +61,8 @@ class GraphiteBackend(Backend):
         return config
 
     def build_request_params(self, **params):
-        req_params = dict((req_k, params[k])
+        req_params = dict(
+            (req_k, params[k])
             for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
         req_params.update({
             'format': 'json',
@@ -127,7 +127,10 @@ class GraphiteBackend(Backend):
 class GraphiteMetric(ConfigMixin):
     """A metric displayed by a GraphiteWidget"""
 
-    __DEFAULTS = {'null_filter': 'skip'}
+    __DEFAULTS = {
+        'null_filter': 'skip',
+        'time_aligner': 'round',
+    }
     __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
 
     def __init__(self, target, null_filter, summarizer,  metadata={}):
@@ -148,12 +151,14 @@ class GraphiteMetric(ConfigMixin):
         if 'bucket_size' in config:
             bucket_size = utils.parse_interval(config.pop('bucket_size'))
             agg_method = guess_aggregation_method(config['target'])
-            aligner = utils.get_time_aligner(config.pop('time_aligner', None))
-            config['summarizer'] = get_summarizer(
-                agg_method, bucket_size, aligner)
+            config['summarizer'] = processors.summarizers.get(
+                agg_method,
+                config.pop('time_aligner'),
+                bucket_size)
 
         if 'null_filter' in config:
-            config['null_filter'] = get_null_filter(config['null_filter'])
+            config['null_filter'] = processors.null_filters.get(
+                config['null_filter'])
 
         return config
 
@@ -172,7 +177,7 @@ class GraphiteMetric(ConfigMixin):
         datapoints = self.null_filter(datapoints)
 
         if 'from_time' in params:
-            datapoints = self.summarizer(datapoints, params['from_time'])
+            datapoints = self.summarizer(params['from_time'], datapoints)
 
         return datapoints
 
