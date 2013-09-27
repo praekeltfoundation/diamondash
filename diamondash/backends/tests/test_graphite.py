@@ -11,8 +11,7 @@ from diamondash import utils, ConfigError
 
 from diamondash.backends import processors
 from diamondash.backends.processors import (
-    AggregatingSummarizer,
-    LastDatapointSummarizer)
+    AggregatingSummarizer, LastDatapointSummarizer)
 
 from diamondash.backends.graphite import (
     GraphiteBackend, GraphiteMetric, guess_aggregation_method)
