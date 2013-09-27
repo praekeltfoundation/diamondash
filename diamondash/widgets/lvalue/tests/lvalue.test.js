@@ -1,4 +1,10 @@
 describe("diamondash.widgets.lvalue", function(){
+  var utils = diamondash.test.utils;
+
+  afterEach(function() {
+    utils.unregisterModels();
+  });
+
   describe("LValueView", function(){
     var LValueView = diamondash.widgets.lvalue.LValueView,
         LValueModel = diamondash.widgets.lvalue.LValueModel;
@@ -60,11 +66,11 @@ describe("diamondash.widgets.lvalue", function(){
     describe(".render()", function() {
       it("should display the appropriate values", function() {
         view.render();
-        assert.equal(view.$('.last').text(), "9.2M");
-        assert.equal(view.$('.diff').text(), "+3.52M");
-        assert.equal(view.$('.percentage').text(), "(61.80%)");
-        assert.equal(view.$('.from').text(), "from 28-06-2012 09:33");
-        assert.equal(view.$('.to').text(), "to 28-06-2012 10:33");
+        assert.include(view.$('.last').text(), "9.2M");
+        assert.include(view.$('.diff').text(), "+3.52M");
+        assert.include(view.$('.percentage').text(), "(61.80%)");
+        assert.include(view.$('.from').text(), "from 28-06-2012 09:33");
+        assert.include(view.$('.to').text(), "to 28-06-2012 10:33");
       });
 
       it("should set the appropriate classes on the change sub-element", function() {

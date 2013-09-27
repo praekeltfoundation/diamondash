@@ -1,7 +1,7 @@
 diamondash.widgets.widget = function() {
   var widgets = diamondash.widgets;
 
-  var WidgetModel = Backbone.Model.extend({
+  var WidgetModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
     isStatic: false,
 
