@@ -19,21 +19,6 @@ _number_suffixes = ['', 'K', 'M', 'B', 'T']
 _eps = 0.0001
 
 
-class Accessor(object):
-    def __init__(self, fallback=None, wrapper=None, **objs):
-        lookup = dict(objs)
-        lookup['fallback'] = fallback
-        self.lookup = lookup
-        self.wrapper = wrapper or self._wrapper
-
-    def _wrapper(self, name, obj, *args, **kwargs):
-        return obj
-
-    def __call__(self, name, *args, **kwargs):
-        obj = self.lookup.get(name, self.lookup['fallback'])
-        return self.wrapper(name, obj, *args, **kwargs)
-
-
 def isint(n):
     """
     Checks if a number is equivalent to an integer value
@@ -131,15 +116,6 @@ def to_client_interval(t):
     return t * CLIENT_INTERVAL_MULTIPLIER
 
 
-def round_time(t, interval):
-    i = int(round(t / float(interval)))
-    return interval * i
-
-    def __call__(self, name, *args, **kwargs):
-        obj = self.lookup.get(name, self.lookup['fallback'])
-        return self.wrapper(name, obj, *args, **kwargs)
-
-
 def http_request(url, data=None, headers={}, method='GET'):
     parsed_url = urlparse(url)
     factory = HTTPClientFactory(
@@ -165,8 +141,12 @@ def floor_time(t, interval):
     return interval * i
 
 
-get_time_aligner = Accessor(
-    round=round_time,
-    floor=floor_time,
-    fallback=round_time
-)
+def round_time(t, interval):
+    i = int(round(t / float(interval)))
+    return interval * i
+
+
+time_aligners = {
+    'round': round_time,
+    'floor': floor_time,
+}

@@ -1,30 +1,46 @@
+from functools import partial
+
 from diamondash import utils
 
 
 def skip_nulls(datapoints):
-    return [d for d in datapoints
-            if d['y'] is not None and d['x'] is not None]
+    return [
+        d for d in datapoints
+        if d['y'] is not None and d['x'] is not None]
 
 
 def zeroize_nulls(datapoints):
-    return [d if d['y'] is not None else {'x': d['x'], 'y': 0}
-            for d in datapoints if d['x'] is not None]
+    return [
+        d if d['y'] is not None else {'x': d['x'], 'y': 0}
+        for d in datapoints if d['x'] is not None]
+
+
+def agg_max(vals):
+    return max(vals) if vals else 0
+
+
+def agg_min(vals):
+    return min(vals) if vals else 0
+
+
+def agg_avg(vals):
+    return sum(vals) / len(vals) if vals else 0
 
 
 class Summarizer(object):
-    def __init__(self, bucket_size, time_aligner=utils.round_time):
-        self.bucket_size = bucket_size
+    def __init__(self, time_aligner, bucket_size):
         self.time_aligner = time_aligner
+        self.bucket_size = bucket_size
 
     def align_time(self, t):
         return self.time_aligner(t, self.bucket_size)
 
-    def __call__(self, datapoints, from_time):
+    def __call__(self, from_time, datapoints):
         raise NotImplementedError()
 
 
 class LastDatapointSummarizer(Summarizer):
-    def __call__(self, datapoints, from_time):
+    def __call__(self, from_time, datapoints):
         step = self.align_time(from_time)
 
         results = []
@@ -50,11 +66,11 @@ class LastDatapointSummarizer(Summarizer):
 
 
 class AggregatingSummarizer(Summarizer):
-    def __init__(self, aggregator, *args, **kwargs):
-        super(AggregatingSummarizer, self).__init__(*args, **kwargs)
+    def __init__(self, time_aligner, bucket_size, aggregator):
+        super(AggregatingSummarizer, self).__init__(time_aligner, bucket_size)
         self.aggregator = aggregator
 
-    def __call__(self, datapoints, from_time):
+    def __call__(self, from_time, datapoints):
         step = self.align_time(from_time)
 
         results = []
@@ -77,26 +93,36 @@ class AggregatingSummarizer(Summarizer):
         return results
 
 
-get_null_filter = utils.Accessor(
-    skip=skip_nulls,
-    zeroize=zeroize_nulls,
-    fallback=zeroize_nulls
-)
+class Summarizers(object):
+    def __init__(self, summarizers):
+        self.summarizers = summarizers
+
+    def get(self, name, time_alignment, bucket_size):
+        time_aligner = utils.time_aligners.get(time_alignment)
+
+        if name not in self.summarizers:
+            raise KeyError("No summarizer called '%s' exists" % name)
+
+        summarizer_cls = self.summarizers[name]
+        return summarizer_cls(time_aligner, bucket_size)
 
 
-avg = (lambda vals: sum(vals) / (len(vals) or 1))
-get_aggregator = utils.Accessor(**{
-    'max': max,
-    'min': min,
+null_filters = {
+    'skip': skip_nulls,
+    'zeroize': zeroize_nulls,
+}
+
+aggregators = {
     'sum': sum,
-    'avg': avg,
-    'fallback': avg,
+    'max': agg_max,
+    'min': agg_min,
+    'avg': agg_avg,
+}
+
+summarizers = Summarizers({
+    'sum': partial(AggregatingSummarizer, aggregator=aggregators['sum']),
+    'max': partial(AggregatingSummarizer, aggregator=aggregators['max']),
+    'min': partial(AggregatingSummarizer, aggregator=aggregators['min']),
+    'avg': partial(AggregatingSummarizer, aggregator=aggregators['avg']),
+    'last': LastDatapointSummarizer,
 })
-
-
-get_summarizer = utils.Accessor(
-    wrapper=lambda agg_method, fn, *a, **kw: fn(agg_method, *a, **kw),
-    last=lambda agg_method, *a, **kw: LastDatapointSummarizer(*a, **kw),
-    fallback=lambda agg_method, *a, **kw: (
-        AggregatingSummarizer(get_aggregator(agg_method), *a, **kw))
-)
