@@ -1,3 +1,5 @@
+from functools import partial
+
 from diamondash import utils
 
 
@@ -11,6 +13,18 @@ def zeroize_nulls(datapoints):
     return [
         d if d['y'] is not None else {'x': d['x'], 'y': 0}
         for d in datapoints if d['x'] is not None]
+
+
+def agg_max(vals):
+    return max(vals) if vals else 0
+
+
+def agg_min(vals):
+    return min(vals) if vals else 0
+
+
+def agg_avg(vals):
+    return sum(vals) / len(vals) if vals else 0
 
 
 class Summarizer(object):
@@ -52,8 +66,8 @@ class LastDatapointSummarizer(Summarizer):
 
 
 class AggregatingSummarizer(Summarizer):
-    def __init__(self, aggregator, *args, **kwargs):
-        super(AggregatingSummarizer, self).__init__(*args, **kwargs)
+    def __init__(self, time_aligner, bucket_size, aggregator):
+        super(AggregatingSummarizer, self).__init__(time_aligner, bucket_size)
         self.aggregator = aggregator
 
     def __call__(self, from_time, datapoints):
@@ -80,28 +94,17 @@ class AggregatingSummarizer(Summarizer):
 
 
 class Summarizers(object):
-    OVERRIDES = {
-        'last': LastDatapointSummarizer
-    }
+    def __init__(self, summarizers):
+        self.summarizers = summarizers
 
-    @classmethod
-    def get(cls, agg_method, time_alignment, bucket_size):
+    def get(self, name, time_alignment, bucket_size):
         time_aligner = utils.time_aligners.get(time_alignment)
 
-        if agg_method in cls.OVERRIDES:
-            summarizer_cls = cls.OVERRIDES[agg_method]
-            return summarizer_cls(time_aligner, bucket_size)
+        if name not in self.summarizers:
+            raise KeyError("No summarizer called '%s' exists" % name)
 
-        aggregator = aggregators.get(agg_method)
-        return AggregatingSummarizer(aggregator, time_aligner, bucket_size)
-
-
-aggregators = {
-    'max': max,
-    'min': min,
-    'sum': sum,
-    'avg': (lambda vals: sum(vals) / (len(vals) or 1)),
-}
+        summarizer_cls = self.summarizers[name]
+        return summarizer_cls(time_aligner, bucket_size)
 
 
 null_filters = {
@@ -109,5 +112,17 @@ null_filters = {
     'zeroize': zeroize_nulls,
 }
 
+aggregators = {
+    'sum': sum,
+    'max': agg_max,
+    'min': agg_min,
+    'avg': agg_avg,
+}
 
-summarizers = Summarizers()
+summarizers = Summarizers({
+    'sum': partial(AggregatingSummarizer, aggregator=aggregators['sum']),
+    'max': partial(AggregatingSummarizer, aggregator=aggregators['max']),
+    'min': partial(AggregatingSummarizer, aggregator=aggregators['min']),
+    'avg': partial(AggregatingSummarizer, aggregator=aggregators['avg']),
+    'last': LastDatapointSummarizer,
+})
