@@ -8,9 +8,11 @@ from twisted.trial import unittest
 
 from diamondash.tests.utils import stub_from_config
 from diamondash import utils, ConfigError
+
+from diamondash.backends import processors
 from diamondash.backends.processors import (
-    LastDatapointSummarizer, AggregatingSummarizer,
-    get_aggregator, get_null_filter)
+    AggregatingSummarizer, LastDatapointSummarizer)
+
 from diamondash.backends.graphite import (
     GraphiteBackend, GraphiteMetric, guess_aggregation_method)
 
@@ -19,7 +21,7 @@ def mk_graphite_metric(target='some.target.max', **kwargs):
     kwargs = utils.update_dict({
         'metadata': {},
         'target': target,
-        'null_filter': get_null_filter('zeroize'),
+        'null_filter': processors.null_filters['zeroize'],
     }, kwargs)
     return GraphiteMetric(**kwargs)
 
@@ -63,15 +65,20 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.m1 = mk_graphite_metric(
             target=self.M1_TARGET,
             metadata=self.M1_METADATA,
-            null_filter=get_null_filter('zeroize'),
-            summarizer=LastDatapointSummarizer(self.BUCKET_SIZE))
+            null_filter=processors.null_filters['zeroize'],
+            summarizer=processors.summarizers.get(
+                'last',
+                'round',
+                self.BUCKET_SIZE))
 
-        sum_agg = get_aggregator('sum')
         self.m2 = mk_graphite_metric(
             target=self.M2_TARGET,
             metadata=self.M2_METADATA,
-            null_filter=get_null_filter('skip'),
-            summarizer=AggregatingSummarizer(sum_agg, self.BUCKET_SIZE))
+            null_filter=processors.null_filters['skip'],
+            summarizer=processors.summarizers.get(
+                'sum',
+                'round',
+                self.BUCKET_SIZE))
 
         self.backend = GraphiteBackend(
             graphite_url='http://some-graphite-url.moc:8080',
@@ -190,7 +197,7 @@ class GraphiteMetricTestCase(unittest.TestCase):
         self.assertEqual(new_config['metadata'], {'name': 'luke-the-metric'})
         self.assertEqual(
             new_config['null_filter'],
-            get_null_filter('zeroize'))
+            processors.null_filters['zeroize'])
         self.assertEqual(
             set(new_config.keys()),
             set(['target', 'metadata', 'null_filter', 'summarizer']))
@@ -204,7 +211,7 @@ class GraphiteMetricTestCase(unittest.TestCase):
             summarizer = GraphiteMetric.parse_config(config)['summarizer']
             self.assertTrue(isinstance(summarizer, AggregatingSummarizer))
             self.assertEqual(summarizer.aggregator,
-                             get_aggregator(agg_name))
+                             processors.aggregators[agg_name])
             self.assertEqual(summarizer.bucket_size, bucket_size)
 
         def assert_ldp_summarizer(config, bucket_size):
