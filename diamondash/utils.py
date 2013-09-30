@@ -145,10 +145,6 @@ def round_time(t, interval):
     i = int(round(t / float(interval)))
     return interval * i
 
-    def __call__(self, name, *args, **kwargs):
-        obj = self.lookup.get(name, self.lookup['fallback'])
-        return self.wrapper(name, obj, *args, **kwargs)
-
 
 time_aligners = {
     'round': round_time,
