@@ -45,10 +45,6 @@ class Config(object):
     @classmethod
     def _parse(cls, items):
         items = utils.update_dict(cls.DEFAULTS, items)
-
-        if 'defaults' in items:
-            items.update(items['defaults'].get(cls.KEY, {}))
-
         return cls.parse(items)
 
     @classmethod
@@ -56,42 +52,19 @@ class Config(object):
         return items
 
     @classmethod
-    def merge_defaults(cls, old, new):
-        defaults = {}
-
-        for type_key in (set(old.keys()) | set(new.keys())):
-            defaults[type_key] = utils.update_dict(
-                old.get(type_key, {}),
-                new.get(type_key, {}))
-
-        return defaults
+    def from_file(cls, filename):
+        return cls(yaml.safe_load(open(filename)))
 
     @classmethod
-    def set_defaults(cls, config_dict, defaults):
-        config_dict['defaults'] = cls.merge_defaults(
-            config_dict.get('defaults', {}),
-            defaults)
-        return config_dict['defaults']
-
-    @classmethod
-    def from_dict(cls, config_dict, defaults=None):
-        cls.set_defaults(config_dict, defaults or {})
-        return cls(config_dict)
-
-    @classmethod
-    def from_file(cls, filename, defaults=None):
-        return cls.from_dict(yaml.safe_load(open(filename)), defaults)
-
-    @classmethod
-    def configs_from_dir(cls, dirname, defaults=None):
+    def configs_from_dir(cls, dirname):
         return [
-            cls.from_file(filepath, defaults)
+            cls.from_file(filepath)
             for filepath in glob(path.join(dirname, "*.yml"))]
 
     @classmethod
-    def from_type(cls, type_str, config=None, defaults=None):
+    def from_type(cls, type_str, config=None):
         type_cls = utils.load_class_by_string(type_str)
-        return type_cls.CONFIG_CLS.from_dict(config, defaults)
+        return type_cls.CONFIG_CLS(config)
 
     def to_type(self, **kwargs):
         if 'type' not in self:

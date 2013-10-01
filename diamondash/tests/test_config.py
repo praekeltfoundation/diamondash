@@ -52,27 +52,6 @@ class ConfigTestCase(unittest.TestCase):
         config = ToyConfig({'foo': 'bar'})
         self.assertTrue('foo' in config)
 
-    def test_merge_defaults(self):
-        old = {'toy': {'foo': 'bar'}}
-        new = {'toy': {'baz': 'qux'}}
-
-        self.assertEqual(
-            ToyConfig.merge_defaults(old, new),
-            {'toy': {'foo': 'bar', 'baz': 'qux'}})
-
-        self.assertEqual(old, {'toy': {'foo': 'bar'}})
-        self.assertEqual(new, {'toy': {'baz': 'qux'}})
-
-    def test_defaults(self):
-        config = ToyConfig({
-            'defaults': {
-                'toy': {'name': 'thing'}
-            }
-        })
-
-        self.assertEqual(config['name'], 'thing')
-        self.assertEqual(config['title'], 'Thing')
-
     def test_from_file(self):
         filename = os.path.join(
             os.path.dirname(__file__),
@@ -80,14 +59,9 @@ class ConfigTestCase(unittest.TestCase):
             'toy_configs',
             'toy_config.yml')
 
-        config = ToyConfig.from_file(
-            filename,
-            defaults={'toy': {'foo': 'bar'}})
+        config = ToyConfig.from_file(filename)
 
         self.assertEqual(config['eggs'], 'ham')
-        self.assertEqual(config['foo'], 'bar')
-        self.assertEqual(config['lerp'], 'larp')
-
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
 
@@ -97,18 +71,12 @@ class ConfigTestCase(unittest.TestCase):
             'fixtures',
             'toy_configs')
 
-        config_a, config_b = ToyConfig.configs_from_dir(
-            dirname,
-            defaults={'toy': {'foo': 'bar'}})
-
+        config_a, config_b = ToyConfig.configs_from_dir(dirname)
         self.assertEqual(config_a['eggs'], 'ham')
-        self.assertEqual(config_a['foo'], 'bar')
-        self.assertEqual(config_a['lerp'], 'larp')
         self.assertEqual(config_a['name'], 'luke')
         self.assertEqual(config_a['title'], 'Luke')
 
         self.assertEqual(config_a['eggs'], 'ham')
-        self.assertEqual(config_b['foo'], 'bar')
         self.assertEqual(config_b['name'], 'anakin')
         self.assertEqual(config_b['title'], 'Anakin')
 
