@@ -28,9 +28,6 @@ class ToyBConfig(ToyConfig):
 
 
 class ConfigTestCase(unittest.TestCase):
-    def test_config_type_registration(self):
-        self.assertEqual(Config.REGISTRY['toy'], ToyConfig)
-
     def test_config_type_defaults_inheritance(self):
         self.assertEqual(ToyAConfig.DEFAULTS, {
             'pram': 'ram',
