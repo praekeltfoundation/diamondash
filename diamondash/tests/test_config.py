@@ -7,7 +7,7 @@ from diamondash.config import Config
 
 class ToyConfig(Config):
     KEY = 'toy'
-    DEFAULTS = {'foo': 'bar'}
+    DEFAULTS = {'eggs': 'ham'}
 
     @classmethod
     def parse(cls, config_dict):
@@ -19,12 +19,12 @@ class ToyConfig(Config):
 
 class ToyAConfig(ToyConfig):
     KEY = 'toy_a'
-    DEFAULTS = {'spam': 'ham'}
+    DEFAULTS = {'pram': 'ram'}
 
 
 class ToyBConfig(ToyConfig):
     KEY = 'toy_b'
-    DEFAULTS = {'foo': 'larp'}
+    DEFAULTS = {'eggs': 'spam'}
 
 
 class ConfigTestCase(unittest.TestCase):
@@ -33,12 +33,12 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_config_type_defaults_inheritance(self):
         self.assertEqual(ToyAConfig.DEFAULTS, {
-            'foo': 'bar',
-            'spam': 'ham',
+            'pram': 'ram',
+            'eggs': 'ham',
         })
 
         self.assertEqual(ToyBConfig.DEFAULTS, {
-            'foo': 'larp',
+            'eggs': 'spam',
         })
 
     def test_setting(self):
@@ -55,18 +55,6 @@ class ConfigTestCase(unittest.TestCase):
         config = ToyConfig({'foo': 'bar'})
         self.assertTrue('foo' in config)
 
-    def test_from_args(self):
-        config = ToyConfig.from_args(name='thing')
-        self.assertEqual(config['foo'], 'bar')
-        self.assertEqual(config['name'], 'thing')
-        self.assertEqual(config['title'], 'Thing')
-
-    def test_from_dict(self):
-        config = ToyConfig.from_dict({'name': 'thing'})
-        self.assertEqual(config['foo'], 'bar')
-        self.assertEqual(config['name'], 'thing')
-        self.assertEqual(config['title'], 'Thing')
-
     def test_merge_defaults(self):
         old = {'toy': {'foo': 'bar'}}
         new = {'toy': {'baz': 'qux'}}
@@ -78,8 +66,8 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(old, {'toy': {'foo': 'bar'}})
         self.assertEqual(new, {'toy': {'baz': 'qux'}})
 
-    def test_from_dict_defaults(self):
-        config = ToyConfig.from_dict({
+    def test_defaults(self):
+        config = ToyConfig({
             'defaults': {
                 'toy': {'name': 'thing'}
             }
@@ -97,10 +85,10 @@ class ConfigTestCase(unittest.TestCase):
 
         config = ToyConfig.from_file(
             filename,
-            defaults={'toy': {'baz': 'qux'}})
+            defaults={'toy': {'foo': 'bar'}})
 
+        self.assertEqual(config['eggs'], 'ham')
         self.assertEqual(config['foo'], 'bar')
-        self.assertEqual(config['baz'], 'qux')
         self.assertEqual(config['lerp'], 'larp')
 
         self.assertEqual(config['name'], 'luke')
@@ -114,16 +102,16 @@ class ConfigTestCase(unittest.TestCase):
 
         config_a, config_b = ToyConfig.configs_from_dir(
             dirname,
-            defaults={'toy': {'baz': 'qux'}})
+            defaults={'toy': {'foo': 'bar'}})
 
+        self.assertEqual(config_a['eggs'], 'ham')
         self.assertEqual(config_a['foo'], 'bar')
-        self.assertEqual(config_a['baz'], 'qux')
         self.assertEqual(config_a['lerp'], 'larp')
         self.assertEqual(config_a['name'], 'luke')
         self.assertEqual(config_a['title'], 'Luke')
 
+        self.assertEqual(config_a['eggs'], 'ham')
         self.assertEqual(config_b['foo'], 'bar')
-        self.assertEqual(config_b['baz'], 'qux')
         self.assertEqual(config_b['name'], 'anakin')
         self.assertEqual(config_b['title'], 'Anakin')
 
@@ -134,8 +122,9 @@ class ConfigTestCase(unittest.TestCase):
         })
 
         self.assertEqual(config.to_dict(), {
+            'eggs': 'ham',
             'foo': 'bar',
-            'baz': 'qux'
+            'baz': 'qux',
         })
 
     def test_to_dict_for_nested_configs(self):
@@ -145,8 +134,12 @@ class ConfigTestCase(unittest.TestCase):
         })
 
         self.assertEqual(config.to_dict(), {
+            'eggs': 'ham',
             'foo': 'bar',
-            'baz': {'lerp': 'larp'}
+            'baz': {
+                'eggs': 'ham',
+                'lerp': 'larp',
+            }
         })
 
     def test_to_json(self):
@@ -156,8 +149,9 @@ class ConfigTestCase(unittest.TestCase):
         })
 
         self.assertEqual(config.to_json(), json.dumps({
+            'eggs': 'ham',
             'foo': 'bar',
-            'baz': 'qux'
+            'baz': 'qux',
         }))
 
     def test_to_json_for_nested_configs(self):
@@ -167,6 +161,10 @@ class ConfigTestCase(unittest.TestCase):
         })
 
         self.assertEqual(config.to_json(), json.dumps({
+            'eggs': 'ham',
             'foo': 'bar',
-            'baz': {'lerp': 'larp'}
+            'baz': {
+                'eggs': 'ham',
+                'lerp': 'larp',
+            }
         }))

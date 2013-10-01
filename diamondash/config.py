@@ -38,7 +38,7 @@ class Config(object):
     REGISTRY = {}
 
     def __init__(self, items=None):
-        self._items = items or {}
+        self._items = self._parse(items or {})
 
     def __contains__(self, key):
         return key in self._items
@@ -50,24 +50,20 @@ class Config(object):
         self._items[key] = value
 
     @classmethod
-    def parse(cls, config_dict):
-        return config_dict
+    def _parse(cls, items):
+        items = utils.update_dict(cls.DEFAULTS, items)
+
+        if 'defaults' in items:
+            items.update(items['defaults'].get(cls.KEY, {}))
+
+        return cls.parse(items)
 
     @classmethod
-    def from_dict(cls, config_dict):
-        config_dict = utils.update_dict(cls.DEFAULTS, config_dict)
-
-        if 'defaults' in config_dict:
-            config_dict.update(config_dict['defaults'].get(cls.KEY, {}))
-
-        return cls(cls.parse(config_dict))
+    def parse(cls, items):
+        return items
 
     @classmethod
-    def from_args(cls, **kwargs):
-        return cls.from_dict(kwargs)
-
-    @staticmethod
-    def merge_defaults(old, new):
+    def merge_defaults(cls, old, new):
         defaults = {}
 
         for type_key in (set(old.keys()) | set(new.keys())):
@@ -78,6 +74,12 @@ class Config(object):
         return defaults
 
     @classmethod
+    def set_defaults(cls, config, defaults):
+        return cls.merge_defaults(
+            config.setdefault('defaults', {}),
+            defaults)
+
+    @classmethod
     def from_file(cls, filename, defaults=None):
         config_dict = yaml.safe_load(open(filename))
 
@@ -86,7 +88,7 @@ class Config(object):
                 config_dict.get('defaults', {}),
                 defaults)
 
-        return cls.from_dict(config_dict)
+        return cls(config_dict)
 
     @classmethod
     def configs_from_dir(cls, dirname, defaults=None):
