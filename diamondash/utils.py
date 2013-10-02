@@ -90,7 +90,7 @@ def last_dir_in_path(pathname):
     return path.split(path.dirname(pathname))[1]
 
 
-def update_dict(*dicts):
+def add_dicts(*dicts):
     """
     Returns a new dict updated with a tuple of dicts.
     """

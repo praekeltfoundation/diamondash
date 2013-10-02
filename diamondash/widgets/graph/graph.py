@@ -28,7 +28,7 @@ class GraphWidget(DynamicWidget):
     def parse_config(cls, config, class_defaults={}):
         config = super(GraphWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
 
         if 'metrics' not in config:
             raise ConfigError('Graph Widget "%s" needs metrics.'
@@ -72,7 +72,7 @@ class GraphWidget(DynamicWidget):
         Parses a metric config given in a graph config into a config useable by
         the backend.
         """
-        config = utils.update_dict(config, metric_defaults)
+        config = utils.add_dicts(config, metric_defaults)
 
         name = config.pop('name')
         if name is None:

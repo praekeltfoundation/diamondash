@@ -42,7 +42,7 @@ class GraphiteBackend(Backend):
         config = super(GraphiteBackend, cls).parse_config(
             config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
 
         if 'graphite_url' not in config:
             raise ConfigError(
@@ -53,7 +53,7 @@ class GraphiteBackend(Backend):
         metric_underrides = dict(
             (k, config.pop(k))
             for k in cls.METRIC_UNDERRIDE_FIELDS if k in config)
-        metrics = [utils.update_dict(metric_underrides, m) for m in metrics]
+        metrics = [utils.add_dicts(metric_underrides, m) for m in metrics]
 
         config['metrics'] = [
             GraphiteMetric.from_config(m, class_defaults) for m in metrics]
@@ -143,7 +143,7 @@ class GraphiteMetric(ConfigMixin):
     @classmethod
     def parse_config(cls, config, class_defaults={}):
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
 
         if 'target' not in config:
             raise ConfigError("All metrics need a target")

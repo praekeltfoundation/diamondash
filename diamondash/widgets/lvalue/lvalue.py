@@ -19,7 +19,7 @@ class LValueWidget(DynamicWidget):
     def parse_config(cls, config, class_defaults={}):
         config = super(LValueWidget, cls).parse_config(config, class_defaults)
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
 
         if 'target' not in config:
             raise ConfigError("All LValueWidgets need a target")
