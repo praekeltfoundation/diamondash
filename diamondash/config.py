@@ -1,5 +1,4 @@
 import yaml
-import json
 from os import path
 from glob import glob
 
@@ -34,7 +33,7 @@ class Config(dict):
 
     @classmethod
     def _parse(cls, items):
-        items = utils.update_dict(cls.DEFAULTS, items)
+        items = utils.add_dicts(cls.DEFAULTS, items)
         return cls.parse(items)
 
     @classmethod
@@ -43,7 +42,7 @@ class Config(dict):
 
     @classmethod
     def from_file(cls, filename, **defaults):
-        items = utils.update_dict(defaults, yaml.safe_load(open(filename)))
+        items = utils.add_dicts(defaults, yaml.safe_load(open(filename)))
         return cls(items)
 
     @classmethod
@@ -53,32 +52,23 @@ class Config(dict):
             for filepath in glob(path.join(dirname, "*.yml"))]
 
     @classmethod
-    def from_type(cls, type_str, config=None):
-        type_cls = utils.load_class_by_string(type_str)
+    def from_type(cls, config):
+        if 'type' not in config:
+            raise KeyError(
+                "Config needs a dict to contain a 'type' key in order to be "
+                "constructed from a type")
+
+        type_cls = utils.load_class_by_string(config['type'])
         return type_cls.CONFIG_CLS(config)
 
-    def to_type(self, **kwargs):
+    def to_type(self, *args, **kwargs):
         if 'type' not in self:
             raise KeyError(
                 "Config instance needs a 'type' key in order to "
                 "construct a type")
 
         type_cls = utils.load_class_by_string(self['type'])
-        return type_cls(config=self, **kwargs)
-
-    def to_dict(self):
-        data = {}
-
-        for key, value in self.items():
-            if isinstance(value, Config):
-                data[key] = value.to_dict()
-            else:
-                data[key] = value
-
-        return data
-
-    def to_json(self):
-        return json.dumps(self.to_dict())
+        return type_cls(config=self, *args, **kwargs)
 
 
 class Configurable(object):
@@ -86,7 +76,3 @@ class Configurable(object):
 
     def __init__(self, config):
         self.config = config
-
-    @classmethod
-    def from_dict(cls, config_dict):
-        return cls(cls.CONFIG_CLS(config_dict))

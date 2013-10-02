@@ -1,5 +1,4 @@
 import os
-import json
 
 from twisted.trial import unittest
 from diamondash.config import Config
@@ -74,57 +73,3 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config_b['eggs'], 'ham')
         self.assertEqual(config_b['name'], 'anakin')
         self.assertEqual(config_b['title'], 'Anakin')
-
-    def test_to_dict(self):
-        config = ToyConfig({
-            'foo': 'bar',
-            'baz': 'qux'
-        })
-
-        self.assertEqual(config.to_dict(), {
-            'eggs': 'ham',
-            'foo': 'bar',
-            'baz': 'qux',
-        })
-
-    def test_to_dict_for_nested_configs(self):
-        config = ToyConfig({
-            'foo': 'bar',
-            'baz': ToyConfig({'lerp': 'larp'}),
-        })
-
-        self.assertEqual(config.to_dict(), {
-            'eggs': 'ham',
-            'foo': 'bar',
-            'baz': {
-                'eggs': 'ham',
-                'lerp': 'larp',
-            }
-        })
-
-    def test_to_json(self):
-        config = ToyConfig({
-            'foo': 'bar',
-            'baz': 'qux'
-        })
-
-        self.assertEqual(config.to_json(), json.dumps({
-            'eggs': 'ham',
-            'foo': 'bar',
-            'baz': 'qux',
-        }))
-
-    def test_to_json_for_nested_configs(self):
-        config = ToyConfig({
-            'foo': 'bar',
-            'baz': ToyConfig({'lerp': 'larp'}),
-        })
-
-        self.assertEqual(config.to_json(), json.dumps({
-            'eggs': 'ham',
-            'foo': 'bar',
-            'baz': {
-                'eggs': 'ham',
-                'lerp': 'larp',
-            }
-        }))
