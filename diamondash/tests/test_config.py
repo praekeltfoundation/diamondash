@@ -38,20 +38,6 @@ class ConfigTestCase(unittest.TestCase):
             'eggs': 'spam',
         })
 
-    def test_setting(self):
-        config = ToyConfig()
-        self.assertTrue('foo' not in config)
-        config['foo'] = 'bar'
-        self.assertEqual(config['foo'], 'bar')
-
-    def test_getting(self):
-        config = ToyConfig({'foo': 'bar'})
-        self.assertEqual(config['foo'], 'bar')
-
-    def test_checking(self):
-        config = ToyConfig({'foo': 'bar'})
-        self.assertTrue('foo' in config)
-
     def test_from_file(self):
         filename = os.path.join(
             os.path.dirname(__file__),

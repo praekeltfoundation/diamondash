@@ -16,7 +16,7 @@ class ConfigMetaClass(type):
 
         defaults = {}
         for base in bases:
-            if base is not object:
+            if hasattr(base, 'DEFAULTS'):
                 defaults.update(base.DEFAULTS)
 
         defaults.update(cls.DEFAULTS)
@@ -25,22 +25,12 @@ class ConfigMetaClass(type):
         return cls
 
 
-class Config(object):
+class Config(dict):
     __metaclass__ = ConfigMetaClass
-
     DEFAULTS = {}
 
     def __init__(self, items=None):
-        self._items = self._parse(items or {})
-
-    def __contains__(self, key):
-        return key in self._items
-
-    def __getitem__(self, key):
-        return self._items[key]
-
-    def __setitem__(self, key, value):
-        self._items[key] = value
+        super(Config, self).__init__(self._parse(items or {}))
 
     @classmethod
     def _parse(cls, items):
@@ -78,7 +68,7 @@ class Config(object):
     def to_dict(self):
         data = {}
 
-        for key, value in self._items.items():
+        for key, value in self.items():
             if isinstance(value, Config):
                 data[key] = value.to_dict()
             else:
@@ -91,11 +81,11 @@ class Config(object):
 
 
 class Configurable(object):
-    CONFIG_TYPE = Config
+    CONFIG_CLS = Config
 
     def __init__(self, config):
         self.config = config
 
     @classmethod
     def from_dict(cls, config_dict):
-        return cls(cls.CONFIG_TYPE(config_dict))
+        return cls(cls.CONFIG_CLS(config_dict))
