@@ -42,13 +42,14 @@ class Config(dict):
         return items
 
     @classmethod
-    def from_file(cls, filename):
-        return cls(yaml.safe_load(open(filename)))
+    def from_file(cls, filename, **defaults):
+        items = utils.update_dict(defaults, yaml.safe_load(open(filename)))
+        return cls(items)
 
     @classmethod
-    def configs_from_dir(cls, dirname):
+    def configs_from_dir(cls, dirname, **defaults):
         return [
-            cls.from_file(filepath)
+            cls.from_file(filepath, **defaults)
             for filepath in glob(path.join(dirname, "*.yml"))]
 
     @classmethod

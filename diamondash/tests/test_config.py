@@ -45,9 +45,13 @@ class ConfigTestCase(unittest.TestCase):
             'toy_configs',
             'toy_config.yml')
 
-        config = ToyConfig.from_file(filename)
+        config = ToyConfig.from_file(
+            filename,
+            foo='bar',
+            eggs='spam')
 
-        self.assertEqual(config['eggs'], 'ham')
+        self.assertEqual(config['foo'], 'bar')
+        self.assertEqual(config['eggs'], 'spam')
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
 
@@ -57,12 +61,17 @@ class ConfigTestCase(unittest.TestCase):
             'fixtures',
             'toy_configs')
 
-        config_a, config_b = ToyConfig.configs_from_dir(dirname)
+        config_a, config_b = ToyConfig.configs_from_dir(
+            dirname,
+            foo='bar')
+
+        self.assertEqual(config_a['foo'], 'bar')
         self.assertEqual(config_a['eggs'], 'ham')
         self.assertEqual(config_a['name'], 'luke')
         self.assertEqual(config_a['title'], 'Luke')
 
-        self.assertEqual(config_a['eggs'], 'ham')
+        self.assertEqual(config_b['foo'], 'bar')
+        self.assertEqual(config_b['eggs'], 'ham')
         self.assertEqual(config_b['name'], 'anakin')
         self.assertEqual(config_b['title'], 'Anakin')
 
