@@ -32,7 +32,7 @@ class Widget(Element, ConfigMixin):
     def parse_config(cls, config, class_defaults={}):
         """Parses a widget config, altering it where necessary."""
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(cls.__DEFAULTS, defaults, config)
+        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
 
         name = config.get('name', None)
         if name is None:

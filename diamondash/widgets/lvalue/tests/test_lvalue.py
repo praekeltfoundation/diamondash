@@ -15,7 +15,7 @@ class LValueWidgetTestCase(unittest.TestCase):
 
     @staticmethod
     def mk_lvalue_widget(**kwargs):
-        return LValueWidget(**utils.update_dict({
+        return LValueWidget(**utils.add_dicts({
             'name': 'some-widget',
             'title': 'Some LValue Widget',
             'client_config': {},

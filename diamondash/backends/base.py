@@ -12,7 +12,7 @@ class Backend(ConfigMixin):
     def parse_config(cls, config, class_defaults={}):
         """Parses the backend config, altering it where necessary."""
         defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.update_dict(config, cls.__DEFAULTS, defaults)
+        config = utils.add_dicts(config, cls.__DEFAULTS, defaults)
 
         # General backend configuration goes here
 

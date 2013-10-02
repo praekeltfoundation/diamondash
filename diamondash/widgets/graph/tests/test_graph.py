@@ -27,7 +27,7 @@ class GraphWidgetTestCase(unittest.TestCase):
 
     @staticmethod
     def mk_graph_widget(**kwargs):
-        kwargs = utils.update_dict({
+        kwargs = utils.add_dicts({
             'name': 'some-widget',
             'title': 'Some Graph Widget',
             'client_config': {},

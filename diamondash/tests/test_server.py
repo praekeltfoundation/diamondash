@@ -50,7 +50,7 @@ class MockError(Exception):
 
 
 def mk_dashboard(**kwargs):
-    kwargs = utils.update_dict({
+    kwargs = utils.add_dicts({
         'name': 'some-dashboard',
         'title': 'Some Dashboard',
         'widgets': [],
@@ -127,7 +127,7 @@ class DiamondashServerTestCase(unittest.TestCase):
         return self.ws.loseConnection()
 
     def mk_dynamic_widget(self, **kwargs):
-        return ToyDynamicWidget(**utils.update_dict({
+        return ToyDynamicWidget(**utils.add_dicts({
             'name': 'some-dynamic-widget',
             'title': 'Some Dynamic Widget',
             'backend': None,
@@ -135,7 +135,7 @@ class DiamondashServerTestCase(unittest.TestCase):
         }, kwargs))
 
     def mk_static_widget(self, **kwargs):
-        return ToyStaticWidget(**utils.update_dict({
+        return ToyStaticWidget(**utils.add_dicts({
             'name': 'some-static-widget',
             'title': 'Some Static Widget',
         }, kwargs))

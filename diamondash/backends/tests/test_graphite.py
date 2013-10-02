@@ -18,7 +18,7 @@ from diamondash.backends.graphite import (
 
 
 def mk_graphite_metric(target='some.target.max', **kwargs):
-    kwargs = utils.update_dict({
+    kwargs = utils.add_dicts({
         'metadata': {},
         'target': target,
         'null_filter': processors.null_filters['zeroize'],
