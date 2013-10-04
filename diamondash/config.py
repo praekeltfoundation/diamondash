@@ -1,6 +1,4 @@
 import yaml
-from os import path
-from glob import glob
 
 from diamondash import utils
 
@@ -44,12 +42,6 @@ class Config(dict):
     def from_file(cls, filename, **defaults):
         items = utils.add_dicts(defaults, yaml.safe_load(open(filename)))
         return cls(items)
-
-    @classmethod
-    def configs_from_dir(cls, dirname, **defaults):
-        return [
-            cls.from_file(filepath, **defaults)
-            for filepath in glob(path.join(dirname, "*.yml"))]
 
     @classmethod
     def from_type(cls, config):

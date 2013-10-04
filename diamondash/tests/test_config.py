@@ -1,11 +1,10 @@
 import os
 
 from twisted.trial import unittest
-from diamondash.config import Config
+from diamondash.config import Config, Configurable
 
 
 class ToyConfig(Config):
-    KEY = 'toy'
     DEFAULTS = {'eggs': 'ham'}
 
     @classmethod
@@ -17,13 +16,15 @@ class ToyConfig(Config):
 
 
 class ToyAConfig(ToyConfig):
-    KEY = 'toy_a'
     DEFAULTS = {'pram': 'ram'}
 
 
 class ToyBConfig(ToyConfig):
-    KEY = 'toy_b'
     DEFAULTS = {'eggs': 'spam'}
+
+
+class ToyConfigurable(Configurable):
+    CONFIG_CLS = ToyConfig
 
 
 class ConfigTestCase(unittest.TestCase):
@@ -54,22 +55,21 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
 
-    def test_configs_from_dir(self):
-        dirname = os.path.join(
-            os.path.dirname(__file__),
-            'fixtures',
-            'toy_configs')
+    def test_from_type(self):
+        config = Config.from_type({
+            'type': 'diamondash.tests.test_config.ToyConfigurable'
+        })
+        self.assertTrue(isinstance(config, ToyConfig))
 
-        config_a, config_b = ToyConfig.configs_from_dir(
-            dirname,
-            foo='bar')
+    def test_from_type_for_no_type(self):
+        self.assertRaises(KeyError, ToyConfig.from_type, {})
 
-        self.assertEqual(config_a['foo'], 'bar')
-        self.assertEqual(config_a['eggs'], 'ham')
-        self.assertEqual(config_a['name'], 'luke')
-        self.assertEqual(config_a['title'], 'Luke')
+    def test_to_type(self):
+        config = ToyConfig({
+            'type': 'diamondash.tests.test_config.ToyConfigurable'
+        })
+        self.assertTrue(isinstance(config.to_type(), ToyConfigurable))
 
-        self.assertEqual(config_b['foo'], 'bar')
-        self.assertEqual(config_b['eggs'], 'ham')
-        self.assertEqual(config_b['name'], 'anakin')
-        self.assertEqual(config_b['title'], 'Anakin')
+    def test_to_type_for_no_type(self):
+        config = ToyConfig()
+        self.assertRaises(KeyError, config.to_type)
