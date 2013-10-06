@@ -63,13 +63,3 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_from_type_for_no_type(self):
         self.assertRaises(KeyError, ToyConfig.from_type, {})
-
-    def test_to_type(self):
-        config = ToyConfig({
-            'type': 'diamondash.tests.test_config.ToyConfigurable'
-        })
-        self.assertTrue(isinstance(config.to_type(), ToyConfigurable))
-
-    def test_to_type_for_no_type(self):
-        config = ToyConfig()
-        self.assertRaises(KeyError, config.to_type)

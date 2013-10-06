@@ -53,15 +53,6 @@ class Config(dict):
         type_cls = utils.load_class_by_string(config['type'])
         return type_cls.CONFIG_CLS(config)
 
-    def to_type(self, *args, **kwargs):
-        if 'type' not in self:
-            raise KeyError(
-                "Config instance needs a 'type' key in order to "
-                "construct a type")
-
-        type_cls = utils.load_class_by_string(self['type'])
-        return type_cls(config=self, *args, **kwargs)
-
 
 class Configurable(object):
     CONFIG_CLS = Config
