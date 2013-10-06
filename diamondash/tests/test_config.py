@@ -55,11 +55,7 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(config['name'], 'luke')
         self.assertEqual(config['title'], 'Luke')
 
-    def test_from_type(self):
-        config = Config.from_type({
-            'type': 'diamondash.tests.test_config.ToyConfigurable'
-        })
-        self.assertTrue(isinstance(config, ToyConfig))
-
-    def test_from_type_for_no_type(self):
-        self.assertRaises(KeyError, ToyConfig.from_type, {})
+    def test_for_type(self):
+        self.assertTrue(
+            Config.for_type('diamondash.tests.test_config.ToyConfigurable')
+            is ToyConfig)

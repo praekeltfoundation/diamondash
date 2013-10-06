@@ -44,14 +44,9 @@ class Config(dict):
         return cls(items)
 
     @classmethod
-    def from_type(cls, config):
-        if 'type' not in config:
-            raise KeyError(
-                "Config needs a dict to contain a 'type' key in order to be "
-                "constructed from a type")
-
-        type_cls = utils.load_class_by_string(config['type'])
-        return type_cls.CONFIG_CLS(config)
+    def for_type(cls, type_name):
+        type_cls = utils.load_class_by_string(type_name)
+        return type_cls.CONFIG_CLS
 
 
 class Configurable(object):
