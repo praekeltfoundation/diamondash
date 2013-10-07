@@ -6,17 +6,43 @@ from urlparse import urljoin
 from twisted.web import client
 from twisted.python import log
 
-from diamondash import utils, ConfigMixin, ConfigError
-from diamondash.backends import processors, Backend
+from diamondash import utils
+from diamondash.config import ConfigError
+from diamondash.backends import (
+    processors, BackendConfig, Backend, MetricConfig, Metric)
+
+
+class GraphiteBackendConfig(BackendConfig):
+    DEFAULTS = {
+        'time_aligner': 'round'
+    }
+
+    METRIC_UNDERRIDES = [
+        'bucket_size',
+        'null_filter',
+        'time_aligner',
+    ]
+
+    @classmethod
+    def parse(cls, config):
+        if 'url' not in config:
+            raise ConfigError("GraphiteBackend needs a 'url' config field.")
+
+        metric_underrides = dict(
+            (k, config.pop(k))
+            for k in cls.METRIC_UNDERRIDES if k in config)
+
+        config['metrics'] = [
+            utils.add_dicts(metric_underrides, m) for m in config['metrics']]
+
+        config['metrics'] = [
+            GraphiteMetricConfig.from_dict(m) for m in config['metrics']]
+
+        return config
 
 
 class GraphiteBackend(Backend):
-    """Abstract widget for displaying metric data from graphite."""
-
-    __DEFAULTS = {'time_aligner': 'round'}
-    __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteBackend'
-
-    METRIC_UNDERRIDE_FIELDS = ['bucket_size', 'null_filter', 'time_aligner']
+    CONFIG_CLS = GraphiteBackendConfig
 
     # Using this for three reasons:
     # 1. Params such as 'from' are reserved words.
@@ -29,36 +55,14 @@ class GraphiteBackend(Backend):
         'until_time': 'until',
     }
 
-    def __init__(self, graphite_url, metrics=[]):
-        self.graphite_url = graphite_url
+    def __init__(self, config):
+        super(GraphiteBackend, self).__init__(config)
 
         self.metrics = []
         self.metrics_by_target = {}
-        for metric in metrics:
-            self.add_metric(metric)
 
-    @classmethod
-    def parse_config(cls, config, class_defaults={}):
-        config = super(GraphiteBackend, cls).parse_config(
-            config, class_defaults)
-        defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
-
-        if 'graphite_url' not in config:
-            raise ConfigError(
-                "GraphiteBackend needs a 'graphite_url' config field.")
-
-        metrics = config.get('metrics', [])
-
-        metric_underrides = dict(
-            (k, config.pop(k))
-            for k in cls.METRIC_UNDERRIDE_FIELDS if k in config)
-        metrics = [utils.add_dicts(metric_underrides, m) for m in metrics]
-
-        config['metrics'] = [
-            GraphiteMetric.from_config(m, class_defaults) for m in metrics]
-
-        return config
+        for metric_config in self.config['metrics']:
+            self.add_metric(metric_config)
 
     def build_request_params(self, **params):
         req_params = dict(
@@ -66,22 +70,24 @@ class GraphiteBackend(Backend):
             for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
         req_params.update({
             'format': 'json',
-            'target': [m.wrapped_target for m in self.metrics]
+            'target': [m.aliased_target() for m in self.metrics]
         })
         return req_params
 
     def build_request_url(self, **params):
         req_params = self.build_request_params(**params)
         render_url = "render/?%s" % urlencode(req_params, True)
-        return urljoin(self.graphite_url, render_url)
+        return urljoin(self.config['url'], render_url)
 
-    def add_metric(self, metric):
-        target = metric.target
+    def add_metric(self, config):
+        target = config['target']
+
         if target in self.metrics_by_target:
             log.msg("Metric with target '%s' already exists in "
                     "Graphite backend." % (target))
             return
 
+        metric = GraphiteMetric(config)
         self.metrics.append(metric)
         self.metrics_by_target[target] = metric
 
@@ -98,11 +104,11 @@ class GraphiteBackend(Backend):
         output = []
         for metric in self.metrics:
             datapoints = metric.process_datapoints(
-                datapoints_by_target.get(metric.target, []),
+                datapoints_by_target.get(metric.config['target'], []),
                 **request_params)
             output.append({
                 'datapoints': datapoints,
-                'metadata': metric.metadata
+                'metadata': metric.config['metadata']
             })
 
         return output
@@ -124,47 +130,49 @@ class GraphiteBackend(Backend):
         return d
 
 
-class GraphiteMetric(ConfigMixin):
-    """A metric displayed by a GraphiteWidget"""
-
-    __DEFAULTS = {
+class GraphiteMetricConfig(MetricConfig):
+    DEFAULTS = {
         'null_filter': 'skip',
-        'time_aligner': 'round',
+        'time_alignment': 'round',
     }
-    __CONFIG_TAG = 'diamondash.backends.graphite.GraphiteMetric'
-
-    def __init__(self, target, null_filter, summarizer,  metadata={}):
-        self.target = target
-        self.wrapped_target = self.alias_target(target)
-        self.metadata = metadata
-        self.null_filter = null_filter
-        self.summarizer = summarizer
 
     @classmethod
-    def parse_config(cls, config, class_defaults={}):
-        defaults = class_defaults.get(cls.__CONFIG_TAG, {})
-        config = utils.add_dicts(cls.__DEFAULTS, defaults, config)
-
+    def parse(cls, config):
         if 'target' not in config:
             raise ConfigError("All metrics need a target")
 
-        if 'bucket_size' in config:
-            bucket_size = utils.parse_interval(config.pop('bucket_size'))
-            agg_method = guess_aggregation_method(config['target'])
-            config['summarizer'] = processors.summarizers.get(
-                agg_method,
-                config.pop('time_aligner'),
-                bucket_size)
+        config['bucket_size'] = utils.parse_interval(config['bucket_size'])
 
-        if 'null_filter' in config:
-            config['null_filter'] = processors.null_filters.get(
-                config['null_filter'])
+        config.setdefault(
+            'agg_method',
+            guess_aggregation_method(config['target']))
 
+        config.setdefault('metadata', {})
         return config
+
+
+class GraphiteMetric(Metric):
+    """A metric displayed by a GraphiteWidget"""
+
+    CONFIG_CLS = GraphiteMetricConfig
+
+    def __init__(self, config):
+        super(GraphiteMetric, self).__init__(config)
+
+        self.null_filter = processors.null_filters.get(
+            self.config['null_filter'])
+
+        self.summarizer = processors.summarizers.get(
+            self.config['agg_method'],
+            self.config['time_alignment'],
+            self.config['bucket_size'])
 
     @staticmethod
     def alias_target(target):
         return "alias(%s, '%s')" % (target, target)
+
+    def aliased_target(self):
+        return self.alias_target(self.config['target'])
 
     def process_datapoints(self, datapoints, **params):
         """
