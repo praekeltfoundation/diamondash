@@ -2,7 +2,12 @@ from pkg_resources import resource_string
 
 from twisted.web.template import renderer, XMLString
 
-from diamondash.widgets.widget.widget import Widget
+from diamondash.widgets.widget.widget import Widget, WidgetConfig
+
+
+class TextWidgetConfig(WidgetConfig):
+    TYPE_NAME = 'text'
+    MIN_COLUMN_SPAN = 2
 
 
 class TextWidget(Widget):
@@ -10,8 +15,7 @@ class TextWidget(Widget):
 
     loader = XMLString(resource_string(__name__, 'template.xml'))
 
-    TYPE_NAME = 'text'
-    MIN_COLUMN_SPAN = 2
+   
     STYLESHEETS = ('text/style.css',)
 
     def __init__(self, text, **kwargs):

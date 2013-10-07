@@ -1,3 +1,13 @@
-from diamondash.backends.base import Backend, BadBackendResponseError
+from diamondash.backends.base import (
+    BackendConfig,
+    Backend,
+    MetricConfig,
+    Metric,
+    BadBackendResponseError)
 
-__all__ = ['Backend', 'BadBackendResponseError']
+__all__ = [
+    'BackendConfig',
+    'Backend',
+    'MetricConfig',
+    'Metric',
+    'BadBackendResponseError']

@@ -1,27 +1,50 @@
-from mock import Mock
 from twisted.web.resource import Resource
 from twisted.web.server import Site
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue, inlineCallbacks
 
 from diamondash.backends import Backend
-
-
-def stub_from_config(cls):
-    cls.from_config = Mock(
-        side_effect=lambda config, class_defaults: (config, class_defaults))
+from diamondash.widgets.dynamic import DynamicWidgetConfig, DynamicWidget
 
 
 class ToyBackend(Backend):
-    def __init__(self, response_data=[]):
-        self.response_data = response_data
-        self.get_data_calls = []
+    def __init__(self, config):
+        super(ToyBackend, self).__init__(config)
+        self.response = []
+        self.requests = []
+
+    def set_response(self, response):
+        self.response = response
+
+    def get_requests(self):
+        return self.requests
 
     def get_data(self, **params):
         d = Deferred()
-        self.get_data_calls.append(params)
-        d.addCallback(lambda *a, **kw: self.response_data)
+        self.requests.append(params)
+        d.addCallback(lambda *a, **kw: self.response)
         return d
+
+
+class ToyDynamicWidgetConfig(DynamicWidgetConfig):
+    TYPE_NAME = 'dynamic_toy'
+
+    @classmethod
+    def parse(cls, config):
+        config = super(ToyDynamicWidgetConfig, cls).parse(config)
+
+        config['backend']['metrics'] = config.get('metrics', [])
+        backend_config_cls = cls.for_type(config['backend']['type'])
+        config['backend'] = backend_config_cls.from_dict(config['backend'])
+
+        return config
+
+
+class ToyDynamicWidget(DynamicWidget):
+    CONFIG_CLS = ToyDynamicWidgetConfig
+
+    def get_snapshot(self):
+        return [self.config['name']]
 
 
 class MockResource(Resource):
