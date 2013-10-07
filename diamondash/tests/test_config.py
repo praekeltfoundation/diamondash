@@ -1,7 +1,7 @@
 import os
 
 from twisted.trial import unittest
-from diamondash.config import Config, Configurable
+from diamondash.config import Config
 
 
 class ToyConfig(Config):
@@ -23,7 +23,7 @@ class ToyBConfig(ToyConfig):
     DEFAULTS = {'eggs': 'spam'}
 
 
-class ToyConfigurable(Configurable):
+class ToyConfigurable(object):
     CONFIG_CLS = ToyConfig
 
 

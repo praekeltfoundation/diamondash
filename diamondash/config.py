@@ -26,8 +26,9 @@ class Config(dict):
     __metaclass__ = ConfigMetaClass
     DEFAULTS = {}
 
-    def __init__(self, items=None):
-        super(Config, self).__init__(self._parse(items or {}))
+    @classmethod
+    def parse(cls, items):
+        return items
 
     @classmethod
     def _parse(cls, items):
@@ -35,22 +36,15 @@ class Config(dict):
         return cls.parse(items)
 
     @classmethod
-    def parse(cls, items):
-        return items
+    def from_dict(cls, items):
+        return cls(cls._parse(items or {}))
 
     @classmethod
     def from_file(cls, filename, **defaults):
         items = utils.add_dicts(defaults, yaml.safe_load(open(filename)))
-        return cls(items)
+        return cls.from_dict(items)
 
     @classmethod
     def for_type(cls, type_name):
         type_cls = utils.load_class_by_string(type_name)
         return type_cls.CONFIG_CLS
-
-
-class Configurable(object):
-    CONFIG_CLS = Config
-
-    def __init__(self, config):
-        self.config = config
