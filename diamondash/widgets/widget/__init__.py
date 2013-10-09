@@ -1,3 +1,5 @@
-__all__ = ['Widget']
+from diamondash.widgets.widget.widget import WidgetConfig, Widget
 
-from diamondash.widgets.widget.widget import Widget
+__all__ = [
+    'WidgetConfig',
+    'Widget']

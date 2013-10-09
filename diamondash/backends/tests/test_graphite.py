@@ -6,34 +6,68 @@ from twisted.internet.defer import Deferred
 from twisted.web import client
 from twisted.trial import unittest
 
-from diamondash.tests.utils import stub_from_config
-from diamondash import utils, ConfigError
-
-from diamondash.backends import processors
-from diamondash.backends.processors import (
-    AggregatingSummarizer, LastDatapointSummarizer)
+from diamondash import utils
+from diamondash.config import ConfigError
 
 from diamondash.backends.graphite import (
-    GraphiteBackend, GraphiteMetric, guess_aggregation_method)
+    GraphiteBackendConfig, GraphiteBackend, GraphiteMetricConfig,
+    guess_aggregation_method)
 
 
-def mk_graphite_metric(target='some.target.max', **kwargs):
-    kwargs = utils.add_dicts({
-        'metadata': {},
-        'target': target,
-        'null_filter': processors.null_filters['zeroize'],
-    }, kwargs)
-    return GraphiteMetric(**kwargs)
+def mk_metric_config_data(**overrides):
+    return utils.add_dicts({
+        'target': 'a.last',
+        'bucket_size': '1h',
+        'null_filter': 'zeroize',
+        'metadata': {'name': 'max of a'}
+    }, overrides)
+
+
+def mk_backend_config_data(**overrides):
+    return utils.add_dicts({
+        'null_filter': 'zeroize',
+        'bucket_size': '5m',
+        'time_aligner': 'round',
+        'url': 'http://some-graphite-url.moc:8080/',
+        'metrics': [{
+            'target': 'a.last',
+            'null_filter': 'zeroize',
+            'metadata': {'name': 'max of a'}
+        }, {
+            'target': 'b.sum',
+            'null_filter': 'skip',
+            'metadata': {'name': 'sum of b'}
+        }]
+    }, overrides)
+
+
+class GraphiteBackendConfigTestCase(unittest.TestCase):
+    def test_parsing(self):
+        config = GraphiteBackendConfig.from_dict(mk_backend_config_data())
+
+        m1_config, m2_config = config['metrics']
+        self.assertEqual(m1_config['target'], 'a.last')
+        self.assertEqual(m1_config['bucket_size'], 300)
+        self.assertEqual(m1_config['time_aligner'], 'round')
+        self.assertEqual(m1_config['null_filter'], 'zeroize')
+
+        self.assertEqual(m2_config['target'], 'b.sum')
+        self.assertEqual(m2_config['bucket_size'], 300)
+        self.assertEqual(m2_config['time_aligner'], 'round')
+        self.assertEqual(m2_config['null_filter'], 'skip')
+
+    def test_parsing_for_no_url(self):
+        config = mk_backend_config_data()
+        del config['url']
+
+        self.assertRaises(ConfigError, GraphiteBackendConfig.parse, config)
 
 
 class GraphiteBackendTestCase(unittest.TestCase):
     TIME = 10800  # 3 hours since the unix epoch
     FROM_TIME = -7200  # 2 hours from 'now'
     UNTIL_TIME = -3600  # 1 hour from 'now'
-    BUCKET_SIZE = 300  # 5 minutes
 
-    M1_TARGET = 'some.target.max'
-    M1_METADATA = {'some-field': 'lorem'}
     M1_RAW_DATAPOINTS = [
         [None, 3773],
         [5.0, 5695],
@@ -44,8 +78,6 @@ class GraphiteBackendTestCase(unittest.TestCase):
         {'x': 5700, 'y': 10.0},
         {'x': 7200, 'y': 12.0}]
 
-    M2_TARGET = 'some.other.target.sum'
-    M2_METADATA = {'some-field': 'ipsum'}
     M2_RAW_DATAPOINTS = [
         [12.0, 3724],
         [14.0, 3741],
@@ -58,31 +90,15 @@ class GraphiteBackendTestCase(unittest.TestCase):
         {'x': 6000, 'y': 11.0}]
 
     RESPONSE_DATA = json.dumps([
-        {"target": M1_TARGET, "datapoints": M1_RAW_DATAPOINTS},
-        {"target": M2_TARGET, "datapoints": M2_RAW_DATAPOINTS}])
+        {'target': 'a.last', 'datapoints': M1_RAW_DATAPOINTS},
+        {'target': 'b.sum', 'datapoints': M2_RAW_DATAPOINTS}])
 
     def setUp(self):
-        self.m1 = mk_graphite_metric(
-            target=self.M1_TARGET,
-            metadata=self.M1_METADATA,
-            null_filter=processors.null_filters['zeroize'],
-            summarizer=processors.summarizers.get(
-                'last',
-                'round',
-                self.BUCKET_SIZE))
+        config = GraphiteBackendConfig.from_dict(mk_backend_config_data())
+        self.backend = GraphiteBackend(config)
 
-        self.m2 = mk_graphite_metric(
-            target=self.M2_TARGET,
-            metadata=self.M2_METADATA,
-            null_filter=processors.null_filters['skip'],
-            summarizer=processors.summarizers.get(
-                'sum',
-                'round',
-                self.BUCKET_SIZE))
+        self.m1, self.m2 = self.backend.metrics
 
-        self.backend = GraphiteBackend(
-            graphite_url='http://some-graphite-url.moc:8080',
-            metrics=[self.m1, self.m2])
         self.last_request_url = None
         self.stub_time(self.TIME)
         self.stub_getPage()
@@ -94,6 +110,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
         def stubbed_getPage(url):
             self.last_requested_url = url
             return d
+
         self.patch(client, 'getPage', stubbed_getPage)
 
     def stub_time(self, t):
@@ -102,51 +119,22 @@ class GraphiteBackendTestCase(unittest.TestCase):
     def assert_url(self, url, expected_base, expected_path, **expected_params):
         url_parts = urlsplit(url)
         self.assertEqual(expected_params, parse_qs(url_parts.query))
-        self.assertEqual(expected_base, "http://%s" % url_parts.netloc)
+        self.assertEqual(expected_base, "http://%s/" % url_parts.netloc)
         self.assertEqual(expected_path, url_parts.path)
 
     def assert_request_url(self, url, expected_url_params):
         expected_url_params.update({
             'format': ['json'],
-            'target': [self.m1.wrapped_target, self.m2.wrapped_target],
-        })
-        self.assert_url(url, self.backend.graphite_url, '/render/',
-                        **expected_url_params)
-
-    def test_parse_config(self):
-        stub_from_config(GraphiteMetric)
-        config = {
-            'null_filter': 'zeroize',
-            'bucket_size': 3600,
-            'time_aligner': 'round',
-            'graphite_url': 'http://some-graphite-url.moc:8080/',
-            'metrics': [
-                {'target': 'a.max'},
-                {'target': 'b.max', 'null_filter': 'skip'}]
-        }
-        class_defaults = {'SomeType': "some default value"}
-
-        parsed_config = GraphiteBackend.parse_config(config, class_defaults)
-        self.assertEqual(parsed_config, {
-            'graphite_url': 'http://some-graphite-url.moc:8080/',
-            'metrics': [
-                ({
-                    'target': 'a.max',
-                    'bucket_size': 3600,
-                    'time_aligner': 'round',
-                    'null_filter': 'zeroize'
-                }, class_defaults),
-                ({
-                    'target': 'b.max',
-                    'bucket_size': 3600,
-                    'time_aligner': 'round',
-                    'null_filter': 'skip'
-                }, class_defaults)
-            ]
+            'target': [
+                self.m1.aliased_target(),
+                self.m2.aliased_target()],
         })
 
-    def test_parse_config_for_no_graphite_url(self):
-        self.assertRaises(ConfigError, GraphiteBackend.parse_config, {})
+        self.assert_url(
+            url,
+            self.backend.config['url'],
+            '/render/',
+            **expected_url_params)
 
     def test_request_url_building(self):
         self.assert_request_url(self.backend.build_request_url(
@@ -173,67 +161,30 @@ class GraphiteBackendTestCase(unittest.TestCase):
 
             self.assertEqual(
                 result,
-                [{'metadata': self.M1_METADATA,
+                [{'metadata': {'name': 'max of a'},
                   'datapoints': self.M1_PROCESSED_DATAPOINTS},
-                 {'metadata': self.M2_METADATA,
+                 {'metadata': {'name': 'sum of b'},
                   'datapoints': self.M2_PROCESSED_DATAPOINTS}])
-        deferred_result.addCallback(assert_retrieved_data)
 
+        deferred_result.addCallback(assert_retrieved_data)
         deferred_result.callback(None)
         return deferred_result
 
 
+class GraphiteMetricConfigTestCase(unittest.TestCase):
+    def test_parsing(self):
+        config = GraphiteMetricConfig.from_dict(mk_metric_config_data())
+        self.assertEqual(config['bucket_size'], 3600)
+        self.assertEqual(config['metadata'], {'name': 'max of a'})
+
+    def test_parsing_for_no_target(self):
+        config = mk_metric_config_data()
+        del config['target']
+
+        self.assertRaises(ConfigError, GraphiteMetricConfig.parse, {})
+
+
 class GraphiteMetricTestCase(unittest.TestCase):
-    def test_parse_config(self):
-        config = {
-            'target': 'some.target.max',
-            'bucket_size': '1h',
-            'null_filter': 'zeroize',
-            'metadata': {'name': 'luke-the-metric'}
-        }
-
-        new_config = GraphiteMetric.parse_config(config)
-        self.assertEqual(new_config['target'], config['target'])
-        self.assertEqual(new_config['metadata'], {'name': 'luke-the-metric'})
-        self.assertEqual(
-            new_config['null_filter'],
-            processors.null_filters['zeroize'])
-        self.assertEqual(
-            set(new_config.keys()),
-            set(['target', 'metadata', 'null_filter', 'summarizer']))
-
-    def test_parse_config_for_no_bucket_size(self):
-        config = GraphiteMetric.parse_config({'target': 'some.random.target'})
-        self.assertTrue('summarizer' not in config)
-
-    def test_parse_config_for_summarizer(self):
-        def assert_agg_summarizer(config, bucket_size, agg_name):
-            summarizer = GraphiteMetric.parse_config(config)['summarizer']
-            self.assertTrue(isinstance(summarizer, AggregatingSummarizer))
-            self.assertEqual(summarizer.aggregator,
-                             processors.aggregators[agg_name])
-            self.assertEqual(summarizer.bucket_size, bucket_size)
-
-        def assert_ldp_summarizer(config, bucket_size):
-            summarizer = GraphiteMetric.parse_config(config)['summarizer']
-            self.assertEqual(summarizer.bucket_size, bucket_size)
-            self.assertTrue(isinstance(summarizer, LastDatapointSummarizer))
-
-        assert_agg_summarizer(
-            {'target': 'some.target.avg', 'bucket_size': '1h'}, 3600, 'avg')
-        assert_agg_summarizer(
-            {'target': 'some.target.sum', 'bucket_size': '2h'}, 7200, 'sum')
-        assert_agg_summarizer(
-            {'target': 'some.target.min', 'bucket_size': '1h'}, 3600, 'min')
-        assert_agg_summarizer(
-            {'target': 'some.target.max', 'bucket_size': '2h'}, 7200, 'max')
-
-        assert_ldp_summarizer(
-            {'target': 'some.target.last', 'bucket_size': '2h'}, 7200)
-
-    def test_parse_config_for_no_target(self):
-        self.assertRaises(ConfigError, GraphiteMetric.parse_config, {})
-
     def test_guess_aggregation_method(self):
         """
         Metric targets should be formatted to be enclosed in a 'summarize()'
