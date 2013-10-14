@@ -38,11 +38,11 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(7200, utils.parse_interval("2h"))
         self.assertEqual(86400 * 2, utils.parse_interval("2d"))
 
-    def test_update_dict(self):
+    def test_add_dicts(self):
         original = {'a': 1}
         defaults = {'a': 0, 'b': 2}
         self.assertEqual(
-            utils.update_dict(defaults, original), {'a': 1, 'b': 2})
+            utils.add_dicts(defaults, original), {'a': 1, 'b': 2})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults, {'a': 0, 'b': 2})
 
@@ -50,7 +50,7 @@ class UtilsTestCase(unittest.TestCase):
         defaults1 = {'a': 0, 'b': 2}
         defaults2 = {'b': 3, 'c': 4}
         self.assertEqual(
-            utils.update_dict(defaults1, defaults2, original),
+            utils.add_dicts(defaults1, defaults2, original),
             {'a': 1, 'b': 3, 'c': 4})
         self.assertEqual(original, {'a': 1})
         self.assertEqual(defaults1, {'a': 0, 'b': 2})

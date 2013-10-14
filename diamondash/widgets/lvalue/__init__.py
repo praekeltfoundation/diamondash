@@ -1,3 +1,5 @@
-__all__ = ['LValueWidget']
+from diamondash.widgets.lvalue.lvalue import LValueWidgetConfig, LValueWidget
 
-from diamondash.widgets.lvalue.lvalue import LValueWidget
+__all__ = [
+    'LValueWidgetConfig',
+    'LValueWidget']

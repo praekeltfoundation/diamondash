@@ -1,174 +1,140 @@
 """Tests for diamondash's dashboard"""
 
-from mock import Mock
 from twisted.trial import unittest
 
-from diamondash.dashboard import Dashboard, WidgetRow
-from diamondash.widgets.widget import Widget
-from diamondash import utils, ConfigError
+from diamondash import utils
+from diamondash.config import ConfigError
+from diamondash.dashboard import DashboardConfig, Dashboard
+from diamondash.widgets.widget import WidgetConfig
+from diamondash.widgets.dynamic import DynamicWidgetConfig
 
 
-class StubbedDashboard(Dashboard):
-    LAYOUT_FUNCTIONS = {
-        'layoutfn1': lambda x: x,
-        'layoutfn2': lambda x: x
-    }
+def mk_config_data(**overrides):
+    return utils.add_dicts({
+        'name': 'Some Dashboard',
+        'request_interval': '2s',
+        'share_id': 'some-dashboard-share-id',
+        'widgets': [
+            {
+                'name': 'widget1',
+                'type': 'diamondash.widgets.widget.Widget',
+            },
+            'newrow',
+            {
+                'name': 'widget2',
+                'type': 'diamondash.tests.utils.ToyDynamicWidget',
+            }
+        ],
+        'backend': {
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+        }
+    }, overrides)
 
 
-class ToyWidget(Widget):
-    __DEFAULTS = {'some-option': 'some-value'}
-    __CONFIG_TAG = 'diamondash.tests.test_dashboard.ToyWidget'
-
-    @classmethod
-    def from_config(cls, config, class_defaults):
-        return "%s -- created" % config['name']
-
-
-class DashboardTestCase(unittest.TestCase):
-    def mk_dashboard(self, **kwargs):
-        kwargs = utils.update_dict({
-            'name': 'some-dashboard',
-            'title': 'Some Dashboard',
-            'widgets': [],
-            'client_config': {},
-        }, kwargs)
-
-        return Dashboard(**kwargs)
-
-    def test_new_row(self):
-        """
-        Should append an empty row and set the last row width to 0.
-        """
-        dashboard = self.mk_dashboard()
-        existing_row = dashboard.last_row
-        dashboard._new_row()
-        self.assertEqual(dashboard.rows, [existing_row, dashboard.last_row])
-        self.assertNotEqual(dashboard.last_row, existing_row)
-
-    def test_add_widget(self):
-        """Should add a widget to the dashboard."""
-
-        dashboard = self.mk_dashboard()
-        widget = ToyWidget(
-            name='toy',
-            title='Toy',
-            client_config='toy_client_config',
-            width=2)
-        dashboard.add_widget(widget)
-
-        self.assertEqual(dashboard.widgets_by_name['toy'], widget)
-        self.assertEqual(dashboard.widgets[0], widget)
-        self.assertEqual(dashboard.rows[0].widgets[0].widget, widget)
-        self.assertEqual(dashboard.last_row.width, 2)
-        self.assertEqual(dashboard.client_config['widgets'][0],
-                         'toy_client_config')
-
-    def test_add_widget_for_layout_fn(self):
-        """
-        Should call the appropriate layout function if the function's name is
-        passed in as a 'widget'.
-        """
-        dashboard = self.mk_dashboard()
-        mock_layoutfn = Mock()
-        dashboard.LAYOUT_FUNCTIONS = {'mock': 'mock_layoutfn'}
-        dashboard.mock_layoutfn = mock_layoutfn
-
-        dashboard.add_widget('mock')
-        self.assertTrue(mock_layoutfn.called)
-
-    def test_add_widget_for_new_row(self):
-        """
-        Should add a new row if there is no space for the widget being added on
-        the current row.
-        """
-        dashboard = self.mk_dashboard()
-        dashboard.last_row = WidgetRow()
-        dashboard.last_row.width = 3
-
-        widget = ToyWidget(name='toy', title='Toy', width=2,
-                           client_config='toy_client_config')
-        self.patch(Dashboard, 'MAX_WIDTH', 4)
-
-        dashboard.add_widget(widget)
-        self.assertEqual(dashboard.last_row.width, 2)
-
-    def test_parse_config(self):
+class DashboardConfigTestCase(unittest.TestCase):
+    def test_parsing(self):
         """
         Should create a dashboard from a config dict.
         """
-        config = StubbedDashboard.parse_config({
-            'name': u'some dashboard',
-            'title': 'Some Dashboard',
-            'request_interval': '2s',
-            'share_id': 'this-is-a-share-id',
-            'widgets': [
-                'layoutfn1',
-                {
-                    'name': 'widget1',
-                    'type': 'diamondash.tests.test_dashboard.ToyWidget',
-                },
-                'layoutfn2',
-                {
-                    'name': 'widget2',
-                    'type': 'diamondash.tests.test_dashboard.ToyWidget',
-                },
-            ]
-        })
+        config = DashboardConfig.from_dict(mk_config_data())
 
         self.assertEqual(config['name'], 'some-dashboard')
         self.assertEqual(config['title'], 'Some Dashboard')
         self.assertEqual(config['client_config'], {
             'name': 'some-dashboard',
-            'requestInterval': 2000
+            'requestInterval': 2000,
+            'widgets': [{
+                'model': {'name': 'widget1'},
+                'typeName': 'widget',
+                'view': {},
+            }, {
+                'model': {'name': 'widget2'},
+                'typeName': 'dynamic_toy',
+                'view': {}
+            }]
         })
-        self.assertEqual(config['share_id'], 'this-is-a-share-id')
-        self.assertEqual(config['widgets'], [
-            'layoutfn1',
-            'widget1 -- created',
-            'layoutfn2',
-            'widget2 -- created',
-        ])
 
-    def test_parse_config_for_defaults(self):
-        class_defaults = {
-            Dashboard._Dashboard__CONFIG_TAG: {
-                'some-field': 'lerp',
-                'some-other-field': 23,
-            }
-        }
-        config = StubbedDashboard.parse_config({
-            'name': u'Test Dashboard',
-            'widgets': [],
-            'defaults': {
-                Dashboard._Dashboard__CONFIG_TAG: {'some-field': 'larp'}
-            }
-        }, class_defaults)
-        self.assertEqual(config['title'], 'Test Dashboard')
-        self.assertFalse(config.get('defaults'))
-        self.assertEqual(config['some-field'], 'larp')
-        self.assertEqual(config['some-other-field'], 23)
+        w1_config, newrow, w2_config = config['widgets']
+        self.assertTrue(isinstance(w1_config, WidgetConfig))
+        self.assertTrue(w1_config['name'], 'widget1')
+        self.assertTrue('backend' not in w1_config)
 
-    def test_parse_config_for_no_name(self):
+        self.assertTrue(isinstance(w2_config, DynamicWidgetConfig))
+        self.assertTrue(w2_config['name'], 'widget2')
+        self.assertEqual(w2_config['backend'], {
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+            'metrics': [],
+        })
+
+        self.assertEqual(newrow, 'newrow')
+
+    def test_parsing_for_no_name(self):
         """
         Should raise an exception when given a dashboard config without a name
         key.
         """
-        self.assertRaises(ConfigError, Dashboard.parse_config, {})
-
-    def test_parse_config_for_no_title(self):
-        """
-        Should create a dashboard with a title set to the name passed into
-        the config if no title is in the config.
-        """
-        config = StubbedDashboard.parse_config({
-            'name': u'Test Dashboard',
-            'widgets': []
-        })
-        self.assertEqual(config['title'], 'Test Dashboard')
+        self.assertRaises(ConfigError, DashboardConfig.parse, {})
 
     def test_parse_config_for_no_widgets(self):
         """
         Should raise an exception when given a dashboard config without a
         widgets key.
         """
-        self.assertRaises(ConfigError, Dashboard.parse_config, {})
+        config = mk_config_data()
+        del config['widgets']
+        self.assertRaises(ConfigError, DashboardConfig.parse, config)
+
+
+class DashboardTestCase(unittest.TestCase):
+    def mk_dashboard(self, **overrides):
+        config = DashboardConfig.from_dict(mk_config_data(**overrides))
+        return Dashboard(config)
+
+    def mk_widget_config(self, **overrides):
+        return WidgetConfig.from_dict(utils.add_dicts({
+            'type': 'diamondash.widgets.widget.Widget',
+            'name': 'toy',
+            'title': 'Toy',
+            'width': 2
+        }, overrides))
+
+    def test_widget_adding(self):
+        """Should add a widget to the dashboard."""
+        dashboard = self.mk_dashboard()
+        widget_config = self.mk_widget_config()
+        dashboard.add_widget(widget_config)
+
+        self.assertEqual(
+            dashboard.widgets_by_name['toy'].config,
+            widget_config)
+
+        self.assertEqual(
+            dashboard.widgets[-1].config,
+            widget_config)
+
+        self.assertEqual(
+            dashboard.last_row.widgets[-1].widget.config,
+            widget_config)
+
+        self.assertEqual(dashboard.last_row.width, 6)
+
+    def test_row_building(self):
+        """
+        Should add a new row if there is no space for the widget being added on
+        the current row.
+        """
+        dashboard = self.mk_dashboard(widgets=[])
+
+        dashboard.add_widget(self.mk_widget_config(width=8))
+        self.assertEqual(len(dashboard.rows), 1)
+        self.assertEqual(dashboard.last_row.width, 8)
+
+        dashboard.add_widget(self.mk_widget_config(width=4))
+        self.assertEqual(len(dashboard.rows), 1)
+        self.assertEqual(dashboard.last_row.width, 12)
+
+        dashboard.add_widget(self.mk_widget_config(width=4))
+        self.assertEqual(len(dashboard.rows), 2)
+        self.assertEqual(dashboard.last_row.width, 4)
