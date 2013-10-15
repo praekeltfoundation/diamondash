@@ -1,5 +1,6 @@
 diamondash.widgets.graph.views = function() {
-  var utils = diamondash.utils,
+  var widgets = diamondash.widgets,
+      utils = diamondash.utils,
       structures = diamondash.components.structures,
       charts = diamondash.components.charts;
 
@@ -349,6 +350,8 @@ diamondash.widgets.graph.views = function() {
       }
     }
   });
+
+  widgets.registry.views.add('graph', GraphView);
 
   return {
     GraphLines: GraphLines,

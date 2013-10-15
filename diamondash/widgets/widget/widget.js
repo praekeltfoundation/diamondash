@@ -34,6 +34,9 @@ diamondash.widgets.widget = function() {
   var WidgetView = Backbone.View.extend({
   });
 
+  widgets.registry.models.add('widget', WidgetModel);
+  widgets.registry.views.add('widget', WidgetView);
+
   return {
     WidgetModel: WidgetModel,
     WidgetCollection: WidgetCollection,

@@ -1,5 +1,6 @@
 diamondash.dashboard = function() {
-  WidgetCollection = diamondash.widgets.widget.WidgetCollection;
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget;
 
   function DashboardController(args) {
     this.name = args.name;
@@ -13,22 +14,23 @@ diamondash.dashboard = function() {
   DashboardController.fromConfig = function(config) {
     var dashboardName = config.name;
 
-    var widgets = new WidgetCollection(),
+    var widgetModels = new widget.WidgetCollection(),
         widgetViews = [];
 
     var requestInterval = config.requestInterval
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var widgetType = diamondash.widgets.registry.get(widgetConfig.typeName);
+      var modelType = widgets.registry.models.get(widgetConfig.typeName);
+      var viewType = widgets.registry.views.get(widgetConfig.typeName);
 
-      var model = new widgetType.model(
+      var model = new modelType(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
-        {collection: widgets});
+        {collection: widgetModels});
 
-      widgets.add(model);
+      widgetModels.add(model);
 
-      widgetViews.push(new widgetType.view({
+      widgetViews.push(new viewType({
         el: $("#" + model.get('name')),
         model: model,
         config: widgetConfig.view
@@ -37,7 +39,7 @@ diamondash.dashboard = function() {
 
     return new DashboardController({
       name: dashboardName,
-      widgets: widgets,
+      widgets: widgetModels,
       widgetViews: widgetViews,
       requestInterval: requestInterval
     });

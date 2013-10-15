@@ -302,28 +302,15 @@ diamondash.components.charts = function() {
 }.call(this);
 
 diamondash.widgets = function() {
-  var structures = diamondash.components.structures,
-      utils = diamondash.utils;
+  var structures = diamondash.components.structures;
 
-  var WidgetRegistry = structures.Registry.extend({
-    processAdd: function(name, options) {
-      return _({}).defaults(options, {
-        view: 'diamondash.widgets.widget.WidgetView',
-        model: 'diamondash.widgets.widget.WidgetModel'
-      });
-    },
-
-    processGet: function(name, options) {
-      return {
-        view: utils.maybeByName(options.view),
-        model: utils.maybeByName(options.model)
-      };
-    }
-  });
+  var registry = {
+    models: new structures.Registry(),
+    views: new structures.Registry()
+  };
 
   return {
-    registry: new WidgetRegistry(),
-    WidgetRegistry: WidgetRegistry
+    registry: registry
   };
 }.call(this);
 
@@ -363,6 +350,9 @@ diamondash.widgets.widget = function() {
   var WidgetView = Backbone.View.extend({
   });
 
+  widgets.registry.models.add('widget', WidgetModel);
+  widgets.registry.views.add('widget', WidgetView);
+
   return {
     WidgetModel: WidgetModel,
     WidgetCollection: WidgetCollection,
@@ -371,17 +361,13 @@ diamondash.widgets.widget = function() {
 }.call(this);
 
 diamondash.widgets.graph = function() {
-  diamondash.widgets.registry.add('graph', {
-    model: 'diamondash.widgets.graph.models.GraphModel',
-    view: 'diamondash.widgets.graph.views.GraphView'
-  });
-
   return {
   };
 }.call(this);
 
 diamondash.widgets.graph.models = function() {
-  var widget = diamondash.widgets.widget,
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget,
       structures = diamondash.components.structures,
       utils = diamondash.utils;
 
@@ -449,6 +435,8 @@ diamondash.widgets.graph.models = function() {
     },
   });
 
+  widgets.registry.models.add('graph', GraphModel);
+
   return {
     GraphModel: GraphModel,
     GraphMetricModel: GraphMetricModel,
@@ -457,7 +445,8 @@ diamondash.widgets.graph.models = function() {
 }.call(this);
 
 diamondash.widgets.graph.views = function() {
-  var utils = diamondash.utils,
+  var widgets = diamondash.widgets,
+      utils = diamondash.utils,
       structures = diamondash.components.structures,
       charts = diamondash.components.charts;
 
@@ -808,6 +797,8 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
+  widgets.registry.views.add('graph', GraphView);
+
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
@@ -922,10 +913,8 @@ diamondash.widgets.lvalue = function() {
     }
   });
 
-  widgets.registry.add('lvalue', {
-    model: LValueModel,
-    view: LValueView
-  });
+  widgets.registry.models.add('lvalue', LValueModel);
+  widgets.registry.views.add('lvalue', LValueView);
 
   return {
     LValueModel: LValueModel,
@@ -935,7 +924,8 @@ diamondash.widgets.lvalue = function() {
 }.call(this);
 
 diamondash.dashboard = function() {
-  WidgetCollection = diamondash.widgets.widget.WidgetCollection;
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget;
 
   function DashboardController(args) {
     this.name = args.name;
@@ -949,22 +939,23 @@ diamondash.dashboard = function() {
   DashboardController.fromConfig = function(config) {
     var dashboardName = config.name;
 
-    var widgets = new WidgetCollection(),
+    var widgetModels = new widget.WidgetCollection(),
         widgetViews = [];
 
     var requestInterval = config.requestInterval
                        || DashboardController.DEFAULT_REQUEST_INTERVAL;
 
     config.widgets.forEach(function(widgetConfig) {
-      var widgetType = diamondash.widgets.registry.get(widgetConfig.typeName);
+      var modelType = widgets.registry.models.get(widgetConfig.typeName);
+      var viewType = widgets.registry.views.get(widgetConfig.typeName);
 
-      var model = new widgetType.model(
+      var model = new modelType(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
-        {collection: widgets});
+        {collection: widgetModels});
 
-      widgets.add(model);
+      widgetModels.add(model);
 
-      widgetViews.push(new widgetType.view({
+      widgetViews.push(new viewType({
         el: $("#" + model.get('name')),
         model: model,
         config: widgetConfig.view
@@ -973,7 +964,7 @@ diamondash.dashboard = function() {
 
     return new DashboardController({
       name: dashboardName,
-      widgets: widgets,
+      widgets: widgetModels,
       widgetViews: widgetViews,
       requestInterval: requestInterval
     });

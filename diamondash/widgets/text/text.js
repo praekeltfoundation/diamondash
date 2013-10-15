@@ -5,7 +5,7 @@ diamondash.widgets.text = function() {
     isStatic: true
   });
 
-  widgets.registry.add('text', {model: TextModel});
+  widgets.registry.models.add('text', TextModel);
 
   return {
     TextModel: TextModel

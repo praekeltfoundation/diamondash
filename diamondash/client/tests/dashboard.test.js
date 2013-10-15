@@ -13,28 +13,27 @@ describe("diamondash.dashboard", function(){
       var dashboard, config;
       
       before(function() {
-        widgets.registry.add('toyA', {
-          model: widgets.widget.WidgetModel.extend({
+        widgets.registry.models.add('toyA', widgets.widget.WidgetModel.extend({
             type: 'ToyWidgetModelA'
-          }),
-          view:  widgets.widget.WidgetView.extend({
+        }));
+        widgets.registry.views.add('toyA', widgets.widget.WidgetView.extend({
             type: 'ToyWidgetViewA'
-          })
-        });
+        }));
 
-        widgets.registry.add('toyB', {
-          model: widgets.widget.WidgetModel.extend({
+        widgets.registry.models.add('toyB', widgets.widget.WidgetModel.extend({
             type: 'ToyWidgetModelB'
-          }),
-          view:  widgets.widget.WidgetView.extend({
+        }));
+        widgets.registry.views.add('toyB', widgets.widget.WidgetView.extend({
             type: 'ToyWidgetViewB'
-          })
-        });
+        }));
       });
 
       after(function() {
-        widgets.registry.remove('toyA');
-        widgets.registry.remove('toyB');
+        widgets.registry.models.remove('toyA');
+        widgets.registry.views.remove('toyA');
+
+        widgets.registry.models.remove('toyB');
+        widgets.registry.views.remove('toyB');
       });
 
       beforeEach(function() {
