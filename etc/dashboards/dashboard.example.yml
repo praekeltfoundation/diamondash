@@ -1,4 +1,5 @@
 name: 'Test Dashboard'
+share_id: 'test'
 
 __ignore__:
   lvalue: &lvalue
