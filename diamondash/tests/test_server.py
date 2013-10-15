@@ -1,5 +1,6 @@
 """Tests for diamondash's server"""
 
+import os
 import json
 
 from twisted import web
@@ -13,6 +14,7 @@ from twisted.web.template import flattenString
 
 from diamondash import utils
 from diamondash.config import ConfigError
+from diamondash.widgets.widget import WidgetConfig
 from diamondash.dashboard import Dashboard, DashboardConfig, DashboardPage
 from diamondash.server import (
     DiamondashConfig, DiamondashServer, Index, DashboardIndexListItem)
@@ -47,6 +49,48 @@ def mk_server_config_data(**overrides):
                 name='Dashboard 2',
                 share_id='dashboard-2-share-id')]
     }, overrides)
+
+
+class DiamondashConfigTestCase(unittest.TestCase):
+    def test_from_dir(self):
+        dirname = os.path.join(
+            os.path.dirname(__file__),
+            'fixtures',
+            'etc')
+
+        config = DiamondashConfig.from_dir(dirname)
+
+        dashboard1_config, dashboard2_config = config['dashboards']
+
+        self.assertTrue(isinstance(dashboard1_config, DashboardConfig))
+        self.assertEqual(dashboard1_config['name'], 'dashboard-1')
+        self.assertEqual(dashboard1_config['title'], 'Dashboard 1')
+        self.assertEqual(
+            dashboard1_config['client_config']['requestInterval'],
+            30000)
+
+        widget1_config, = dashboard1_config['widgets']
+        self.assertTrue(isinstance(widget1_config, WidgetConfig))
+        self.assertEqual(widget1_config['name'], 'dashboard-1-widget-1')
+        self.assertEqual(widget1_config['title'], 'Dashboard 1 Widget 1')
+        self.assertEqual(
+            widget1_config['backend']['url'],
+            'http://127.0.0.1:8118')
+
+        self.assertTrue(isinstance(dashboard2_config, DashboardConfig))
+        self.assertEqual(dashboard2_config['name'], 'dashboard-2')
+        self.assertEqual(dashboard2_config['title'], 'Dashboard 2')
+        self.assertEqual(
+            dashboard2_config['client_config']['requestInterval'],
+            10000)
+
+        widget1_config, = dashboard2_config['widgets']
+        self.assertTrue(isinstance(widget1_config, WidgetConfig))
+        self.assertEqual(widget1_config['name'], 'dashboard-2-widget-1')
+        self.assertEqual(widget1_config['title'], 'Dashboard 2 Widget 1')
+        self.assertEqual(
+            widget1_config['backend']['url'],
+            'http://127.0.0.1:7118')
 
 
 class DiamondashServerTestCase(unittest.TestCase):

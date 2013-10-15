@@ -18,7 +18,7 @@ class LValueWidgetConfig(DynamicWidgetConfig):
 
     @classmethod
     def parse(cls, config):
-        super(LValueWidgetConfig, cls).parse(config)
+        config = super(LValueWidgetConfig, cls).parse(config)
 
         if 'target' not in config:
             raise ConfigError("All LValueWidgets need a target")
