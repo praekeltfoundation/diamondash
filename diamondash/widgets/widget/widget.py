@@ -14,6 +14,7 @@ class WidgetConfig(Config):
     MAX_COLUMN_SPAN = 12
 
     DEFAULTS = {
+        'type_name': TYPE_NAME,
         'width': MIN_COLUMN_SPAN
     }
 
@@ -29,6 +30,8 @@ class WidgetConfig(Config):
 
     @classmethod
     def parse(cls, config):
+        config['type_name'] = cls.TYPE_NAME
+
         if 'name' not in config:
             raise ConfigError('All widgets need a name.')
 
