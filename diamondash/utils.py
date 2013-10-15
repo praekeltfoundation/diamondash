@@ -83,7 +83,7 @@ def parse_interval(interval):
                 return int(interval[:-1]) * multiplier
         return int(interval)
     except ValueError:
-        raise ValueError("%r is not a valid time interval.")
+        raise ValueError("%r is not a valid time interval." % interval)
 
 
 def last_dir_in_path(pathname):
