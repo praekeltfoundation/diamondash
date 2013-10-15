@@ -212,7 +212,7 @@ class DashboardPage(PageElement):
 
     @renderer
     def brand_renderer(self, request, tag):
-        href = '' if not self.shared else '/'
+        href = '#' if self.shared else '/'
         tag.fillSlots(brand_href_slot=href)
         return tag
 

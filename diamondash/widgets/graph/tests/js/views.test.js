@@ -421,7 +421,8 @@ describe("diamondash.widgets.graph", function() {
       it("should draw its axis", function() {
         assert.equal(
           graph.$('.axis').text(),
-          '01-01 00:00');
+          ['01-01 00:00',
+           '01-01 00:00'].join(''));
 
         graph.render();
 

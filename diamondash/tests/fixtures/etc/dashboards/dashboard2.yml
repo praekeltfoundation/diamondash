@@ -1,0 +1,9 @@
+name: 'Dashboard 2'
+
+backend:
+  type: diamondash.backends.graphite.GraphiteBackend
+  url: 'http://127.0.0.1:7118'
+
+widgets:
+  - name: 'Dashboard 2 Widget 1'
+    type: diamondash.tests.utils.ToyDynamicWidget

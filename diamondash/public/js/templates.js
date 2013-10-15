@@ -25,17 +25,17 @@ obj || (obj = {});
 var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
 function print() { __p += __j.call(arguments, '') }
 with (obj) {
-
+__p += '<div class="row">\n  ';
  self.model.get('metrics').each(function(m) { ;
-__p += '\n<li class="legend-item" data-metric-id="' +
+__p += '\n    <div class="legend-item col-md-6" data-metric-id="' +
 ((__t = ( m.get('id') )) == null ? '' : __t) +
-'">\n  <span class="swatch"></span>\n  <span class="title">' +
+'">\n      <span class="swatch"></span>\n      <span class="title">' +
 ((__t = ( m.get('title') )) == null ? '' : __t) +
-'</span>\n  <span class="value">' +
+'</span>\n      <span class="value">' +
 ((__t = ( self.format(x ? m.valueAt(x) : m.lastValue()) )) == null ? '' : __t) +
-'</span>\n</li>\n';
+'</span>\n    </div>\n  ';
  }); ;
-__p += '\n';
+__p += '\n</div>\n';
 
 }
 return __p

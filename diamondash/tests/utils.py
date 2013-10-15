@@ -1,5 +1,5 @@
-from twisted.web.resource import Resource
 from twisted.web.server import Site
+from twisted.web.resource import Resource
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue, inlineCallbacks
 
