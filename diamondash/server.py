@@ -25,6 +25,7 @@ class DiamondashConfig(Config):
     FILENAME = 'diamondash.yml'
 
     DEFAULTS = {
+        'request_interval': '60s',
         'backend': {
             'type': 'diamondash.backends.graphite.GraphiteBackend',
             'url': 'http://127.0.0.1:8080',
@@ -33,10 +34,19 @@ class DiamondashConfig(Config):
 
     @classmethod
     def parse(cls, config):
-        defaults = {'backend': config.pop('backend')}
+        defaults = {
+            'backend': config.pop('backend'),
+            'request_interval': config.pop('request_interval')
+        }
+
         config['dashboards'] = [
             DashboardConfig.from_dict(utils.add_dicts(defaults, d))
             for d in config['dashboards']]
+
+        config['dashboards'] = sorted(
+            config['dashboards'],
+            key=lambda d: d['name'])
+
         return config
 
     @classmethod
@@ -46,11 +56,6 @@ class DiamondashConfig(Config):
         config['dashboards'] = [
             yaml.safe_load(open(filename))
             for filename in glob(path.join(dirname, 'dashboards', '*.yml'))]
-
-        if 'request_interval' in config:
-            interval = config.pop('request_interval')
-            for dashboard_config in config['dashboards']:
-                dashboard_config.setdefault('request_interval', interval)
 
         return cls.parse(config)
 
