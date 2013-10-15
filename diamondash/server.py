@@ -45,9 +45,14 @@ class DiamondashConfig(Config):
 
         config['dashboards'] = [
             yaml.safe_load(open(filename))
-            for filename in glob(path.join(dirname, "*.yml"))]
+            for filename in glob(path.join(dirname, 'dashboards', '*.yml'))]
 
-        return cls(config)
+        if 'request_interval' in config:
+            interval = config.pop('request_interval')
+            for dashboard_config in config['dashboards']:
+                dashboard_config.setdefault('request_interval', interval)
+
+        return cls.parse(config)
 
 
 class DiamondashServer(object):
