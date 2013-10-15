@@ -1,10 +1,11 @@
 """Tests for diamondash's dashboard"""
 
 from twisted.trial import unittest
+from twisted.web.template import flattenString
 
 from diamondash import utils
 from diamondash.config import ConfigError
-from diamondash.dashboard import DashboardConfig, Dashboard
+from diamondash.dashboard import DashboardConfig, Dashboard, DashboardPage
 from diamondash.widgets.widget import WidgetConfig
 from diamondash.widgets.dynamic import DynamicWidgetConfig
 
@@ -30,6 +31,11 @@ def mk_config_data(**overrides):
             'url': 'http://127.0.0.1:3000',
         }
     }, overrides)
+
+
+def mk_dashboard(**overrides):
+    config = DashboardConfig.from_dict(mk_config_data(**overrides))
+    return Dashboard(config)
 
 
 class DashboardConfigTestCase(unittest.TestCase):
@@ -88,10 +94,6 @@ class DashboardConfigTestCase(unittest.TestCase):
 
 
 class DashboardTestCase(unittest.TestCase):
-    def mk_dashboard(self, **overrides):
-        config = DashboardConfig.from_dict(mk_config_data(**overrides))
-        return Dashboard(config)
-
     def mk_widget_config(self, **overrides):
         return WidgetConfig.from_dict(utils.add_dicts({
             'type': 'diamondash.widgets.widget.Widget',
@@ -102,7 +104,7 @@ class DashboardTestCase(unittest.TestCase):
 
     def test_widget_adding(self):
         """Should add a widget to the dashboard."""
-        dashboard = self.mk_dashboard()
+        dashboard = mk_dashboard()
         widget_config = self.mk_widget_config()
         dashboard.add_widget(widget_config)
 
@@ -125,7 +127,7 @@ class DashboardTestCase(unittest.TestCase):
         Should add a new row if there is no space for the widget being added on
         the current row.
         """
-        dashboard = self.mk_dashboard(widgets=[])
+        dashboard = mk_dashboard(widgets=[])
 
         dashboard.add_widget(self.mk_widget_config(width=8))
         self.assertEqual(len(dashboard.rows), 1)
@@ -138,3 +140,25 @@ class DashboardTestCase(unittest.TestCase):
         dashboard.add_widget(self.mk_widget_config(width=4))
         self.assertEqual(len(dashboard.rows), 2)
         self.assertEqual(dashboard.last_row.width, 4)
+
+
+class DashboardPageTestCase(unittest.TestCase):
+    def test_brand_rendering_for_shared_pages(self):
+        page = DashboardPage(mk_dashboard(), shared=True)
+        d = flattenString(None, page)
+
+        def assert_brand_rendering(response):
+            self.assertTrue('<a href="#" class="brand">' in response)
+
+        d.addCallback(assert_brand_rendering)
+        return d
+
+    def test_brand_rendering_for_non_shared_pages(self):
+        page = DashboardPage(mk_dashboard(), shared=False)
+        d = flattenString(None, page)
+
+        def assert_brand_rendering(response):
+            self.assertTrue('<a href="/" class="brand">' in response)
+
+        d.addCallback(assert_brand_rendering)
+        return d

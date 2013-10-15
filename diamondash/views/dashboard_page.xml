@@ -12,12 +12,11 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </a>
+
           <t:transparent t:render="brand_renderer" />
 
           <a t:render="brand_renderer" class="brand">
-            <t:attr name="href">
-              <t:slot name="brand_href_slot" />
-            </t:attr>
+            <t:attr name="href"><t:slot name="brand_href_slot" /></t:attr>
             diamondash
           </a>
         </div>
