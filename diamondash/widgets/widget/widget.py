@@ -13,6 +13,10 @@ class WidgetConfig(Config):
     MIN_COLUMN_SPAN = 3
     MAX_COLUMN_SPAN = 12
 
+    DEFAULTS = {
+        'width': MIN_COLUMN_SPAN
+    }
+
     @classmethod
     def parse_width(cls, width):
         """
@@ -33,10 +37,7 @@ class WidgetConfig(Config):
         name = utils.slugify(name)
         config['name'] = name
 
-        if 'width' not in config:
-            config['width'] = cls.MIN_COLUMN_SPAN
-        else:
-            config['width'] = cls.parse_width(config['width'])
+        config['width'] = cls.parse_width(config['width'])
 
         config['client_config'] = {
             'view': {},
