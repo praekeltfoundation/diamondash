@@ -1,7 +1,9 @@
-<% self.model.get('metrics').each(function(m) { %>
-<li class="legend-item" data-metric-id="<%= m.get('id') %>">
-  <span class="swatch"></span>
-  <span class="title"><%= m.get('title') %></span>
-  <span class="value"><%= self.format(x ? m.valueAt(x) : m.lastValue()) %></span>
-</li>
-<% }); %>
+<div class="row">
+  <% self.model.get('metrics').each(function(m) { %>
+    <div class="legend-item col-md-6" data-metric-id="<%= m.get('id') %>">
+      <span class="swatch"></span>
+      <span class="title"><%= m.get('title') %></span>
+      <span class="value"><%= self.format(x ? m.valueAt(x) : m.lastValue()) %></span>
+    </div>
+  <% }); %>
+</div>
