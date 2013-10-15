@@ -1,25 +1,12 @@
 diamondash.widgets = function() {
-  var structures = diamondash.components.structures,
-      utils = diamondash.utils;
+  var structures = diamondash.components.structures;
 
-  var WidgetRegistry = structures.Registry.extend({
-    processAdd: function(name, options) {
-      return _({}).defaults(options, {
-        view: 'diamondash.widgets.widget.WidgetView',
-        model: 'diamondash.widgets.widget.WidgetModel'
-      });
-    },
-
-    processGet: function(name, options) {
-      return {
-        view: utils.maybeByName(options.view),
-        model: utils.maybeByName(options.model)
-      };
-    }
-  });
+  var registry = {
+    models: new structures.Registry(),
+    views: new structures.Registry()
+  };
 
   return {
-    registry: new WidgetRegistry(),
-    WidgetRegistry: WidgetRegistry
+    registry: registry
   };
 }.call(this);

@@ -1,5 +1,6 @@
 diamondash.widgets.graph.models = function() {
-  var widget = diamondash.widgets.widget,
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget,
       structures = diamondash.components.structures,
       utils = diamondash.utils;
 
@@ -66,6 +67,8 @@ diamondash.widgets.graph.models = function() {
       'metrics': []
     },
   });
+
+  widgets.registry.models.add('graph', GraphModel);
 
   return {
     GraphModel: GraphModel,

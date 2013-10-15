@@ -102,10 +102,8 @@ diamondash.widgets.lvalue = function() {
     }
   });
 
-  widgets.registry.add('lvalue', {
-    model: LValueModel,
-    view: LValueView
-  });
+  widgets.registry.models.add('lvalue', LValueModel);
+  widgets.registry.views.add('lvalue', LValueView);
 
   return {
     LValueModel: LValueModel,
