@@ -22,15 +22,6 @@
 
 .graph .legend {
   text-align: left;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.graph .legend li {
-  width: 275px;
-  float: left;
-  margin: 2px 4px;
 }
 
 .graph .legend-item .swatch {
