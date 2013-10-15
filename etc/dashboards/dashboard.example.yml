@@ -85,10 +85,10 @@ widgets:
       - name: 'Big E'
         target: diamondash.test.big.e.last
 
-  - name: 'Small Metrics Hourly'
+  - <<: *graph
+    name: 'Small Metrics Hourly'
     time_range: '1h'
     bucket_size: '5m'
-    type: diamondash.widgets.graph.GraphWidget
     width: 6
     metrics: 
       - name: 'Small A'
@@ -102,10 +102,10 @@ widgets:
       - name: 'Small E'
         target: diamondash.test.small.e.last
 
-  - name: 'Small Metrics Daily'
+  - <<: *graph
+    name: 'Small Metrics Daily'
     time_range: '1d'
     bucket_size: '1h'
-    type: diamondash.widgets.graph.GraphWidget
     width: 6
     metrics: 
       - name: 'Small A'
