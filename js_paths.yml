@@ -26,6 +26,7 @@ diamondash:
       - 'diamondash/client/js/components/charts.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
+      - 'diamondash/widgets/dynamic/dynamic.js'
       - 'diamondash/widgets/graph/js/index.js'
       - 'diamondash/widgets/graph/js/models.js'
       - 'diamondash/widgets/graph/js/views.js'

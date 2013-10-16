@@ -1,8 +1,9 @@
 diamondash.widgets.lvalue = function() {
-  var widgets = diamondash.widgets;
+  var widgets = diamondash.widgets,
+      dynamic = diamondash.widgets.dynamic,
+      widget = diamondash.widgets.widget;
 
-  var LValueModel = widgets.widget.WidgetModel.extend({
-    isStatic: false
+  var LValueModel = dynamic.DynamicWidgetModel.extend({
   });
 
   var LastValueView = Backbone.View.extend({
@@ -43,7 +44,7 @@ diamondash.widgets.lvalue = function() {
     }
   });
 
-  var LValueView = widgets.widget.WidgetView.extend({
+  var LValueView = widget.WidgetView.extend({
     jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
