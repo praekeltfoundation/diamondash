@@ -45,12 +45,17 @@ diamondash.utils = function() {
     return values;
   }
 
+  function extend(superConstructor, proto, statics) {
+    return Backbone.Model.extend.call(superConstructor, proto, statics);
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap,
-    d3Map: d3Map
+    d3Map: d3Map,
+    extend: extend
   };
 }.call(this);
