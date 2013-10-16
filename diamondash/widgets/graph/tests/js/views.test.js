@@ -235,7 +235,6 @@ describe("diamondash.widgets.graph", function() {
 
     beforeEach(function() {
       graph = new views.GraphView({
-        dotted: true,
         el: $('<div>')
           .width(960)
           .height(64),
@@ -438,16 +437,7 @@ describe("diamondash.widgets.graph", function() {
 
       describe("if the graph is dotted", function() {
         beforeEach(function() {
-          testUtils.unregisterModels();
-
-          graph = new views.GraphView({
-            dotted: true,
-            el: $('<div>')
-              .width(960)
-              .height(64),
-            model: new models.GraphModel(
-              fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
-          });
+          graph.model.set('dotted', true);
         });
 
         it("should draw its dots", function() {
