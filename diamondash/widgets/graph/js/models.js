@@ -1,6 +1,6 @@
 diamondash.widgets.graph.models = function() {
   var widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget,
+      dynamic = diamondash.widgets.dynamic,
       structures = diamondash.components.structures,
       utils = diamondash.utils;
 
@@ -51,9 +51,7 @@ diamondash.widgets.graph.models = function() {
     }
   });
 
-  var GraphModel = widget.WidgetModel.extend({
-    isStatic: false,
-
+  var GraphModel = dynamic.DynamicWidgetModel.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'metrics',

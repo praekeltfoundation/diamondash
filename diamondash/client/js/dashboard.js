@@ -1,5 +1,6 @@
 diamondash.dashboard = function() {
   var widgets = diamondash.widgets,
+      dynamic = diamondash.widgets.dynamic,
       widget = diamondash.widgets.widget;
 
   function DashboardController(args) {
@@ -22,7 +23,10 @@ diamondash.dashboard = function() {
 
     config.widgets.forEach(function(widgetConfig) {
       var modelType = widgets.registry.models.get(widgetConfig.typeName);
+      if (!modelType) { modelType = widget.WidgetModel; }
+
       var viewType = widgets.registry.views.get(widgetConfig.typeName);
+      if (!viewType) { viewType = widget.WidgetView; }
 
       var model = new modelType(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
@@ -46,15 +50,20 @@ diamondash.dashboard = function() {
   };
 
   DashboardController.prototype = {
-    fetch: function() {
-      this.widgets.forEach(function(m) { return m.fetch(); });
+    fetchSnapshots: function() {
+      this.widgets.forEach(function(m) {
+        if (m instanceof dynamic.DynamicWidgetModel) {
+          m.fetchSnapshot();
+        }
+      });
     },
+
     start: function() {
       var self = this;
 
-      self.fetch();
+      self.fetchSnapshots();
       setInterval(
-        function() { self.fetch.call(self); },
+        function() { self.fetchSnapshots(); },
         this.requestInterval);
     }
   };

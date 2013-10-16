@@ -319,27 +319,14 @@ diamondash.widgets.widget = function() {
 
   var WidgetModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
-    isStatic: false,
-
-    _fetch: Backbone.Model.prototype.fetch,
-    fetch: function() {
-      if (!this.isStatic) {
-        this._fetch();
-      }
-    },
-
-    _parse: Backbone.Model.prototype.parse,
-    parse: function(response, options) {
-      if (response && !_.isEmpty(response)) {
-        return this._parse(response, options);
-      }
-    },
 
     url: function() {
-      return '/api/widgets/'
-        + this.get('dashboardName') + '/'
-        + this.get('name')
-        + '/snapshot';
+      return [
+        '/api',
+        'widgets',
+        this.get('dashboardName'),
+        this.get('name')
+      ].join('/');
     }
   });
 
@@ -360,6 +347,33 @@ diamondash.widgets.widget = function() {
   };
 }.call(this);
 
+diamondash.widgets.dynamic = function() {
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget;
+
+  var DynamicWidgetModel = widget.WidgetModel.extend({
+    snapshotUrl: function() {
+      return [
+        _(this).result('url'),
+        'snapshot'
+      ].join('/');
+    },
+
+    fetchSnapshot: function(options) {
+      options = options || {};
+      options.url = _(this).result('snapshotUrl');
+      
+      return this.fetch(options);
+    }
+  });
+
+  widgets.registry.models.add('dynamic', DynamicWidgetModel);
+
+  return {
+    DynamicWidgetModel: DynamicWidgetModel
+  };
+}.call(this);
+
 diamondash.widgets.graph = function() {
   return {
   };
@@ -367,7 +381,7 @@ diamondash.widgets.graph = function() {
 
 diamondash.widgets.graph.models = function() {
   var widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget,
+      dynamic = diamondash.widgets.dynamic,
       structures = diamondash.components.structures,
       utils = diamondash.utils;
 
@@ -418,9 +432,7 @@ diamondash.widgets.graph.models = function() {
     }
   });
 
-  var GraphModel = widget.WidgetModel.extend({
-    isStatic: false,
-
+  var GraphModel = dynamic.DynamicWidgetModel.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'metrics',
@@ -810,10 +822,11 @@ diamondash.widgets.graph.views = function() {
 }.call(this);
 
 diamondash.widgets.lvalue = function() {
-  var widgets = diamondash.widgets;
+  var widgets = diamondash.widgets,
+      dynamic = diamondash.widgets.dynamic,
+      widget = diamondash.widgets.widget;
 
-  var LValueModel = widgets.widget.WidgetModel.extend({
-    isStatic: false
+  var LValueModel = dynamic.DynamicWidgetModel.extend({
   });
 
   var LastValueView = Backbone.View.extend({
@@ -854,7 +867,7 @@ diamondash.widgets.lvalue = function() {
     }
   });
 
-  var LValueView = widgets.widget.WidgetView.extend({
+  var LValueView = widget.WidgetView.extend({
     jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
@@ -925,6 +938,7 @@ diamondash.widgets.lvalue = function() {
 
 diamondash.dashboard = function() {
   var widgets = diamondash.widgets,
+      dynamic = diamondash.widgets.dynamic,
       widget = diamondash.widgets.widget;
 
   function DashboardController(args) {
@@ -947,7 +961,10 @@ diamondash.dashboard = function() {
 
     config.widgets.forEach(function(widgetConfig) {
       var modelType = widgets.registry.models.get(widgetConfig.typeName);
+      if (!modelType) { modelType = widget.WidgetModel; }
+
       var viewType = widgets.registry.views.get(widgetConfig.typeName);
+      if (!viewType) { viewType = widget.WidgetView; }
 
       var model = new modelType(
         _({dashboardName: dashboardName}).extend(widgetConfig.model),
@@ -971,15 +988,20 @@ diamondash.dashboard = function() {
   };
 
   DashboardController.prototype = {
-    fetch: function() {
-      this.widgets.forEach(function(m) { return m.fetch(); });
+    fetchSnapshots: function() {
+      this.widgets.forEach(function(m) {
+        if (m instanceof dynamic.DynamicWidgetModel) {
+          m.fetchSnapshot();
+        }
+      });
     },
+
     start: function() {
       var self = this;
 
-      self.fetch();
+      self.fetchSnapshots();
       setInterval(
-        function() { self.fetch.call(self); },
+        function() { self.fetchSnapshots(); },
         this.requestInterval);
     }
   };
