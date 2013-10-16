@@ -6,10 +6,10 @@ describe("diamondash.dashboard", function(){
     utils.unregisterModels();
   });
 
-  describe("DashboardController", function(){
+  describe("DashboardController", function() {
     var DashboardController = diamondash.dashboard.DashboardController;
 
-    describe(".fromConfig()", function(){
+    describe(".fromConfig()", function() {
       var dashboard, config;
       
       before(function() {
