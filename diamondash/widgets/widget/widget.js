@@ -3,27 +3,14 @@ diamondash.widgets.widget = function() {
 
   var WidgetModel = Backbone.RelationalModel.extend({
     idAttribute: 'name',
-    isStatic: false,
-
-    _fetch: Backbone.Model.prototype.fetch,
-    fetch: function() {
-      if (!this.isStatic) {
-        this._fetch();
-      }
-    },
-
-    _parse: Backbone.Model.prototype.parse,
-    parse: function(response, options) {
-      if (response && !_.isEmpty(response)) {
-        return this._parse(response, options);
-      }
-    },
 
     url: function() {
-      return '/api/widgets/'
-        + this.get('dashboardName') + '/'
-        + this.get('name')
-        + '/snapshot';
+      return [
+        '/api',
+        'widgets',
+        this.get('dashboardName'),
+        this.get('name')
+      ].join('/');
     }
   });
 
@@ -33,6 +20,9 @@ diamondash.widgets.widget = function() {
 
   var WidgetView = Backbone.View.extend({
   });
+
+  widgets.registry.models.add('widget', WidgetModel);
+  widgets.registry.views.add('widget', WidgetView);
 
   return {
     WidgetModel: WidgetModel,
