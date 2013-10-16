@@ -13,7 +13,8 @@
     "d3": "~3.3.3",
     "bootstrap": "~3.0.0",
     "jquery": "~2.0.3",
-    "backbone-relational": "~0.8.6"
+    "backbone-relational": "~0.8.6",
+    "backbone.babysitter": "~0.0.6"
   },
   "devDependencies": {
     "chai": "~1.7.2",
