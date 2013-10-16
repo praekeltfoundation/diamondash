@@ -15,6 +15,7 @@ describe("diamondash.widgets.dynamic", function() {
 
       model = new dynamic.DynamicWidgetModel({
         name: 'widget-1',
+        type: 'dynamic',
         dashboardName: 'dashboard-1',
         foo: [1, 2, 3],
         bar: ['a', 'b', 'c']
@@ -47,6 +48,7 @@ describe("diamondash.widgets.dynamic", function() {
 
         assert.deepEqual(model.toJSON(), {
           name: 'widget-1',
+          type: 'dynamic',
           dashboardName: 'dashboard-1',
           foo: 'spam',
           bar: ['a', 'b', 'c']
