@@ -27,9 +27,7 @@ diamondash.widgets.widget = function() {
   widgets.registry.views.add('widget', WidgetView);
 
   widgets.registry.models.on('add', function(name, type) {
-    var objName = typeof type != 'string'
-      ? 'diamondash.widgets.registry.models.items.' + name
-      : type;
+    var objName = 'diamondash.widgets.registry.models.items.' + name;
 
     // Modifying something on the prototype and changing internal properties
     // set by backbone-relational is not ideal, but is the only way to

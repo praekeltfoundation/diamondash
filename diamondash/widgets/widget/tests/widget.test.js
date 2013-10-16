@@ -17,32 +17,16 @@ describe("diamondash.widgets.widget", function() {
       widgets.registry.models.remove('toy');
     });
 
-    describe(" if the registed model is an object reference", function() {
-      it("should add the sub-model type to WidgetModel", function() {
-        var model;
+    it("should add the sub-model type to WidgetModel", function() {
+      var model;
 
-        model = widget.WidgetModel.build({type: 'toy'});
-        assert(!(model instanceof ToyWidgetModel));
+      model = widget.WidgetModel.build({type: 'toy'});
+      assert(!(model instanceof ToyWidgetModel));
 
-        widgets.registry.models.add('toy', ToyWidgetModel);
+      widgets.registry.models.add('toy', ToyWidgetModel);
 
-        model = widget.WidgetModel.build({type: 'toy'});
-        assert(model instanceof ToyWidgetModel);
-      });
-    });
-
-    describe("if the registed model a string-based reference", function() {
-      it("should add the sub-model type to WidgetModel", function() {
-        var model;
-
-        model = widget.WidgetModel.build({type: 'toy'});
-        assert(!(model instanceof ToyWidgetModel));
-
-        widgets.registry.models.add('toy', ToyWidgetModel);
-
-        model = widget.WidgetModel.build({type: 'toy'});
-        assert(model instanceof ToyWidgetModel);
-      });
+      model = widget.WidgetModel.build({type: 'toy'});
+      assert(model instanceof ToyWidgetModel);
     });
   });
 
