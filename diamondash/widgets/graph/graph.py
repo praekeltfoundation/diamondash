@@ -42,7 +42,7 @@ class GraphWidgetConfig(DynamicWidgetConfig):
         config['backend'] = backend_config_cls.from_dict(config['backend'])
 
         config['client_config']['model'].update({
-            'step': bucket_size * 1000,
+            'step': bucket_size,
             'metrics': [
                 m['metadata']['client_config']
                 for m in config['backend']['metrics']]
@@ -91,7 +91,7 @@ class GraphWidget(DynamicWidget):
         for metric in metric_data:
             # x values are converted to milliseconds for client
             metric['datapoints'] = [{
-                'x': utils.to_client_interval(d['x']),
+                'x': d['x'],
                 'y': d['y']
             } for d in metric['datapoints']]
 
