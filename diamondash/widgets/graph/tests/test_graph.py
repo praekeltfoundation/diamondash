@@ -31,9 +31,9 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
     def test_parsing(self):
         config = GraphWidgetConfig.from_dict(mk_config_data())
 
-        self.assertEqual(config['time_range'], 86400)
+        self.assertEqual(config['time_range'], 86400000)
 
-        self.assertEqual(config['backend']['bucket_size'], 3600)
+        self.assertEqual(config['backend']['bucket_size'], 3600000)
         self.assertEqual(config['backend']['null_filter'], 'zeroize')
 
         m1_config, m2_config = config['backend']['metrics']
@@ -101,21 +101,29 @@ class GraphWidgetTestCase(unittest.TestCase):
         return d
 
     def test_snapshot_retrieval(self):
-        return self.assert_snapshot_retrieval([
+        self.widget.backend.set_response([
             {
                 'metadata': {'id': '0'},
                 'datapoints': [{'x': 0, 'y': 0},
-                               {'x': 2, 'y': 1},
-                               {'x': 3, 'y': 2}]
+                               {'x': 2000, 'y': 1},
+                               {'x': 3000, 'y': 2}]
             }, {
                 'metadata': {'id': '1'},
-                'datapoints': [{'x': 5, 'y': 4},
-                               {'x':  15, 'y': 1}]
+                'datapoints': [{'x': 5000, 'y': 4},
+                               {'x':  15000, 'y': 1}]
             }, {
                 'metadata': {'id': '2'},
                 'datapoints': []
             }
-        ], {
+        ])
+
+        d = self.widget.get_snapshot()
+
+        self.assertEqual(
+            self.widget.backend.get_requests(),
+            [{'from_time': 1340789597000}])
+
+        d.addCallback(self.assertEqual, {
             'domain': (0, 15000),
             'range': (0, 4),
             'metrics': [
@@ -135,23 +143,39 @@ class GraphWidgetTestCase(unittest.TestCase):
                     'datapoints': []
                 }
             ]
-        }, 1340789597)
+        })
+
+        d.callback(None)
+        return d
 
     def test_snapshot_retrieval_for_empty_datapoints(self):
-        return self.assert_snapshot_retrieval([
+        self.widget.backend.set_response([
             {'metadata': {'id': '0'}, 'datapoints': []},
             {'metadata': {'id': '1'}, 'datapoints': []},
-            {'metadata': {'id': '2'}, 'datapoints': []}], {
+            {'metadata': {'id': '2'}, 'datapoints': []}
+        ])
+
+        d = self.widget.get_snapshot()
+
+        self.assertEqual(
+            self.widget.backend.get_requests(),
+            [{'from_time': 1340789597000}])
+
+        d.addCallback(self.assertEqual, {
             'domain': (0, 0),
             'range': (0, 0),
             'metrics': [
                 {'id': '0', 'datapoints': []},
                 {'id': '1', 'datapoints': []},
                 {'id': '2', 'datapoints': []}]
-        }, 1340789597)
+        })
+
+        d.callback(None)
+        return d
 
     def test_snapshot_retrieval_for_align_to_start(self):
         self.widget.config['align_to_start'] = True
         self.widget.get_snapshot()
-        self.assertEqual(self.widget.backend.get_requests(),
-                         [{'from_time': 1340841600}])
+        self.assertEqual(
+            self.widget.backend.get_requests(),
+            [{'from_time': 1340841600000}])
