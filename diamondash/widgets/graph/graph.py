@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from diamondash import utils
 from diamondash.config import ConfigError
 from diamondash.widgets.dynamic import DynamicWidgetConfig, DynamicWidget
@@ -44,7 +42,7 @@ class GraphWidgetConfig(DynamicWidgetConfig):
         config['client_config']['model'].update({
             'step': bucket_size,
             'metrics': [
-                m['metadata']['client_config']
+                m['client_config']
                 for m in config['backend']['metrics']]
         })
         config['client_config']['view'].update({
@@ -63,22 +61,13 @@ class GraphWidgetConfig(DynamicWidgetConfig):
         if 'name' not in config:
             raise ConfigError('Every graph metric needs a name.')
 
-        id = str(uuid4())
         name = config.pop('name')
-        title = config.pop('title', name)
-        name = utils.slugify(name)
+        config['title'] = config.pop('title', name)
+        config['name'] = utils.slugify(name)
 
-        client_config = {
-            'id': id,
-            'name': name,
-            'title': title
-        }
-
-        config['metadata'] = {
-            'id': id,
-            'name': name,
-            'title': title,
-            'client_config': client_config
+        config['client_config'] = {
+            'name': config['name'],
+            'title': config['title']
         }
 
         return config
@@ -103,7 +92,7 @@ class GraphWidget(DynamicWidget):
         range = (y_min, max(y_vals))
 
         output_metric_data = [{
-            'id': m['metadata']['id'],
+            'id': m['id'],
             'datapoints': m['datapoints'],
         } for m in metric_data]
 

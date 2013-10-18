@@ -5,17 +5,17 @@ from twisted.trial import unittest
 
 from diamondash import utils
 from diamondash.config import ConfigError
-from diamondash.widgets.graph import graph
+from diamondash.backends import base as backends
 from diamondash.widgets.graph import GraphWidgetConfig, GraphWidget
 
 
 def mk_config_data(**overrides):
     return utils.add_dicts({
-        'name': u'test-graph-widget',
+        'name': 'test-graph-widget',
         'graphite_url': 'fake_graphite_url',
         'metrics': [
-            {'name': u'random sum', 'target': 'vumi.random.count.sum'},
-            {'name': u'random avg', 'target': 'vumi.random.timer.avg'}],
+            {'name': 'random sum', 'target': 'vumi.random.count.sum'},
+            {'name': 'random avg', 'target': 'vumi.random.timer.avg'}],
         'time_range': '1d',
         'bucket_size': '1h',
         'null_filter': 'zeroize',
@@ -26,7 +26,7 @@ def mk_config_data(**overrides):
 class GraphWidgetConfigTestCase(unittest.TestCase):
     def setUp(self):
         self.uuid_counter = count()
-        self.patch(graph, 'uuid4', lambda: next(self.uuid_counter))
+        self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
 
     def test_parsing(self):
         config = GraphWidgetConfig.from_dict(mk_config_data())
@@ -38,33 +38,25 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
 
         m1_config, m2_config = config['backend']['metrics']
         self.assertEqual(m1_config['target'], 'vumi.random.count.sum')
-        self.assertEqual(m1_config['metadata'], {
-            'id': '0',
+        self.assertEqual(m1_config['name'], 'random-sum')
+        self.assertEqual(m1_config['title'], 'random sum')
+        self.assertEqual(m1_config['client_config'], {
             'name': 'random-sum',
             'title': 'random sum',
-            'client_config': {
-                'id': '0',
-                'name': 'random-sum',
-                'title': 'random sum',
-            },
         })
 
         self.assertEqual(m2_config['target'], 'vumi.random.timer.avg')
-        self.assertEqual(m2_config['metadata'], {
-            'id': '1',
+        self.assertEqual(m2_config['name'], 'random-avg')
+        self.assertEqual(m2_config['title'], 'random avg')
+        self.assertEqual(m2_config['client_config'], {
             'name': 'random-avg',
             'title': 'random avg',
-            'client_config': {
-                'id': '1',
-                'name': 'random-avg',
-                'title': 'random avg',
-            },
         })
 
         self.assertEqual(
             config['client_config']['model']['metrics'],
-            [{'id': '0', 'name': 'random-sum', 'title': 'random sum'},
-             {'id': '1', 'name': 'random-avg', 'title': 'random avg'}])
+            [{'name': 'random-sum', 'title': 'random sum'},
+             {'name': 'random-avg', 'title': 'random avg'}])
         self.assertEqual(config['client_config']['model']['step'], 3600000)
 
     def test_parsing_for_no_metrics(self):
@@ -77,7 +69,7 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
 class GraphWidgetTestCase(unittest.TestCase):
     def setUp(self):
         self.uuid_counter = count()
-        self.patch(graph, 'uuid4', lambda: next(self.uuid_counter))
+        self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
 
         self.stub_time(1340875997)
         self.widget = self.mk_widget()
@@ -101,21 +93,21 @@ class GraphWidgetTestCase(unittest.TestCase):
         return d
 
     def test_snapshot_retrieval(self):
-        self.widget.backend.set_response([
-            {
-                'metadata': {'id': '0'},
-                'datapoints': [{'x': 0, 'y': 0},
-                               {'x': 2000, 'y': 1},
-                               {'x': 3000, 'y': 2}]
-            }, {
-                'metadata': {'id': '1'},
-                'datapoints': [{'x': 5000, 'y': 4},
-                               {'x':  15000, 'y': 1}]
-            }, {
-                'metadata': {'id': '2'},
-                'datapoints': []
-            }
-        ])
+        self.widget.backend.set_response([{
+            'id': '0',
+            'datapoints': [
+                {'x': 0, 'y': 0},
+                {'x': 2000, 'y': 1},
+                {'x': 3000, 'y': 2}]
+        }, {
+            'id': '1',
+            'datapoints': [
+                {'x': 5000, 'y': 4},
+                {'x':  15000, 'y': 1}]
+        }, {
+            'id': '2',
+            'datapoints': []
+        }])
 
         d = self.widget.get_snapshot()
 
@@ -150,9 +142,9 @@ class GraphWidgetTestCase(unittest.TestCase):
 
     def test_snapshot_retrieval_for_empty_datapoints(self):
         self.widget.backend.set_response([
-            {'metadata': {'id': '0'}, 'datapoints': []},
-            {'metadata': {'id': '1'}, 'datapoints': []},
-            {'metadata': {'id': '2'}, 'datapoints': []}
+            {'id': '0', 'datapoints': []},
+            {'id': '1', 'datapoints': []},
+            {'id': '2', 'datapoints': []}
         ])
 
         d = self.widget.get_snapshot()
