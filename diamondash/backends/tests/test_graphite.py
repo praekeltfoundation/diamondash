@@ -1,5 +1,6 @@
 import json
 import time
+from itertools import count
 from urlparse import urlsplit, parse_qs
 
 from twisted.internet.defer import Deferred
@@ -9,6 +10,7 @@ from twisted.trial import unittest
 from diamondash import utils
 from diamondash.config import ConfigError
 
+from diamondash.backends import base as backends
 from diamondash.backends.graphite import (
     GraphiteBackendConfig, GraphiteBackend, GraphiteMetricConfig,
     guess_aggregation_method)
@@ -95,6 +97,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         {'target': 'b.sum', 'datapoints': M2_RAW_DATAPOINTS}])
 
     def setUp(self):
+        self.uuid_counter = count()
+        self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
+
         config = GraphiteBackendConfig.from_dict(mk_backend_config_data())
         self.backend = GraphiteBackend(config)
 
@@ -160,12 +165,13 @@ class GraphiteBackendTestCase(unittest.TestCase):
                 self.last_requested_url,
                 {'from': ['3600'], 'until': ['7200']})
 
-            self.assertEqual(
-                result,
-                [{'metadata': {'name': 'max of a'},
-                  'datapoints': self.M1_PROCESSED_DATAPOINTS},
-                 {'metadata': {'name': 'sum of b'},
-                  'datapoints': self.M2_PROCESSED_DATAPOINTS}])
+            self.assertEqual(result, [{
+                'id': '0',
+                'datapoints': self.M1_PROCESSED_DATAPOINTS
+            }, {
+                'id': '1',
+                'datapoints': self.M2_PROCESSED_DATAPOINTS
+            }])
 
         deferred_result.addCallback(assert_retrieved_data)
         deferred_result.callback(None)
@@ -177,12 +183,6 @@ class GraphiteMetricConfigTestCase(unittest.TestCase):
         config = GraphiteMetricConfig.from_dict(mk_metric_config_data())
         self.assertEqual(config['bucket_size'], 3600000)
         self.assertEqual(config['metadata'], {'name': 'max of a'})
-
-    def test_parsing_for_no_target(self):
-        config = mk_metric_config_data()
-        del config['target']
-
-        self.assertRaises(ConfigError, GraphiteMetricConfig.parse, {})
 
 
 class GraphiteMetricTestCase(unittest.TestCase):

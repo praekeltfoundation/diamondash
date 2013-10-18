@@ -99,8 +99,8 @@ class GraphiteBackend(Backend):
                 datapoints_by_target.get(metric.config['target'], []),
                 **request_params)
             output.append({
+                'id': metric.config['id'],
                 'datapoints': datapoints,
-                'metadata': metric.config['metadata']
             })
 
         return output
@@ -126,8 +126,7 @@ class GraphiteMetricConfig(MetricConfig):
 
     @classmethod
     def parse(cls, config):
-        if 'target' not in config:
-            raise ConfigError("All metrics need a target")
+        config = super(GraphiteMetricConfig, cls).parse(config)
 
         config['bucket_size'] = utils.parse_interval(config['bucket_size'])
 
@@ -135,7 +134,6 @@ class GraphiteMetricConfig(MetricConfig):
             'agg_method',
             guess_aggregation_method(config['target']))
 
-        config.setdefault('metadata', {})
         return config
 
 
