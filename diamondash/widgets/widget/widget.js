@@ -8,9 +8,8 @@ diamondash.widgets.widget = function() {
 
     url: function() {
       return [
-        '/api',
-        'widgets',
-        this.get('dashboardName'),
+        '/api/widgets',
+        this.get('dashboard').get('name'),
         this.get('name')
       ].join('/');
     }
