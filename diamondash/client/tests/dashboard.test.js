@@ -37,8 +37,8 @@ describe("diamondash.dashboard", function(){
       widgets.registry.models.add('static_toy', StaticToyWidgetModel);
       widgets.registry.models.add('dynamic_toy', DynamicToyWidgetModel);
 
-      var data = fixtures.get('diamondash.dashboard.DashboardModel:simple');
-      model = new dashboard.DashboardModel(data);
+      model = new dashboard.DashboardModel(fixtures.get(
+        'diamondash.dashboard.DashboardModel:static-and-dynamic'));
 
       widget2 = model.get('widgets').get('widget-2');
       widget4 = model.get('widgets').get('widget-4');

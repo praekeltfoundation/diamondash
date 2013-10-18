@@ -1,4 +1,4 @@
-diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:simple', {
+diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:static-and-dynamic', {
   name: 'dashboard-1',
   poll_interval: 50,
   widgets: [{
