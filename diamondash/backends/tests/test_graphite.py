@@ -184,12 +184,6 @@ class GraphiteMetricConfigTestCase(unittest.TestCase):
         self.assertEqual(config['bucket_size'], 3600000)
         self.assertEqual(config['metadata'], {'name': 'max of a'})
 
-    def test_parsing_for_no_target(self):
-        config = mk_metric_config_data()
-        del config['target']
-
-        self.assertRaises(ConfigError, GraphiteMetricConfig.parse, {})
-
 
 class GraphiteMetricTestCase(unittest.TestCase):
     def test_guess_aggregation_method(self):
