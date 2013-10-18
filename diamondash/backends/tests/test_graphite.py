@@ -47,12 +47,12 @@ class GraphiteBackendConfigTestCase(unittest.TestCase):
 
         m1_config, m2_config = config['metrics']
         self.assertEqual(m1_config['target'], 'a.last')
-        self.assertEqual(m1_config['bucket_size'], 300)
+        self.assertEqual(m1_config['bucket_size'], 300000)
         self.assertEqual(m1_config['time_aligner'], 'round')
         self.assertEqual(m1_config['null_filter'], 'zeroize')
 
         self.assertEqual(m2_config['target'], 'b.sum')
-        self.assertEqual(m2_config['bucket_size'], 300)
+        self.assertEqual(m2_config['bucket_size'], 300000)
         self.assertEqual(m2_config['time_aligner'], 'round')
         self.assertEqual(m2_config['null_filter'], 'skip')
 
@@ -65,8 +65,9 @@ class GraphiteBackendConfigTestCase(unittest.TestCase):
 
 class GraphiteBackendTestCase(unittest.TestCase):
     TIME = 10800  # 3 hours since the unix epoch
-    FROM_TIME = -7200  # 2 hours from 'now'
-    UNTIL_TIME = -3600  # 1 hour from 'now'
+
+    FROM_TIME = -7200000  # 2 hours from 'now'
+    UNTIL_TIME = -3600000  # 1 hour from 'now'
 
     M1_RAW_DATAPOINTS = [
         [None, 3773],
@@ -74,9 +75,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [10.0, 5700],
         [12.0, 7114]]
     M1_PROCESSED_DATAPOINTS = [
-        {'x': 3600, 'y': 0},
-        {'x': 5700, 'y': 10.0},
-        {'x': 7200, 'y': 12.0}]
+        {'x': 3600000, 'y': 0},
+        {'x': 5700000, 'y': 10.0},
+        {'x': 7200000, 'y': 12.0}]
 
     M2_RAW_DATAPOINTS = [
         [12.0, 3724],
@@ -85,9 +86,9 @@ class GraphiteBackendTestCase(unittest.TestCase):
         [None, 4829],
         [11.0, 6075]]
     M2_PROCESSED_DATAPOINTS = [
-        {'x': 3600, 'y': 26.0},
-        {'x': 4500, 'y': 25.0},
-        {'x': 6000, 'y': 11.0}]
+        {'x': 3600000, 'y': 26.0},
+        {'x': 4500000, 'y': 25.0},
+        {'x': 6000000, 'y': 11.0}]
 
     RESPONSE_DATA = json.dumps([
         {'target': 'a.last', 'datapoints': M1_RAW_DATAPOINTS},
@@ -138,15 +139,15 @@ class GraphiteBackendTestCase(unittest.TestCase):
 
     def test_request_url_building(self):
         self.assert_request_url(self.backend.build_request_url(
-            **{'from_time': '3600'}),
+            **{'from_time': 3600000}),
             {'from': ['3600']})
 
         self.assert_request_url(self.backend.build_request_url(
-            **{'until_time': '3600'}),
+            **{'until_time': 3600000}),
             {'until': ['3600']})
 
         self.assert_request_url(self.backend.build_request_url(
-            **{'from_time': '7200', 'until_time': '3600'}),
+            **{'from_time': 7200000, 'until_time': 3600000}),
             {'from': ['7200'], 'until': ['3600']})
 
     def test_data_retrieval(self):
@@ -174,7 +175,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
 class GraphiteMetricConfigTestCase(unittest.TestCase):
     def test_parsing(self):
         config = GraphiteMetricConfig.from_dict(mk_metric_config_data())
-        self.assertEqual(config['bucket_size'], 3600)
+        self.assertEqual(config['bucket_size'], 3600000)
         self.assertEqual(config['metadata'], {'name': 'max of a'})
 
     def test_parsing_for_no_target(self):
