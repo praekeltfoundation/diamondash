@@ -23,7 +23,7 @@ class LValueWidgetConfigTestCase(unittest.TestCase):
     def test_parsing(self):
         config = LValueWidgetConfig.from_dict(mk_config_data())
 
-        self.assertEqual(config['backend']['bucket_size'], 5)
+        self.assertEqual(config['backend']['bucket_size'], 5000)
         self.assertEqual(config['backend']['time_aligner'], 'floor')
 
         metric_config, = config['backend']['metrics']
@@ -58,12 +58,12 @@ class LValueWidgetTestCase(unittest.TestCase):
         widget.backend.set_response([{
             'target': 'some.target',
             'datapoints': [
-                {'x': 1340875975, 'y': 1346269.0},
-                {'x': 1340875980, 'y': 2178309.0},
-                {'x': 1340875985, 'y': 3524578.0},
-                {'x': 1340875990, 'y': 5702887.0},
-                {'x': 1340875995, 'y': 9227465.0},
-                {'x': 1340876000, 'y': 0.0}
+                {'x': 1340875975000, 'y': 1346269.0},
+                {'x': 1340875980000, 'y': 2178309.0},
+                {'x': 1340875985000, 'y': 3524578.0},
+                {'x': 1340875990000, 'y': 5702887.0},
+                {'x': 1340875995000, 'y': 9227465.0},
+                {'x': 1340876000000, 'y': 0.0}
             ]
         }])
 
@@ -72,11 +72,11 @@ class LValueWidgetTestCase(unittest.TestCase):
         def assert_snapshot_retrieval(result):
             self.assertEqual(
                 widget.backend.get_requests(),
-                [{'from_time': 1340875990}])
+                [{'from_time': 1340875990000}])
 
             self.assertEqual(result, {
                 'from': 1340875995000,
-                'to': 1340875999000,
+                'to': 1340875999999,
                 'last': 9227465.0,
                 'prev': 5702887.0,
             })
