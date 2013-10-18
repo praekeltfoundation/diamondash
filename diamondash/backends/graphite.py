@@ -44,17 +44,6 @@ class GraphiteBackendConfig(BackendConfig):
 class GraphiteBackend(Backend):
     CONFIG_CLS = GraphiteBackendConfig
 
-    # Using this for three reasons:
-    # 1. Params such as 'from' are reserved words.
-    # 2. Eventually, if and when we support multiple backends, we will need a
-    # standard set of param names that can be converted to the param names
-    # needed in requests to a particular backend.
-    # 3. Allows params not supported by the backend to be excluded.
-    REQUEST_PARAMS_MAP = {
-        'from_time': 'from',
-        'until_time': 'until',
-    }
-
     def __init__(self, config):
         super(GraphiteBackend, self).__init__(config)
 
@@ -65,9 +54,12 @@ class GraphiteBackend(Backend):
             self.add_metric(metric_config)
 
     def build_request_params(self, **params):
-        req_params = dict(
-            (req_k, params[k])
-            for k, req_k in self.REQUEST_PARAMS_MAP.iteritems() if k in params)
+        req_params = {}
+        if 'from_time' in params:
+            req_params['from'] = int(params['from_time'] / 1000)
+        if 'until_time' in params:
+            req_params['until'] = int(params['until_time'] / 1000)
+
         req_params.update({
             'format': 'json',
             'target': [m.aliased_target() for m in self.metrics]
@@ -113,16 +105,12 @@ class GraphiteBackend(Backend):
 
         return output
 
-    @staticmethod
-    def parse_time(t):
-        return utils.relative_to_now(t) if t < 0 else t
-
     def get_data(self, **params):
         if 'from_time' in params:
-            params['from_time'] = self.parse_time(params['from_time'])
+            params['from_time'] = utils.absolute_time(params['from_time'])
 
         if 'until_time' in params:
-            params['until_time'] = self.parse_time(params['until_time'])
+            params['until_time'] = utils.absolute_time(params['until_time'])
 
         request_url = self.build_request_url(**params)
         d = client.getPage(request_url)
@@ -181,7 +169,7 @@ class GraphiteMetric(Metric):
         filtering), and returns the processed datapoints.
         """
         # convert to internal format
-        datapoints = [{'x': x, 'y': y} for y, x in datapoints]
+        datapoints = [{'x': x * 1000, 'y': y} for y, x in datapoints]
         datapoints = self.null_filter(datapoints)
 
         if 'from_time' in params:

@@ -33,10 +33,10 @@ class UtilsTestCase(unittest.TestCase):
         """
         self.assertEqual(2, utils.parse_interval(2))
         self.assertEqual(2, utils.parse_interval("2"))
-        self.assertEqual(2, utils.parse_interval("2s"))
-        self.assertEqual(120, utils.parse_interval("2m"))
-        self.assertEqual(7200, utils.parse_interval("2h"))
-        self.assertEqual(86400 * 2, utils.parse_interval("2d"))
+        self.assertEqual(2 * 1000, utils.parse_interval("2s"))
+        self.assertEqual(120 * 1000, utils.parse_interval("2m"))
+        self.assertEqual(7200 * 1000, utils.parse_interval("2h"))
+        self.assertEqual(86400 * 1000 * 2, utils.parse_interval("2d"))
 
     def test_add_dicts(self):
         original = {'a': 1}

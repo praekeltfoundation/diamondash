@@ -36,7 +36,6 @@ class DashboardConfig(Config):
 
         # request interval is converted to milliseconds for client side
         request_interval = utils.parse_interval(config.pop('request_interval'))
-        request_interval = utils.to_client_interval(request_interval)
 
         config['client_config'] = {
             'name': name,

@@ -9,11 +9,6 @@ from urlparse import urlparse
 from twisted.internet import reactor
 from twisted.web.client import HTTPClientFactory
 
-# The internal representation of intervals in diamondash is seconds.
-# This multiplier is used to convert the internal interval representation to
-# what is needed by the client side
-CLIENT_INTERVAL_MULTIPLIER = 1000  # seconds -> milliseconds
-
 _punct_re = re.compile(r'[^a-zA-Z0-9]+')
 _number_suffixes = ['', 'K', 'M', 'B', 'T']
 _eps = 0.0001
@@ -66,16 +61,16 @@ def load_class_by_string(class_path):
 def parse_interval(interval):
     """
     Recognise 's', 'm', 'h', 'd' suffixes as seconds, minutes, hours and days.
-    Return integer seconds.
+    Return integer in milliseconds (diamondash's internal time format).
     """
     if not isinstance(interval, basestring):
         # It isn't a string, so there's nothing to parse
         return interval
     suffixes = {
-        's': 1,
-        'm': 60,
-        'h': 3600,
-        'd': 86400,
+        's': 1000,
+        'm': 60000,
+        'h': 3600000,
+        'd': 86400000,
     }
     try:
         for suffix, multiplier in suffixes.items():
@@ -101,19 +96,15 @@ def add_dicts(*dicts):
 
 
 def now():
-    return int(time.time())
+    return int(time.time()) * 1000
 
 
 def relative_to_now(t):
     return now() + t
 
 
-def to_client_interval(t):
-    """
-    Convert time interval from interal representation to representation used by
-    client side
-    """
-    return t * CLIENT_INTERVAL_MULTIPLIER
+def absolute_time(t):
+    return relative_to_now(t) if t < 0 else t
 
 
 def http_request(url, data=None, headers={}, method='GET'):

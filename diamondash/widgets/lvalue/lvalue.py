@@ -50,8 +50,8 @@ class LValueWidget(DynamicWidget):
         # representation (seconds) to the representation used by the client
         # side (milliseconds).
         return {
-            'from': utils.to_client_interval(last['x']),
-            'to': utils.to_client_interval(last['x'] + time_range - 1),
+            'from': last['x'],
+            'to': last['x'] + time_range - 1,
             'last': last['y'],
             'prev': prev['y'],
         }
