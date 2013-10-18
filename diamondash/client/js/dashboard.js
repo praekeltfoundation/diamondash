@@ -60,11 +60,16 @@ diamondash.dashboard = function() {
 
       this.model.get('widgets').each(function(w) {
         this.widgets.addNew({
-          el: '#' + w.id,
+          el: this.$('#' + w.id),
           model: w
         });
       }, this);
     },
+
+    render: function() {
+      this.widgets.invoke('render');
+      return this;
+    }
   });
 
   return {

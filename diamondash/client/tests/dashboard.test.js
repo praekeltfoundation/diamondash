@@ -20,16 +20,6 @@ describe("diamondash.dashboard", function(){
     var StaticToyWidgetModel = widget.WidgetModel.extend();
     var DynamicToyWidgetModel = dynamic.DynamicWidgetModel.extend();
 
-    function assertSnapshots(responses, done) {
-      return function(req) {
-        var idx = expectedUrls.indexOf(req.url);
-        assert(idx > -1);
-
-        expectedUrls.splice(idx, 1);
-        expectedUrls.length || done();
-      };
-    }
-
     beforeEach(function() {
       clock = sinon.useFakeTimers();
       server = sinon.fakeServer.create();
@@ -173,6 +163,43 @@ describe("diamondash.dashboard", function(){
 
         clock.tick(50);
         assert.equal(polls, 2);
+      });
+    });
+  });
+
+  describe(".DashboardView", function() {
+    var view;
+
+    var ToyWidgetView = Backbone.View.extend({
+      render: function() {
+        this.$el.text(this.model.get('stuff'));
+      }
+    });
+
+    beforeEach(function() {
+      widgets.registry.views.add('toy', ToyWidgetView);
+
+      view = new dashboard.DashboardView({
+        el: JST[
+          'diamondash/client/tests/fixtures/dashboard.simple.fixture.jst'],
+        model: new dashboard.DashboardModel(fixtures.get(
+          'diamondash.dashboard.DashboardModel:simple'))
+      });
+    });
+
+    afterEach(function() {
+      widgets.registry.views.remove('toy');
+    });
+
+    describe(".render()", function() {
+      it("should render its widgets", function() {
+        assert.equal(view.$('#widget-1').text(), '');
+        assert.equal(view.$('#widget-2').text(), '');
+
+        view.render();
+
+        assert.equal(view.$('#widget-1').text(), 'foo');
+        assert.equal(view.$('#widget-2').text(), 'bar');
       });
     });
   });
