@@ -36,28 +36,14 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
         self.assertEqual(config['backend']['bucket_size'], 3600000)
         self.assertEqual(config['backend']['null_filter'], 'zeroize')
 
-        m1_config, m2_config = config['backend']['metrics']
+        m1_config, m2_config = config['metrics']
         self.assertEqual(m1_config['target'], 'vumi.random.count.sum')
         self.assertEqual(m1_config['name'], 'random-sum')
         self.assertEqual(m1_config['title'], 'random sum')
-        self.assertEqual(m1_config['client_config'], {
-            'name': 'random-sum',
-            'title': 'random sum',
-        })
 
         self.assertEqual(m2_config['target'], 'vumi.random.timer.avg')
         self.assertEqual(m2_config['name'], 'random-avg')
         self.assertEqual(m2_config['title'], 'random avg')
-        self.assertEqual(m2_config['client_config'], {
-            'name': 'random-avg',
-            'title': 'random avg',
-        })
-
-        self.assertEqual(
-            config['client_config']['model']['metrics'],
-            [{'name': 'random-sum', 'title': 'random sum'},
-             {'name': 'random-avg', 'title': 'random avg'}])
-        self.assertEqual(config['client_config']['model']['step'], 3600000)
 
     def test_parsing_for_no_metrics(self):
         config = mk_config_data()

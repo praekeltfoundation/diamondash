@@ -1,6 +1,6 @@
 name: 'Dashboard 1'
 
-request_interval: '30s'
+poll_interval: '30s'
 
 widgets:
   - name: 'Dashboard 1 Widget 1'

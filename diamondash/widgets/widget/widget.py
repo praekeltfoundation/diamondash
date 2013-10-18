@@ -42,12 +42,6 @@ class WidgetConfig(Config):
 
         config['width'] = cls.parse_width(config['width'])
 
-        config['client_config'] = {
-            'view': {},
-            'model': {'name': name},
-            'typeName': cls.TYPE_NAME,
-        }
-
         return config
 
 

@@ -16,12 +16,6 @@ class WidgetConfigTestCase(unittest.TestCase):
         self.assertEqual(config['title'], 'Test Widget')
         self.assertEqual(config['width'], 4)
 
-        self.assertEqual(config['client_config'], {
-            'model': {'name': 'test-widget'},
-            'view': {},
-            'typeName': 'widget',
-        })
-
     def test_parsing_for_no_name(self):
         """
         Should raise an exception when given widget dashboard config without a
