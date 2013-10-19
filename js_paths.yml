@@ -7,6 +7,7 @@ vendor:
       - 'bower_components/backbone-relational/backbone-relational.js'
       - 'bower_components/d3/d3.js'
       - 'bower_components/backbone.babysitter/lib/backbone.babysitter.js'
+      - 'bower_components/layoutmanager/backbone.layoutmanager.js'
     dest: 'diamondash/public/js/vendor.js'
   css:
     src:
