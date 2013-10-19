@@ -5,6 +5,7 @@ diamondash.widgets.widget = function() {
     idAttribute: 'name',
 
     subModelTypes: {},
+    subModelTypeAttribute: 'type_name',
 
     url: function() {
       return [

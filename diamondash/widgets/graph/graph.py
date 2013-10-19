@@ -26,20 +26,19 @@ class GraphWidgetConfig(DynamicWidgetConfig):
                 "Graph Widget '%s' needs metrics." % config['name'])
 
         config['time_range'] = utils.parse_interval(config['time_range'])
-        bucket_size = utils.parse_interval(config.pop('bucket_size'))
+        config['bucket_size'] = utils.parse_interval(config['bucket_size'])
 
         config['backend'].update({
-            'bucket_size': bucket_size,
+            'bucket_size': config['bucket_size'],
             'metrics': [cls.parse_metric(m) for m in config.pop('metrics')],
         })
-
-        config['metrics'] = config['backend']['metrics']
 
         if 'null_filter' in config:
             config['backend']['null_filter'] = config.pop('null_filter')
 
         backend_config_cls = cls.for_type(config['backend']['type'])
         config['backend'] = backend_config_cls.from_dict(config['backend'])
+        config['metrics'] = config['backend']['metrics']
 
         return config
 

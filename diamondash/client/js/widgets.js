@@ -9,7 +9,7 @@ diamondash.widgets = function() {
 
   var WidgetViewSet = utils.extend(Backbone.ChildViewContainer, {
     make: function(options) {
-      var typeName = options.model.get('type');
+      var typeName = options.model.get('type_name');
       var type = registry.views.get(typeName);
       type = type || diamondash.widgets.widget.WidgetView;
       return new type(options);

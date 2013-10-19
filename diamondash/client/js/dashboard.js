@@ -32,11 +32,10 @@ diamondash.dashboard = function() {
     },
 
     poll: function(options) {
-      var self = this;
-
       if (this.pollHandle === null) {
         this.fetchSnapshots(options);
 
+        var self = this;
         this.pollHandle = setInterval(
           function() { self.fetchSnapshots(); },
           this.get('poll_interval'));
@@ -48,6 +47,7 @@ diamondash.dashboard = function() {
     stopPolling: function() {
       if (this.pollHandle !== null) {
         clearInterval(this.pollHandle);
+        this.pollHandle = null;
       }
 
       return this;

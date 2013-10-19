@@ -20,12 +20,12 @@ describe("diamondash.widgets.widget", function() {
     it("should add the sub-model type to WidgetModel", function() {
       var model;
 
-      model = widget.WidgetModel.build({type: 'toy'});
+      model = widget.WidgetModel.build({type_name: 'toy'});
       assert(!(model instanceof ToyWidgetModel));
 
       widgets.registry.models.add('toy', ToyWidgetModel);
 
-      model = widget.WidgetModel.build({type: 'toy'});
+      model = widget.WidgetModel.build({type_name: 'toy'});
       assert(model instanceof ToyWidgetModel);
     });
   });
@@ -42,7 +42,7 @@ describe("diamondash.widgets.widget", function() {
     it("should remove the sub-model type from WidgetModel", function() {
       widgets.registry.models.remove('toy');
 
-      var model = widget.WidgetModel.build({type: 'toy'});
+      var model = widget.WidgetModel.build({type_name: 'toy'});
       assert(!(model instanceof ToyWidgetModel));
     });
   });

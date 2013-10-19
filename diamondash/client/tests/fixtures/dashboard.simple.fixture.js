@@ -3,11 +3,11 @@ diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:simple', {
   poll_interval: 50,
   widgets: [{
     name: 'widget-1',
-    type: 'toy',
+    type_name: 'toy',
     stuff: 'foo'
   }, {
     name: 'widget-2',
-    type: 'toy',
+    type_name: 'toy',
     stuff: 'bar'
   }]
 });

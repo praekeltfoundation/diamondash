@@ -32,6 +32,7 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
         config = GraphWidgetConfig.from_dict(mk_config_data())
 
         self.assertEqual(config['time_range'], 86400000)
+        self.assertEqual(config['bucket_size'], 3600000)
 
         self.assertEqual(config['backend']['bucket_size'], 3600000)
         self.assertEqual(config['backend']['null_filter'], 'zeroize')

@@ -11,6 +11,6 @@
       model: new diamondash.dashboard.DashboardModel(data)
     });
 
-    dashboard.poll();
+    dashboard.model.poll();
   </script>
 </div>
