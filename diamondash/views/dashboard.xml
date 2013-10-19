@@ -8,7 +8,7 @@
 
     var dashboard = new diamondash.dashboard.DashboardView({
       el: '#dashboard',
-      model: new diamondash.dashboard.DashboardModel(data);
+      model: new diamondash.dashboard.DashboardModel(data)
     });
 
     dashboard.poll();
