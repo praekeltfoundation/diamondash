@@ -286,7 +286,7 @@ diamondash.widgets.graph.views = function() {
     render: function() {
       var domain = this.model.get('domain'),
           range = this.model.get('range'),
-          step = this.model.get('step');
+          step = this.model.get('bucket_size');
 
       this.fx.domain(domain);
       this.fy.domain(range);
@@ -316,7 +316,7 @@ diamondash.widgets.graph.views = function() {
       position.x = utils.snap(
         this.fx.invert(position.svg.x),
         this.model.get('domain')[0],
-        this.model.get('step'));
+        this.model.get('bucket_size'));
 
       // shift the svg x value to correspond to the snapped time value
       position.svg.x = this.fx(position.x);
