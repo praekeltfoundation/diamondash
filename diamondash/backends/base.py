@@ -1,4 +1,6 @@
-from diamondash.config import Config
+from uuid import uuid4
+
+from diamondash.config import Config, ConfigError
 
 
 class BackendConfig(Config):
@@ -13,7 +15,17 @@ class Backend(object):
 
 
 class MetricConfig(Config):
-    pass
+    @classmethod
+    def parse(cls, config):
+        if 'target' not in config:
+            raise ConfigError("All metrics need a target")
+
+        config['id'] = str(uuid4())
+
+        config.setdefault('client_config', {})
+        config['client_config']['id'] = config['id']
+
+        return config
 
 
 class Metric(object):
