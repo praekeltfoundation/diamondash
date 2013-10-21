@@ -58,4 +58,45 @@ describe("diamondash.components.structures", function() {
       });
     });
   });
+
+  describe(".ViewSet", function() {
+    var views,
+        viewA;
+
+    beforeEach(function() {
+      views = new structures.ViewSet();
+      viewA = new Backbone.View({id: 'a'});
+      views.add(viewA);
+    });
+
+    describe(".add()", function() {
+      it("should key added views by its id", function() {
+        var view = new Backbone.View({id: 'b'});
+
+        assert.isUndefined(views.findByCustom('b'));
+        views.add(view);
+        assert.strictEqual(views.findByCustom('b'), view);
+      });
+    });
+
+    describe(".get()", function() {
+      it("should allow retrieving of views by its id", function() {
+        assert.strictEqual(views.get('a'), viewA);
+      });
+    });
+
+    describe(".remove()", function() {
+      it("should remove the given view", function() {
+        assert.strictEqual(views.get('a'), viewA);
+        views.remove(viewA);
+        assert.isUndefined(views.get('a'));
+      });
+
+      it("should allow removal of views by its id", function() {
+        assert.strictEqual(views.get('a'), viewA);
+        views.remove('a');
+        assert.isUndefined(views.get('a'));
+      });
+    });
+  });
 });

@@ -240,6 +240,10 @@ diamondash.widgets.graph.views = function() {
       bottom: 0
     },
 
+    id: function() {
+      return this.model.id;
+    },
+
     initialize: function(options) {
       options = options || {};
       _(options).defaults(options.config);

@@ -26,16 +26,5 @@ describe("diamondash.widgets", function(){
         assert.strictEqual(view.model, model);
       });
     });
-
-    describe(".addNew()", function() {
-      it("should add a widget view with the given options", function() {
-        var model = widget.WidgetModel.build({type_name: 'toy'});
-        views.addNew({model: model});
-
-        var view = views.findByModel(model);
-        assert(view instanceof ToyWidgetView);
-        assert.strictEqual(view.model, model);
-      });
-    });
   });
 });

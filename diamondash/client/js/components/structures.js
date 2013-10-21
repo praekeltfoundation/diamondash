@@ -1,4 +1,6 @@
 diamondash.components.structures = function() {
+  var utils = diamondash.utils;
+
   function Extendable() {}
   Extendable.extend = Backbone.Model.extend;
 
@@ -60,10 +62,39 @@ diamondash.components.structures = function() {
     }
   });
 
+  var ViewSet = Extendable.extend.call(Backbone.ChildViewContainer, {
+    idOf: function(obj) {
+      return _(obj).result('id');
+    },
+
+    ensureId: function(obj) {
+      return obj instanceof Backbone.View
+        ? this.idOf(obj)
+        : obj;
+    },
+
+    get: function(id) {
+      return this.findByCustom(id);
+    },
+
+    add: function(widget) {
+      return ViewSet.__super__.add.call(this, widget, this.idOf(widget));
+    },
+
+    remove: function(obj) {
+      var widget = this.get(this.ensureId(obj));
+      if (widget) { ViewSet.__super__.remove.call(this, widget); }
+      return this;
+    }
+  });
+
+  ViewSet.extend = Extendable.extend;
+
   return {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
-    ColorMaker: ColorMaker
+    ColorMaker: ColorMaker,
+    ViewSet: ViewSet
   };
 }.call(this);

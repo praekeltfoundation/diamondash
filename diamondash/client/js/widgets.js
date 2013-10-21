@@ -1,22 +1,27 @@
 diamondash.widgets = function() {
-  var utils = diamondash.utils,
-      structures = diamondash.components.structures;
+  var structures = diamondash.components.structures;
 
   var registry = {
     models: new structures.Registry(),
     views: new structures.Registry()
   };
 
-  var WidgetViewSet = utils.extend(Backbone.ChildViewContainer, {
+  var WidgetViewSet = structures.ViewSet.extend({
     make: function(options) {
-      var typeName = options.model.get('type_name');
-      var type = registry.views.get(typeName);
+      var type;
+
+      if (options.model) {
+        type = registry.views.get(options.model.get('type_name'));
+      }
+
       type = type || diamondash.widgets.widget.WidgetView;
       return new type(options);
     },
 
-    addNew: function(options, idx) {
-      return this.add(this.make(options), idx);
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
     }
   });
 
