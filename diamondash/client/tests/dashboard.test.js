@@ -170,7 +170,7 @@ describe("diamondash.dashboard", function(){
   describe(".DashboardView", function() {
     var view;
 
-    var ToyWidgetView = Backbone.View.extend({
+    var ToyWidgetView = widget.WidgetView.extend({
       render: function() {
         this.$el.text(this.model.get('stuff'));
       }
@@ -189,6 +189,31 @@ describe("diamondash.dashboard", function(){
 
     afterEach(function() {
       widgets.registry.views.remove('toy');
+    });
+
+    describe(".addWidget()", function() {
+      it("should add the widget to its widget set", function() {
+        var widget = new ToyWidgetView({id: 'widget-3'});
+        view.addWidget(widget);
+        assert.strictEqual(view.widgets.get('widget-3'), widget);
+      });
+
+      it("should allow adding widgets from an options object", function() {
+        view.addWidget({
+          id: 'widget-3',
+          model: new widget.WidgetModel({type_name: 'toy'})
+        });
+
+        assert(view.widgets.get('widget-3') instanceof ToyWidgetView);
+      });
+    });
+
+    describe(".removeWidget()", function() {
+      it("should remove the widget from its widget set", function() {
+        assert.isDefined(view.widgets.get('widget-1'));
+        view.removeWidget(view.widgets.get('widget-1'));
+        assert.isUndefined(view.widgets.get('widget-1'));
+      });
     });
 
     describe(".render()", function() {

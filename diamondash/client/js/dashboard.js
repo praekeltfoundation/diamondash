@@ -59,11 +59,22 @@ diamondash.dashboard = function() {
       this.widgets = new widgets.WidgetViewSet();
 
       this.model.get('widgets').each(function(w) {
-        this.widgets.addNew({
+        this.addWidget({
           el: this.$('#' + w.id),
           model: w
         });
       }, this);
+    },
+
+    addWidget: function(options) {
+      var widget = this.widgets.ensure(options);
+      this.widgets.add(widget);
+      return this;
+    },
+
+    removeWidget: function(widget) {
+      this.widgets.remove(widget);
+      return this;
     },
 
     render: function() {
