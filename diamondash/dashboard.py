@@ -14,7 +14,7 @@ from diamondash.widgets.dynamic import DynamicWidget
 
 class DashboardConfig(Config):
     DEFAULTS = {
-        'request_interval': '60s'
+        'poll_interval': '60s'
     }
 
     @classmethod
@@ -35,15 +35,7 @@ class DashboardConfig(Config):
             cls.parse_widget(w, backend_config) for w in config['widgets']]
 
         # request interval is converted to milliseconds for client side
-        request_interval = utils.parse_interval(config.pop('request_interval'))
-
-        config['client_config'] = {
-            'name': name,
-            'requestInterval': request_interval,
-            'widgets': [
-                w['client_config'] for w in config['widgets']
-                if not Dashboard.is_layout_fn(w)]
-        }
+        config['poll_interval'] = utils.parse_interval(config['poll_interval'])
 
         return config
 
@@ -78,7 +70,7 @@ class Dashboard(Element):
     LAYOUT_FUNCTIONS = {'newrow': '_new_row'}
 
     loader = XMLString(
-        resource_string(__name__, 'views/dashboard_container.xml'))
+        resource_string(__name__, 'views/dashboard.xml'))
 
     def __init__(self, config):
         self.config = config
@@ -126,7 +118,9 @@ class Dashboard(Element):
 
     def get_details(self):
         """Returns data describing the dashboard."""
-        return self.config
+        details = self.config.copy()
+        details['widgets'] = [w.get_details() for w in self.widgets]
+        return details
 
     @renderer
     def dashboard_title_renderer(self, request, tag):
@@ -139,8 +133,7 @@ class Dashboard(Element):
 
     @renderer
     def init_script_renderer(self, request, tag):
-        client_config = json.dumps(self.config['client_config'])
-        tag.fillSlots(client_config_slot=client_config)
+        tag.fillSlots(config_slot=json.dumps(self.get_details()))
         return tag
 
 

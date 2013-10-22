@@ -202,12 +202,15 @@ diamondash.widgets.graph.views = function() {
       this.graph = options.graph;
 
       this.line = d3.svg.line()
-        .interpolate(options.smooth ? 'monotone' : 'linear')
         .x(this.graph.fx.accessor)
         .y(this.graph.fy.accessor);
     },
 
     render: function() {
+      this.line.interpolate(this.graph.model.get('smooth')
+        ? 'monotone'
+        : 'linear');
+
       var line = this.graph.svg
         .selectAll('.metric-line')
         .data(this.graph.model.get('metrics').models);
@@ -227,9 +230,6 @@ diamondash.widgets.graph.views = function() {
   });
 
   var GraphView = charts.ChartView.extend({
-    dotted: true,
-    smooth: true,
-
     height: 214,
     axisHeight: 24,
 
@@ -240,15 +240,13 @@ diamondash.widgets.graph.views = function() {
       bottom: 0
     },
 
+    id: function() {
+      return this.model.id;
+    },
+
     initialize: function(options) {
       options = options || {};
       _(options).defaults(options.config);
-
-      if ('margin' in options) { this.margin = options.margin; }
-      if ('dotted' in options) { this.dotted = options.dotted; }
-      if ('smooth' in options) { this.smooth = options.smooth; }
-      if ('height' in options) { this.height = options.height; }
-      if ('axisHeight' in options) { this.axisHeight = options.axisHeight; }
 
       GraphView.__super__.initialize.call(this, {
         dimensions: new charts.Dimensions({
@@ -262,7 +260,6 @@ diamondash.widgets.graph.views = function() {
 
       this.lines = new GraphLines({
         graph: this,
-        smooth: this.smooth
       });
 
       this.axis = new charts.AxisView({
@@ -293,14 +290,14 @@ diamondash.widgets.graph.views = function() {
     render: function() {
       var domain = this.model.get('domain'),
           range = this.model.get('range'),
-          step = this.model.get('step');
+          step = this.model.get('bucket_size');
 
       this.fx.domain(domain);
       this.fy.domain(range);
 
       this.lines.render();
 
-      if (this.dotted) {
+      if (this.model.get('dotted')) {
         this.dots.render();
       }
 
@@ -323,7 +320,7 @@ diamondash.widgets.graph.views = function() {
       position.x = utils.snap(
         this.fx.invert(position.svg.x),
         this.model.get('domain')[0],
-        this.model.get('step'));
+        this.model.get('bucket_size'));
 
       // shift the svg x value to correspond to the snapped time value
       position.svg.x = this.fx(position.x);

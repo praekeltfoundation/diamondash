@@ -52,6 +52,9 @@ module.exports = function(grunt) {
     exec: {
       'vendor.fonts': {
         cmd: 'cp <%= paths.vendor.fonts.src %> <%= paths.vendor.fonts.dest %>'
+      },
+      'tests.cleanup': {
+        cmd: 'rm <%= paths.tests.cleanup %>'
       }
     },
     jst: {
@@ -59,6 +62,13 @@ module.exports = function(grunt) {
         files: {
           '<%= paths.diamondash.jst.dest %>': [
             '<%= paths.diamondash.jst.src %>'
+          ]
+        }
+      },
+      'test-templates.jst': {
+        files: {
+          '<%= paths.tests.jst.dest %>': [
+            '<%= paths.tests.jst.src %>'
           ]
         }
       },
@@ -73,7 +83,7 @@ module.exports = function(grunt) {
   });
 
   grunt.registerTask('build', [
-    'jst',
+    'jst:diamondash.jst',
     'exec:vendor.fonts',
     'concat'
   ]);
@@ -85,6 +95,7 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [
     'jst',
-    'karma'
+    'karma',
+    'exec:tests.cleanup'
   ]);
 };

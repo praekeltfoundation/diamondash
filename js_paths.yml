@@ -46,12 +46,20 @@ diamondash:
     dest: 'diamondash/public/css/diamondash.css'
 
 tests:
+  jst:
+    src:
+      - 'diamondash/widgets/**/*.fixture.jst'
+      - 'diamondash/client/tests/**/*.fixture.jst'
+    dest: &test_templates 'diamondash/public/js/test-templates.js'
   vendor:
     - 'bower_components/sinon/index.js'
     - 'bower_components/chai/chai.js'
   spec:
     - 'diamondash/client/tests/init.js'
     - 'diamondash/client/tests/utils.js'
-    - 'diamondash/widgets/**/fixtures.js'
+    - 'diamondash/widgets/**/*.fixture.js'
+    - 'diamondash/client/tests/**/*.fixture.js'
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'
+  cleanup:
+    - *test_templates

@@ -6,7 +6,27 @@ diamondash.widgets = function() {
     views: new structures.Registry()
   };
 
+  var WidgetViewSet = structures.ViewSet.extend({
+    make: function(options) {
+      var type;
+
+      if (options.model) {
+        type = registry.views.get(options.model.get('type_name'));
+      }
+
+      type = type || diamondash.widgets.widget.WidgetView;
+      return new type(options);
+    },
+
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
+    }
+  });
+
   return {
-    registry: registry
+    registry: registry,
+    WidgetViewSet: WidgetViewSet
   };
 }.call(this);

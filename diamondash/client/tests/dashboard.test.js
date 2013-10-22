@@ -1,71 +1,230 @@
 describe("diamondash.dashboard", function(){
-  var widgets = diamondash.widgets,
-      utils = diamondash.test.utils;
+  var utils = diamondash.test.utils,
+      widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget,
+      dynamic = diamondash.widgets.dynamic,
+      dashboard = diamondash.dashboard,
+      fixtures = diamondash.test.fixtures;
 
   afterEach(function() {
     utils.unregisterModels();
   });
 
-  describe("DashboardController", function() {
-    var DashboardController = diamondash.dashboard.DashboardController;
+  describe(".DashboardModel", function() {
+    var server,
+        clock,
+        model,
+        widget2,
+        widget4;
 
-    describe(".fromConfig()", function() {
-      var dashboard, config;
-      
-      before(function() {
-        widgets.registry.models.add('toyA', widgets.widget.WidgetModel.extend({
-            type: 'ToyWidgetModelA'
-        }));
-        widgets.registry.views.add('toyA', widgets.widget.WidgetView.extend({
-            type: 'ToyWidgetViewA'
-        }));
+    var StaticToyWidgetModel = widget.WidgetModel.extend();
+    var DynamicToyWidgetModel = dynamic.DynamicWidgetModel.extend();
 
-        widgets.registry.models.add('toyB', widgets.widget.WidgetModel.extend({
-            type: 'ToyWidgetModelB'
-        }));
-        widgets.registry.views.add('toyB', widgets.widget.WidgetView.extend({
-            type: 'ToyWidgetViewB'
-        }));
+    beforeEach(function() {
+      clock = sinon.useFakeTimers();
+      server = sinon.fakeServer.create();
+
+      widgets.registry.models.add('static_toy', StaticToyWidgetModel);
+      widgets.registry.models.add('dynamic_toy', DynamicToyWidgetModel);
+
+      model = new dashboard.DashboardModel(fixtures.get(
+        'diamondash.dashboard.DashboardModel:static-and-dynamic'));
+
+      widget2 = model.get('widgets').get('widget-2');
+      widget4 = model.get('widgets').get('widget-4');
+    });
+
+    afterEach(function() {
+      clock.restore();
+      server.restore();
+
+      model.stopPolling();
+
+      widgets.registry.models.remove('dynamic_toy');
+      widgets.registry.models.remove('static_toy');
+    });
+
+    describe(".fetchSnapshots()", function() {
+      it("should fetch the snaphots of its dynamic widgets", function() {
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-2/snapshot',
+          JSON.stringify({stuff: 'spam'}));
+
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-4/snapshot',
+          JSON.stringify({stuff: 'ham'}));
+
+        assert.equal(widget2.get('stuff'), 'foo');
+        assert.equal(widget4.get('stuff'), 'bar');
+
+        model.fetchSnapshots();
+        server.respond();
+
+        assert.equal(widget2.get('stuff'), 'spam');
+        assert.equal(widget4.get('stuff'), 'ham');
       });
+    });
 
-      after(function() {
-        widgets.registry.models.remove('toyA');
-        widgets.registry.views.remove('toyA');
-
-        widgets.registry.models.remove('toyB');
-        widgets.registry.views.remove('toyB');
-      });
-
+    describe(".poll()", function() {
       beforeEach(function() {
-        config = {
-          name: 'tatooine-the-dashboard',
-          requestInterval: 10,
-          widgets: [{
-            model: {name: 'anakin-the-widget'},
-            typeName: "toyA"
-          }, {
-            model: {name: 'qui-gon-the-widget'},
-            typeName: "toyB",
-          }]
+        server.autoRespond = true;
+        server.autoRespondAfter = 1;
+      });
+
+      it("should issue snapshot requests immediately", function() {
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-2/snapshot',
+          JSON.stringify({stuff: 'spam'}));
+
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-4/snapshot',
+          JSON.stringify({stuff: 'ham'}));
+
+        assert.equal(widget2.get('stuff'), 'foo');
+        assert.equal(widget4.get('stuff'), 'bar');
+
+        model.poll();
+        server.respond();
+
+        assert.equal(widget2.get('stuff'), 'spam');
+        assert.equal(widget4.get('stuff'), 'ham');
+      });
+
+      it("should issue snapshot requests each poll interval", function() {
+        var responses = {
+          widget2: [
+            {stuff: 'spam-0'},
+            {stuff: 'spam-1'},
+            {stuff: 'spam-2'}],
+          widget4: [
+            {stuff: 'ham-0'},
+            {stuff: 'ham-1'},
+            {stuff: 'ham-2'}]
         };
+
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-2/snapshot',
+          function(req) {
+            var res = responses.widget2.shift();
+            req.respond(200, [], JSON.stringify(res));
+          });
+
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-4/snapshot',
+          function(req) {
+            var res = responses.widget4.shift();
+            req.respond(200, [], JSON.stringify(res));
+          });
+
+        model.poll();
+        assert.equal(widget2.get('stuff'), 'foo');
+        assert.equal(widget4.get('stuff'), 'bar');
+
+        clock.tick(1);
+        assert.equal(widget2.get('stuff'), 'spam-0');
+        assert.equal(widget4.get('stuff'), 'ham-0');
+
+        clock.tick(50);
+        assert.equal(widget2.get('stuff'), 'spam-1');
+        assert.equal(widget4.get('stuff'), 'ham-1');
+
+        clock.tick(50);
+        assert.equal(widget2.get('stuff'), 'spam-2');
+        assert.equal(widget4.get('stuff'), 'ham-2');
+      });
+    });
+
+    describe(".stopPolling()", function() {
+      beforeEach(function() {
+        server.autoRespond = true;
+        server.autoRespondAfter = 1;
       });
 
-      it("should create the widget model collection correctly", function() {
-        dashboard = DashboardController.fromConfig(config);
-        assert.equal(dashboard.widgets.get('anakin-the-widget').type,
-                     'ToyWidgetModelA');
-        assert.equal(dashboard.widgets.get('qui-gon-the-widget').type,
-                     'ToyWidgetModelB');
+      it("should stop disable polling", function() {
+        var polls = 0;
+
+        server.respondWith(
+          '/api/widgets/dashboard-1/widget-2/snapshot',
+          function(req) {
+            polls++;
+            req.respond(200, [], '{}');
+          });
+
+        model.poll();
+        assert.equal(polls, 0);
+
+        clock.tick(1);
+        assert.equal(polls, 1);
+
+        clock.tick(50);
+        assert.equal(polls, 2);
+
+        model.stopPolling();
+
+        clock.tick(50);
+        assert.equal(polls, 2);
+      });
+    });
+  });
+
+  describe(".DashboardView", function() {
+    var view;
+
+    var ToyWidgetView = widget.WidgetView.extend({
+      render: function() {
+        this.$el.text(this.model.get('stuff'));
+      }
+    });
+
+    beforeEach(function() {
+      widgets.registry.views.add('toy', ToyWidgetView);
+
+      view = new dashboard.DashboardView({
+        el: JST[
+          'diamondash/client/tests/fixtures/dashboard.simple.fixture.jst'],
+        model: new dashboard.DashboardModel(fixtures.get(
+          'diamondash.dashboard.DashboardModel:simple'))
+      });
+    });
+
+    afterEach(function() {
+      widgets.registry.views.remove('toy');
+    });
+
+    describe(".addWidget()", function() {
+      it("should add the widget to its widget set", function() {
+        var widget = new ToyWidgetView({id: 'widget-3'});
+        view.addWidget(widget);
+        assert.strictEqual(view.widgets.get('widget-3'), widget);
       });
 
-      it("should create the widget views correctly", function() {
-        dashboard = DashboardController.fromConfig(config);
-        assert.equal(dashboard.widgetViews[0].type, 'ToyWidgetViewA');
-        assert.equal(dashboard.widgetViews[1].type, 'ToyWidgetViewB');
-        assert.equal(dashboard.widgetViews[0].model,
-                     dashboard.widgets.at(0));
-        assert.equal(dashboard.widgetViews[1].model,
-                     dashboard.widgets.at(1));
+      it("should allow adding widgets from an options object", function() {
+        view.addWidget({
+          id: 'widget-3',
+          model: new widget.WidgetModel({type_name: 'toy'})
+        });
+
+        assert(view.widgets.get('widget-3') instanceof ToyWidgetView);
+      });
+    });
+
+    describe(".removeWidget()", function() {
+      it("should remove the widget from its widget set", function() {
+        assert.isDefined(view.widgets.get('widget-1'));
+        view.removeWidget(view.widgets.get('widget-1'));
+        assert.isUndefined(view.widgets.get('widget-1'));
+      });
+    });
+
+    describe(".render()", function() {
+      it("should render its widgets", function() {
+        assert.equal(view.$('#widget-1').text(), '');
+        assert.equal(view.$('#widget-2').text(), '');
+
+        view.render();
+
+        assert.equal(view.$('#widget-1').text(), 'foo');
+        assert.equal(view.$('#widget-2').text(), 'bar');
       });
     });
   });

@@ -21,10 +21,6 @@ class MetricConfig(Config):
             raise ConfigError("All metrics need a target")
 
         config['id'] = str(uuid4())
-
-        config.setdefault('client_config', {})
-        config['client_config']['id'] = config['id']
-
         return config
 
 

@@ -58,4 +58,68 @@ describe("diamondash.components.structures", function() {
       });
     });
   });
+
+  describe(".ViewSet", function() {
+    var views,
+        viewA,
+        viewB;
+
+    beforeEach(function() {
+      views = new structures.ViewSet();
+
+      viewA = new Backbone.View({id: 'a'});
+      views.add(viewA);
+
+      viewB = new Backbone.View();
+      views.add(viewB, 'b');
+    });
+
+    describe(".add()", function() {
+      it("should key added views by their id", function() {
+        var view = new Backbone.View({id: 'c'});
+
+        assert.isUndefined(views.findByCustom('c'));
+        views.add(view);
+        assert.strictEqual(views.findByCustom('c'), view);
+      });
+
+      it("should allow keying of added views by a custom key", function() {
+        var view = new Backbone.View();
+
+        assert.isUndefined(views.findByCustom('c'));
+        views.add(view, 'c');
+        assert.strictEqual(views.findByCustom('c'), view);
+      });
+    });
+
+    describe(".get()", function() {
+      it("should allow retrieving of views by their id", function() {
+        assert.strictEqual(views.get('a'), viewA);
+      });
+
+      it("should allow retrieving of views by a custom key", function() {
+        assert.strictEqual(views.get('b'), viewB);
+      });
+    });
+
+    describe(".remove()", function() {
+      it("should remove the given view", function() {
+        assert.strictEqual(views.get('a'), viewA);
+        views.remove(viewA);
+        assert.isUndefined(views.get('a'));
+      });
+
+      it("should allow removal of views by their id", function() {
+        assert.strictEqual(views.get('a'), viewA);
+        views.remove('a');
+        assert.isUndefined(views.get('a'));
+      });
+
+      it("should allow removal of views by a custom key", function() {
+        assert.strictEqual(views.get('b'), viewB);
+        views.remove('b');
+        assert.isUndefined(views.get('b'));
+      });
+    });
+  });
 });
