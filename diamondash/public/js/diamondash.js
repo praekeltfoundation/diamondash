@@ -50,18 +50,13 @@ diamondash.utils = function() {
     return values;
   }
 
-  function extend(superConstructor, proto, statics) {
-    return Backbone.Model.extend.call(superConstructor, proto, statics);
-  }
-
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap,
-    d3Map: d3Map,
-    extend: extend
+    d3Map: d3Map
   };
 }.call(this);
 
@@ -71,6 +66,8 @@ diamondash.components = function() {
 }.call(this);
 
 diamondash.components.structures = function() {
+  var utils = diamondash.utils;
+
   function Extendable() {}
   Extendable.extend = Backbone.Model.extend;
 
@@ -132,11 +129,41 @@ diamondash.components.structures = function() {
     }
   });
 
+  var ViewSet = Extendable.extend.call(Backbone.ChildViewContainer, {
+    keyOf: function(obj) {
+      return _(obj).result('id');
+    },
+
+    ensureKey: function(obj) {
+      return obj instanceof Backbone.View
+        ? this.keyOf(obj)
+        : obj;
+    },
+
+    get: function(key) {
+      return this.findByCustom(key);
+    },
+
+    add: function(widget, key) {
+      if (typeof key == 'undefined') { key = this.keyOf(widget); }
+      return ViewSet.__super__.add.call(this, widget, key);
+    },
+
+    remove: function(obj) {
+      var widget = this.get(this.ensureKey(obj));
+      if (widget) { ViewSet.__super__.remove.call(this, widget); }
+      return this;
+    }
+  });
+
+  ViewSet.extend = Extendable.extend;
+
   return {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
-    ColorMaker: ColorMaker
+    ColorMaker: ColorMaker,
+    ViewSet: ViewSet
   };
 }.call(this);
 
@@ -307,24 +334,29 @@ diamondash.components.charts = function() {
 }.call(this);
 
 diamondash.widgets = function() {
-  var utils = diamondash.utils,
-      structures = diamondash.components.structures;
+  var structures = diamondash.components.structures;
 
   var registry = {
     models: new structures.Registry(),
     views: new structures.Registry()
   };
 
-  var WidgetViewSet = utils.extend(Backbone.ChildViewContainer, {
+  var WidgetViewSet = structures.ViewSet.extend({
     make: function(options) {
-      var typeName = options.model.get('type_name');
-      var type = registry.views.get(typeName);
+      var type;
+
+      if (options.model) {
+        type = registry.views.get(options.model.get('type_name'));
+      }
+
       type = type || diamondash.widgets.widget.WidgetView;
       return new type(options);
     },
 
-    addNew: function(options, idx) {
-      return this.add(this.make(options), idx);
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
     }
   });
 
@@ -357,6 +389,9 @@ diamondash.widgets.widget = function() {
   });
 
   var WidgetView = Backbone.View.extend({
+    id: function() {
+      return this.model.id;
+    }
   });
 
   widgets.registry.models.add('widget', WidgetModel);
@@ -737,6 +772,10 @@ diamondash.widgets.graph.views = function() {
       bottom: 0
     },
 
+    id: function() {
+      return this.model.id;
+    },
+
     initialize: function(options) {
       options = options || {};
       _(options).defaults(options.config);
@@ -1029,11 +1068,22 @@ diamondash.dashboard = function() {
       this.widgets = new widgets.WidgetViewSet();
 
       this.model.get('widgets').each(function(w) {
-        this.widgets.addNew({
+        this.addWidget({
           el: this.$('#' + w.id),
           model: w
         });
       }, this);
+    },
+
+    addWidget: function(options) {
+      var widget = this.widgets.ensure(options);
+      this.widgets.add(widget);
+      return this;
+    },
+
+    removeWidget: function(widget) {
+      this.widgets.remove(widget);
+      return this;
     },
 
     render: function() {
