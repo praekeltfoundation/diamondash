@@ -62,8 +62,8 @@ diamondash.widgets.graph.models = function() {
     }],
 
     defaults: {
-      'domain': 0,
-      'range': 0,
+      'domain': [0, 0],
+      'range': [0, 0],
       'metrics': []
     },
   });

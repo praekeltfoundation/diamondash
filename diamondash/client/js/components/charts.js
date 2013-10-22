@@ -4,17 +4,6 @@ diamondash.components.charts = function() {
 
   var components = {};
 
-  components.svg = function(target, dimensions) {
-    return target.append('svg')
-      .attr('width', dimensions.width)
-      .attr('height', dimensions.height)
-      .append('g')
-        .attr('transform', "translate("
-          + dimensions.margin.left
-          + ","
-          + dimensions.margin.top + ")");
-  };
-
   // Replicates the way d3 generates axis time markers
   components.marker = function(target) {
     target.append('line')
@@ -44,6 +33,10 @@ diamondash.components.charts = function() {
     },
 
     constructor: function(options) {
+      this.set(options);
+    },
+
+    set: function(options) {
       options = options || {};
 
       if ('height' in options) { this.height = options.height; }
@@ -82,9 +75,8 @@ diamondash.components.charts = function() {
         .tickFormat(this.format)
         .ticks(_(this).result('tickCount'));
 
-      this.line = this.chart.svg.append("g")
+      this.line = this.chart.canvas.append("g")
         .attr('class', 'axis')
-        .attr('transform', this._translation())
         .call(this.axis);
     },
 
@@ -112,18 +104,18 @@ diamondash.components.charts = function() {
     }(),
 
     tickCount: function() {
-      var width = this.chart.dimensions.innerWidth,
-          count = Math.floor(width / this.markerWidth);
+      var width = this.chart.dimensions.width;
+      var count = Math.floor(width / this.markerWidth);
 
       return Math.max(0, count);
     },
 
     tickValues: function(start, end, step) {
-      var n = (end - start) / step,
-          m = _(this).result('tickCount'),
-          i = 1;
+      var n = (end - start) / step;
+      var m = _(this).result('tickCount');
+      var i = 1;
 
-      while (Math.floor(n / i) > m) i++;
+      while (Math.floor(n / i) > m) { i++; }
 
       var values = d3.range(start, end, step * i);
       values.push(end);
@@ -132,6 +124,7 @@ diamondash.components.charts = function() {
     },
 
     render: function(start, end, step) {
+      this.line.attr('transform', this._translation());
       this.axis.tickValues(this.tickValues(start, end, step));
       this.line.call(this.axis);
       return this;
@@ -141,18 +134,42 @@ diamondash.components.charts = function() {
   var ChartView = Backbone.View.extend({
     className: 'chart',
 
+    dimensions: new Dimensions(),
+
     initialize: function(options) {
-      this.dimensions = options.dimensions;
-      this.svg = components.svg(d3.select(this.el), this.dimensions);
+      options = options || {};
+
+      if ('dimensions' in options) {
+        this.dimensions = options.dimensions;
+      }
+
+      this.svg = d3.select(this.el).append('svg');
+      this.canvas = this.svg.append('g');
 
       var self = this;
-      this.overlay = this.svg.append('rect')
+      this.overlay = this.canvas.append('rect')
         .attr('class', 'event-overlay')
         .attr('fill-opacity', 0)
-        .attr('width', this.dimensions.width)
-        .attr('height', this.dimensions.height)
         .on('mousemove', function() { self.trigger('mousemove', this); })
         .on('mouseout', function() { self.trigger('mouseout', this); });
+    },
+
+    render: function() {
+      this.svg
+        .attr('width', this.dimensions.width)
+        .attr('height', this.dimensions.height);
+
+      this.canvas
+        .attr('transform', 'translate('
+          + this.dimensions.margin.left
+          + ','
+          + this.dimensions.margin.top + ')');
+
+      this.overlay
+        .attr('width', this.dimensions.width)
+        .attr('height', this.dimensions.height);
+
+      return this;
     }
   });
 
