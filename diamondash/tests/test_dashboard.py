@@ -13,7 +13,7 @@ from diamondash.widgets.dynamic import DynamicWidgetConfig
 def mk_config_data(**overrides):
     return utils.add_dicts({
         'name': 'Some Dashboard',
-        'request_interval': '2s',
+        'poll_interval': '2s',
         'share_id': 'some-dashboard-share-id',
         'widgets': [
             {
@@ -47,19 +47,6 @@ class DashboardConfigTestCase(unittest.TestCase):
 
         self.assertEqual(config['name'], 'some-dashboard')
         self.assertEqual(config['title'], 'Some Dashboard')
-        self.assertEqual(config['client_config'], {
-            'name': 'some-dashboard',
-            'requestInterval': 2000,
-            'widgets': [{
-                'model': {'name': 'widget1'},
-                'typeName': 'widget',
-                'view': {},
-            }, {
-                'model': {'name': 'widget2'},
-                'typeName': 'dynamic_toy',
-                'view': {}
-            }]
-        })
 
         w1_config, newrow, w2_config = config['widgets']
         self.assertTrue(isinstance(w1_config, WidgetConfig))

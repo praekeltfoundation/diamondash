@@ -65,9 +65,6 @@ class DiamondashConfigTestCase(unittest.TestCase):
         self.assertTrue(isinstance(dashboard1_config, DashboardConfig))
         self.assertEqual(dashboard1_config['name'], 'dashboard-1')
         self.assertEqual(dashboard1_config['title'], 'Dashboard 1')
-        self.assertEqual(
-            dashboard1_config['client_config']['requestInterval'],
-            30000)
 
         widget1_config, = dashboard1_config['widgets']
         self.assertTrue(isinstance(widget1_config, WidgetConfig))
@@ -80,9 +77,6 @@ class DiamondashConfigTestCase(unittest.TestCase):
         self.assertTrue(isinstance(dashboard2_config, DashboardConfig))
         self.assertEqual(dashboard2_config['name'], 'dashboard-2')
         self.assertEqual(dashboard2_config['title'], 'Dashboard 2')
-        self.assertEqual(
-            dashboard2_config['client_config']['requestInterval'],
-            10000)
 
         widget1_config, = dashboard2_config['widgets']
         self.assertTrue(isinstance(widget1_config, WidgetConfig))
@@ -187,7 +181,7 @@ class DiamondashServerTestCase(unittest.TestCase):
 
     def test_api_dashboard_details_retrieval(self):
         d = self.request('/api/dashboards/dashboard-1')
-        d.addCallback(self.assert_json_response, self.dashboard1.config)
+        d.addCallback(self.assert_json_response, self.dashboard1.get_details())
         return d
 
     def test_api_dashboard_creation(self):
@@ -329,7 +323,7 @@ class DiamondashServerTestCase(unittest.TestCase):
         d = self.request('/api/widgets/dashboard-1/widget-1')
         d.addCallback(
             self.assert_json_response,
-            self.dashboard1.get_widget('widget-1').config)
+            self.dashboard1.get_widget('widget-1').get_details())
         return d
 
     def test_api_widget_details_retrieval_for_nonexistent_dashboard(self):
