@@ -1,18 +1,13 @@
-.row {
-	margin-bottom: 18px;
-}
-
-.widget-title {
-	background-color: #333;
-	color: #eee;
-	text-align: center;
-	min-height: 30px;
-}
-
-.widget-title h4 {
-	line-height: 30px;
-}
-
-.dashboard-title {
+.dashboard .dashboard-head {
   margin-bottom: 14px;
+}
+
+.dashboard .widget .widget-head {
+	color: #eee;
+	background-color: #333;
+	text-align: center;
+}
+
+.dashboard .widget .widget-head h4 {
+  padding: 4px;
 }

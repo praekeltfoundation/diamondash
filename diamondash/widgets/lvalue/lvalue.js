@@ -77,7 +77,7 @@ diamondash.widgets.lvalue = function() {
       else if (diff < 0) { change = 'bad'; }
       else { change = 'no'; }
 
-      this.$('.widget-container').html(this.jst({
+      this.$el.html(this.jst({
         from: this.format.time(model.get('from')),
         to: this.format.time(model.get('to')),
         diff: this.format.diff(diff),

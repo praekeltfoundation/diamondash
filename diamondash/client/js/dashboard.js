@@ -74,7 +74,7 @@ diamondash.dashboard = function() {
     parentAlias: 'dashboard',
 
     selector: function(key) {
-      return '[data-widget=' + key + '] .body';
+      return '[data-widget=' + key + '] .widget-body';
     },
 
     add: function(obj) {

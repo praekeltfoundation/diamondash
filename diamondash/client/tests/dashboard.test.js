@@ -183,7 +183,7 @@ describe("diamondash.dashboard", function(){
 
     function widgetRows() {
       return view
-        .$('.row')
+        .$('.dashboard-body .row')
         .map(function() {
           return [$(this)
             .find('.widget')
@@ -204,9 +204,13 @@ describe("diamondash.dashboard", function(){
 
     describe(".render()", function() {
       it("should render its title", function() {
-        assert.equal(view.$('> .head').length, 0);
+        assert.equal(view.$('.dashboard-head').length, 0);
+
         view.render();
-        assert.equal(view.$('> .head').text(), 'Dashboard 1');
+
+        assert.equal(
+          view.$('.dashboard-head').text().trim(),
+          'Dashboard 1');
       });
 
       it("should render its widgets", function() {
@@ -218,28 +222,28 @@ describe("diamondash.dashboard", function(){
         view.render();
 
         var $widget1 = view.$('[data-widget=widget-1]');
-        assert.equal($widget1.find('.head').text(), 'Widget 1');
-        assert.equal($widget1.find('.body').text(), 'foo');
+        assert.equal($widget1.find('.widget-head').text(), 'Widget 1');
+        assert.equal($widget1.find('.widget-body').text(), 'foo');
         assert($widget1.hasClass('col-md-3'));
 
         var $widget2 = view.$('[data-widget=widget-2]');
-        assert.equal($widget2.find('.head').text(), 'Widget 2');
-        assert.equal($widget2.find('.body').text(), 'bar');
+        assert.equal($widget2.find('.widget-head').text(), 'Widget 2');
+        assert.equal($widget2.find('.widget-body').text(), 'bar');
         assert($widget2.hasClass('col-md-4'));
 
         var $widget3 = view.$('[data-widget=widget-3]');
-        assert.equal($widget3.find('.head').text(), 'Widget 3');
-        assert.equal($widget3.find('.body').text(), 'baz');
+        assert.equal($widget3.find('.widget-head').text(), 'Widget 3');
+        assert.equal($widget3.find('.widget-body').text(), 'baz');
         assert($widget3.hasClass('col-md-2'));
 
         var $widget4 = view.$('[data-widget=widget-4]');
-        assert.equal($widget4.find('.head').text(), 'Widget 4');
-        assert.equal($widget4.find('.body').text(), 'qux');
+        assert.equal($widget4.find('.widget-head').text(), 'Widget 4');
+        assert.equal($widget4.find('.widget-body').text(), 'qux');
         assert($widget4.hasClass('col-md-5'));
       });
 
       it("should render its widget rows correctly", function() {
-        assert.equal(view.$('.row').length, 0);
+        assert.deepEqual(widgetRows(), []);
 
         view.render();
 
