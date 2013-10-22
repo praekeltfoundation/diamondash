@@ -86,6 +86,12 @@ diamondash.components.structures = function() {
       var widget = this.get(this.ensureKey(obj));
       if (widget) { ViewSet.__super__.remove.call(this, widget); }
       return this;
+    },
+
+    each: function(fn, that) {
+      for (var k in this._indexByCustom) {
+        fn.call(that, this.get(k), k);
+      }
     }
   });
 

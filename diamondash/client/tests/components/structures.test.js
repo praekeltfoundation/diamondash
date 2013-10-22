@@ -121,5 +121,21 @@ describe("diamondash.components.structures", function() {
         assert.isUndefined(views.get('b'));
       });
     });
+
+    describe(".each()", function() {
+      it("should iterate over the (view, key) pairs", function() {
+        var remaining = {
+          'a': views.get('a'),
+          'b': views.get('b')
+        };
+
+        views.each(function(view, key) {
+          assert.strictEqual(view, remaining[key]);
+          delete remaining[key];
+        });
+
+        assert.equal(_(remaining).size(), 0);
+      });
+    });
   });
 });
