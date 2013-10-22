@@ -11,10 +11,24 @@ diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:simple', {
     name: 'widget-2',
     type_name: 'toy',
     stuff: 'bar'
+  }, {
+    title: 'Widget 3',
+    name: 'widget-3',
+    type_name: 'toy',
+    stuff: 'baz'
+  }, {
+    title: 'Widget 4',
+    name: 'widget-4',
+    type_name: 'toy',
+    stuff: 'qux'
   }],
   rows: [{
     widgets: [
       {name: 'widget-1'},
       {name: 'widget-2'}]
+  }, {
+    widgets: [
+      {name: 'widget-3'},
+      {name: 'widget-4'}]
   }]
 });
