@@ -153,17 +153,43 @@ diamondash.components.structures = function() {
       var widget = this.get(this.ensureKey(obj));
       if (widget) { ViewSet.__super__.remove.call(this, widget); }
       return this;
+    },
+
+    each: function(fn, that) {
+      that = that || this;
+
+      for (var k in this._indexByCustom) {
+        fn.call(that, this.get(k), k);
+      }
     }
   });
 
   ViewSet.extend = Extendable.extend;
+
+  var SubviewSet = ViewSet.extend({
+    constructor: function(options) {
+      SubviewSet.__super__.constructor.call(this);
+      this.parent = options.parent;
+    },
+
+    render: function() {
+      var args = arguments;
+
+      this.each(function(view, selector) {
+        view.setElement(this.parent.$(selector), true);
+      }, this);
+
+      this.apply('render', arguments);
+    }
+  });
 
   return {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
     ColorMaker: ColorMaker,
-    ViewSet: ViewSet
+    ViewSet: ViewSet,
+    SubviewSet: SubviewSet
   };
 }.call(this);
 
