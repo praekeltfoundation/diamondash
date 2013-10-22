@@ -89,6 +89,8 @@ diamondash.components.structures = function() {
     },
 
     each: function(fn, that) {
+      that = that || this;
+
       for (var k in this._indexByCustom) {
         fn.call(that, this.get(k), k);
       }
