@@ -15,5 +15,14 @@ diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:static-and-dyn
     name: 'widget-4',
     type_name: 'dynamic_toy',
     stuff: 'bar'
+  }],
+  rows: [{
+    widgets: [
+      {name: 'widget-1'},
+      {name: 'widget-2'}]
+  }, {
+    widgets: [
+      {name: 'widget-3'},
+      {name: 'widget-4'}]
   }]
 });

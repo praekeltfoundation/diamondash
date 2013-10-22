@@ -3,6 +3,15 @@ diamondash.dashboard = function() {
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
+  var DashboardRowModel = Backbone.RelationalModel.extend({
+     relations: [{
+       type: Backbone.HasMany,
+       key: 'widgets',
+       relatedModel: 'diamondash.widgets.widget.WidgetModel',
+       includeInJSON: ['name']
+     }]
+   });
+
   var DashboardModel = Backbone.RelationalModel.extend({
     relations: [{
       type: Backbone.HasMany,
@@ -12,10 +21,16 @@ diamondash.dashboard = function() {
         key: 'dashboard',
         includeInJSON: false
       }
+    }, {
+      type: Backbone.HasMany,
+      key: 'rows',
+      relatedModel: DashboardRowModel,
+      includeInJSON: ['widgets']
     }],
 
     defaults: {
       widgets: [],
+      rows: [],
       poll_interval: 10000
     },
 
