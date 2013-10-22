@@ -84,6 +84,8 @@ diamondash.dashboard = function() {
   });
 
   var DashboardView = Backbone.View.extend({
+    jst: JST['diamondash/client/jst/dashboard.jst'],
+
     initialize: function() {
       this.widgets = new DashboardWidgetViews({dashboard: this});
 
@@ -93,7 +95,8 @@ diamondash.dashboard = function() {
     },
 
     render: function() {
-      this.widgets.invoke('render');
+      this.$el.html(this.jst({dashboard: this}));
+      this.widgets.render();
       return this;
     }
   });

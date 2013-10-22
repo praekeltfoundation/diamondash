@@ -1,0 +1,12 @@
+<% dashboard.model.get('rows').each(function(row) { %>
+<div class="row">
+  <% row.get('widgets').each(function(widget) { %>
+    <div
+     data-widget="<%= widget.id %>"
+     class="widget col-md-<%= widget.get('width')%>">
+      <div class="head"><h4><%= widget.get('title') %></h4></div>
+      <div class="body"></div>
+    </div>
+  <% }); %>
+</div>
+<% }); %>

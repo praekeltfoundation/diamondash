@@ -181,6 +181,20 @@ describe("diamondash.dashboard", function(){
   describe(".DashboardView", function() {
     var view;
 
+    function widgetRows() {
+      return view
+        .$('.row')
+        .map(function() {
+          return [$(this)
+            .find('.widget')
+            .map(function() {
+              return $(this).attr('data-widget');
+            })
+            .get()];
+        })
+        .get();
+    }
+
     beforeEach(function() {
       view = new dashboard.DashboardView({
         model: new dashboard.DashboardModel(fixtures.get(
@@ -190,13 +204,43 @@ describe("diamondash.dashboard", function(){
 
     describe(".render()", function() {
       it("should render its widgets", function() {
-        assert.equal(view.$('#widget-1').text(), '');
-        assert.equal(view.$('#widget-2').text(), '');
+        assert.equal(view.$('[data-widget=widget-1]').length, 0);
+        assert.equal(view.$('[data-widget=widget-2]').length, 0);
+        assert.equal(view.$('[data-widget=widget-3]').length, 0);
+        assert.equal(view.$('[data-widget=widget-4]').length, 0);
 
         view.render();
 
-        assert.equal(view.$('#widget-1').text(), 'foo');
-        assert.equal(view.$('#widget-2').text(), 'bar');
+        var $widget1 = view.$('[data-widget=widget-1]');
+        assert.equal($widget1.find('.head').text(), 'Widget 1');
+        assert.equal($widget1.find('.body').text(), 'foo');
+        assert($widget1.hasClass('col-md-3'));
+
+        var $widget2 = view.$('[data-widget=widget-2]');
+        assert.equal($widget2.find('.head').text(), 'Widget 2');
+        assert.equal($widget2.find('.body').text(), 'bar');
+        assert($widget2.hasClass('col-md-4'));
+
+        var $widget3 = view.$('[data-widget=widget-3]');
+        assert.equal($widget3.find('.head').text(), 'Widget 3');
+        assert.equal($widget3.find('.body').text(), 'baz');
+        assert($widget3.hasClass('col-md-2'));
+
+        var $widget4 = view.$('[data-widget=widget-4]');
+        assert.equal($widget4.find('.head').text(), 'Widget 4');
+        assert.equal($widget4.find('.body').text(), 'qux');
+        assert($widget4.hasClass('col-md-5'));
+      });
+
+      it("should render its widget rows correctly", function() {
+        assert.equal(view.$('.row').length, 0);
+
+        view.render();
+
+        assert.deepEqual(
+          widgetRows(),
+          [['widget-1', 'widget-2'],
+           ['widget-3', 'widget-4']]);
       });
     });
   });
