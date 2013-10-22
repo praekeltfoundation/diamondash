@@ -1,16 +1,17 @@
 diamondash.dashboard = function() {
-  var widgets = diamondash.widgets,
+  var structures = diamondash.components.structures,
+      widgets = diamondash.widgets,
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
   var DashboardRowModel = Backbone.RelationalModel.extend({
-     relations: [{
-       type: Backbone.HasMany,
-       key: 'widgets',
-       relatedModel: 'diamondash.widgets.widget.WidgetModel',
-       includeInJSON: ['name']
-     }]
-   });
+    relations: [{
+      type: Backbone.HasMany,
+      key: 'widgets',
+      relatedModel: 'diamondash.widgets.widget.WidgetModel',
+      includeInJSON: ['name']
+    }]
+  });
 
   var DashboardModel = Backbone.RelationalModel.extend({
     relations: [{
@@ -69,27 +70,26 @@ diamondash.dashboard = function() {
     }
   });
 
+  var DashboardWidgetViews = structures.SubviewSet.extend({
+    parentAlias: 'dashboard',
+
+    selector: function(key) {
+      return '[data-widget=' + key + '] .body';
+    },
+
+    add: function(obj) {
+      var widget = widgets.registry.views.ensure(obj);
+      return DashboardWidgetViews.__super__.add.call(this, widget);
+    }
+  });
+
   var DashboardView = Backbone.View.extend({
     initialize: function() {
-      this.widgets = new widgets.WidgetViewSet();
+      this.widgets = new DashboardWidgetViews({dashboard: this});
 
       this.model.get('widgets').each(function(w) {
-        this.addWidget({
-          el: this.$('#' + w.id),
-          model: w
-        });
+        this.widgets.add({model: w});
       }, this);
-    },
-
-    addWidget: function(options) {
-      var widget = this.widgets.ensure(options);
-      this.widgets.add(widget);
-      return this;
-    },
-
-    removeWidget: function(widget) {
-      this.widgets.remove(widget);
-      return this;
     },
 
     render: function() {
@@ -100,6 +100,9 @@ diamondash.dashboard = function() {
 
   return {
     DashboardView: DashboardView,
-    DashboardModel: DashboardModel
+    DashboardWidgetViews: DashboardWidgetViews,
+
+    DashboardModel: DashboardModel,
+    DashboardRowModel: DashboardRowModel
   };
 }.call(this);

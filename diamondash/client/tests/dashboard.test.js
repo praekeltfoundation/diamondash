@@ -6,8 +6,19 @@ describe("diamondash.dashboard", function(){
       dashboard = diamondash.dashboard,
       fixtures = diamondash.test.fixtures;
 
+  var ToyWidgetView = widget.WidgetView.extend({
+    render: function() {
+      this.$el.text(this.model.get('stuff'));
+    }
+  });
+
+  beforeEach(function() {
+    widgets.registry.views.add('toy', ToyWidgetView);
+  });
+
   afterEach(function() {
     utils.unregisterModels();
+    widgets.registry.views.remove('toy');
   });
 
   describe(".DashboardModel", function() {
@@ -170,49 +181,10 @@ describe("diamondash.dashboard", function(){
   describe(".DashboardView", function() {
     var view;
 
-    var ToyWidgetView = widget.WidgetView.extend({
-      render: function() {
-        this.$el.text(this.model.get('stuff'));
-      }
-    });
-
     beforeEach(function() {
-      widgets.registry.views.add('toy', ToyWidgetView);
-
       view = new dashboard.DashboardView({
-        el: JST[
-          'diamondash/client/tests/fixtures/dashboard.simple.fixture.jst'],
         model: new dashboard.DashboardModel(fixtures.get(
           'diamondash.dashboard.DashboardModel:simple'))
-      });
-    });
-
-    afterEach(function() {
-      widgets.registry.views.remove('toy');
-    });
-
-    describe(".addWidget()", function() {
-      it("should add the widget to its widget set", function() {
-        var widget = new ToyWidgetView({id: 'widget-3'});
-        view.addWidget(widget);
-        assert.strictEqual(view.widgets.get('widget-3'), widget);
-      });
-
-      it("should allow adding widgets from an options object", function() {
-        view.addWidget({
-          id: 'widget-3',
-          model: new widget.WidgetModel({type_name: 'toy'})
-        });
-
-        assert(view.widgets.get('widget-3') instanceof ToyWidgetView);
-      });
-    });
-
-    describe(".removeWidget()", function() {
-      it("should remove the widget from its widget set", function() {
-        assert.isDefined(view.widgets.get('widget-1'));
-        view.removeWidget(view.widgets.get('widget-1'));
-        assert.isUndefined(view.widgets.get('widget-1'));
       });
     });
 
@@ -225,6 +197,45 @@ describe("diamondash.dashboard", function(){
 
         assert.equal(view.$('#widget-1').text(), 'foo');
         assert.equal(view.$('#widget-2').text(), 'bar');
+      });
+    });
+  });
+
+  describe("DashboardWidgetViews", function() {
+    var views;
+
+    beforeEach(function() {
+      var dashboardView = new dashboard.DashboardView({
+        model: new dashboard.DashboardModel(fixtures.get(
+          'diamondash.dashboard.DashboardModel:simple'))
+      });
+
+      views = dashboardView.widgets;
+    });
+
+    describe(".add", function() {
+      it("should allowing adding widget instances", function() {
+        var widgetN = new ToyWidgetView({
+          model: new widget.WidgetModel({
+            name: 'widget-n',
+            type_name: 'toy'
+          })
+        });
+
+        views.add(widgetN);
+
+        assert.strictEqual(views.get('widget-n'), widgetN);
+      });
+
+      it("should allow adding widgets from an options object", function() {
+        views.add({
+          model: new widget.WidgetModel({
+            name: 'widget-n',
+            type_name: 'toy'
+          })
+        });
+
+        assert(views.get('widget-n') instanceof ToyWidgetView);
       });
     });
   });
