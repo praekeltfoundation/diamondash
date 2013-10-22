@@ -138,4 +138,88 @@ describe("diamondash.components.structures", function() {
       });
     });
   });
+
+  describe(".SubviewSet", function() {
+    var parent,
+        childA,
+        childB;
+
+    var ParentView = Backbone.View.extend({
+      initialize: function(options) {
+        this.subviews = new structures.SubviewSet({parent: this});
+      },
+
+      render: function() {
+        this.$el.html([
+          '<div id="a"></div>',
+          '<div id="b"></div>'
+        ].join(''));
+      }
+    });
+
+    var ChildView = Backbone.View.extend({
+      initialize: function(options) {
+        this.text = options.text;
+        this.clicked = false;
+      },
+
+      render: function() {
+        this.$el.text(this.text);
+      },
+
+      events: {
+        'click': function() {
+          this.clicked = true;
+        }
+      }
+    });
+
+    beforeEach(function() {
+      parent = new ParentView();
+
+      childA = new ChildView({text: 'foo'});
+      childB = new ChildView({text: 'bar'});
+
+      parent.subviews.add(childA, '#a');
+      parent.subviews.add(childB, '#b');
+    });
+
+    describe(".render()", function() {
+      beforeEach(function() {
+        parent.render();
+      });
+
+      it("should render the subviews as part of the parent", function() {
+        assert.equal(parent.$('#a').text(), '');
+        assert.equal(parent.$('#b').text(), '');
+
+        parent.subviews.render();
+
+        assert.equal(parent.$('#a').text(), 'foo');
+        assert.equal(parent.$('#b').text(), 'bar');
+      });
+
+      it("should assign the subviews to the corresponding parts of the parent",
+      function() {
+        assert(!parent.$('#a').is(childA.$el));
+        assert(!parent.$('#b').is(childB.$el));
+
+        parent.subviews.render();
+
+        assert(parent.$('#a').is(childA.$el));
+        assert(parent.$('#b').is(childB.$el));
+      });
+
+      it("should ensure the subviews' events are delegated to the " +
+      "corresponding parts of the parent", function() {
+        parent.$('#a').click();
+        assert(!childA.clicked);
+
+        parent.subviews.render();
+
+        parent.$('#a').click();
+        assert(childA.clicked);
+      });
+    });
+  });
 });

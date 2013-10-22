@@ -97,11 +97,31 @@ diamondash.components.structures = function() {
 
   ViewSet.extend = Extendable.extend;
 
+  var SubviewSet = ViewSet.extend({
+    constructor: function(options) {
+      SubviewSet.__super__.constructor.call(this);
+
+      options = options || {};
+      this.parent = options.parent;
+    },
+
+    render: function() {
+      var args = arguments;
+
+      this.each(function(view, selector) {
+        view.setElement(this.parent.$(selector), true);
+      }, this);
+
+      this.apply('render', arguments);
+    }
+  });
+
   return {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
     ColorMaker: ColorMaker,
-    ViewSet: ViewSet
+    ViewSet: ViewSet,
+    SubviewSet: SubviewSet
   };
 }.call(this);
