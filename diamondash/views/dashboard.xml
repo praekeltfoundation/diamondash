@@ -1,7 +1,5 @@
-<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class="container" id="dashboard">
-  <h1 class="dashboard-title"><t:transparent t:render="dashboard_title_renderer"/></h1>
-
-  <t:transparent t:render="widget_row_renderer"/>
+<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+  <div id="dashboard"></div>
 
   <script t:render="init_script_renderer">
     var data = <t:slot name="config_slot"/>;
@@ -11,6 +9,7 @@
       model: new diamondash.dashboard.DashboardModel(data)
     });
 
+    dashboard.render();
     dashboard.model.poll();
   </script>
 </div>
