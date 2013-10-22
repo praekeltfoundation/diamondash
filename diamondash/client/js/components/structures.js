@@ -100,9 +100,13 @@ diamondash.components.structures = function() {
   ViewSet.extend = Extendable.extend;
 
   var SubviewSet = ViewSet.extend({
+    parentAlias: 'parent',
+
     constructor: function(options) {
       SubviewSet.__super__.constructor.call(this);
-      this.parent = options.parent;
+
+      this.parent = options[this.parentAlias];
+      this[this.parentAlias] = this.parent;
     },
 
     selector: function(key) {
