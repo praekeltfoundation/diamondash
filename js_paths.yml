@@ -36,8 +36,8 @@ diamondash:
     dest: 'diamondash/public/js/diamondash.js'
   jst:
     src:
-      - 'diamondash/widgets/lvalue/lvalue.jst'
-      - 'diamondash/widgets/graph/legend.jst'
+      - 'diamondash/widgets/**/*.jst'
+      - 'diamondash/client/jst/**/*.jst'
     dest: 'diamondash/public/js/templates.js'
   css:
     src:
