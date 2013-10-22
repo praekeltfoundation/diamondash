@@ -28,7 +28,7 @@ describe("diamondash.dashboard", function(){
       widgets.registry.models.add('dynamic_toy', DynamicToyWidgetModel);
 
       model = new dashboard.DashboardModel(fixtures.get(
-        'diamondash.dashboard.DashboardModel:static-and-dynamic'));
+        'diamondash.dashboard.DashboardModel:complex'));
 
       widget2 = model.get('widgets').get('widget-2');
       widget4 = model.get('widgets').get('widget-4');
