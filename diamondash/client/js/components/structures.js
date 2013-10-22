@@ -100,8 +100,6 @@ diamondash.components.structures = function() {
   var SubviewSet = ViewSet.extend({
     constructor: function(options) {
       SubviewSet.__super__.constructor.call(this);
-
-      options = options || {};
       this.parent = options.parent;
     },
 
