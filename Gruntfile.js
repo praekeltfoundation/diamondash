@@ -94,8 +94,7 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('test', [
-    'jst',
-    'karma',
-    'exec:tests.cleanup'
+    'jst:diamondash.jst',
+    'karma'
   ]);
 };
