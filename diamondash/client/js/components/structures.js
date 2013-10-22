@@ -63,8 +63,8 @@ diamondash.components.structures = function() {
   });
 
   var ViewSet = Extendable.extend.call(Backbone.ChildViewContainer, {
-    keyOf: function(obj) {
-      return _(obj).result('id');
+    keyOf: function(view) {
+      return _(view).result('id');
     },
 
     ensureKey: function(obj) {
@@ -105,11 +105,13 @@ diamondash.components.structures = function() {
       this.parent = options.parent;
     },
 
-    render: function() {
-      var args = arguments;
+    selector: function(key) {
+      return key;
+    },
 
-      this.each(function(view, selector) {
-        view.setElement(this.parent.$(selector), true);
+    render: function() {
+      this.each(function(view, key) {
+        view.setElement(this.parent.$(this.selector(key)), true);
       }, this);
 
       this.apply('render', arguments);
