@@ -63,26 +63,27 @@ diamondash.components.structures = function() {
   });
 
   var ViewSet = Extendable.extend.call(Backbone.ChildViewContainer, {
-    idOf: function(obj) {
+    keyOf: function(obj) {
       return _(obj).result('id');
     },
 
-    ensureId: function(obj) {
+    ensureKey: function(obj) {
       return obj instanceof Backbone.View
-        ? this.idOf(obj)
+        ? this.keyOf(obj)
         : obj;
     },
 
-    get: function(id) {
-      return this.findByCustom(id);
+    get: function(key) {
+      return this.findByCustom(key);
     },
 
-    add: function(widget) {
-      return ViewSet.__super__.add.call(this, widget, this.idOf(widget));
+    add: function(widget, key) {
+      if (typeof key == 'undefined') { key = this.keyOf(widget); }
+      return ViewSet.__super__.add.call(this, widget, key);
     },
 
     remove: function(obj) {
-      var widget = this.get(this.ensureId(obj));
+      var widget = this.get(this.ensureKey(obj));
       if (widget) { ViewSet.__super__.remove.call(this, widget); }
       return this;
     }
