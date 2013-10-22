@@ -203,6 +203,12 @@ describe("diamondash.dashboard", function(){
     });
 
     describe(".render()", function() {
+      it("should render its title", function() {
+        assert.equal(view.$('> .head').length, 0);
+        view.render();
+        assert.equal(view.$('> .head').text(), 'Dashboard 1');
+      });
+
       it("should render its widgets", function() {
         assert.equal(view.$('[data-widget=widget-1]').length, 0);
         assert.equal(view.$('[data-widget=widget-2]').length, 0);

@@ -1,5 +1,6 @@
 diamondash.test.fixtures.add('diamondash.dashboard.DashboardModel:simple', {
   name: 'dashboard-1',
+  title: 'Dashboard 1',
   poll_interval: 50,
   widgets: [{
     name: 'widget-1',

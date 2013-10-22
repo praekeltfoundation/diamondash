@@ -1,12 +1,16 @@
-<% dashboard.model.get('rows').each(function(row) { %>
-<div class="row">
-  <% row.get('widgets').each(function(widget) { %>
-    <div
-     data-widget="<%= widget.id %>"
-     class="widget col-md-<%= widget.get('width')%>">
-      <div class="head"><h4><%= widget.get('title') %></h4></div>
-      <div class="body"></div>
-    </div>
+<div class="head"><h1><%= dashboard.model.get('title') %></h1></div>
+
+<div class="body container">
+  <% dashboard.model.get('rows').each(function(row) { %>
+  <div class="row">
+    <% row.get('widgets').each(function(widget) { %>
+      <div
+       data-widget="<%= widget.id %>"
+       class="widget col-md-<%= widget.get('width')%>">
+        <div class="head"><h4><%= widget.get('title') %></h4></div>
+        <div class="body"></div>
+      </div>
+    <% }); %>
+  </div>
   <% }); %>
 </div>
-<% }); %>
