@@ -1,17 +1,12 @@
 diamondash.widgets = function() {
   var structures = diamondash.components.structures;
 
-  var registry = {
-    models: new structures.Registry(),
-    views: new structures.Registry()
-  };
-
-  var WidgetViewSet = structures.ViewSet.extend({
+  var WidgetViewRegistry = structures.Registry.extend({
     make: function(options) {
       var type;
 
       if (options.model) {
-        type = registry.views.get(options.model.get('type_name'));
+        type = this.get(options.model.get('type_name'));
       }
 
       type = type || diamondash.widgets.widget.WidgetView;
@@ -25,8 +20,13 @@ diamondash.widgets = function() {
     }
   });
 
+  var registry = {
+    models: new structures.Registry(),
+    views: new WidgetViewRegistry()
+  };
+
   return {
     registry: registry,
-    WidgetViewSet: WidgetViewSet
+    WidgetViewRegistry: WidgetViewRegistry
   };
 }.call(this);
