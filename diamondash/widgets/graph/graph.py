@@ -26,10 +26,10 @@ class GraphWidgetConfig(DynamicWidgetConfig):
                 "Graph Widget '%s' needs metrics." % config['name'])
 
         config['time_range'] = utils.parse_interval(config['time_range'])
-        bucket_size = utils.parse_interval(config.pop('bucket_size'))
+        config['bucket_size'] = utils.parse_interval(config['bucket_size'])
 
         config['backend'].update({
-            'bucket_size': bucket_size,
+            'bucket_size': config['bucket_size'],
             'metrics': [cls.parse_metric(m) for m in config.pop('metrics')],
         })
 
@@ -38,17 +38,7 @@ class GraphWidgetConfig(DynamicWidgetConfig):
 
         backend_config_cls = cls.for_type(config['backend']['type'])
         config['backend'] = backend_config_cls.from_dict(config['backend'])
-
-        config['client_config']['model'].update({
-            'step': bucket_size,
-            'metrics': [
-                m['client_config']
-                for m in config['backend']['metrics']]
-        })
-        config['client_config']['view'].update({
-            'dotted': config.pop('dotted'),
-            'smooth': config.pop('smooth'),
-        })
+        config['metrics'] = config['backend']['metrics']
 
         return config
 
@@ -62,13 +52,8 @@ class GraphWidgetConfig(DynamicWidgetConfig):
             raise ConfigError('Every graph metric needs a name.')
 
         name = config.pop('name')
-        config['title'] = config.pop('title', name)
+        config['title'] = config.setdefault('title', name)
         config['name'] = utils.slugify(name)
-
-        config['client_config'] = {
-            'name': config['name'],
-            'title': config['title']
-        }
 
         return config
 

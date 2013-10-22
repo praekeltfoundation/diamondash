@@ -25,7 +25,7 @@ class DiamondashConfig(Config):
     FILENAME = 'diamondash.yml'
 
     DEFAULTS = {
-        'request_interval': '60s',
+        'poll_interval': '60s',
         'backend': {
             'type': 'diamondash.backends.graphite.GraphiteBackend',
             'url': 'http://127.0.0.1:8080',
@@ -36,7 +36,7 @@ class DiamondashConfig(Config):
     def parse(cls, config):
         defaults = {
             'backend': config.pop('backend'),
-            'request_interval': config.pop('request_interval')
+            'poll_interval': config.pop('poll_interval')
         }
 
         config['dashboards'] = [

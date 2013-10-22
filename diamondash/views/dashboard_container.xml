@@ -1,9 +1,0 @@
-<div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1" class="container" id="dashboard-container">
-  <h1 class="dashboard-title"><t:transparent t:render="dashboard_title_renderer"/></h1>
-
-  <t:transparent t:render="widget_row_renderer"/>
-  <script t:render="init_script_renderer">
-    var controller = new diamondash.dashboard.DashboardController.fromConfig(<t:slot name="client_config_slot"/>);
-    controller.start();
-  </script>
-</div>

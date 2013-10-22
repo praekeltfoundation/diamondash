@@ -15,9 +15,10 @@ describe("diamondash.widgets.dynamic", function() {
 
       model = new dynamic.DynamicWidgetModel({
         name: 'widget-1',
-        dashboardName: 'dashboard-1',
+        type_name: 'dynamic',
         foo: [1, 2, 3],
-        bar: ['a', 'b', 'c']
+        bar: ['a', 'b', 'c'],
+        dashboard: {name: 'dashboard-1'}
       });
     });
 
@@ -38,16 +39,14 @@ describe("diamondash.widgets.dynamic", function() {
 
       it("should not remove attrs not present in the api response",
       function() {
-        server.respondWith(JSON.stringify({
-          foo: 'spam'
-        }));
+        server.respondWith(JSON.stringify({foo: 'spam'}));
 
         model.fetchSnapshot();
         server.respond();
 
         assert.deepEqual(model.toJSON(), {
           name: 'widget-1',
-          dashboardName: 'dashboard-1',
+          type_name: 'dynamic',
           foo: 'spam',
           bar: ['a', 'b', 'c']
         });

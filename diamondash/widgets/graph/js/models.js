@@ -6,7 +6,9 @@ diamondash.widgets.graph.models = function() {
 
   var GraphMetricModel = Backbone.RelationalModel.extend({
     defaults: {
-      'datapoints': [],
+      dotted: false,
+      smooth: false,
+      datapoints: []
     },
 
     bisect: d3
