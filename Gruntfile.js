@@ -83,7 +83,7 @@ module.exports = function(grunt) {
   });
 
   grunt.registerTask('build', [
-    'jst',
+    'jst:diamondash.jst',
     'exec:vendor.fonts',
     'concat'
   ]);
