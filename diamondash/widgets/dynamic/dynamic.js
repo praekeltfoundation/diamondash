@@ -4,10 +4,7 @@ diamondash.widgets.dynamic = function() {
 
   var DynamicWidgetModel = widget.WidgetModel.extend({
     snapshotUrl: function() {
-      return [
-        _(this).result('url'),
-        'snapshot'
-      ].join('/');
+      return diamondash.url(_(this).result('url'), 'snapshot');
     },
 
     fetchSnapshot: function(options) {

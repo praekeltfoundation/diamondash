@@ -8,11 +8,10 @@ diamondash.widgets.widget = function() {
     subModelTypeAttribute: 'type_name',
 
     url: function() {
-      return [
-        '/api/widgets',
+      return diamondash.url(
+        'api/widgets',
         this.get('dashboard').get('name'),
-        this.get('name')
-      ].join('/');
+        this.get('name'));
     },
 
     defaults: {
