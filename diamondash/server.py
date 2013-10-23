@@ -126,10 +126,9 @@ class DiamondashServer(object):
     def show_index(self, request):
         return self.index
 
-    @app.route('/<any(css, js):res_type>/<string:name>')
-    @app.route('/shared/<any(css, js):res_type>/<string:name>')
-    def serve_static_resource(self, request, res_type, name):
-        """Routing for all css files"""
+    @app.route('/public/<string:res_type>/<string:name>')
+    def serve_resource(self, request, res_type, name):
+        """Routing for all public resources"""
         res_dir = self.resources.getChild(res_type, request)
         return res_dir.getChild(name, request)
 
