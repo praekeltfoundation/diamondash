@@ -26,8 +26,8 @@ class Config(dict):
     __metaclass__ = ConfigMetaClass
     DEFAULTS = {}
 
-    def __init__(self, items):
-        super(Config, self).__init__(self._parse(items))
+    def __init__(self, items=None):
+        super(Config, self).__init__(self._parse(items or {}))
 
     @classmethod
     def parse(cls, items):
