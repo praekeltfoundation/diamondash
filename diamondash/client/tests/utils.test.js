@@ -116,14 +116,14 @@ describe("diamondash.utils", function() {
       assert.equal(utils.joinPaths('a/', '/', 'b', '/', '/c'), 'a/b/c');
     });
 
-    it("should keep slashes at the end of the joined path", function() {
+    it("should keep a slash at the end of the joined path", function() {
       assert.equal(utils.joinPaths('/'), '/');
       assert.equal(utils.joinPaths('a/'), 'a/');
       assert.equal(utils.joinPaths('a/', '/b/', '/c/'), 'a/b/c/');
       assert.equal(utils.joinPaths('a/', '/b/', '/c', '/'), 'a/b/c/');
     });
 
-    it("should keep slash at the start of the joined path", function() {
+    it("should keep a slash at the start of the joined path", function() {
       assert.equal(utils.joinPaths('/'), '/');
       assert.equal(utils.joinPaths('/a/', '/b/', '/c/'), '/a/b/c/');
       assert.equal(utils.joinPaths('/', 'a/', '/b/', '/c'), '/a/b/c');
