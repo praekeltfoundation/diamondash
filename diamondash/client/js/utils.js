@@ -1,7 +1,7 @@
 diamondash.utils = function() {
   var re = {};
-  re.leadingSlash = /^\//;
-  re.trailingSlash = /\/$/;
+  re.leadingSlash = /^\/+/;
+  re.trailingSlash = /\/+$/;
 
   function objectByName(name, that) {
     return _(name.split( '.' )).reduce(
