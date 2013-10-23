@@ -1,4 +1,4 @@
-describe.only("diamondash", function() {
+describe("diamondash", function() {
   describe(".url()", function() {
     before(function() {
       diamondash.config.set('url_prefix', 'foo');
