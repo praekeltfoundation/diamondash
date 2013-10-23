@@ -1,4 +1,8 @@
 diamondash.utils = function() {
+  var re = {};
+  re.leadingSlash = /^\/+/;
+  re.trailingSlash = /\/+$/;
+
   function objectByName(name, that) {
     return _(name.split( '.' )).reduce(
       function(obj, propName) { return obj[propName]; },
@@ -45,12 +49,36 @@ diamondash.utils = function() {
     return values;
   }
 
+  function joinPaths() {
+    var parts = _(arguments).compact();
+
+    var result = _(parts)
+      .chain()
+      .map(function(p) {
+        return p
+          .replace(re.leadingSlash, '')
+          .replace(re.trailingSlash, '');
+      })
+      .compact()
+      .value()
+      .join('/');
+
+    var first = parts.shift();
+    if (_(first).first() == '/') { result = '/' + result; }
+
+    var last = parts.pop() || (first != '/' ? first : '');
+    if (_(last).last() == '/') { result = result + '/'; }
+
+    return result;
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap,
-    d3Map: d3Map
+    d3Map: d3Map,
+    joinPaths: joinPaths
   };
 }.call(this);
