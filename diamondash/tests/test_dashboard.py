@@ -34,7 +34,7 @@ def mk_config_data(**overrides):
 
 
 def mk_dashboard(**overrides):
-    config = DashboardConfig.from_dict(mk_config_data(**overrides))
+    config = DashboardConfig(mk_config_data(**overrides))
     return Dashboard(config)
 
 
@@ -43,7 +43,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         """
         Should create a dashboard from a config dict.
         """
-        config = DashboardConfig.from_dict(mk_config_data())
+        config = DashboardConfig(mk_config_data())
 
         self.assertEqual(config['name'], 'some-dashboard')
         self.assertEqual(config['title'], 'Some Dashboard')
@@ -85,7 +85,7 @@ class DashboardConfigTestCase(unittest.TestCase):
 
 class DashboardTestCase(unittest.TestCase):
     def mk_widget_config(self, **overrides):
-        return WidgetConfig.from_dict(utils.add_dicts({
+        return WidgetConfig(utils.add_dicts({
             'type': 'diamondash.widgets.widget.Widget',
             'name': 'toy',
             'title': 'Toy',

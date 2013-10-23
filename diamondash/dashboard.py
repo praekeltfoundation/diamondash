@@ -63,7 +63,7 @@ class DashboardConfig(Config):
                 config.get('backend', {}))
 
         config_cls = cls.for_type(config['type'])
-        return config_cls.from_dict(config)
+        return config_cls(config)
 
 
 class Dashboard(Element):

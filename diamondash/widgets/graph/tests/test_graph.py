@@ -29,7 +29,7 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
         self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
 
     def test_parsing(self):
-        config = GraphWidgetConfig.from_dict(mk_config_data())
+        config = GraphWidgetConfig(mk_config_data())
 
         self.assertEqual(config['time_range'], 86400000)
         self.assertEqual(config['bucket_size'], 3600000)
@@ -66,7 +66,7 @@ class GraphWidgetTestCase(unittest.TestCase):
 
     @staticmethod
     def mk_widget(**kwargs):
-        config = GraphWidgetConfig.from_dict(mk_config_data(**kwargs))
+        config = GraphWidgetConfig(mk_config_data(**kwargs))
         return GraphWidget(config)
 
     def assert_snapshot_retrieval(self, backend_res, expected_data,
