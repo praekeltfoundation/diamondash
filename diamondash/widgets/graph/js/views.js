@@ -96,7 +96,7 @@ diamondash.widgets.graph.views = function() {
     },
 
     hide: function() {
-      this.graph.svg
+      this.graph.canvas
         .selectAll('.hover-marker')
         .remove();
 
@@ -130,7 +130,7 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
-      var metricDots = this.graph.svg
+      var metricDots = this.graph.canvas
         .selectAll('.metric-dots')
         .data(this.graph.model.get('metrics').models);
 
@@ -172,7 +172,7 @@ diamondash.widgets.graph.views = function() {
             return d.y !== null;
           });
 
-        var dot = this.graph.svg
+        var dot = this.graph.canvas
           .selectAll('.hover-dot')
           .data(data);
 
@@ -190,7 +190,7 @@ diamondash.widgets.graph.views = function() {
       },
 
       'unhover graph': function() {
-        this.graph.svg
+        this.graph.canvas
           .selectAll('.hover-dot')
           .remove();
       }
@@ -211,7 +211,7 @@ diamondash.widgets.graph.views = function() {
         ? 'monotone'
         : 'linear');
 
-      var line = this.graph.svg
+      var line = this.graph.canvas
         .selectAll('.metric-line')
         .data(this.graph.model.get('metrics').models);
 
@@ -244,23 +244,23 @@ diamondash.widgets.graph.views = function() {
       return this.model.id;
     },
 
-    initialize: function(options) {
-      options = options || {};
-      _(options).defaults(options.config);
-
+    initialize: function() {
       GraphView.__super__.initialize.call(this, {
         dimensions: new charts.Dimensions({
-          width: this.$el.width(),
           height: this.height,
           margin: this.margin
         })
       });
 
-      this._setupScales();
+      var fx = d3.time.scale();
+      fx.accessor = function(d) { return fx(d.x); };
+      this.fx = fx;
 
-      this.lines = new GraphLines({
-        graph: this,
-      });
+      var fy = d3.scale.linear();
+      fy.accessor = function(d) { return fy(d.y); };
+      this.fy = fy;
+
+      this.lines = new GraphLines({graph: this});
 
       this.axis = new charts.AxisView({
         chart: this,
@@ -275,23 +275,19 @@ diamondash.widgets.graph.views = function() {
       utils.bindEvents(this.bindings, this);
     },
 
-    _setupScales: function() {
-      var fx = d3.time.scale().range([0, this.dimensions.innerWidth]);
-      fx.accessor = function(d) { return fx(d.x); };
-
+    resetScales: function() {
       var maxY = this.dimensions.innerHeight - this.axisHeight;
-      var fy = d3.scale.linear().range([maxY, 0]);
-      fy.accessor = function(d) { return fy(d.y); };
-
-      this.fx = fx;
-      this.fy = fy;
+      this.fy.range([maxY, 0]);
+      this.fx.range([0, this.dimensions.innerWidth]);
     },
 
     render: function() {
-      var domain = this.model.get('domain'),
-          range = this.model.get('range'),
-          step = this.model.get('bucket_size');
+      this.dimensions.set({width: this.$el.width()});
+      GraphView.__super__.render.call(this);
 
+      this.resetScales();
+      var domain = this.model.get('domain');
+      var range = this.model.get('range');
       this.fx.domain(domain);
       this.fy.domain(range);
 
@@ -301,10 +297,14 @@ diamondash.widgets.graph.views = function() {
         this.dots.render();
       }
 
+      var step = this.model.get('bucket_size');
       this.axis.render(domain[0], domain[1], step);
 
       this.legend.render();
-      this.$el.append(this.legend.$el);
+
+      this.$el
+        .append($(this.svg.node()))
+        .append(this.legend.$el);
 
       return this;
     },
@@ -315,7 +315,7 @@ diamondash.widgets.graph.views = function() {
       position.svg.x = coords.x;
       position.svg.y = coords.y;
 
-      // convert the svg x value to the corresponding time alue, then snap
+      // convert the svg x value to the corresponding time value, then snap
       // it to the closest timestep
       position.x = utils.snap(
         this.fx.invert(position.svg.x),

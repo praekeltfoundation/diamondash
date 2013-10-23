@@ -1,20 +1,15 @@
-.row {
-	margin-bottom: 18px;
+.dashboard {
+  margin-bottom: 2.5em;
 }
 
-.widget-title {
-	background-color: #333;
+.dashboard .widget .widget-head {
 	color: #eee;
+	background-color: #333;
 	text-align: center;
-	min-height: 30px;
 }
 
-.widget-title h4 {
-	line-height: 30px;
-}
-
-.dashboard-title {
-  margin-bottom: 14px;
+.dashboard .widget .widget-head h4 {
+  padding: 4px;
 }
 
 .error-header {
@@ -165,7 +160,7 @@ a:hover {
   transition: fill-opacity 250ms linear;
  }
 
-.widget-container {
+.lvalue .widget-body {
   padding: 0;
   text-align: center;
 }

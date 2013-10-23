@@ -63,8 +63,8 @@ diamondash.components.structures = function() {
   });
 
   var ViewSet = Extendable.extend.call(Backbone.ChildViewContainer, {
-    keyOf: function(obj) {
-      return _(obj).result('id');
+    keyOf: function(view) {
+      return _(view).result('id');
     },
 
     ensureKey: function(obj) {
@@ -100,16 +100,22 @@ diamondash.components.structures = function() {
   ViewSet.extend = Extendable.extend;
 
   var SubviewSet = ViewSet.extend({
+    parentAlias: 'parent',
+
     constructor: function(options) {
       SubviewSet.__super__.constructor.call(this);
-      this.parent = options.parent;
+
+      this.parent = options[this.parentAlias];
+      this[this.parentAlias] = this.parent;
+    },
+
+    selector: function(key) {
+      return key;
     },
 
     render: function() {
-      var args = arguments;
-
-      this.each(function(view, selector) {
-        view.setElement(this.parent.$(selector), true);
+      this.each(function(view, key) {
+        view.setElement(this.parent.$(this.selector(key)), true);
       }, this);
 
       this.apply('render', arguments);

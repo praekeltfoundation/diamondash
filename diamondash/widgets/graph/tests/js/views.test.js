@@ -418,10 +418,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should draw its axis", function() {
-        assert.equal(
-          graph.$('.axis').text(),
-          ['01-01 00:00',
-           '01-01 00:00'].join(''));
+        assert.equal(graph.$('.axis').text(), '');
 
         graph.render();
 
@@ -452,8 +449,10 @@ describe("diamondash.widgets.graph", function() {
       var coords;
 
       beforeEach(function() {
+        graph.render();
+
         sinon.stub(d3, 'mouse', function() {
-          return [1276514232848231, -2311];
+          return [190.4, -11];
         });
       });
 
@@ -465,8 +464,8 @@ describe("diamondash.widgets.graph", function() {
       function(done) {
         graph.on('hover', function(position) {
           assert.equal(position.x, 1340876295000);
-          assert.equal(position.svg.x, 1276514232840000);
-          assert.equal(position.svg.y, -2311);
+          assert.equal(position.svg.x, 190.4);
+          assert.equal(position.svg.y, -11);
           done();
         });
 

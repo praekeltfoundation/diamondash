@@ -48,7 +48,7 @@ class DashboardConfigTestCase(unittest.TestCase):
         self.assertEqual(config['name'], 'some-dashboard')
         self.assertEqual(config['title'], 'Some Dashboard')
 
-        w1_config, newrow, w2_config = config['widgets']
+        w1_config, w2_config = config['widgets']
         self.assertTrue(isinstance(w1_config, WidgetConfig))
         self.assertTrue(w1_config['name'], 'widget1')
         self.assertTrue('backend' not in w1_config)
@@ -61,7 +61,10 @@ class DashboardConfigTestCase(unittest.TestCase):
             'metrics': [],
         })
 
-        self.assertEqual(newrow, 'newrow')
+        self.assertEqual(config['rows'], [
+            {'widgets': [{'name': 'widget1'}]},
+            {'widgets': [{'name': 'widget2'}]}
+        ])
 
     def test_parsing_for_no_name(self):
         """
@@ -102,31 +105,6 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(
             dashboard.widgets[-1].config,
             widget_config)
-
-        self.assertEqual(
-            dashboard.last_row.widgets[-1].widget.config,
-            widget_config)
-
-        self.assertEqual(dashboard.last_row.width, 6)
-
-    def test_row_building(self):
-        """
-        Should add a new row if there is no space for the widget being added on
-        the current row.
-        """
-        dashboard = mk_dashboard(widgets=[])
-
-        dashboard.add_widget(self.mk_widget_config(width=8))
-        self.assertEqual(len(dashboard.rows), 1)
-        self.assertEqual(dashboard.last_row.width, 8)
-
-        dashboard.add_widget(self.mk_widget_config(width=4))
-        self.assertEqual(len(dashboard.rows), 1)
-        self.assertEqual(dashboard.last_row.width, 12)
-
-        dashboard.add_widget(self.mk_widget_config(width=4))
-        self.assertEqual(len(dashboard.rows), 2)
-        self.assertEqual(dashboard.last_row.width, 4)
 
 
 class DashboardPageTestCase(unittest.TestCase):

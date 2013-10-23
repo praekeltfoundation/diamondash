@@ -1,7 +1,17 @@
 diamondash.dashboard = function() {
-  var widgets = diamondash.widgets,
+  var structures = diamondash.components.structures,
+      widgets = diamondash.widgets,
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
+
+  var DashboardRowModel = Backbone.RelationalModel.extend({
+    relations: [{
+      type: Backbone.HasMany,
+      key: 'widgets',
+      relatedModel: 'diamondash.widgets.widget.WidgetModel',
+      includeInJSON: ['name']
+    }]
+  });
 
   var DashboardModel = Backbone.RelationalModel.extend({
     relations: [{
@@ -12,10 +22,16 @@ diamondash.dashboard = function() {
         key: 'dashboard',
         includeInJSON: false
       }
+    }, {
+      type: Backbone.HasMany,
+      key: 'rows',
+      relatedModel: DashboardRowModel,
+      includeInJSON: ['widgets']
     }],
 
     defaults: {
       widgets: [],
+      rows: [],
       poll_interval: 10000
     },
 
@@ -54,37 +70,42 @@ diamondash.dashboard = function() {
     }
   });
 
+  var DashboardWidgetViews = structures.SubviewSet.extend({
+    parentAlias: 'dashboard',
+
+    selector: function(key) {
+      return '[data-widget=' + key + '] .widget-body';
+    },
+
+    add: function(obj) {
+      var widget = widgets.registry.views.ensure(obj);
+      return DashboardWidgetViews.__super__.add.call(this, widget);
+    }
+  });
+
   var DashboardView = Backbone.View.extend({
+    jst: JST['diamondash/client/jst/dashboard.jst'],
+
     initialize: function() {
-      this.widgets = new widgets.WidgetViewSet();
+      this.widgets = new DashboardWidgetViews({dashboard: this});
 
       this.model.get('widgets').each(function(w) {
-        this.addWidget({
-          el: this.$('#' + w.id),
-          model: w
-        });
+        this.widgets.add({model: w});
       }, this);
     },
 
-    addWidget: function(options) {
-      var widget = this.widgets.ensure(options);
-      this.widgets.add(widget);
-      return this;
-    },
-
-    removeWidget: function(widget) {
-      this.widgets.remove(widget);
-      return this;
-    },
-
     render: function() {
-      this.widgets.invoke('render');
+      this.$el.html(this.jst({dashboard: this}));
+      this.widgets.render();
       return this;
     }
   });
 
   return {
     DashboardView: DashboardView,
-    DashboardModel: DashboardModel
+    DashboardWidgetViews: DashboardWidgetViews,
+
+    DashboardModel: DashboardModel,
+    DashboardRowModel: DashboardRowModel
   };
 }.call(this);

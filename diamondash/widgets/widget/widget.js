@@ -13,6 +13,10 @@ diamondash.widgets.widget = function() {
         this.get('dashboard').get('name'),
         this.get('name')
       ].join('/');
+    },
+
+    defaults: {
+      width: 3
     }
   });
 

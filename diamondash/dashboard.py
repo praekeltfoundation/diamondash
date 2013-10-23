@@ -27,23 +27,34 @@ class DashboardConfig(Config):
         name = utils.slugify(name)
         config['name'] = name
 
+        # request interval is converted to milliseconds for client side
+        config['poll_interval'] = utils.parse_interval(config['poll_interval'])
+
         if 'widgets' not in config:
             raise ConfigError("Dashboard '%s' has no widgets" % name)
 
         backend_config = config.pop('backend', {})
-        config['widgets'] = [
-            cls.parse_widget(w, backend_config) for w in config['widgets']]
 
-        # request interval is converted to milliseconds for client side
-        config['poll_interval'] = utils.parse_interval(config['poll_interval'])
+        last_row = []
+        rows = [{'widgets': last_row}]
+        widget_configs = []
+
+        for widget_config in config['widgets']:
+            if widget_config == 'newrow':
+                last_row = []
+                rows.append({'widgets': last_row})
+            else:
+                widget_config = cls.parse_widget(widget_config, backend_config)
+                last_row.append({'name': widget_config['name']})
+                widget_configs.append(widget_config)
+
+        config['rows'] = rows
+        config['widgets'] = widget_configs
 
         return config
 
     @classmethod
     def parse_widget(cls, config, backend_config):
-        if Dashboard.is_layout_fn(config):
-            return config
-
         type_cls = utils.load_class_by_string(config['type'])
 
         if issubclass(type_cls, DynamicWidget):
@@ -67,8 +78,6 @@ class Dashboard(Element):
     # the max number of columns allowed by Bootstrap's grid system
     MAX_WIDTH = 12
 
-    LAYOUT_FUNCTIONS = {'newrow': '_new_row'}
-
     loader = XMLString(
         resource_string(__name__, 'views/dashboard.xml'))
 
@@ -77,40 +86,21 @@ class Dashboard(Element):
 
         self.widgets = []
         self.widgets_by_name = {}
-        self.last_row = WidgetRow()
-        self.rows = [self.last_row]
 
         for widget in self.config['widgets']:
-            self.add_widget(widget)
+            self.add_widget(widget, add_to_layout=False)
 
-    @classmethod
-    def is_layout_fn(cls, obj):
-        return isinstance(obj, str) and obj in cls.LAYOUT_FUNCTIONS
-
-    def apply_layout_fn(self, name):
-        return getattr(self, self.LAYOUT_FUNCTIONS[name])()
-
-    def _new_row(self):
-        self.last_row = WidgetRow()
-        self.rows.append(self.last_row)
-
-    def add_widget(self, config):
+    def add_widget(self, config, add_to_layout=True):
         """Adds a widget to the dashboard. """
+        type_cls = utils.load_class_by_string(config['type'])
+        widget = type_cls(config)
 
-        if self.is_layout_fn(config):
-            self.apply_layout_fn(config)
-        else:
-            if self.last_row.width + config['width'] > self.MAX_WIDTH:
-                self._new_row()
+        self.widgets_by_name[config['name']] = widget
+        self.widgets.append(widget)
 
-            type_cls = utils.load_class_by_string(config['type'])
-            widget = type_cls(config)
-
-            self.widgets_by_name[config['name']] = widget
-            self.widgets.append(widget)
-
-            # append to the last row
-            self.last_row.add_widget(WidgetContainer(widget))
+        if add_to_layout:
+            last_row = self.config['rows'][-1]
+            last_row['widgets'].append({'name': config['name']})
 
     def get_widget(self, name):
         """Returns a widget using the passed in widget name."""
@@ -121,15 +111,6 @@ class Dashboard(Element):
         details = self.config.copy()
         details['widgets'] = [w.get_details() for w in self.widgets]
         return details
-
-    @renderer
-    def dashboard_title_renderer(self, request, tag):
-        return tag(self.config['title'])
-
-    @renderer
-    def widget_row_renderer(self, request, tag):
-        for row in self.rows:
-            yield row
 
     @renderer
     def init_script_renderer(self, request, tag):

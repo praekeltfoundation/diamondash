@@ -1,0 +1,24 @@
+<div class="container">
+  <div class="row">
+    <div class="dashboard-head col-md-12">
+      <h1><%= dashboard.model.get('title') %></h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="dashboard-body col-md-12">
+      <% dashboard.model.get('rows').each(function(row) { %>
+      <div class="row">
+        <% row.get('widgets').each(function(widget) { %>
+          <div
+           data-widget="<%= widget.id %>"
+           class="<%= widget.get('type_name') %> widget col-md-<%= widget.get('width') %>">
+            <div class="widget-head"><h4><%= widget.get('title') %></h4></div>
+            <div class="widget-body"></div>
+          </div>
+        <% }); %>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+</div>

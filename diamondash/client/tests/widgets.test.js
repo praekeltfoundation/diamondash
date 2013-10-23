@@ -4,16 +4,12 @@ describe("diamondash.widgets", function(){
 
   var ToyWidgetView = Backbone.View.extend();
 
-  describe(".WidgetViewSet", function() {
+  describe(".WidgetViewRegistry", function() {
     var views;
 
     beforeEach(function() {
-      views = new widgets.WidgetViewSet();
-      widgets.registry.views.add('toy', ToyWidgetView);
-    });
-
-    afterEach(function() {
-      widgets.registry.views.remove('toy');
+      views = new widgets.WidgetViewRegistry();
+      views.add('toy', ToyWidgetView);
     });
 
     describe(".make()", function() {
