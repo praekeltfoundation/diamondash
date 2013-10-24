@@ -45,7 +45,7 @@ def mk_backend_config_data(**overrides):
 
 class GraphiteBackendConfigTestCase(unittest.TestCase):
     def test_parsing(self):
-        config = GraphiteBackendConfig.from_dict(mk_backend_config_data())
+        config = GraphiteBackendConfig(mk_backend_config_data())
 
         m1_config, m2_config = config['metrics']
         self.assertEqual(m1_config['target'], 'a.last')
@@ -100,7 +100,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
         self.uuid_counter = count()
         self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
 
-        config = GraphiteBackendConfig.from_dict(mk_backend_config_data())
+        config = GraphiteBackendConfig(mk_backend_config_data())
         self.backend = GraphiteBackend(config)
 
         self.m1, self.m2 = self.backend.metrics
@@ -180,7 +180,7 @@ class GraphiteBackendTestCase(unittest.TestCase):
 
 class GraphiteMetricConfigTestCase(unittest.TestCase):
     def test_parsing(self):
-        config = GraphiteMetricConfig.from_dict(mk_metric_config_data())
+        config = GraphiteMetricConfig(mk_metric_config_data())
         self.assertEqual(config['bucket_size'], 3600000)
         self.assertEqual(config['metadata'], {'name': 'max of a'})
 

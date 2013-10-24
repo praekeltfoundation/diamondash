@@ -40,7 +40,7 @@ class DiamondashConfig(Config):
         }
 
         config['dashboards'] = [
-            DashboardConfig.from_dict(utils.add_dicts(defaults, d))
+            DashboardConfig(utils.add_dicts(defaults, d))
             for d in config['dashboards']]
 
         config['dashboards'] = sorted(
@@ -240,7 +240,7 @@ class DiamondashServer(object):
                 "Dashboard with name '%s' already exists")
 
         try:
-            config = DashboardConfig.from_dict(config)
+            config = DashboardConfig(config)
         except ConfigError:
             return self.api_error_response(
                 request,
@@ -270,7 +270,7 @@ class DiamondashServer(object):
         config['name'] = name.encode('utf-8')
 
         try:
-            config = DashboardConfig.from_dict(config)
+            config = DashboardConfig(config)
         except ConfigError:
             return self.api_error_response(
                 request,

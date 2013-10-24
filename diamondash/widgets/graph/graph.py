@@ -37,7 +37,7 @@ class GraphWidgetConfig(DynamicWidgetConfig):
             config['backend']['null_filter'] = config.pop('null_filter')
 
         backend_config_cls = cls.for_type(config['backend']['type'])
-        config['backend'] = backend_config_cls.from_dict(config['backend'])
+        config['backend'] = backend_config_cls(config['backend'])
         config['metrics'] = config['backend']['metrics']
 
         return config

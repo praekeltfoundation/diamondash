@@ -6,7 +6,7 @@ from diamondash.config import ConfigError
 
 class WidgetConfigTestCase(unittest.TestCase):
     def test_parsing(self):
-        config = WidgetConfig.from_dict({
+        config = WidgetConfig({
             'name': u'Test Widget',
             'title': 'Test Widget',
             'width': 4
@@ -21,7 +21,7 @@ class WidgetConfigTestCase(unittest.TestCase):
         Should raise an exception when given widget dashboard config without a
         name key.
         """
-        self.assertRaises(ConfigError, WidgetConfig.from_dict, {})
+        self.assertRaises(ConfigError, WidgetConfig, {})
 
     def test_parsing_for_no_title(self):
         """
@@ -29,7 +29,7 @@ class WidgetConfigTestCase(unittest.TestCase):
         title is in the config.
         """
         config = {'name': u'Test Widget'}
-        parsed_config = WidgetConfig.from_dict(config)
+        parsed_config = WidgetConfig(config)
         self.assertEqual(parsed_config['title'], 'Test Widget')
 
     def test_parsing_for_no_width(self):
@@ -37,7 +37,7 @@ class WidgetConfigTestCase(unittest.TestCase):
         Should set the widget width to the minimum column span if no width
         value is given.
         """
-        config = WidgetConfig.from_dict({
+        config = WidgetConfig({
             'name': u'Test Widget',
             'title': u'Test Widget'
         })
