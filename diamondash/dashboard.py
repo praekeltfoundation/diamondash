@@ -12,6 +12,10 @@ from diamondash.config import Config, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
 
 
+class DashboardRowOverflowError(Exception):
+    """Raised when a dashboard row has too little space to add a widget"""
+
+
 class DashboardRowConfig(Config):
     WIDTH = 12
 
@@ -28,6 +32,9 @@ class DashboardRowConfig(Config):
         return self.remaining_width >= config['width']
 
     def add_widget(self, config):
+        if not self.accepts_widget(config):
+            raise DashboardRowOverflowError()
+
         self['widgets'].append({'name': config['name']})
         self.remaining_width -= config['width']
 

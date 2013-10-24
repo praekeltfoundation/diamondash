@@ -8,8 +8,8 @@ from diamondash.config import ConfigError
 from diamondash.widgets.widget import WidgetConfig
 from diamondash.widgets.dynamic import DynamicWidgetConfig
 from diamondash.dashboard import (
-    DashboardRowConfig, DashboardRowConfigs, DashboardWidgetConfigs,
-    DashboardConfig, Dashboard, DashboardPage)
+    DashboardRowOverflowError, DashboardRowConfig, DashboardRowConfigs,
+    DashboardWidgetConfigs, DashboardConfig, Dashboard, DashboardPage)
 
 
 def mk_config_data(**overrides):
@@ -78,6 +78,22 @@ class DashboardRowConfigTestCase(unittest.TestCase):
                 {'name': 'widget1'},
                 {'name': 'widget2'}]
         })
+
+    def test_widget_adding_for_overflow_handling(self):
+        row = DashboardRowConfig()
+
+        row.add_widget(WidgetConfig({
+            'name': 'widget1',
+            'width': 4
+        }))
+
+        self.assertRaises(
+            DashboardRowOverflowError,
+            row.add_widget,
+            WidgetConfig({
+                'name': 'widget2',
+                'width': 9
+            }))
 
 
 class DashboardRowConfigsTestCase(unittest.TestCase):
