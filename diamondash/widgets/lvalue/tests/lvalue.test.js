@@ -1,19 +1,105 @@
 describe("diamondash.widgets.lvalue", function(){
-  var utils = diamondash.test.utils;
+  var utils = diamondash.test.utils,
+      lvalue = diamondash.widgets.lvalue;
 
   afterEach(function() {
     utils.unregisterModels();
   });
 
-  describe("LValueView", function(){
-    var LValueView = diamondash.widgets.lvalue.LValueView,
-        LValueModel = diamondash.widgets.lvalue.LValueModel;
+  describe("LValueModel", function(){
+    var model;
 
+    beforeEach(function() {
+      model = new lvalue.LValueModel({
+        'name': 'some-lvalue-widget',
+        'last': 9227465.0,
+        'prev': 5702887.0,
+        'from': 1340875995000,
+        'to': 1340875995000 + 3600000 - 1,
+      });
+    });
+
+    describe(".validate", function() {
+      it("should validate its 'last' attr", function() {
+        assert(model.isValid());
+        model.unset('last');
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'last' attr: undefined");
+
+        model.set('last', null);
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'last' attr: null");
+
+        model.set('last', 0);
+        assert(model.isValid());
+      });
+
+      it("should validate its 'prev' attr", function() {
+        assert(model.isValid());
+        model.unset('prev');
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'prev' attr: undefined");
+
+        model.set('prev', null);
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'prev' attr: null");
+
+        model.set('prev', 0);
+        assert(model.isValid());
+      });
+
+      it("should validate its 'from' attr", function() {
+        assert(model.isValid());
+        model.unset('from');
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'from' attr: undefined");
+
+        model.set('from', null);
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'from' attr: null");
+
+        model.set('from', 0);
+        assert(model.isValid());
+      });
+
+      it("should validate its 'to' attr", function() {
+        assert(model.isValid());
+        model.unset('to');
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'to' attr: undefined");
+
+        model.set('to', null);
+        assert(!model.isValid());
+        assert.equal(
+          model.validationError,
+          "LValueModel has bad 'to' attr: null");
+
+        model.set('to', 0);
+        assert(model.isValid());
+      });
+    });
+  });
+
+  describe("LValueView", function(){
     var model,
         view;
 
     beforeEach(function() {
-      model = new LValueModel({
+      model = new lvalue.LValueModel({
         'name': 'some-lvalue-widget',
         'last': 9227465.0,
         'prev': 5702887.0,
@@ -21,7 +107,7 @@ describe("diamondash.widgets.lvalue", function(){
         'to': 1340875995000 + 3600000 - 1,
       });
 
-      view = new LValueView({
+      view = new lvalue.LValueView({
         model: model,
         el: $('<div>').append(
           $('<div>').addClass('widget-container'))
