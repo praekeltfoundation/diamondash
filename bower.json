@@ -6,7 +6,7 @@
     "Praekelt Foundation"
   ],
   "license": "BSD",
-  "private": true,
+  "private": false,
   "dependencies": {
     "backbone": "~1.0.0",
     "underscore": "~1.5.2",
