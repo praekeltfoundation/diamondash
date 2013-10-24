@@ -96,7 +96,7 @@ class DashboardRowConfigsTestCase(unittest.TestCase):
             'width': 3
         }))
 
-        self.assertEqual(rows, [{
+        self.assertEqual(rows.to_list(), [{
             'widgets': [
                 {'name': 'widget1'}]
         }, {
@@ -127,7 +127,7 @@ class DashboardRowConfigsTestCase(unittest.TestCase):
             'width': 4
         }))
 
-        self.assertEqual(rows, [{
+        self.assertEqual(rows.to_list(), [{
             'widgets': [
                 {'name': 'widget1'},
                 {'name': 'widget2'}]

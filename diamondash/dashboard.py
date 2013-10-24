@@ -32,39 +32,50 @@ class DashboardRowConfig(Config):
         self.remaining_width -= config['width']
 
 
-class DashboardRowConfigs(list):
+class DashboardRowConfigs(object):
     def __init__(self):
+        self._rows = []
         self.new_row()
 
+    def to_list(self):
+        return self._rows
+
     def new_row(self):
-        self.append(DashboardRowConfig())
+        self._rows.append(DashboardRowConfig())
 
     def add_widget(self, config):
-        if not self[-1].accepts_widget(config):
+        if not self._rows[-1].accepts_widget(config):
             self.new_row()
 
-        self[-1].add_widget(config)
+        self._rows[-1].add_widget(config)
 
 
-class DashboardWidgetConfigs(list):
-    def __init__(self, backend_config=None):
-        self.backend_config = backend_config or {}
-        self.rows = DashboardRowConfigs()
+class DashboardWidgetConfigs(object):
+    def __init__(self, backend_dict=None):
+        self._widgets = []
+        self._rows = DashboardRowConfigs()
+        self.backend_dict = backend_dict or {}
 
     def add_widget(self, config):
         config = self.parse_widget(config)
-        self.append(config)
-        self.rows.add_widget(config)
+        self._widgets.append(config)
+        self._rows.add_widget(config)
 
     def by_row(self):
-        return self.rows
+        return self._rows.to_list()
+
+    def to_list(self):
+        return self._widgets
+
+    def new_row(self):
+        self._rows.new_row()
 
     def parse_widget(self, config):
         type_cls = utils.load_class_by_string(config['type'])
 
         if issubclass(type_cls, DynamicWidget):
             config['backend'] = utils.add_dicts(
-                self.backend_config,
+                self.backend_dict,
                 config.get('backend', {}))
 
         config_cls = Config.for_type(config['type'])
@@ -96,11 +107,11 @@ class DashboardConfig(Config):
 
         for widget in config['widgets']:
             if widget == 'new_row':
-                widgets.rows.new_row()
+                widgets.new_row()
             else:
                 widgets.add_widget(widget)
 
-        config['widgets'] = widgets
+        config['widgets'] = widgets.to_list()
         config['rows'] = widgets.by_row()
         return config
 
