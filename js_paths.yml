@@ -1,0 +1,65 @@
+vendor:
+  js:
+    src:
+      - 'bower_components/jquery/jquery.js'
+      - 'bower_components/underscore/underscore.js'
+      - 'bower_components/backbone/backbone.js'
+      - 'bower_components/backbone-relational/backbone-relational.js'
+      - 'bower_components/d3/d3.js'
+      - 'bower_components/backbone.babysitter/lib/backbone.babysitter.js'
+    dest: 'diamondash/public/js/vendor.js'
+  css:
+    src:
+      - 'bower_components/bootstrap/dist/css/bootstrap.css'
+    dest: 'diamondash/public/css/vendor.css'
+  fonts:
+    src:
+      - 'bower_components/bootstrap/dist/fonts/*'
+    dest: 'diamondash/public/fonts/'
+
+diamondash:
+  js:
+    src:
+      - 'diamondash/client/js/index.js'
+      - 'diamondash/client/js/utils.js'
+      - 'diamondash/client/js/components/index.js'
+      - 'diamondash/client/js/components/structures.js'
+      - 'diamondash/client/js/components/charts.js'
+      - 'diamondash/client/js/widgets.js'
+      - 'diamondash/widgets/widget/widget.js'
+      - 'diamondash/widgets/dynamic/dynamic.js'
+      - 'diamondash/widgets/graph/js/index.js'
+      - 'diamondash/widgets/graph/js/models.js'
+      - 'diamondash/widgets/graph/js/views.js'
+      - 'diamondash/widgets/lvalue/lvalue.js'
+      - 'diamondash/client/js/dashboard.js'
+    dest: 'diamondash/public/js/diamondash.js'
+  jst:
+    src:
+      - 'diamondash/widgets/**/*.jst'
+      - 'diamondash/client/jst/**/*.jst'
+    dest: 'diamondash/public/js/templates.js'
+  css:
+    src:
+      - 'diamondash/client/css/*.css'
+      - "diamondash/widgets/**/*.css"
+    dest: 'diamondash/public/css/diamondash.css'
+
+tests:
+  jst:
+    src:
+      - 'diamondash/widgets/**/*.fixture.jst'
+      - 'diamondash/client/tests/**/*.fixture.jst'
+    dest: &test_templates 'diamondash/public/js/test-templates.js'
+  vendor:
+    - 'bower_components/sinon/index.js'
+    - 'bower_components/chai/chai.js'
+  spec:
+    - 'diamondash/client/tests/init.js'
+    - 'diamondash/client/tests/utils.js'
+    - 'diamondash/widgets/**/*.fixture.js'
+    - 'diamondash/client/tests/**/*.fixture.js'
+    - 'diamondash/client/tests/**/*.test.js'
+    - 'diamondash/widgets/**/*.test.js'
+  cleanup:
+    - *test_templates

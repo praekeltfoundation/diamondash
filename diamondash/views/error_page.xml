@@ -1,0 +1,15 @@
+<html xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <t:transparent t:render="resources_renderer"/>
+  </head>
+  <body>
+      <header t:render="header_renderer" class="error-header">
+        <h1 id='brand'><a href="/">diamondash</a><span> says</span></h1>
+        <hgroup class='error-details'>
+          <h2 id='title'><t:slot name="title_slot"/></h2>
+          <h3 id='description'><t:slot name="description_slot"/></h3>
+        </hgroup>
+      </header>
+  </body>
+</html>

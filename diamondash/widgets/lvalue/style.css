@@ -1,0 +1,46 @@
+.lvalue .widget-body {
+  padding: 0;
+  text-align: center;
+}
+
+.lvalue .last {
+  margin: 10px auto;
+  text-align: center;
+	height: 44px;
+}
+
+.lvalue .short.last {
+	font-size: 44px;
+}
+
+.lvalue .long.last {
+	font-size: 24px;
+	color: #555;
+}
+
+.lvalue .time {
+	font-size: 12px;
+  text-align: right;
+	color: #808080;
+}
+
+.lvalue .time .from, .lvalue .time .to {
+  display: block;
+}
+
+.lvalue .change {
+  margin: 8px auto;
+	font-size: 20px;
+	margin-left: 5px;
+}
+
+.lvalue .change span {
+  display: block;
+}
+
+.lvalue .good.change {
+  color: #2ca02c;
+}
+.lvalue .bad.change {
+  color: #d62728;
+}

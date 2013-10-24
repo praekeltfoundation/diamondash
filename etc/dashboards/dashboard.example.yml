@@ -1,62 +1,121 @@
 name: 'Test Dashboard'
+share_id: 'test'
 
-share_id: 'lorem1234'
+__ignore__:
+  lvalue: &lvalue
+    time_range: '1h'
+    type: diamondash.widgets.lvalue.LValueWidget
 
-graph_defaults:
-    time_range: '1d'
-    bucket_size: '1h'
-
-lvalue_defaults:
-    time_range: '1d'
+  graph: &graph
+    type: diamondash.widgets.graph.GraphWidget
 
 widgets:
+  - <<: *lvalue
+    name: 'Big A Hourly'
+    target: diamondash.test.big.a.last
 
-    - name: 'Multiple metrics'
-      width: 3
-      metrics: 
-          - name: 'Sum of random count'
-            target: vumi.random.count.sum
-            color: '#33cc33'
-          - name: 'Average of random timer'
-            target: vumi.random.timer.avg
- 
-    - name: 'Average of random timer'
-      width: 2
-      metrics: 
-          - name: 'Average of random timer'
-            target: vumi.random.timer.avg
+  - <<: *lvalue
+    name: 'Big B Hourly'
+    target: diamondash.test.big.b.last
 
-    - name: 'An lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
+  - <<: *lvalue
+    name: 'Big C Hourly'
+    target: diamondash.test.big.c.last
 
-    - name: 'Another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
+  - <<: *lvalue
+    name: 'Big D Hourly'
+    target: diamondash.test.big.d.last
 
-    - 'newrow'
+  - <<: *lvalue
+    name: 'Big E Hourly'
+    target: diamondash.test.big.e.last
 
-    - name: 'Sum of random count'
-      metrics: 
-          - name: 'Sum of random count'
-            target: vumi.random.count.sum
-            warning_max_threshold: 340 
+  - 'new_row'
 
-    - name: 'And another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
+  - <<: *lvalue
+    name: 'Small A Hourly'
+    target: diamondash.test.small.a.last
 
-    - name: 'Yet another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
+  - <<: *lvalue
+    name: 'Small B Hourly'
+    target: diamondash.test.small.b.last
 
-    - 'newcol'
+  - <<: *lvalue
+    name: 'Small C Hourly'
+    target: diamondash.test.small.c.last
 
-    - name: 'And yet another lvalue widget'
-      type: lvalue
-      metrics: 
-          - vumi.random.count.sum
+  - <<: *lvalue
+    name: 'Small D Hourly'
+    target: diamondash.test.small.d.last
+
+  - <<: *lvalue
+    name: 'Small E Hourly'
+    target: diamondash.test.small.e.last
+
+  - <<: *graph
+    name: 'Big Metrics Hourly'
+    time_range: '1h'
+    bucket_size: '5m'
+    width: 6
+    metrics: 
+      - name: 'Big A'
+        target: diamondash.test.big.a.last
+      - name: 'Big B'
+        target: diamondash.test.big.b.last
+      - name: 'Big C'
+        target: diamondash.test.big.c.last
+      - name: 'Big D'
+        target: diamondash.test.big.d.last
+      - name: 'Big E'
+        target: diamondash.test.big.e.last
+
+  - <<: *graph
+    name: 'Big Metrics Daily'
+    time_range: '1d'
+    bucket_size: '1h'
+    width: 6
+    metrics: 
+      - name: 'Big A'
+        target: diamondash.test.big.a.last
+      - name: 'Big B'
+        target: diamondash.test.big.b.last
+      - name: 'Big C'
+        target: diamondash.test.big.c.last
+      - name: 'Big D'
+        target: diamondash.test.big.d.last
+      - name: 'Big E'
+        target: diamondash.test.big.e.last
+
+  - <<: *graph
+    name: 'Small Metrics Hourly'
+    time_range: '1h'
+    bucket_size: '5m'
+    width: 6
+    metrics: 
+      - name: 'Small A'
+        target: diamondash.test.small.a.last
+      - name: 'Small B'
+        target: diamondash.test.small.b.last
+      - name: 'Small C'
+        target: diamondash.test.small.c.last
+      - name: 'Small D'
+        target: diamondash.test.small.d.last
+      - name: 'Small E'
+        target: diamondash.test.small.e.last
+
+  - <<: *graph
+    name: 'Small Metrics Daily'
+    time_range: '1d'
+    bucket_size: '1h'
+    width: 6
+    metrics: 
+      - name: 'Small A'
+        target: diamondash.test.small.a.last
+      - name: 'Small B'
+        target: diamondash.test.small.b.last
+      - name: 'Small C'
+        target: diamondash.test.small.c.last
+      - name: 'Small D'
+        target: diamondash.test.small.d.last
+      - name: 'Small E'
+        target: diamondash.test.small.e.last

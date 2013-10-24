@@ -1,0 +1,5 @@
+poll_interval: '10s'
+
+backend:
+  type: diamondash.backends.graphite.GraphiteBackend
+  url: 'http://127.0.0.1:8118'

@@ -1,0 +1,7 @@
+name: 'Dashboard 1'
+
+poll_interval: '30s'
+
+widgets:
+  - name: 'Dashboard 1 Widget 1'
+    type: diamondash.tests.utils.ToyDynamicWidget

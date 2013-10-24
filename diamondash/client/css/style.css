@@ -1,0 +1,27 @@
+body {
+	padding-top: 60px;
+  background-color: #fdfdfd;
+}
+
+a {
+	color: #555;
+}
+
+a:hover {
+	color: #333;
+}
+
+.navbar {
+  background: #222;
+}
+
+.navbar .brand {
+  font-family: georgia;
+  font-size: 21px;
+  color: #ddd;
+  line-height: 46px;
+}
+
+.navbar .brand:hover {
+  text-decoration: none;
+}
