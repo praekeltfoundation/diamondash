@@ -1,9 +1,30 @@
 window.diamondash = function() {
+  var DiamondashConfigModel = Backbone.RelationalModel.extend({
+    defaults: {
+      url_prefix: ''
+    }
+  });
+
+  var config = new DiamondashConfigModel();
+
+  function url() {
+    var parts = _(arguments).toArray();
+    parts.unshift(config.get('url_prefix'));
+    parts.unshift('/');
+    return diamondash.utils.joinPaths.apply(this, parts);
+  }
+
   return {
+    url: url,
+    config: config
   };
 }.call(this);
 
 diamondash.utils = function() {
+  var re = {};
+  re.leadingSlash = /^\/+/;
+  re.trailingSlash = /\/+$/;
+
   function objectByName(name, that) {
     return _(name.split( '.' )).reduce(
       function(obj, propName) { return obj[propName]; },
@@ -50,13 +71,37 @@ diamondash.utils = function() {
     return values;
   }
 
+  function joinPaths() {
+    var parts = _(arguments).compact();
+
+    var result = _(parts)
+      .chain()
+      .map(function(p) {
+        return p
+          .replace(re.leadingSlash, '')
+          .replace(re.trailingSlash, '');
+      })
+      .compact()
+      .value()
+      .join('/');
+
+    var first = parts.shift();
+    if (_(first).first() == '/') { result = '/' + result; }
+
+    var last = parts.pop() || (first != '/' ? first : '');
+    if (_(last).last() == '/') { result = result + '/'; }
+
+    return result;
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap,
-    d3Map: d3Map
+    d3Map: d3Map,
+    joinPaths: joinPaths
   };
 }.call(this);
 
@@ -425,11 +470,10 @@ diamondash.widgets.widget = function() {
     subModelTypeAttribute: 'type_name',
 
     url: function() {
-      return [
-        '/api/widgets',
+      return diamondash.url(
+        'api/widgets',
         this.get('dashboard').get('name'),
-        this.get('name')
-      ].join('/');
+        this.get('name'));
     },
 
     defaults: {
@@ -478,10 +522,7 @@ diamondash.widgets.dynamic = function() {
 
   var DynamicWidgetModel = widget.WidgetModel.extend({
     snapshotUrl: function() {
-      return [
-        _(this).result('url'),
-        'snapshot'
-      ].join('/');
+      return diamondash.url(_(this).result('url'), 'snapshot');
     },
 
     fetchSnapshot: function(options) {
@@ -951,6 +992,27 @@ diamondash.widgets.lvalue = function() {
       widget = diamondash.widgets.widget;
 
   var LValueModel = dynamic.DynamicWidgetModel.extend({
+    valueIsBad: function(v) {
+      return v !== 0 && !v;
+    },
+
+    validate: function(attrs, options) {
+      if (this.valueIsBad(attrs.last)) {
+        return "LValueModel has bad 'last' attr: " + attrs.last;
+      }
+
+      if (this.valueIsBad(attrs.prev)) {
+        return "LValueModel has bad 'prev' attr: " + attrs.prev;
+      }
+
+      if (this.valueIsBad(attrs.from)) {
+        return "LValueModel has bad 'from' attr: " + attrs.from;
+      }
+
+      if (this.valueIsBad(attrs.to)) {
+        return "LValueModel has bad 'to' attr: " + attrs.to;
+      }
+    }
   });
 
   var LastValueView = Backbone.View.extend({
@@ -1014,27 +1076,30 @@ diamondash.widgets.lvalue = function() {
     },
 
     render: function() {
-      var model = this.model,
-          last = model.get('last'),
-          prev = model.get('prev'),
-          diff = last - prev;
+      if (this.model.isValid()) {
+        var last = this.model.get('last');
+        var prev = this.model.get('prev');
+        var diff = last - prev;
 
-      var change;
-      if (diff > 0) { change = 'good'; }
-      else if (diff < 0) { change = 'bad'; }
-      else { change = 'no'; }
+        var change;
+        if (diff > 0) { change = 'good'; }
+        else if (diff < 0) { change = 'bad'; }
+        else { change = 'no'; }
 
-      this.$el.html(this.jst({
-        from: this.format.time(model.get('from')),
-        to: this.format.time(model.get('to')),
-        diff: this.format.diff(diff),
-        change: change,
-        percentage: this.format.percentage(diff / (prev || 1))
-      }));
+        this.$el.html(this.jst({
+          from: this.format.time(this.model.get('from')),
+          to: this.format.time(this.model.get('to')),
+          diff: this.format.diff(diff),
+          change: change,
+          percentage: this.format.percentage(diff / (prev || 1))
+        }));
 
-      this.last
-        .setElement(this.$('.last'))
-        .render(this.mouseIsOver);
+        this.last
+          .setElement(this.$('.last'))
+          .render(this.mouseIsOver);
+      }
+
+      return this;
     },
 
     events: {

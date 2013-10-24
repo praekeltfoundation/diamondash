@@ -4,6 +4,27 @@ diamondash.widgets.lvalue = function() {
       widget = diamondash.widgets.widget;
 
   var LValueModel = dynamic.DynamicWidgetModel.extend({
+    valueIsBad: function(v) {
+      return v !== 0 && !v;
+    },
+
+    validate: function(attrs, options) {
+      if (this.valueIsBad(attrs.last)) {
+        return "LValueModel has bad 'last' attr: " + attrs.last;
+      }
+
+      if (this.valueIsBad(attrs.prev)) {
+        return "LValueModel has bad 'prev' attr: " + attrs.prev;
+      }
+
+      if (this.valueIsBad(attrs.from)) {
+        return "LValueModel has bad 'from' attr: " + attrs.from;
+      }
+
+      if (this.valueIsBad(attrs.to)) {
+        return "LValueModel has bad 'to' attr: " + attrs.to;
+      }
+    }
   });
 
   var LastValueView = Backbone.View.extend({
@@ -67,27 +88,30 @@ diamondash.widgets.lvalue = function() {
     },
 
     render: function() {
-      var model = this.model,
-          last = model.get('last'),
-          prev = model.get('prev'),
-          diff = last - prev;
+      if (this.model.isValid()) {
+        var last = this.model.get('last');
+        var prev = this.model.get('prev');
+        var diff = last - prev;
 
-      var change;
-      if (diff > 0) { change = 'good'; }
-      else if (diff < 0) { change = 'bad'; }
-      else { change = 'no'; }
+        var change;
+        if (diff > 0) { change = 'good'; }
+        else if (diff < 0) { change = 'bad'; }
+        else { change = 'no'; }
 
-      this.$el.html(this.jst({
-        from: this.format.time(model.get('from')),
-        to: this.format.time(model.get('to')),
-        diff: this.format.diff(diff),
-        change: change,
-        percentage: this.format.percentage(diff / (prev || 1))
-      }));
+        this.$el.html(this.jst({
+          from: this.format.time(this.model.get('from')),
+          to: this.format.time(this.model.get('to')),
+          diff: this.format.diff(diff),
+          change: change,
+          percentage: this.format.percentage(diff / (prev || 1))
+        }));
 
-      this.last
-        .setElement(this.$('.last'))
-        .render(this.mouseIsOver);
+        this.last
+          .setElement(this.$('.last'))
+          .render(this.mouseIsOver);
+      }
+
+      return this;
     },
 
     events: {
