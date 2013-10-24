@@ -150,6 +150,17 @@ describe("diamondash.widgets.lvalue", function(){
     });
 
     describe(".render()", function() {
+      it("should change its contents if the model is invalid", function() {
+        view.render();
+
+        var contents = view.$el.html();
+        assert(contents);
+
+        model.unset('last');
+        view.render();
+        assert.equal(view.$el.html(), contents);
+      });
+
       it("should display the appropriate values", function() {
         view.render();
         assert.include(view.$('.last').text(), "9.2M");

@@ -88,26 +88,28 @@ diamondash.widgets.lvalue = function() {
     },
 
     render: function() {
-      var last = this.model.get('last');
-      var prev = this.model.get('prev');
-      var diff = last - prev;
+      if (this.model.isValid()) {
+        var last = this.model.get('last');
+        var prev = this.model.get('prev');
+        var diff = last - prev;
 
-      var change;
-      if (diff > 0) { change = 'good'; }
-      else if (diff < 0) { change = 'bad'; }
-      else { change = 'no'; }
+        var change;
+        if (diff > 0) { change = 'good'; }
+        else if (diff < 0) { change = 'bad'; }
+        else { change = 'no'; }
 
-      this.$el.html(this.jst({
-        from: this.format.time(this.model.get('from')),
-        to: this.format.time(this.model.get('to')),
-        diff: this.format.diff(diff),
-        change: change,
-        percentage: this.format.percentage(diff / (prev || 1))
-      }));
+        this.$el.html(this.jst({
+          from: this.format.time(this.model.get('from')),
+          to: this.format.time(this.model.get('to')),
+          diff: this.format.diff(diff),
+          change: change,
+          percentage: this.format.percentage(diff / (prev || 1))
+        }));
 
-      this.last
-        .setElement(this.$('.last'))
-        .render(this.mouseIsOver);
+        this.last
+          .setElement(this.$('.last'))
+          .render(this.mouseIsOver);
+      }
 
       return this;
     },

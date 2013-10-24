@@ -1,6 +1,7 @@
 .lvalue .widget-body {
   padding: 0;
   text-align: center;
+  min-height: 152px;
 }
 
 .lvalue .last {
