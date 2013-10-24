@@ -1,12 +1,12 @@
 {
   "name": "diamondash",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "homepage": "https://github.com/praekelt/diamondash",
   "authors": [
     "Praekelt Foundation"
   ],
   "license": "BSD",
-  "private": true,
+  "private": false,
   "dependencies": {
     "backbone": "~1.0.0",
     "underscore": "~1.5.2",
