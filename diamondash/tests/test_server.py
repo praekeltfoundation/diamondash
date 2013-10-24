@@ -89,7 +89,7 @@ class DiamondashConfigTestCase(unittest.TestCase):
 
 class DiamondashServerTestCase(unittest.TestCase):
     def setUp(self):
-        config = DiamondashConfig.from_dict(mk_server_config_data())
+        config = DiamondashConfig(mk_server_config_data())
         self.server = DiamondashServer(config)
         self.dashboard1 = self.server.get_dashboard('dashboard-1')
         self.dashboard2 = self.server.get_dashboard('dashboard-2')
@@ -117,7 +117,7 @@ class DiamondashServerTestCase(unittest.TestCase):
         raise error_class(*args, **kwargs)
 
     def mock_dashboard_config_error(self):
-        self.patch(DashboardConfig, 'from_dict', classmethod(
+        self.patch(DashboardConfig, 'parse', classmethod(
             lambda *a, **kw: self.raise_error(ConfigError)))
 
     def assert_response(self, response, body, code=http.OK, headers={}):
@@ -358,7 +358,7 @@ class DiamondashServerTestCase(unittest.TestCase):
 
     def test_add_dashboard(self):
         """Should add a dashboard to the server."""
-        config = DashboardConfig.from_dict(mk_dashboard_config_data())
+        config = DashboardConfig(mk_dashboard_config_data())
         self.server.add_dashboard(config)
 
         self.assertEqual(
@@ -375,7 +375,7 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         Should create a dashboard index list item from a dashboard instance.
         """
         data = mk_dashboard_config_data(share_id='test-share-id')
-        dashboard = Dashboard(DashboardConfig.from_dict(data))
+        dashboard = Dashboard(DashboardConfig(data))
         item = DashboardIndexListItem.from_dashboard(dashboard)
 
         self.assertEqual(item.url, '/some-dashboard')
@@ -398,7 +398,7 @@ class DashboardIndexListItemTestCase(unittest.TestCase):
         """
         data = mk_dashboard_config_data(share_id='test-share-id')
         del data['share_id']
-        dashboard = Dashboard(DashboardConfig.from_dict(data))
+        dashboard = Dashboard(DashboardConfig(data))
 
         item = DashboardIndexListItem.from_dashboard(dashboard)
         self.assertEqual(item.shared_url_tag, '')

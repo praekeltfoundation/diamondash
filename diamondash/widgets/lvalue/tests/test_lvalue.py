@@ -21,7 +21,7 @@ def mk_config_data(**overrides):
 
 class LValueWidgetConfigTestCase(unittest.TestCase):
     def test_parsing(self):
-        config = LValueWidgetConfig.from_dict(mk_config_data())
+        config = LValueWidgetConfig(mk_config_data())
 
         self.assertEqual(config['backend']['bucket_size'], 5000)
         self.assertEqual(config['backend']['time_aligner'], 'floor')
@@ -46,7 +46,7 @@ class LValueWidgetTestCase(unittest.TestCase):
 
     @staticmethod
     def mk_widget(**overrides):
-        config = LValueWidgetConfig.from_dict(mk_config_data(**overrides))
+        config = LValueWidgetConfig(mk_config_data(**overrides))
         return LValueWidget(config)
 
     def stub_time(self, t):

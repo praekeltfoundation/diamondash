@@ -36,7 +36,7 @@ class GraphiteBackendConfig(BackendConfig):
             utils.add_dicts(metric_underrides, m) for m in config['metrics']]
 
         config['metrics'] = [
-            GraphiteMetricConfig.from_dict(m) for m in config['metrics']]
+            GraphiteMetricConfig(m) for m in config['metrics']]
 
         return config
 

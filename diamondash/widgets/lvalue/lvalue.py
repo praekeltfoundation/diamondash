@@ -35,7 +35,7 @@ class LValueWidgetConfig(DynamicWidgetConfig):
         })
 
         backend_config_cls = cls.for_type(config['backend']['type'])
-        config['backend'] = backend_config_cls.from_dict(config['backend'])
+        config['backend'] = backend_config_cls(config['backend'])
 
         return config
 
