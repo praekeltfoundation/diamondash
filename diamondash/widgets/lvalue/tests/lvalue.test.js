@@ -150,7 +150,7 @@ describe("diamondash.widgets.lvalue", function(){
     });
 
     describe(".render()", function() {
-      it("should change its contents if the model is invalid", function() {
+      it("should not change its contents if the model is invalid", function() {
         view.render();
 
         var contents = view.$el.html();
