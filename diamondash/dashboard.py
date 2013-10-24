@@ -12,6 +12,83 @@ from diamondash.config import Config, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
 
 
+class DashboardRowOverflowError(Exception):
+    """Raised when a dashboard row has too little space to add a widget"""
+
+
+class DashboardRowConfig(Config):
+    WIDTH = 12
+
+    def __init__(self, items=None):
+        super(DashboardRowConfig, self).__init__(items)
+        self.remaining_width = self.WIDTH
+
+    @classmethod
+    def parse(cls, config):
+        config.setdefault('widgets', [])
+        return config
+
+    def accepts_widget(self, config):
+        return self.remaining_width >= config['width']
+
+    def add_widget(self, config):
+        if not self.accepts_widget(config):
+            raise DashboardRowOverflowError()
+
+        self['widgets'].append({'name': config['name']})
+        self.remaining_width -= config['width']
+
+
+class DashboardRowConfigs(object):
+    def __init__(self):
+        self._rows = []
+        self.new_row()
+
+    def to_list(self):
+        return self._rows
+
+    def new_row(self):
+        self._rows.append(DashboardRowConfig())
+
+    def add_widget(self, config):
+        if not self._rows[-1].accepts_widget(config):
+            self.new_row()
+
+        self._rows[-1].add_widget(config)
+
+
+class DashboardWidgetConfigs(object):
+    def __init__(self, backend_dict=None):
+        self._widgets = []
+        self._rows = DashboardRowConfigs()
+        self.backend_dict = backend_dict or {}
+
+    def add_widget(self, config):
+        config = self.parse_widget(config)
+        self._widgets.append(config)
+        self._rows.add_widget(config)
+
+    def by_row(self):
+        return self._rows.to_list()
+
+    def to_list(self):
+        return self._widgets
+
+    def new_row(self):
+        self._rows.new_row()
+
+    def parse_widget(self, config):
+        type_cls = utils.load_class_by_string(config['type'])
+
+        if issubclass(type_cls, DynamicWidget):
+            config['backend'] = utils.add_dicts(
+                self.backend_dict,
+                config.get('backend', {}))
+
+        config_cls = Config.for_type(config['type'])
+        return config_cls(config)
+
+
 class DashboardConfig(Config):
     DEFAULTS = {
         'poll_interval': '60s'
@@ -33,37 +110,17 @@ class DashboardConfig(Config):
         if 'widgets' not in config:
             raise ConfigError("Dashboard '%s' has no widgets" % name)
 
-        backend_config = config.pop('backend', {})
+        widgets = DashboardWidgetConfigs(config.pop('backend', {}))
 
-        last_row = []
-        rows = [{'widgets': last_row}]
-        widget_configs = []
-
-        for widget_config in config['widgets']:
-            if widget_config == 'newrow':
-                last_row = []
-                rows.append({'widgets': last_row})
+        for widget in config['widgets']:
+            if widget == 'new_row':
+                widgets.new_row()
             else:
-                widget_config = cls.parse_widget(widget_config, backend_config)
-                last_row.append({'name': widget_config['name']})
-                widget_configs.append(widget_config)
+                widgets.add_widget(widget)
 
-        config['rows'] = rows
-        config['widgets'] = widget_configs
-
+        config['widgets'] = widgets.to_list()
+        config['rows'] = widgets.by_row()
         return config
-
-    @classmethod
-    def parse_widget(cls, config, backend_config):
-        type_cls = utils.load_class_by_string(config['type'])
-
-        if issubclass(type_cls, DynamicWidget):
-            config['backend'] = utils.add_dicts(
-                backend_config,
-                config.get('backend', {}))
-
-        config_cls = cls.for_type(config['type'])
-        return config_cls(config)
 
 
 class Dashboard(Element):
@@ -74,9 +131,6 @@ class Dashboard(Element):
     """
 
     CONFIG_CLS = DashboardConfig
-
-    # the max number of columns allowed by Bootstrap's grid system
-    MAX_WIDTH = 12
 
     loader = XMLString(
         resource_string(__name__, 'views/dashboard.xml'))

@@ -30,7 +30,7 @@ widgets:
     name: 'Big E Hourly'
     target: diamondash.test.big.e.last
 
-  - 'newrow'
+  - 'new_row'
 
   - <<: *lvalue
     name: 'Small A Hourly'
