@@ -1,7 +1,6 @@
 .lvalue .widget-body {
   padding: 0;
   text-align: center;
-  min-height: 152px;
 }
 
 .lvalue .last {
@@ -20,8 +19,6 @@
 }
 
 .lvalue .time {
-  margin: 8px auto;
-  margin-right: 12px;
 	font-size: 12px;
   text-align: right;
 	color: #808080;
