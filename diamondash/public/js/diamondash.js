@@ -1,9 +1,30 @@
 window.diamondash = function() {
+  var DiamondashConfigModel = Backbone.RelationalModel.extend({
+    defaults: {
+      url_prefix: ''
+    }
+  });
+
+  var config = new DiamondashConfigModel();
+
+  function url() {
+    var parts = _(arguments).toArray();
+    parts.unshift(config.get('url_prefix'));
+    parts.unshift('/');
+    return diamondash.utils.joinPaths.apply(this, parts);
+  }
+
   return {
+    url: url,
+    config: config
   };
 }.call(this);
 
 diamondash.utils = function() {
+  var re = {};
+  re.leadingSlash = /^\/+/;
+  re.trailingSlash = /\/+$/;
+
   function objectByName(name, that) {
     return _(name.split( '.' )).reduce(
       function(obj, propName) { return obj[propName]; },
@@ -50,13 +71,37 @@ diamondash.utils = function() {
     return values;
   }
 
+  function joinPaths() {
+    var parts = _(arguments).compact();
+
+    var result = _(parts)
+      .chain()
+      .map(function(p) {
+        return p
+          .replace(re.leadingSlash, '')
+          .replace(re.trailingSlash, '');
+      })
+      .compact()
+      .value()
+      .join('/');
+
+    var first = parts.shift();
+    if (_(first).first() == '/') { result = '/' + result; }
+
+    var last = parts.pop() || (first != '/' ? first : '');
+    if (_(last).last() == '/') { result = result + '/'; }
+
+    return result;
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
     maybeByName: maybeByName,
     bindEvents: bindEvents,
     snap: snap,
-    d3Map: d3Map
+    d3Map: d3Map,
+    joinPaths: joinPaths
   };
 }.call(this);
 
@@ -425,11 +470,10 @@ diamondash.widgets.widget = function() {
     subModelTypeAttribute: 'type_name',
 
     url: function() {
-      return [
-        '/api/widgets',
+      return diamondash.url(
+        'api/widgets',
         this.get('dashboard').get('name'),
-        this.get('name')
-      ].join('/');
+        this.get('name'));
     },
 
     defaults: {
@@ -478,10 +522,7 @@ diamondash.widgets.dynamic = function() {
 
   var DynamicWidgetModel = widget.WidgetModel.extend({
     snapshotUrl: function() {
-      return [
-        _(this).result('url'),
-        'snapshot'
-      ].join('/');
+      return diamondash.url(_(this).result('url'), 'snapshot');
     },
 
     fetchSnapshot: function(options) {
