@@ -2,6 +2,11 @@
   margin-bottom: 2.5em;
 }
 
+.dashboard .widget {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
 .dashboard .widget .widget-head {
 	color: #eee;
 	background-color: #333;
