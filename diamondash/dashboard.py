@@ -12,6 +12,65 @@ from diamondash.config import Config, ConfigError
 from diamondash.widgets.dynamic import DynamicWidget
 
 
+class DashboardRowConfig(Config):
+    WIDTH = 12
+
+    def __init__(self, items=None):
+        super(DashboardRowConfig, self).__init__(items)
+        self.remaining_width = self.WIDTH
+
+    @classmethod
+    def parse(cls, config):
+        config.setdefault('widgets', [])
+        return config
+
+    def accepts_widget(self, config):
+        return self.remaining_width >= config['width']
+
+    def add_widget(self, config):
+        self['widgets'].append({'name': config['name']})
+        self.remaining_width -= config['width']
+
+
+class DashboardRowConfigs(list):
+    def __init__(self):
+        self.new_row()
+
+    def new_row(self):
+        self.append(DashboardRowConfig())
+
+    def add_widget(self, config):
+        if not self[-1].accepts_widget(config):
+            self.new_row()
+
+        self[-1].add_widget(config)
+
+
+class DashboardWidgetConfigs(list):
+    def __init__(self, backend_config=None):
+        self.backend_config = backend_config or {}
+        self.rows = DashboardRowConfigs()
+
+    def add_widget(self, config):
+        config = self.parse_widget(config)
+        self.append(config)
+        self.rows.add_widget(config)
+
+    def by_row(self):
+        return self.rows
+
+    def parse_widget(self, config):
+        type_cls = utils.load_class_by_string(config['type'])
+
+        if issubclass(type_cls, DynamicWidget):
+            config['backend'] = utils.add_dicts(
+                self.backend_config,
+                config.get('backend', {}))
+
+        config_cls = Config.for_type(config['type'])
+        return config_cls(config)
+
+
 class DashboardConfig(Config):
     DEFAULTS = {
         'poll_interval': '60s'
@@ -33,37 +92,17 @@ class DashboardConfig(Config):
         if 'widgets' not in config:
             raise ConfigError("Dashboard '%s' has no widgets" % name)
 
-        backend_config = config.pop('backend', {})
+        widgets = DashboardWidgetConfigs(config.pop('backend', {}))
 
-        last_row = []
-        rows = [{'widgets': last_row}]
-        widget_configs = []
-
-        for widget_config in config['widgets']:
-            if widget_config == 'newrow':
-                last_row = []
-                rows.append({'widgets': last_row})
+        for widget in config['widgets']:
+            if widget == 'new_row':
+                widgets.rows.new_row()
             else:
-                widget_config = cls.parse_widget(widget_config, backend_config)
-                last_row.append({'name': widget_config['name']})
-                widget_configs.append(widget_config)
+                widgets.add_widget(widget)
 
-        config['rows'] = rows
-        config['widgets'] = widget_configs
-
+        config['widgets'] = widgets
+        config['rows'] = widgets.by_row()
         return config
-
-    @classmethod
-    def parse_widget(cls, config, backend_config):
-        type_cls = utils.load_class_by_string(config['type'])
-
-        if issubclass(type_cls, DynamicWidget):
-            config['backend'] = utils.add_dicts(
-                backend_config,
-                config.get('backend', {}))
-
-        config_cls = cls.for_type(config['type'])
-        return config_cls(config)
 
 
 class Dashboard(Element):
@@ -74,9 +113,6 @@ class Dashboard(Element):
     """
 
     CONFIG_CLS = DashboardConfig
-
-    # the max number of columns allowed by Bootstrap's grid system
-    MAX_WIDTH = 12
 
     loader = XMLString(
         resource_string(__name__, 'views/dashboard.xml'))

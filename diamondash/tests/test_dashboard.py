@@ -5,9 +5,11 @@ from twisted.web.template import flattenString
 
 from diamondash import utils
 from diamondash.config import ConfigError
-from diamondash.dashboard import DashboardConfig, Dashboard, DashboardPage
 from diamondash.widgets.widget import WidgetConfig
 from diamondash.widgets.dynamic import DynamicWidgetConfig
+from diamondash.dashboard import (
+    DashboardRowConfig, DashboardRowConfigs, DashboardWidgetConfigs,
+    DashboardConfig, Dashboard, DashboardPage)
 
 
 def mk_config_data(**overrides):
@@ -20,7 +22,7 @@ def mk_config_data(**overrides):
                 'name': 'widget1',
                 'type': 'diamondash.widgets.widget.Widget',
             },
-            'newrow',
+            'new_row',
             {
                 'name': 'widget2',
                 'type': 'diamondash.tests.utils.ToyDynamicWidget',
@@ -36,6 +38,167 @@ def mk_config_data(**overrides):
 def mk_dashboard(**overrides):
     config = DashboardConfig(mk_config_data(**overrides))
     return Dashboard(config)
+
+
+class DashboardRowConfigTestCase(unittest.TestCase):
+    def test_widget_acceptance(self):
+        row = DashboardRowConfig()
+
+        self.assertTrue(row.accepts_widget(WidgetConfig({
+            'name': 'widget1',
+            'width': 3
+        })))
+
+        row.add_widget(WidgetConfig({
+            'name': 'widget2',
+            'width': 8
+        }))
+
+        self.assertFalse(row.accepts_widget(WidgetConfig({
+            'name': 'widget3',
+            'width': 6
+        })))
+
+    def test_widget_adding(self):
+        row = DashboardRowConfig()
+
+        row.add_widget(WidgetConfig({
+            'name': 'widget1',
+            'width': 3
+        }))
+
+        row.add_widget(WidgetConfig({
+            'name': 'widget2',
+            'width': 4
+        }))
+
+        self.assertEqual(row.remaining_width, 5)
+        self.assertEqual(row, {
+            'widgets': [
+                {'name': 'widget1'},
+                {'name': 'widget2'}]
+        })
+
+
+class DashboardRowConfigsTestCase(unittest.TestCase):
+    def test_row_creation(self):
+        rows = DashboardRowConfigs()
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget1',
+            'width': 3
+        }))
+
+        rows.new_row()
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget2',
+            'width': 3
+        }))
+
+        self.assertEqual(rows, [{
+            'widgets': [
+                {'name': 'widget1'}]
+        }, {
+            'widgets': [
+                {'name': 'widget2'}]
+        }])
+
+    def test_widget_adding(self):
+        rows = DashboardRowConfigs()
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget1',
+            'width': 3
+        }))
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget2',
+            'width': 8
+        }))
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget3',
+            'width': 3
+        }))
+
+        rows.add_widget(WidgetConfig({
+            'name': 'widget4',
+            'width': 4
+        }))
+
+        self.assertEqual(rows, [{
+            'widgets': [
+                {'name': 'widget1'},
+                {'name': 'widget2'}]
+        }, {
+            'widgets': [
+                {'name': 'widget3'},
+                {'name': 'widget4'}]
+        }])
+
+
+class DashboardWidgetConfigsTestCase(unittest.TestCase):
+    def test_row_fitting(self):
+        widgets = DashboardWidgetConfigs()
+
+        widgets.add_widget(WidgetConfig({
+            'width': 3,
+            'name': 'widget1',
+            'type': 'diamondash.widgets.widget.Widget',
+        }))
+
+        widgets.add_widget(WidgetConfig({
+            'width': 8,
+            'name': 'widget2',
+            'type': 'diamondash.widgets.widget.Widget',
+        }))
+
+        widgets.add_widget(WidgetConfig({
+            'width': 3,
+            'name': 'widget3',
+            'type': 'diamondash.widgets.widget.Widget',
+        }))
+
+        widgets.add_widget(WidgetConfig({
+            'width': 4,
+            'name': 'widget4',
+            'type': 'diamondash.widgets.widget.Widget',
+        }))
+
+    def test_widget_parsing_for_dynamic_widgets(self):
+        widgets = DashboardWidgetConfigs({
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+        })
+
+        config = widgets.parse_widget({
+            'name': 'widget2',
+            'type': 'diamondash.tests.utils.ToyDynamicWidget',
+        })
+
+        self.assertTrue(isinstance(config, DynamicWidgetConfig))
+        self.assertTrue(config['name'], 'widget2')
+        self.assertEqual(config['backend'], {
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+            'metrics': [],
+        })
+
+    def test_widget_parsing_for_static_widgets(self):
+        widgets = DashboardWidgetConfigs({
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+        })
+
+        config = widgets.parse_widget({
+            'name': 'widget1',
+            'type': 'diamondash.widgets.widget.Widget',
+        })
+
+        self.assertTrue(isinstance(config, WidgetConfig))
+        self.assertTrue(config['name'], 'widget1')
+        self.assertTrue('backend' not in config)
 
 
 class DashboardConfigTestCase(unittest.TestCase):
