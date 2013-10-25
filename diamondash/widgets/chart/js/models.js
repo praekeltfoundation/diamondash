@@ -30,6 +30,38 @@ diamondash.widgets.chart.models = function() {
       return d && (x === d.x)
         ? d.y
         : null;
+    },
+
+    xMin: function() {
+      return d3.min(
+        this.get('datapoints'),
+        function(d) { return d.x; });
+    },
+
+    xMax: function() {
+      return d3.max(
+        this.get('datapoints'),
+        function(d) { return d.x; });
+    },
+
+    domain: function() {
+      return [this.xMin(), this.xMax()];
+    },
+
+    yMin: function() {
+      return d3.min(
+        this.get('datapoints'),
+        function(d) { return d.y; });
+    },
+
+    yMax: function() {
+      return d3.max(
+        this.get('datapoints'),
+        function(d) { return d.y; });
+    },
+
+    range: function() {
+      return [this.yMin(), this.yMax()];
     }
   });
 
@@ -60,10 +92,40 @@ diamondash.widgets.chart.models = function() {
     }],
 
     defaults: {
-      'domain': [0, 0],
-      'range': [0, 0],
       'metrics': []
     },
+
+    xMin: function() {
+      return d3.min(this.get('metrics').map(function(m) {
+        return m.xMin();
+      }));
+    },
+
+    xMax: function() {
+      return d3.max(this.get('metrics').map(function(m) {
+        return m.xMax();
+      }));
+    },
+
+    domain: function() {
+      return [this.xMin(), this.xMax()];
+    },
+
+    yMin: function() {
+      return d3.min(this.get('metrics').map(function(m) {
+        return m.yMin();
+      }));
+    },
+
+    yMax: function() {
+      return d3.max(this.get('metrics').map(function(m) {
+        return m.yMax();
+      }));
+    },
+
+    range: function() {
+      return [this.yMin(), this.yMax()];
+    }
   });
 
   widgets.registry.models.add('chart', ChartModel);

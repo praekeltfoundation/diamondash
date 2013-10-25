@@ -286,10 +286,9 @@ diamondash.widgets.graph.views = function() {
       GraphView.__super__.render.call(this);
       this.resetScales();
 
-      var domain = this.model.get('domain');
-      var range = this.model.get('range');
+      var domain = this.model.domain();
       this.fx.domain(domain);
-      this.fy.domain(range);
+      this.fy.domain(this.model.range());
 
       this.lines.render();
 
@@ -319,7 +318,7 @@ diamondash.widgets.graph.views = function() {
       // it to the closest timestep
       position.x = utils.snap(
         this.fx.invert(position.svg.x),
-        this.model.get('domain')[0],
+        this.model.xMin(),
         this.model.get('bucket_size'));
 
       // shift the svg x value to correspond to the snapped time value
