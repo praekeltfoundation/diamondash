@@ -1,6 +1,8 @@
-diamondash.components.charts = function() {
+diamondash.widgets.chart.views = function() {
   var structures = diamondash.components.structures,
-      utils = diamondash.utils;
+      utils = diamondash.utils,
+      widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget;
 
   var components = {};
 
@@ -21,7 +23,7 @@ diamondash.components.charts = function() {
     return target;
   };
 
-  var Dimensions = structures.Extendable.extend({
+  var ChartDimensions = structures.Extendable.extend({
     height: 0,
     width: 0,
 
@@ -131,17 +133,12 @@ diamondash.components.charts = function() {
     }
   });
 
-  var ChartView = Backbone.View.extend({
+  var ChartView = widget.WidgetView.extend({
     className: 'chart',
-
-    dimensions: new Dimensions(),
 
     initialize: function(options) {
       options = options || {};
-
-      if ('dimensions' in options) {
-        this.dimensions = options.dimensions;
-      }
+      this.dimensions = new ChartDimensions(options.dimensions);
 
       this.svg = d3.select(this.el).append('svg');
       this.canvas = this.svg.append('g');
@@ -173,10 +170,12 @@ diamondash.components.charts = function() {
     }
   });
 
+  widgets.registry.views.add('chart', ChartView);
+
   return {
     components: components,
     AxisView: AxisView,
     ChartView: ChartView,
-    Dimensions: Dimensions
+    ChartDimensions: ChartDimensions
   };
 }.call(this);

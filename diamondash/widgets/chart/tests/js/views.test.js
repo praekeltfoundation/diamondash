@@ -1,11 +1,17 @@
-describe("diamondash.components.charts", function() {
-  var charts = diamondash.components.charts;
+describe("diamondash.widgets.chart.views", function() {
+  var utils = diamondash.test.utils,
+      models = diamondash.widgets.chart.models,
+      views = diamondash.widgets.chart.views;
 
-  describe(".Dimensions", function() {
+  afterEach(function() {
+    utils.unregisterModels();
+  });
+
+  describe(".ChartDimensions", function() {
     var dimensions;
 
     beforeEach(function() {
-      dimensions = new charts.Dimensions({
+      dimensions = new views.ChartDimensions({
         height: 128,
         width: 64,
         margin: {
@@ -28,14 +34,15 @@ describe("diamondash.components.charts", function() {
         chart;
 
     beforeEach(function() {
-      chart = new charts.ChartView({
-        dimensions: new charts.Dimensions({
+      chart = new views.ChartView({
+        model: new models.ChartModel({id: 'chart-1'}),
+        dimensions: {
           width: 128,
           height: 74
-        })
+        }
       });
 
-      axis = new charts.AxisView({
+      axis = new views.AxisView({
         chart: chart,
         tickCount: 6,
         scale: d3.time.scale().range([0, chart.dimensions.innerWidth])
