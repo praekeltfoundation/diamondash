@@ -103,8 +103,6 @@ class ChartWidgetTestCase(unittest.TestCase):
             [{'from_time': 1340789597000}])
 
         d.addCallback(self.assertEqual, {
-            'domain': (0, 15000),
-            'range': (0, 4),
             'metrics': [
                 {
                     'id': '0',
@@ -141,8 +139,6 @@ class ChartWidgetTestCase(unittest.TestCase):
             [{'from_time': 1340789597000}])
 
         d.addCallback(self.assertEqual, {
-            'domain': (0, 0),
-            'range': (0, 0),
             'metrics': [
                 {'id': '0', 'datapoints': []},
                 {'id': '1', 'datapoints': []},

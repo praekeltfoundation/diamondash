@@ -67,23 +67,12 @@ class ChartWidget(DynamicWidget):
                 'y': d['y']
             } for d in metric['datapoints']]
 
-        x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
-        y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
-        domain = (min(x_vals), max(x_vals))
-
-        y_min = self.config['y_min'] if 'y_min' in self.config else min(y_vals)
-        range = (y_min, max(y_vals))
-
         output_metric_data = [{
             'id': m['id'],
             'datapoints': m['datapoints'],
         } for m in metric_data]
 
-        return {
-            'domain': domain,
-            'range': range,
-            'metrics': output_metric_data,
-        }
+        return {'metrics': output_metric_data}
 
     def get_snapshot(self):
         time_range = self.config['time_range']
