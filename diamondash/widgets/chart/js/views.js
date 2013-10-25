@@ -53,7 +53,7 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
-  var AxisView = structures.Eventable.extend({
+  var ChartAxisView = structures.Eventable.extend({
     height: 24,
     orient: 'bottom',
 
@@ -174,7 +174,7 @@ diamondash.widgets.chart.views = function() {
 
   return {
     components: components,
-    AxisView: AxisView,
+    ChartAxisView: ChartAxisView,
     ChartView: ChartView,
     ChartDimensions: ChartDimensions
   };

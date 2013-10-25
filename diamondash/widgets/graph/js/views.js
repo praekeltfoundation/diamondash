@@ -2,7 +2,7 @@ diamondash.widgets.graph.views = function() {
   var widgets = diamondash.widgets,
       utils = diamondash.utils,
       structures = diamondash.components.structures,
-      charts = diamondash.components.charts;
+      chart = diamondash.widgets.chart;
 
   var GraphLegendView = Backbone.View.extend({
     className: 'legend',
@@ -74,7 +74,7 @@ diamondash.widgets.graph.views = function() {
 
       marker.enter().append('g')
         .attr('class', 'hover-marker')
-        .call(charts.components.marker)
+        .call(chart.views.components.marker)
         .transition()
           .select('text')
           .attr('fill-opacity', 1);
@@ -229,7 +229,7 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
-  var GraphView = charts.ChartView.extend({
+  var GraphView = chart.views.ChartView.extend({
     height: 214,
     axisHeight: 24,
 
@@ -246,7 +246,7 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dimensions: new charts.Dimensions({
+        dimensions: new chart.views.ChartDimensions({
           height: this.height,
           margin: this.margin
         })
@@ -262,7 +262,7 @@ diamondash.widgets.graph.views = function() {
 
       this.lines = new GraphLines({graph: this});
 
-      this.axis = new charts.AxisView({
+      this.axis = new chart.views.ChartAxisView({
         chart: this,
         scale: this.fx,
         height: this.axisHeight
@@ -284,8 +284,8 @@ diamondash.widgets.graph.views = function() {
     render: function() {
       this.dimensions.set({width: this.$el.width()});
       GraphView.__super__.render.call(this);
-
       this.resetScales();
+
       var domain = this.model.get('domain');
       var range = this.model.get('range');
       this.fx.domain(domain);

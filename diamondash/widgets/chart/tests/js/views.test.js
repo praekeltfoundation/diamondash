@@ -29,7 +29,7 @@ describe("diamondash.widgets.chart.views", function() {
     });
   });
 
-  describe(".AxisView", function() {
+  describe(".ChartAxisView", function() {
     var axis,
         chart;
 
@@ -42,7 +42,7 @@ describe("diamondash.widgets.chart.views", function() {
         }
       });
 
-      axis = new views.AxisView({
+      axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
         scale: d3.time.scale().range([0, chart.dimensions.innerWidth])
