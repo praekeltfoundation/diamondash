@@ -11,4 +11,4 @@ class GraphWidgetConfig(ChartWidgetConfig):
 
 
 class GraphWidget(ChartWidget):
-    CONFIG_CLS = ChartWidgetConfig
+    CONFIG_CLS = GraphWidgetConfig
