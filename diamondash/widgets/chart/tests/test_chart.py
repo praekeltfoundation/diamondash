@@ -6,12 +6,12 @@ from twisted.trial import unittest
 from diamondash import utils
 from diamondash.config import ConfigError
 from diamondash.backends import base as backends
-from diamondash.widgets.graph import GraphWidgetConfig, GraphWidget
+from diamondash.widgets.chart import ChartWidgetConfig, ChartWidget
 
 
 def mk_config_data(**overrides):
     return utils.add_dicts({
-        'name': 'test-graph-widget',
+        'name': 'test-chart-widget',
         'graphite_url': 'fake_graphite_url',
         'metrics': [
             {'name': 'random sum', 'target': 'vumi.random.count.sum'},
@@ -23,13 +23,13 @@ def mk_config_data(**overrides):
     }, overrides)
 
 
-class GraphWidgetConfigTestCase(unittest.TestCase):
+class ChartWidgetConfigTestCase(unittest.TestCase):
     def setUp(self):
         self.uuid_counter = count()
         self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
 
     def test_parsing(self):
-        config = GraphWidgetConfig(mk_config_data())
+        config = ChartWidgetConfig(mk_config_data())
 
         self.assertEqual(config['time_range'], 86400000)
         self.assertEqual(config['bucket_size'], 3600000)
@@ -50,10 +50,10 @@ class GraphWidgetConfigTestCase(unittest.TestCase):
         config = mk_config_data()
         del config['name']
 
-        self.assertRaises(ConfigError, GraphWidgetConfig.parse, config)
+        self.assertRaises(ConfigError, ChartWidgetConfig.parse, config)
 
 
-class GraphWidgetTestCase(unittest.TestCase):
+class ChartWidgetTestCase(unittest.TestCase):
     def setUp(self):
         self.uuid_counter = count()
         self.patch(backends, 'uuid4', lambda: next(self.uuid_counter))
@@ -66,8 +66,8 @@ class GraphWidgetTestCase(unittest.TestCase):
 
     @staticmethod
     def mk_widget(**kwargs):
-        config = GraphWidgetConfig(mk_config_data(**kwargs))
-        return GraphWidget(config)
+        config = ChartWidgetConfig(mk_config_data(**kwargs))
+        return ChartWidget(config)
 
     def assert_snapshot_retrieval(self, backend_res, expected_data,
                                   expected_from_time):
