@@ -1,16 +1,16 @@
-describe("diamondash.widgets.graph.models", function() {
+describe("diamondash.widgets.chart.models", function() {
   var utils = diamondash.test.utils,
-      models = diamondash.widgets.graph.models;
+      models = diamondash.widgets.chart.models;
 
   afterEach(function() {
     utils.unregisterModels();
   });
 
-  describe("GraphMetricModel", function() {
+  describe("ChartMetricModel", function() {
     var model;
 
     beforeEach(function() {
-      model = new models.GraphMetricModel({
+      model = new models.ChartMetricModel({
         datapoints: [
           {x: 0, y: 1},
           {x: 1, y: 2},
@@ -54,7 +54,7 @@ describe("diamondash.widgets.graph.models", function() {
     var collection;
 
     beforeEach(function() {
-      collection = new models.GraphMetricCollection();
+      collection = new models.ChartMetricCollection();
     });
 
     describe("when a metric is added", function() {
