@@ -11,12 +11,6 @@ diamondash.widgets = function() {
 
       type = type || diamondash.widgets.widget.WidgetView;
       return new type(options);
-    },
-
-    ensure: function(obj) {
-      return !(obj instanceof Backbone.View)
-        ? this.make(obj)
-        : obj;
     }
   });
 
