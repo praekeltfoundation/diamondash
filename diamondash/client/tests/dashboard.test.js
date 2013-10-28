@@ -254,43 +254,4 @@ describe("diamondash.dashboard", function(){
       });
     });
   });
-
-  describe("DashboardWidgetViews", function() {
-    var views;
-
-    beforeEach(function() {
-      var dashboardView = new dashboard.DashboardView({
-        model: new dashboard.DashboardModel(fixtures.get(
-          'diamondash.dashboard.DashboardModel:simple'))
-      });
-
-      views = dashboardView.widgets;
-    });
-
-    describe(".add", function() {
-      it("should allowing adding widget instances", function() {
-        var widgetN = new ToyWidgetView({
-          model: new widget.WidgetModel({
-            name: 'widget-n',
-            type_name: 'toy'
-          })
-        });
-
-        views.add(widgetN);
-
-        assert.strictEqual(views.get('widget-n'), widgetN);
-      });
-
-      it("should allow adding widgets from an options object", function() {
-        views.add({
-          model: new widget.WidgetModel({
-            name: 'widget-n',
-            type_name: 'toy'
-          })
-        });
-
-        assert(views.get('widget-n') instanceof ToyWidgetView);
-      });
-    });
-  });
 });

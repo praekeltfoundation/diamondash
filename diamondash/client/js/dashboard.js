@@ -77,9 +77,8 @@ diamondash.dashboard = function() {
       return '[data-widget=' + key + '] .widget-body';
     },
 
-    add: function(obj) {
-      var widget = widgets.registry.views.ensure(obj);
-      return DashboardWidgetViews.__super__.add.call(this, widget);
+    make: function(options) {
+      return widgets.registry.views.make(options);
     }
   });
 

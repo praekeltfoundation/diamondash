@@ -77,14 +77,25 @@ diamondash.components.structures = function() {
       return this.findByCustom(key);
     },
 
-    add: function(widget, key) {
-      if (typeof key == 'undefined') { key = this.keyOf(widget); }
-      return ViewSet.__super__.add.call(this, widget, key);
+    make: function(options) {
+      return new Backbone.View(options);
+    },
+
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
+    },
+
+    add: function(obj, key) {
+      var view = this.ensure(obj);
+      if (typeof key == 'undefined') { key = this.keyOf(view); }
+      return ViewSet.__super__.add.call(this, view, key);
     },
 
     remove: function(obj) {
-      var widget = this.get(this.ensureKey(obj));
-      if (widget) { ViewSet.__super__.remove.call(this, widget); }
+      var view = this.get(this.ensureKey(obj));
+      if (view) { ViewSet.__super__.remove.call(this, view); }
       return this;
     },
 
