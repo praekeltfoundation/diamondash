@@ -1,6 +1,7 @@
 vendor:
   js:
     src:
+      - 'bower_components/js-base64/base64.js'
       - 'bower_components/jquery/jquery.js'
       - 'bower_components/underscore/underscore.js'
       - 'bower_components/backbone/backbone.js'
