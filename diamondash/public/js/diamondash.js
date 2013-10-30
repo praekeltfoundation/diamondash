@@ -1,22 +1,13 @@
 window.diamondash = function() {
-  var DiamondashConfigModel = Backbone.RelationalModel.extend({
-    defaults: {
-      url_prefix: ''
-    }
-  });
-
-  var config = new DiamondashConfigModel();
-
   function url() {
     var parts = _(arguments).toArray();
-    parts.unshift(config.get('url_prefix'));
+    parts.unshift(diamondash.config.get('url_prefix'));
     parts.unshift('/');
     return diamondash.utils.joinPaths.apply(this, parts);
   }
 
   return {
-    url: url,
-    config: config
+    url: url
   };
 }.call(this);
 
@@ -94,6 +85,10 @@ diamondash.utils = function() {
     return result;
   }
 
+  function basicAuth(username, password) {
+    return 'Basic ' + Base64.encode(username + ':' + password);
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -101,7 +96,8 @@ diamondash.utils = function() {
     bindEvents: bindEvents,
     snap: snap,
     d3Map: d3Map,
-    joinPaths: joinPaths
+    joinPaths: joinPaths,
+    basicAuth: basicAuth
   };
 }.call(this);
 
@@ -189,14 +185,25 @@ diamondash.components.structures = function() {
       return this.findByCustom(key);
     },
 
-    add: function(widget, key) {
-      if (typeof key == 'undefined') { key = this.keyOf(widget); }
-      return ViewSet.__super__.add.call(this, widget, key);
+    make: function(options) {
+      return new Backbone.View(options);
+    },
+
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
+    },
+
+    add: function(obj, key) {
+      var view = this.ensure(obj);
+      if (typeof key == 'undefined') { key = this.keyOf(view); }
+      return ViewSet.__super__.add.call(this, view, key);
     },
 
     remove: function(obj) {
-      var widget = this.get(this.ensureKey(obj));
-      if (widget) { ViewSet.__super__.remove.call(this, widget); }
+      var view = this.get(this.ensureKey(obj));
+      if (view) { ViewSet.__super__.remove.call(this, view); }
       return this;
     },
 
@@ -427,6 +434,55 @@ diamondash.components.charts = function() {
   };
 }.call(this);
 
+diamondash.models = function() {
+  var DiamondashConfigModel = Backbone.RelationalModel.extend({
+    relations: [{
+      type: Backbone.HasOne,
+      key: 'auth',
+      relatedModel: 'diamondash.models.AuthModel',
+      includeInJSON: false
+    }],
+
+    defaults: {
+      auth: {}
+    }
+  });
+
+  var AuthModel = Backbone.RelationalModel.extend({
+    defaults: {
+      all: false
+    },
+
+    stringify: function() {
+      return diamondash.utils.basicAuth(
+        this.get('username'),
+        this.get('password'));
+    }
+  });
+
+  var Model = Backbone.RelationalModel.extend({
+    sync: function(method, model, options) {
+      options = options || {};
+
+      if (options.auth || diamondash.config.get('auth').get('all')) {
+        options.beforeSend = function(xhr) {
+          xhr.setRequestHeader(
+            'Authorization',
+            diamondash.config.get('auth').stringify());
+        };
+      }
+
+      return Backbone.sync.call(this, method, model, options);
+    }
+  });
+
+  return {
+    Model: Model,
+    AuthModel: AuthModel,
+    DiamondashConfigModel: DiamondashConfigModel
+  };
+}.call(this);
+
 diamondash.widgets = function() {
   var structures = diamondash.components.structures;
 
@@ -440,12 +496,6 @@ diamondash.widgets = function() {
 
       type = type || diamondash.widgets.widget.WidgetView;
       return new type(options);
-    },
-
-    ensure: function(obj) {
-      return !(obj instanceof Backbone.View)
-        ? this.make(obj)
-        : obj;
     }
   });
 
@@ -461,9 +511,10 @@ diamondash.widgets = function() {
 }.call(this);
 
 diamondash.widgets.widget = function() {
-  var widgets = diamondash.widgets;
+  var models = diamondash.models,
+      widgets = diamondash.widgets;
 
-  var WidgetModel = Backbone.RelationalModel.extend({
+  var WidgetModel = models.Model.extend({
     idAttribute: 'name',
 
     subModelTypes: {},
@@ -1127,11 +1178,12 @@ diamondash.widgets.lvalue = function() {
 
 diamondash.dashboard = function() {
   var structures = diamondash.components.structures,
+      models = diamondash.models,
       widgets = diamondash.widgets,
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
-  var DashboardRowModel = Backbone.RelationalModel.extend({
+  var DashboardRowModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -1140,7 +1192,7 @@ diamondash.dashboard = function() {
     }]
   });
 
-  var DashboardModel = Backbone.RelationalModel.extend({
+  var DashboardModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -1204,9 +1256,8 @@ diamondash.dashboard = function() {
       return '[data-widget=' + key + '] .widget-body';
     },
 
-    add: function(obj) {
-      var widget = widgets.registry.views.ensure(obj);
-      return DashboardWidgetViews.__super__.add.call(this, widget);
+    make: function(options) {
+      return widgets.registry.views.make(options);
     }
   });
 
@@ -1236,3 +1287,7 @@ diamondash.dashboard = function() {
     DashboardRowModel: DashboardRowModel
   };
 }.call(this);
+
+(function() {
+  diamondash.config = new diamondash.models.DiamondashConfigModel();
+}).call(this);

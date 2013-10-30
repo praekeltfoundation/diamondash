@@ -72,6 +72,10 @@ diamondash.utils = function() {
     return result;
   }
 
+  function basicAuth(username, password) {
+    return 'Basic ' + Base64.encode(username + ':' + password);
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -79,6 +83,7 @@ diamondash.utils = function() {
     bindEvents: bindEvents,
     snap: snap,
     d3Map: d3Map,
-    joinPaths: joinPaths
+    joinPaths: joinPaths,
+    basicAuth: basicAuth
   };
 }.call(this);
