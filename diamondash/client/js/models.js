@@ -1,4 +1,17 @@
 diamondash.models = function() {
+  var DiamondashConfigModel = Backbone.RelationalModel.extend({
+    relations: [{
+      type: Backbone.HasOne,
+      key: 'auth',
+      relatedModel: 'diamondash.models.AuthModel',
+      includeInJSON: false
+    }],
+
+    defaults: {
+      auth: {}
+    }
+  });
+
   var AuthModel = Backbone.RelationalModel.extend({
     defaults: {
       all: false
@@ -29,6 +42,7 @@ diamondash.models = function() {
 
   return {
     Model: Model,
-    AuthModel: AuthModel
+    AuthModel: AuthModel,
+    DiamondashConfigModel: DiamondashConfigModel
   };
 }.call(this);

@@ -1,17 +1,4 @@
 window.diamondash = function() {
-  var DiamondashConfigModel = Backbone.RelationalModel.extend({
-    relations: [{
-      type: Backbone.HasOne,
-      key: 'auth',
-      relatedModel: 'diamondash.models.AuthModel',
-      includeInJSON: false
-    }],
-
-    defaults: {
-      auth: {}
-    }
-  });
-
   function url() {
     var parts = _(arguments).toArray();
     parts.unshift(diamondash.config.get('url_prefix'));
@@ -20,7 +7,6 @@ window.diamondash = function() {
   }
 
   return {
-    url: url,
-    DiamondashConfigModel: DiamondashConfigModel
+    url: url
   };
 }.call(this);

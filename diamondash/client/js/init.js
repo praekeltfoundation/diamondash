@@ -1,3 +1,3 @@
 (function() {
-  diamondash.config = new diamondash.DiamondashConfigModel();
+  diamondash.config = new diamondash.models.DiamondashConfigModel();
 }).call(this);
