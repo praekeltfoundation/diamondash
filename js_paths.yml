@@ -1,6 +1,7 @@
 vendor:
   js:
     src:
+      - 'bower_components/js-base64/base64.js'
       - 'bower_components/jquery/jquery.js'
       - 'bower_components/underscore/underscore.js'
       - 'bower_components/backbone/backbone.js'
@@ -25,6 +26,7 @@ diamondash:
       - 'diamondash/client/js/components/index.js'
       - 'diamondash/client/js/components/structures.js'
       - 'diamondash/client/js/components/charts.js'
+      - 'diamondash/client/js/models.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
       - 'diamondash/widgets/dynamic/dynamic.js'
@@ -33,6 +35,7 @@ diamondash:
       - 'diamondash/widgets/graph/js/views.js'
       - 'diamondash/widgets/lvalue/lvalue.js'
       - 'diamondash/client/js/dashboard.js'
+      - 'diamondash/client/js/init.js'
     dest: 'diamondash/public/js/diamondash.js'
   jst:
     src:

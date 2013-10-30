@@ -130,4 +130,13 @@ describe("diamondash.utils", function() {
       assert.equal(utils.joinPaths('/', 'a/', '/b/', '/c'), '/a/b/c');
     });
   });
+
+  describe(".basicAuth()", function() {
+    it("should create a basic auth string from a username and password",
+    function() {
+      assert.equal(
+        utils.basicAuth('spam', 'ham'),
+        'Basic ' + Base64.encode('spam:ham'));
+    });
+  });
 });
