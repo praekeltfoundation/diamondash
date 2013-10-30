@@ -6,6 +6,26 @@ describe("diamondash.models", function() {
     test.utils.unregisterModels();
   });
 
+  describe(".AuthModel", function() {
+    var model;
+
+    beforeEach(function() {
+      model = new models.AuthModel({
+        username: 'user',
+        password: 'pass'
+      });
+    });
+
+    describe(".stringify()", function() {
+      it("should return a basic auth string from the username and password",
+      function() {
+        assert.equal(
+          model.stringify(),
+          'Basic ' + Base64.encode('user:pass'));
+      });
+    });
+  });
+
   describe(".Model", function() {
     var server,
         reqs,
