@@ -118,9 +118,9 @@ class DiamondashServer(object):
     # Rendering
     # =========
 
-    def render_error_response(self, request, code, description):
+    def render_error_response(self, request, message, code):
         request.setResponseCode(code)
-        return ErrorPage(code, description)
+        return ErrorPage(code, message)
 
     @app.route('/')
     def show_index(self, request):
@@ -143,8 +143,8 @@ class DiamondashServer(object):
         if dashboard is None:
             return self.render_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard '%s' does not exist" % name)
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % name)
         return DashboardPage(dashboard)
 
     @app.route('/shared/<string:share_id>')
@@ -154,9 +154,10 @@ class DiamondashServer(object):
         if dashboard is None:
             return self.render_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard with share id '%s' does not exist or is not shared"
-                % share_id)
+                code=http.NOT_FOUND,
+                message=(
+                    "Dashboard with share id '%s' does not exist "
+                    "or is not shared" % share_id))
         return DashboardPage(dashboard, shared=True)
 
     # API
@@ -173,15 +174,17 @@ class DiamondashServer(object):
         return json.dumps(data)
 
     @classmethod
-    def api_error_response(cls, request, code, description):
-        return cls.api_response(request, code=code,
-                                data={'description': description})
+    def api_success_response(cls, request, data=None, code=http.OK):
+        return cls.api_response(request, code=code, data={
+            'success': True,
+            'data': data,
+        })
 
     @classmethod
-    def api_status_response(cls, request, name, status, code=http.OK):
+    def api_error_response(cls, request, message, code):
         return cls.api_response(request, code=code, data={
-            'name': name,
-            'status': status,
+            'success': False,
+            'message': message,
         })
 
     @classmethod
@@ -191,8 +194,10 @@ class DiamondashServer(object):
         def trap_unhandled_error(f):
             f.trap(Exception)
             log.msg("Unhandled error occured during api request: %s" % f.value)
-            return cls.api_error_response(request, http.INTERNAL_SERVER_ERROR,
-                                          "Some unhandled error occurred")
+            return cls.api_error_response(
+                request,
+                code=http.INTERNAL_SERVER_ERROR,
+                message="Some unhandled error occurred")
 
         d.addCallback(lambda data: cls.api_response(request, data))
         d.addErrback(trap_unhandled_error)
@@ -207,8 +212,8 @@ class DiamondashServer(object):
         if dashboard is None:
             return self.render_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard '%s' does not exist" % name)
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % name)
         return self.api_get(request, dashboard.get_details)
 
     @app.route('/api/dashboards', methods=['POST'])
@@ -218,38 +223,40 @@ class DiamondashServer(object):
         except:
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Error parsing dashboard config as json object")
+                code=http.BAD_REQUEST,
+                message="Error parsing dashboard config as json object")
 
         if not isinstance(config, dict):
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Dashboard configs need to be json objects")
+                code=http.BAD_REQUEST,
+                message="Dashboard configs need to be json objects")
 
         if 'name' not in config:
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Dashboards need a name to be created")
+                code=http.BAD_REQUEST,
+                message="Dashboards need a name to be created")
 
         if self.has_dashboard(utils.slugify(config['name'])):
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Dashboard with name '%s' already exists")
+                code=http.BAD_REQUEST,
+                message="Dashboard with name '%s' already exists")
 
         try:
             config = DashboardConfig(config)
         except ConfigError:
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Error parsing dashboard config")
+                code=http.BAD_REQUEST,
+                message="Error parsing dashboard config")
 
         self.add_dashboard(config)
-        return self.api_status_response(
-            request, config['name'], 'CREATED', code=http.CREATED)
+        return self.api_success_response(
+            request,
+            data=config,
+            code=http.CREATED)
 
     @app.route('/api/dashboards/<string:name>', methods=['PUT'])
     def api_replace_dashboard(self, request, name):
@@ -258,14 +265,14 @@ class DiamondashServer(object):
         except:
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Error parsing dashboard config as json object")
+                code=http.BAD_REQUEST,
+                message="Error parsing dashboard config as json object")
 
         if not isinstance(config, dict):
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Dashboard configs need to be json objects")
+                code=http.BAD_REQUEST,
+                message="Dashboard configs need to be json objects")
 
         config['name'] = name.encode('utf-8')
 
@@ -274,11 +281,12 @@ class DiamondashServer(object):
         except ConfigError:
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Error parsing dashboard config")
+                code=http.BAD_REQUEST,
+                message="Error parsing dashboard config")
 
         self.add_dashboard(config, True)
-        return self.api_response(request, {'name': config['name']})
+
+        return self.api_success_response(request, data=config)
 
     @app.route('/api/dashboards/<string:name>', methods=['DELETE'])
     def api_remove_dashboard(self, request, name):
@@ -286,11 +294,11 @@ class DiamondashServer(object):
         if not self.has_dashboard(name):
             return self.render_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard '%s' does not exist" % name)
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % name)
 
         self.remove_dashboard(name)
-        return self.api_status_response(request, name, 'DELETED')
+        return self.api_success_response(request)
 
     # Widget API
     # -------------
@@ -305,15 +313,15 @@ class DiamondashServer(object):
         if dashboard is None:
             return self.api_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard '%s' does not exist" % dashboard_name)
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % dashboard_name)
 
         widget = dashboard.get_widget(widget_name)
         if widget is None:
             return self.api_error_response(
                 request,
-                http.NOT_FOUND,
-                "Widget '%s' does not exist" % widget_name)
+                code=http.NOT_FOUND,
+                message="Widget '%s' does not exist" % widget_name)
 
         return self.api_get(request, widget.get_details)
 
@@ -328,21 +336,21 @@ class DiamondashServer(object):
         if dashboard is None:
             return self.api_error_response(
                 request,
-                http.NOT_FOUND,
-                "Dashboard '%s' does not exist" % dashboard_name)
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % dashboard_name)
 
         widget = dashboard.get_widget(widget_name)
         if widget is None:
             return self.api_error_response(
                 request,
-                http.NOT_FOUND,
-                "Widget '%s' does not exist" % widget_name)
+                code=http.NOT_FOUND,
+                message="Widget '%s' does not exist" % widget_name)
 
         if not isinstance(widget, DynamicWidget):
             return self.api_error_response(
                 request,
-                http.BAD_REQUEST,
-                "Widget '%s' is not dynamic" % widget_name)
+                code=http.BAD_REQUEST,
+                message="Widget '%s' is not dynamic" % widget_name)
 
         return self.api_get(request, widget.get_snapshot)
 
@@ -411,12 +419,12 @@ class ErrorPage(PageElement):
     loader = XMLString(resource_string(
         __name__, 'views/error_page.xml'))
 
-    def __init__(self, code, description):
+    def __init__(self, code, message):
         self.title = "(%s) %s" % (
             code, http.RESPONSES.get(code, "Error with Unknown Code"))
-        self.description = description
+        self.message = message
 
     @renderer
     def header_renderer(self, request, tag):
-        tag.fillSlots(title_slot=self.title, description_slot=self.description)
+        tag.fillSlots(title_slot=self.title, message_slot=self.message)
         yield tag

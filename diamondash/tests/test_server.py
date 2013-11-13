@@ -196,11 +196,10 @@ class DiamondashServerTestCase(unittest.TestCase):
             self.assert_json_response(
                 response,
                 code=http.CREATED,
-                data={'name': 'dashboard-3', 'status': 'CREATED'})
-
-            self.assertEqual(
-                self.server.get_dashboard('dashboard-3').config['title'],
-                'Dashboard 3')
+                data={
+                    'success': True,
+                    'data': self.server.get_dashboard('dashboard-3').config
+                })
 
         d.addCallback(assert_response)
         return d
@@ -255,11 +254,10 @@ class DiamondashServerTestCase(unittest.TestCase):
             self.assert_json_response(
                 response,
                 code=http.OK,
-                data={'name': 'dashboard-3'})
-
-            self.assertEqual(
-                self.server.get_dashboard('dashboard-3').config['title'],
-                'Dashboard 3')
+                data={
+                    'success': True,
+                    'data': self.server.get_dashboard('dashboard-3').config
+                })
 
         d.addCallback(assert_response)
         return d
@@ -273,11 +271,13 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
-            self.assert_json_response(response, data={'name': 'dashboard-1'})
-
-            self.assertEqual(
-                self.server.get_dashboard('dashboard-1').config['title'],
-                'New Dashboard 1')
+            self.assert_json_response(
+                response,
+                code=http.OK,
+                data={
+                    'success': True,
+                    'data': self.server.get_dashboard('dashboard-1').config
+                })
 
         d.addCallback(assert_response)
         return d
@@ -304,9 +304,10 @@ class DiamondashServerTestCase(unittest.TestCase):
         d = self.request('/api/dashboards/dashboard-1', method='DELETE')
 
         def assert_response(response):
-            self.assert_json_response(
-                response,
-                {'name': 'dashboard-1', 'status': 'DELETED'})
+            self.assert_json_response(response, {
+                'success': True,
+                'data': None,
+            })
 
             self.assertFalse(self.server.has_dashboard('dashboard-1'))
             self.assertFalse(self.server.index.has_dashboard('dashboard-1'))

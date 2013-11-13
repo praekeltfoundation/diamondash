@@ -8,7 +8,7 @@
         <h1 id='brand'><a href="/">diamondash</a><span> says</span></h1>
         <hgroup class='error-details'>
           <h2 id='title'><t:slot name="title_slot"/></h2>
-          <h3 id='description'><t:slot name="description_slot"/></h3>
+          <h3 id='message'><t:slot name="message_slot"/></h3>
         </hgroup>
       </header>
   </body>
