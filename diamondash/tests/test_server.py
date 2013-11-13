@@ -193,12 +193,14 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
+            data = self.server.get_dashboard('dashboard-3').get_details()
+
             self.assert_json_response(
                 response,
                 code=http.CREATED,
                 data={
                     'success': True,
-                    'data': self.server.get_dashboard('dashboard-3').config
+                    'data': data
                 })
 
         d.addCallback(assert_response)
@@ -251,12 +253,14 @@ class DiamondashServerTestCase(unittest.TestCase):
             method='PUT')
 
         def assert_response(response):
+            data = self.server.get_dashboard('dashboard-3').get_details()
+
             self.assert_json_response(
                 response,
                 code=http.OK,
                 data={
                     'success': True,
-                    'data': self.server.get_dashboard('dashboard-3').config
+                    'data': data
                 })
 
         d.addCallback(assert_response)
@@ -271,12 +275,14 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
+            data = self.server.get_dashboard('dashboard-1').get_details()
+
             self.assert_json_response(
                 response,
                 code=http.OK,
                 data={
                     'success': True,
-                    'data': self.server.get_dashboard('dashboard-1').config
+                    'data': data
                 })
 
         d.addCallback(assert_response)

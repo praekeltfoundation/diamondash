@@ -255,7 +255,7 @@ class DiamondashServer(object):
         self.add_dashboard(config)
         return self.api_success_response(
             request,
-            data=config,
+            data=self.get_dashboard(config['name']).get_details(),
             code=http.CREATED)
 
     @app.route('/api/dashboards', methods=['PUT'])
@@ -283,7 +283,9 @@ class DiamondashServer(object):
                 message="Error parsing dashboard config")
 
         self.add_dashboard(config, True)
-        return self.api_success_response(request, data=config)
+        return self.api_success_response(
+            request,
+            data=self.get_dashboard(config['name']).get_details())
 
     @app.route('/api/dashboards/<string:name>', methods=['DELETE'])
     def api_remove_dashboard(self, request, name):
