@@ -1,8 +1,6 @@
 diamondash.test.fixtures.add('diamondash.widgets.graph.models.GraphModel:simple', {
   name: 'graph-a',
   bucket_size: (5 * 1000 * 60),
-  domain: [1340875995000, 1340877495000],
-  range: [2, 24],
   metrics: [{
     id: 'metric-a',
     name: 'metric-a',

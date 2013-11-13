@@ -390,10 +390,17 @@ describe("diamondash.widgets.graph", function() {
           range(),
           [2, 24]);
 
-        graph.model.set({
-          range: [3, 25],
-          domain: [1340875998000, 1340877498000]
-        });
+        graph.model.get('metrics').set([{
+          id: 'metric-a',
+          datapoints: [{
+            x: 1340875998000,
+            y: 3
+          }, {
+            x: 1340877498000,
+            y: 25
+          }]
+        }]);
+
         graph.render();
 
         assert.deepEqual(
