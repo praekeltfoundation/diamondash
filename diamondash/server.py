@@ -258,8 +258,8 @@ class DiamondashServer(object):
             data=config,
             code=http.CREATED)
 
-    @app.route('/api/dashboards/<string:name>', methods=['PUT'])
-    def api_replace_dashboard(self, request, name):
+    @app.route('/api/dashboards', methods=['PUT'])
+    def api_replace_dashboard(self, request):
         try:
             config = json.loads(request.content.read())
         except:
@@ -274,8 +274,6 @@ class DiamondashServer(object):
                 code=http.BAD_REQUEST,
                 message="Dashboard configs need to be json objects")
 
-        config['name'] = name.encode('utf-8')
-
         try:
             config = DashboardConfig(config)
         except ConfigError:
@@ -285,7 +283,6 @@ class DiamondashServer(object):
                 message="Error parsing dashboard config")
 
         self.add_dashboard(config, True)
-
         return self.api_success_response(request, data=config)
 
     @app.route('/api/dashboards/<string:name>', methods=['DELETE'])

@@ -243,10 +243,10 @@ class DiamondashServerTestCase(unittest.TestCase):
         ])
 
     def test_api_dashboard_replacement_for_new_dashboards(self):
-        data = mk_dashboard_config_data(title='Dashboard 3')
+        data = mk_dashboard_config_data(name='dashboard-3')
 
         d = self.request(
-            '/api/dashboards/dashboard-3',
+            '/api/dashboards',
             data=json.dumps(data),
             method='PUT')
 
@@ -263,10 +263,10 @@ class DiamondashServerTestCase(unittest.TestCase):
         return d
 
     def test_api_dashboard_replacement_for_already_existing_dashboards(self):
-        data = mk_dashboard_config_data(title='New Dashboard 1')
+        data = mk_dashboard_config_data(name='dashboard-1')
 
         d = self.request(
-            '/api/dashboards/dashboard-1',
+            '/api/dashboards',
             method='PUT',
             data=json.dumps(data))
 
@@ -285,7 +285,7 @@ class DiamondashServerTestCase(unittest.TestCase):
     def test_api_dashboard_replacement_for_config_error_handling(self):
         self.mock_dashboard_config_error()
         d = self.request(
-            '/api/dashboards/dashboard-1', method='PUT', data="{}")
+            '/api/dashboards', method='PUT', data="{}")
         d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
         return d
 
@@ -296,8 +296,8 @@ class DiamondashServerTestCase(unittest.TestCase):
             return d
 
         return gatherResults([
-            request_and_assert('/api/dashboards/dashboard-1', ""),
-            request_and_assert('/api/dashboards/dashboard-1', "[]"),
+            request_and_assert('/api/dashboards', ""),
+            request_and_assert('/api/dashboards', "[]"),
         ])
 
     def test_api_dashboard_removal(self):
