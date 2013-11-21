@@ -45,11 +45,18 @@ diamondash:
       - 'diamondash/client/jst/**/*.jst'
     dest: 'diamondash/public/js/templates.js'
   css:
+    widgets:
+      src: &diamondash.css.widgets.src 'diamondash/widgets/**/*.less'
+      dest: &diamondash.css.widgets.dest 'diamondash/client/css/widgets.less'
+    paths: 'diamondash/client/css'
+    entry: 'diamondash/client/css/diamondash.less'
     src:
+      - *diamondash.css.widgets.src
       - 'diamondash/client/css/*.less'
     dest: 'diamondash/public/css/diamondash.css'
-  cleanup:
-    - ''
+    cleanup:
+      - *diamondash.css.widgets.dest
+
 
 tests:
   jst:
