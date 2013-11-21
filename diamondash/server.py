@@ -246,11 +246,11 @@ class DiamondashServer(object):
 
         try:
             config = DashboardConfig(config)
-        except ConfigError:
+        except ConfigError, e:
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
-                message="Error parsing dashboard config")
+                message="Error parsing dashboard config: %s" % e)
 
         self.add_dashboard(config)
         return self.api_success_response(
@@ -276,11 +276,11 @@ class DiamondashServer(object):
 
         try:
             config = DashboardConfig(config)
-        except ConfigError:
+        except ConfigError, e:
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
-                message="Error parsing dashboard config")
+                message="Error parsing dashboard config: %s" % e)
 
         self.add_dashboard(config, True)
         return self.api_success_response(
