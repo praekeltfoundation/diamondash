@@ -27,6 +27,19 @@ describe("diamondash.widgets.dynamic", function() {
       server.restore();
     });
 
+    describe(".snapshotUrl()", function() {
+      it("should construct the snapshot url correctly", function() {
+        var config = diamondash.config;
+        config.set('url_prefix', 'foo');
+
+        assert.equal(
+          model.snapshotUrl(),
+          '/foo/api/widgets/dashboard-1/widget-1/snapshot');
+
+        config.set('url_prefix', config.previous('url_prefix'));
+      });
+    });
+
     describe(".fetchSnapshot()", function() {
       it("should issue an api request to its snapshot url", function(done) {
         server.respondWith(function(req) {

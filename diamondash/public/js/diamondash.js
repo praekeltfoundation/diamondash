@@ -386,11 +386,12 @@ diamondash.widgets.widget = function() {
 
 diamondash.widgets.dynamic = function() {
   var widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget;
+      widget = diamondash.widgets.widget,
+      utils = diamondash.utils;
 
   var DynamicWidgetModel = widget.WidgetModel.extend({
     snapshotUrl: function() {
-      return diamondash.url(_(this).result('url'), 'snapshot');
+      return utils.joinPaths(_(this).result('url'), 'snapshot');
     },
 
     fetchSnapshot: function(options) {
