@@ -55,6 +55,9 @@ module.exports = function(grunt) {
       },
       'tests.cleanup': {
         cmd: 'rm <%= paths.tests.cleanup %>'
+      },
+      'diamondash.cleanup': {
+        cmd: ': rm <%= paths.diamondash.cleanup %>'
       }
     },
     jst: {
@@ -82,10 +85,30 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.registerTask('build', [
+  grunt.registerTask('build:js', [
     'jst:diamondash.jst',
-    'exec:vendor.fonts',
-    'concat'
+    'concat:vendor.js',
+    'concat:diamondash.js'
+  ]);
+
+  grunt.registerTask('build:css', [
+    'concat:vendor.css',
+    'concat:diamondash.css'
+  ]);
+
+  grunt.registerTask('build:fonts', [
+    'exec:vendor.fonts'
+  ]);
+
+  grunt.registerTask('build:cleanup', [
+    'exec:diamondash.cleanup'
+  ]);
+
+  grunt.registerTask('build', [
+    'build:js',
+    'build:css',
+    'build:fonts',
+    'build:cleanup'
   ]);
 
   grunt.registerTask('default', [
@@ -95,6 +118,8 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [
     'jst:diamondash.jst',
-    'karma'
+    'build:css',
+    'karma',
+    'build:cleanup'
   ]);
 };

@@ -46,9 +46,10 @@ diamondash:
     dest: 'diamondash/public/js/templates.js'
   css:
     src:
-      - 'diamondash/client/css/*.css'
-      - "diamondash/widgets/**/*.css"
+      - 'diamondash/client/css/*.less'
     dest: 'diamondash/public/css/diamondash.css'
+  cleanup:
+    - ''
 
 tests:
   jst:
