@@ -23,7 +23,9 @@ module.exports = function(grunt) {
         dest: '<%= paths.vendor.js.dest %>'
       },
       'diamondash.js': {
-        src: ['<%= paths.diamondash.js.src %>'],
+        src: [
+          '<%= paths.diamondash.jst.dest %>',
+          '<%= paths.diamondash.js.src %>'],
         dest: '<%= paths.diamondash.js.dest %>'
       }
     },
@@ -55,6 +57,9 @@ module.exports = function(grunt) {
       },
       'tests.cleanup': {
         cmd: 'rm <%= paths.tests.cleanup %>'
+      },
+      'diamondash.cleanup': {
+        cmd: 'rm <%= paths.diamondash.cleanup %>'
       }
     },
     jst: {
@@ -85,7 +90,8 @@ module.exports = function(grunt) {
   grunt.registerTask('build', [
     'jst:diamondash.jst',
     'exec:vendor.fonts',
-    'concat'
+    'concat',
+    'exec:diamondash.cleanup'
   ]);
 
   grunt.registerTask('default', [
@@ -95,6 +101,7 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [
     'jst:diamondash.jst',
-    'karma'
+    'karma',
+    'exec:tests.cleanup'
   ]);
 };
