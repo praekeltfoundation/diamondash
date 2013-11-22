@@ -41,6 +41,10 @@ def mk_dashboard_config_data(**overrides):
 
 def mk_server_config_data(**overrides):
     return utils.add_dicts({
+        'backend': {
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+        },
         'dashboards': [
             mk_dashboard_config_data(
                 name='Dashboard 1',
@@ -193,14 +197,23 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
-            data = self.server.get_dashboard('dashboard-3').get_details()
+            dashboard = self.server.get_dashboard('dashboard-3')
+            backend = dashboard.get_widget('widget-1').config['backend']
+
+            self.assertEqual(
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
 
             self.assert_json_response(
                 response,
                 code=http.CREATED,
                 data={
                     'success': True,
-                    'data': data
+                    'data': dashboard.get_details()
                 })
 
         d.addCallback(assert_response)
@@ -253,14 +266,23 @@ class DiamondashServerTestCase(unittest.TestCase):
             method='PUT')
 
         def assert_response(response):
-            data = self.server.get_dashboard('dashboard-3').get_details()
+            dashboard = self.server.get_dashboard('dashboard-3')
+            backend = dashboard.get_widget('widget-1').config['backend']
+
+            self.assertEqual(
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
 
             self.assert_json_response(
                 response,
                 code=http.OK,
                 data={
                     'success': True,
-                    'data': data
+                    'data': dashboard.get_details()
                 })
 
         d.addCallback(assert_response)
@@ -275,14 +297,23 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
-            data = self.server.get_dashboard('dashboard-1').get_details()
+            dashboard = self.server.get_dashboard('dashboard-1')
+            backend = dashboard.get_widget('widget-1').config['backend']
+
+            self.assertEqual(
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
 
             self.assert_json_response(
                 response,
                 code=http.OK,
                 data={
                     'success': True,
-                    'data': data
+                    'data': dashboard.get_details()
                 })
 
         d.addCallback(assert_response)
