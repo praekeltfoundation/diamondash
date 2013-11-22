@@ -5,8 +5,8 @@ module.exports = function(config) {
 
   config.set({
     files: [].concat(
-      paths.vendor.css.src,
-      paths.diamondash.css.src,
+      paths.vendor.css.dest,
+      paths.diamondash.css.dest,
       paths.vendor.js.src,
       paths.diamondash.jst.dest,
       paths.tests.jst.dest,

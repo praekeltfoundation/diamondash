@@ -1,0 +1,77 @@
+.graph {
+  .chart *, .axis * {
+    pointer-events: none;
+  }
+
+  .axis {
+    path, line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+
+    text {
+      font-family: sans-serif;
+      font-size: 11px;
+    }
+
+    g {
+      -webkit-transition: fill-opacity 250ms linear;
+      -moz-transition: fill-opacity 250ms linear;
+      -o-transition: fill-opacity 250ms linear;
+      transition: fill-opacity 250ms linear;
+    }
+  }
+
+  .metric-line {
+    fill: none;
+    stroke-width: 1.5px;
+    pointer-events: none;
+  }
+
+  .legend {
+    text-align: left;
+
+    .legend-items {
+      .swatch {
+        display: inline-block;
+        vertical-align: middle;
+        width: 14px;
+        height: 14px;
+        margin: 0 4px;
+        border-radius: 4px;
+      }
+
+      .value {
+        font-weight: bold;
+      }
+    }
+
+    &.hover .legend-items .value {
+      color: #555;
+    }
+  }
+
+  .dot, .hover-dot {
+    pointer-events: none;
+  }
+
+  .dot {
+    stroke: none;
+  }
+
+  .hover-dot {
+    fill: none;
+    stroke-width: 1.5px;
+  }
+
+  .hover-marker {
+    line {
+      stroke: #555;
+    }
+
+    text {
+      fill: #555;
+    }
+  }
+}

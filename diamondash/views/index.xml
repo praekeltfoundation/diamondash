@@ -4,22 +4,24 @@
     <t:transparent t:render="resources_renderer"/>
   </head>
   <body>
-    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
-          <a class="brand" href="/">diamondash</a>
+    <div class="diamondash index">
+      <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+          <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </a>
+            <a class="brand" href="/">diamondash</a>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="container" id="dashboard-container">
-      <ul class='dashboard-list'>
-        <t:transparent t:render="dashboard_list_item_renderer"/>
-      </ul>
+      <div class="container" id="dashboard-container">
+        <ul class='dashboard-list'>
+          <t:transparent t:render="dashboard_list_item_renderer"/>
+        </ul>
+      </div>
     </div>
   </body>
 </html>
