@@ -19,6 +19,11 @@ vendor:
     dest: 'diamondash/public/fonts/'
 
 diamondash:
+  jst:
+    src:
+      - 'diamondash/widgets/**/*.jst'
+      - 'diamondash/client/jst/**/*.jst'
+    dest: &diamondash.jst.dest 'diamondash/public/js/templates.js'
   js:
     src:
       - 'diamondash/client/js/index.js'
@@ -39,11 +44,8 @@ diamondash:
       - 'diamondash/client/js/dashboard.js'
       - 'diamondash/client/js/init.js'
     dest: 'diamondash/public/js/diamondash.js'
-  jst:
-    src:
-      - 'diamondash/widgets/**/*.jst'
-      - 'diamondash/client/jst/**/*.jst'
-    dest: 'diamondash/public/js/templates.js'
+    cleanup:
+      - *diamondash.jst.dest
   css:
     widgets:
       src: &diamondash.css.widgets.src 'diamondash/widgets/**/*.less'
@@ -57,13 +59,12 @@ diamondash:
     cleanup:
       - *diamondash.css.widgets.dest
 
-
 tests:
   jst:
     src:
       - 'diamondash/widgets/**/*.fixture.jst'
       - 'diamondash/client/tests/**/*.fixture.jst'
-    dest: &test_templates 'diamondash/public/js/test-templates.js'
+    dest: &tests.jst.dest 'diamondash/public/js/test-templates.js'
   vendor:
     - 'bower_components/sinon/index.js'
     - 'bower_components/chai/chai.js'
@@ -75,4 +76,4 @@ tests:
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'
   cleanup:
-    - *test_templates
+    - *diamondash.jst.dest
