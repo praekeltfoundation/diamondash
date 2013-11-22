@@ -46,9 +46,7 @@ obj || (obj = {});
 var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
 function print() { __p += __j.call(arguments, '') }
 with (obj) {
-__p += '<div class="container">\n  <div class="row">\n    <div class="dashboard-head col-md-12">\n      <h1>' +
-((__t = ( dashboard.model.get('title') )) == null ? '' : __t) +
-'</h1>\n    </div>\n  </div>\n\n  <div class="row">\n    <div class="dashboard-body col-md-12">\n      ';
+__p += '<div class="container">\n  <div class="row">\n    <div class="dashboard-body col-md-12">\n      ';
  dashboard.model.get('rows').each(function(row) { ;
 __p += '\n      <div class="row">\n        ';
  row.get('widgets').each(function(widget) { ;
