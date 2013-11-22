@@ -39,7 +39,7 @@ class DiamondashConfig(Config):
             key=lambda d: d['name'])
 
         config['dashboards'] = [
-            DashboardConfig(cls._set_dashboard_defaults(config, d))
+            DashboardConfig(cls._apply_dashboard_defaults(config, d))
             for d in dashboard_configs]
 
         return config
@@ -55,14 +55,14 @@ class DiamondashConfig(Config):
         return cls(config)
 
     @classmethod
-    def _set_dashboard_defaults(self, config, dashboard_config):
+    def _apply_dashboard_defaults(self, config, dashboard_config):
         return utils.add_dicts({
             'backend': config['backend'],
             'poll_interval': config['poll_interval'],
         }, dashboard_config)
 
-    def set_dashboard_defaults(self, dashboard_config):
-        return self._set_dashboard_defaults(self, dashboard_config)
+    def apply_dashboard_defaults(self, dashboard_config):
+        return self._apply_dashboard_defaults(self, dashboard_config)
 
 
 class ApiRequestError(Exception):
@@ -244,7 +244,7 @@ class DiamondashServer(object):
                 code=http.BAD_REQUEST,
                 message="Dashboard with name '%s' already exists")
 
-        config = self.config.set_dashboard_defaults(config)
+        config = self.config.apply_dashboard_defaults(config)
 
         try:
             config = DashboardConfig(config)
