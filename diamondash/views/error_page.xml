@@ -4,6 +4,7 @@
     <t:transparent t:render="resources_renderer"/>
   </head>
   <body>
+    <div class="diamondash error">
       <header t:render="header_renderer" class="error-header">
         <h1 id='brand'><a href="/">diamondash</a><span> says</span></h1>
         <hgroup class='error-details'>
@@ -11,5 +12,6 @@
           <h3 id='message'><t:slot name="message_slot"/></h3>
         </hgroup>
       </header>
+    </div>
   </body>
 </html>
