@@ -34,18 +34,13 @@ class DiamondashConfig(Config):
 
     @classmethod
     def parse(cls, config):
-        defaults = {
-            'backend': config.pop('backend'),
-            'poll_interval': config.pop('poll_interval')
-        }
+        dashboard_configs = sorted(
+            config.get('dashboards', []),
+            key=lambda d: d['name'])
 
         config['dashboards'] = [
-            DashboardConfig(utils.add_dicts(defaults, d))
-            for d in config['dashboards']]
-
-        config['dashboards'] = sorted(
-            config['dashboards'],
-            key=lambda d: d['name'])
+            DashboardConfig(cls._set_dashboard_defaults(config, d))
+            for d in dashboard_configs]
 
         return config
 
@@ -57,7 +52,17 @@ class DiamondashConfig(Config):
             yaml.safe_load(open(filename))
             for filename in glob(path.join(dirname, 'dashboards', '*.yml'))]
 
-        return cls.parse(config)
+        return cls(config)
+
+    @classmethod
+    def _set_dashboard_defaults(self, config, dashboard_config):
+        return utils.add_dicts({
+            'backend': config['backend'],
+            'poll_interval': config['poll_interval'],
+        }, dashboard_config)
+
+    def set_dashboard_defaults(self, dashboard_config):
+        return self._set_dashboard_defaults(self, dashboard_config)
 
 
 class DiamondashServer(object):
