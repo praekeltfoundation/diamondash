@@ -1,5 +1,7 @@
 """Tests for diamondash's dashboard"""
 
+import json
+
 from twisted.trial import unittest
 from twisted.web.template import flattenString
 
@@ -284,6 +286,28 @@ class DashboardTestCase(unittest.TestCase):
         self.assertEqual(
             dashboard.widgets[-1].config,
             widget_config)
+
+    def test_title_rendering(self):
+        dashboard = mk_dashboard()
+        d = flattenString(None, dashboard)
+
+        def assert_title_rendering(response):
+            self.assertTrue('<h1>Some Dashboard</h1>' in response)
+
+        d.addCallback(assert_title_rendering)
+        return d
+
+    def test_init_script_rendering(self):
+        dashboard = mk_dashboard()
+        d = flattenString(None, dashboard)
+
+        def assert_init_script_rendering(response):
+            self.assertTrue(
+                'var data = %s;' % json.dumps(dashboard.get_details())
+                in response)
+
+        d.addCallback(assert_init_script_rendering)
+        return d
 
 
 class DashboardPageTestCase(unittest.TestCase):
