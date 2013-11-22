@@ -55,7 +55,7 @@ class DiamondashConfig(Config):
         return cls(config)
 
     @classmethod
-    def _apply_dashboard_defaults(self, config, dashboard_config):
+    def _apply_dashboard_defaults(cls, config, dashboard_config):
         return utils.add_dicts({
             'backend': config['backend'],
             'poll_interval': config['poll_interval'],
