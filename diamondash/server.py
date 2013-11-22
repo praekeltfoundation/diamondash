@@ -65,6 +65,12 @@ class DiamondashConfig(Config):
         return self._set_dashboard_defaults(self, dashboard_config)
 
 
+class ApiRequestError(Exception):
+    """
+    Raised when there was a problem handling a client request to the api.
+    """
+
+
 class DiamondashServer(object):
     """Contains the server's configuration options and dashboards"""
 
@@ -211,21 +217,10 @@ class DiamondashServer(object):
     # Dashboard API
     # -------------
 
-    @app.route('/api/dashboards/<string:name>', methods=['GET'])
-    def api_get_dashboard_details(self, request, name):
-        dashboard = self.get_dashboard(name.encode('utf-8'))
-        if dashboard is None:
-            return self.render_error_response(
-                request,
-                code=http.NOT_FOUND,
-                message="Dashboard '%s' does not exist" % name)
-        return self.api_get(request, dashboard.get_details)
-
-    @app.route('/api/dashboards', methods=['POST'])
-    def api_create_dashboard(self, request):
+    def api_add_dashboard(self, request, replace):
         try:
             config = json.loads(request.content.read())
-        except:
+        except Exception, e:
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
@@ -243,7 +238,7 @@ class DiamondashServer(object):
                 code=http.BAD_REQUEST,
                 message="Dashboards need a name to be created")
 
-        if self.has_dashboard(utils.slugify(config['name'])):
+        if not replace and self.has_dashboard(utils.slugify(config['name'])):
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
@@ -257,40 +252,30 @@ class DiamondashServer(object):
                 code=http.BAD_REQUEST,
                 message="Error parsing dashboard config: %r" % e)
 
-        self.add_dashboard(config)
+        self.add_dashboard(config, replace)
+
         return self.api_success_response(
             request,
             data=self.get_dashboard(config['name']).get_details(),
-            code=http.CREATED)
+            code=http.CREATED if not replace else http.OK)
+
+    @app.route('/api/dashboards/<string:name>', methods=['GET'])
+    def api_get_dashboard_details(self, request, name):
+        dashboard = self.get_dashboard(name.encode('utf-8'))
+        if dashboard is None:
+            return self.render_error_response(
+                request,
+                code=http.NOT_FOUND,
+                message="Dashboard '%s' does not exist" % name)
+        return self.api_get(request, dashboard.get_details)
+
+    @app.route('/api/dashboards', methods=['POST'])
+    def api_create_dashboard(self, request):
+        return self.api_add_dashboard(request, replace=False)
 
     @app.route('/api/dashboards', methods=['PUT'])
     def api_replace_dashboard(self, request):
-        try:
-            config = json.loads(request.content.read())
-        except:
-            return self.api_error_response(
-                request,
-                code=http.BAD_REQUEST,
-                message="Error parsing dashboard config as json object")
-
-        if not isinstance(config, dict):
-            return self.api_error_response(
-                request,
-                code=http.BAD_REQUEST,
-                message="Dashboard configs need to be json objects")
-
-        try:
-            config = DashboardConfig(config)
-        except ConfigError, e:
-            return self.api_error_response(
-                request,
-                code=http.BAD_REQUEST,
-                message="Error parsing dashboard config: %r" % e)
-
-        self.add_dashboard(config, True)
-        return self.api_success_response(
-            request,
-            data=self.get_dashboard(config['name']).get_details())
+        return self.api_add_dashboard(request, replace=True)
 
     @app.route('/api/dashboards/<string:name>', methods=['DELETE'])
     def api_remove_dashboard(self, request, name):
