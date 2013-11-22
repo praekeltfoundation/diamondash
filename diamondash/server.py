@@ -250,7 +250,7 @@ class DiamondashServer(object):
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
-                message="Error parsing dashboard config: %s" % e)
+                message="Error parsing dashboard config: %r" % e)
 
         self.add_dashboard(config)
         return self.api_success_response(
@@ -280,7 +280,7 @@ class DiamondashServer(object):
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
-                message="Error parsing dashboard config: %s" % e)
+                message="Error parsing dashboard config: %r" % e)
 
         self.add_dashboard(config, True)
         return self.api_success_response(
