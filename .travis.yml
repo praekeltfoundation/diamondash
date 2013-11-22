@@ -8,4 +8,4 @@ install:
   - "pip install -r requirements.pip"
   - "npm install"
 script:
-  - ./utils/run-tests.sh
+  - ./utils/run_tests.sh
