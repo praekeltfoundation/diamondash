@@ -244,7 +244,7 @@ class DiamondashServer(object):
                 code=http.BAD_REQUEST,
                 message="Dashboard with name '%s' already exists")
 
-        self.config.set_dashboard_defaults(config)
+        config = self.config.set_dashboard_defaults(config)
 
         try:
             config = DashboardConfig(config)
