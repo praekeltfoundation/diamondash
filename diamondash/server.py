@@ -220,7 +220,7 @@ class DiamondashServer(object):
     def api_add_dashboard(self, request, replace):
         try:
             config = json.loads(request.content.read())
-        except Exception, e:
+        except:
             return self.api_error_response(
                 request,
                 code=http.BAD_REQUEST,
