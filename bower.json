@@ -1,6 +1,6 @@
 {
   "name": "diamondash",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "homepage": "https://github.com/praekelt/diamondash",
   "authors": [
     "Praekelt Foundation"
@@ -14,7 +14,8 @@
     "bootstrap": "~3.0.0",
     "jquery": "~2.0.3",
     "backbone-relational": "~0.8.6",
-    "backbone.babysitter": "~0.0.6"
+    "backbone.babysitter": "~0.0.6",
+    "js-base64": "~2.1.2"
   },
   "devDependencies": {
     "chai": "~1.7.2",

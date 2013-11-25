@@ -41,6 +41,10 @@ def mk_dashboard_config_data(**overrides):
 
 def mk_server_config_data(**overrides):
     return utils.add_dicts({
+        'backend': {
+            'type': 'diamondash.tests.utils.ToyBackend',
+            'url': 'http://127.0.0.1:3000',
+        },
         'dashboards': [
             mk_dashboard_config_data(
                 name='Dashboard 1',
@@ -193,14 +197,24 @@ class DiamondashServerTestCase(unittest.TestCase):
             data=json.dumps(data))
 
         def assert_response(response):
+            dashboard = self.server.get_dashboard('dashboard-3')
+            backend = dashboard.get_widget('widget-1').config['backend']
+
+            self.assertEqual(
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
+
             self.assert_json_response(
                 response,
                 code=http.CREATED,
-                data={'name': 'dashboard-3', 'status': 'CREATED'})
-
-            self.assertEqual(
-                self.server.get_dashboard('dashboard-3').config['title'],
-                'Dashboard 3')
+                data={
+                    'success': True,
+                    'data': dashboard.get_details()
+                })
 
         d.addCallback(assert_response)
         return d
@@ -244,40 +258,63 @@ class DiamondashServerTestCase(unittest.TestCase):
         ])
 
     def test_api_dashboard_replacement_for_new_dashboards(self):
-        data = mk_dashboard_config_data(title='Dashboard 3')
+        data = mk_dashboard_config_data(name='dashboard-3')
 
         d = self.request(
-            '/api/dashboards/dashboard-3',
+            '/api/dashboards',
             data=json.dumps(data),
             method='PUT')
 
         def assert_response(response):
+            dashboard = self.server.get_dashboard('dashboard-3')
+            backend = dashboard.get_widget('widget-1').config['backend']
+
+            self.assertEqual(
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
+
             self.assert_json_response(
                 response,
                 code=http.OK,
-                data={'name': 'dashboard-3'})
-
-            self.assertEqual(
-                self.server.get_dashboard('dashboard-3').config['title'],
-                'Dashboard 3')
+                data={
+                    'success': True,
+                    'data': dashboard.get_details()
+                })
 
         d.addCallback(assert_response)
         return d
 
     def test_api_dashboard_replacement_for_already_existing_dashboards(self):
-        data = mk_dashboard_config_data(title='New Dashboard 1')
+        data = mk_dashboard_config_data(name='dashboard-1')
 
         d = self.request(
-            '/api/dashboards/dashboard-1',
+            '/api/dashboards',
             method='PUT',
             data=json.dumps(data))
 
         def assert_response(response):
-            self.assert_json_response(response, data={'name': 'dashboard-1'})
+            dashboard = self.server.get_dashboard('dashboard-1')
+            backend = dashboard.get_widget('widget-1').config['backend']
 
             self.assertEqual(
-                self.server.get_dashboard('dashboard-1').config['title'],
-                'New Dashboard 1')
+                backend['url'],
+                'http://127.0.0.1:3000')
+
+            self.assertEqual(
+                backend['type'],
+                'diamondash.tests.utils.ToyBackend')
+
+            self.assert_json_response(
+                response,
+                code=http.OK,
+                data={
+                    'success': True,
+                    'data': dashboard.get_details()
+                })
 
         d.addCallback(assert_response)
         return d
@@ -285,7 +322,7 @@ class DiamondashServerTestCase(unittest.TestCase):
     def test_api_dashboard_replacement_for_config_error_handling(self):
         self.mock_dashboard_config_error()
         d = self.request(
-            '/api/dashboards/dashboard-1', method='PUT', data="{}")
+            '/api/dashboards', method='PUT', data="{}")
         d.addBoth(self.assert_unhappy_response, http.BAD_REQUEST)
         return d
 
@@ -296,17 +333,18 @@ class DiamondashServerTestCase(unittest.TestCase):
             return d
 
         return gatherResults([
-            request_and_assert('/api/dashboards/dashboard-1', ""),
-            request_and_assert('/api/dashboards/dashboard-1', "[]"),
+            request_and_assert('/api/dashboards', ""),
+            request_and_assert('/api/dashboards', "[]"),
         ])
 
     def test_api_dashboard_removal(self):
         d = self.request('/api/dashboards/dashboard-1', method='DELETE')
 
         def assert_response(response):
-            self.assert_json_response(
-                response,
-                {'name': 'dashboard-1', 'status': 'DELETED'})
+            self.assert_json_response(response, {
+                'success': True,
+                'data': None,
+            })
 
             self.assertFalse(self.server.has_dashboard('dashboard-1'))
             self.assertFalse(self.server.index.has_dashboard('dashboard-1'))

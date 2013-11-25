@@ -203,16 +203,6 @@ describe("diamondash.dashboard", function(){
     });
 
     describe(".render()", function() {
-      it("should render its title", function() {
-        assert.equal(view.$('.dashboard-head').length, 0);
-
-        view.render();
-
-        assert.equal(
-          view.$('.dashboard-head').text().trim(),
-          'Dashboard 1');
-      });
-
       it("should render its widgets", function() {
         assert.equal(view.$('[data-widget=widget-1]').length, 0);
         assert.equal(view.$('[data-widget=widget-2]').length, 0);
@@ -251,45 +241,6 @@ describe("diamondash.dashboard", function(){
           widgetRows(),
           [['widget-1', 'widget-2'],
            ['widget-3', 'widget-4']]);
-      });
-    });
-  });
-
-  describe("DashboardWidgetViews", function() {
-    var views;
-
-    beforeEach(function() {
-      var dashboardView = new dashboard.DashboardView({
-        model: new dashboard.DashboardModel(fixtures.get(
-          'diamondash.dashboard.DashboardModel:simple'))
-      });
-
-      views = dashboardView.widgets;
-    });
-
-    describe(".add", function() {
-      it("should allowing adding widget instances", function() {
-        var widgetN = new ToyWidgetView({
-          model: new widget.WidgetModel({
-            name: 'widget-n',
-            type_name: 'toy'
-          })
-        });
-
-        views.add(widgetN);
-
-        assert.strictEqual(views.get('widget-n'), widgetN);
-      });
-
-      it("should allow adding widgets from an options object", function() {
-        views.add({
-          model: new widget.WidgetModel({
-            name: 'widget-n',
-            type_name: 'toy'
-          })
-        });
-
-        assert(views.get('widget-n') instanceof ToyWidgetView);
       });
     });
   });

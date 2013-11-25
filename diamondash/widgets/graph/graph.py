@@ -1,100 +1,14 @@
-from diamondash import utils
-from diamondash.config import ConfigError
-from diamondash.widgets.dynamic import DynamicWidgetConfig, DynamicWidget
+from diamondash.widgets.chart import ChartWidgetConfig, ChartWidget
 
 
-class GraphWidgetConfig(DynamicWidgetConfig):
+class GraphWidgetConfig(ChartWidgetConfig):
     DEFAULTS = {
-        'time_range': '1d',
-        'bucket_size': '1h',
-        'align_to_start': False,
         'dotted': False,
         'smooth': False,
     }
 
     TYPE_NAME = 'graph'
 
-    MIN_COLUMN_SPAN = 3
-    MAX_COLUMN_SPAN = 12
 
-    @classmethod
-    def parse(cls, config):
-        super(GraphWidgetConfig, cls).parse(config)
-
-        if 'metrics' not in config:
-            raise ConfigError(
-                "Graph Widget '%s' needs metrics." % config['name'])
-
-        config['time_range'] = utils.parse_interval(config['time_range'])
-        config['bucket_size'] = utils.parse_interval(config['bucket_size'])
-
-        config['backend'].update({
-            'bucket_size': config['bucket_size'],
-            'metrics': [cls.parse_metric(m) for m in config.pop('metrics')],
-        })
-
-        if 'null_filter' in config:
-            config['backend']['null_filter'] = config.pop('null_filter')
-
-        backend_config_cls = cls.for_type(config['backend']['type'])
-        config['backend'] = backend_config_cls(config['backend'])
-        config['metrics'] = config['backend']['metrics']
-
-        return config
-
-    @classmethod
-    def parse_metric(cls, config):
-        """
-        Parses a metric config given in a graph config into a config useable by
-        the backend.
-        """
-        if 'name' not in config:
-            raise ConfigError('Every graph metric needs a name.')
-
-        name = config.pop('name')
-        config['title'] = config.setdefault('title', name)
-        config['name'] = utils.slugify(name)
-
-        return config
-
-
-class GraphWidget(DynamicWidget):
+class GraphWidget(ChartWidget):
     CONFIG_CLS = GraphWidgetConfig
-
-    def process_backend_response(self, metric_data):
-        for metric in metric_data:
-            # x values are converted to milliseconds for client
-            metric['datapoints'] = [{
-                'x': d['x'],
-                'y': d['y']
-            } for d in metric['datapoints']]
-
-        x_vals = [d['x'] for m in metric_data for d in m['datapoints']] or [0]
-        y_vals = [d['y'] for m in metric_data for d in m['datapoints']] or [0]
-        domain = (min(x_vals), max(x_vals))
-
-        y_min = self.config['y_min'] if 'y_min' in self.config else min(y_vals)
-        range = (y_min, max(y_vals))
-
-        output_metric_data = [{
-            'id': m['id'],
-            'datapoints': m['datapoints'],
-        } for m in metric_data]
-
-        return {
-            'domain': domain,
-            'range': range,
-            'metrics': output_metric_data,
-        }
-
-    def get_snapshot(self):
-        time_range = self.config['time_range']
-        if self.config['align_to_start']:
-            from_time = utils.floor_time(utils.now(), time_range)
-        else:
-            from_time = utils.relative_to_now(-time_range)
-
-        d = self.backend.get_data(from_time=from_time)
-        d.addCallback(self.process_backend_response)
-        d.addErrback(self.handle_bad_backend_response)
-        return d

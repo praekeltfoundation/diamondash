@@ -167,6 +167,11 @@ class Dashboard(Element):
         return details
 
     @renderer
+    def title_renderer(self, request, tag):
+        tag.fillSlots(title_slot=self.config['title'])
+        return tag
+
+    @renderer
     def init_script_renderer(self, request, tag):
         tag.fillSlots(config_slot=json.dumps(self.get_details()))
         return tag

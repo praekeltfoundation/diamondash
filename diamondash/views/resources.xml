@@ -2,6 +2,5 @@
   <link href="/public/css/vendor.css" rel="stylesheet"/>
   <link href="/public/css/diamondash.css" rel="stylesheet"/>
   <script src="/public/js/vendor.js"/>
-  <script src="/public/js/templates.js"/>
   <script src="/public/js/diamondash.js"/>
 </t:transparent>

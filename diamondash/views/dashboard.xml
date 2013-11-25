@@ -1,11 +1,19 @@
 <div xmlns:t="http://twistedmatrix.com/ns/twisted.web.template/0.1">
-  <div class="dashboard"></div>
+  <div class="container">
+    <div class="row">
+      <div class="dashboard-head col-md-12" t:render="title_renderer">
+        <h1><t:slot name="title_slot"/></h1>
+      </div>
+    </div>
+
+    <div id="dashboard"></div>
+  </div>
 
   <script t:render="init_script_renderer">
     var data = <t:slot name="config_slot"/>;
 
     var dashboard = new diamondash.dashboard.DashboardView({
-      el: '.dashboard',
+      el: '#dashboard',
       model: new diamondash.dashboard.DashboardModel(data)
     });
 

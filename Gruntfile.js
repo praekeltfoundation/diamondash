@@ -4,6 +4,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jst');
+  grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-exec');
   grunt.loadNpmTasks('grunt-karma');
 
@@ -14,17 +15,30 @@ module.exports = function(grunt) {
         src: ['<%= paths.vendor.css.src %>'],
         dest: '<%= paths.vendor.css.dest %>'
       },
-      'diamondash.css': {
-        src: ['<%= paths.diamondash.css.src %>'],
-      dest: '<%= paths.diamondash.css.dest %>'
+      'widgets.less': {
+        src: ['<%= paths.diamondash.css.widgets.src %>'],
+        dest: '<%= paths.diamondash.css.widgets.dest %>'
       },
       'vendor.js': {
         src: ['<%= paths.vendor.js.src %>'],
         dest: '<%= paths.vendor.js.dest %>'
       },
       'diamondash.js': {
-        src: ['<%= paths.diamondash.js.src %>'],
+        src: [
+          '<%= paths.diamondash.jst.dest %>',
+          '<%= paths.diamondash.js.src %>'],
         dest: '<%= paths.diamondash.js.dest %>'
+      }
+    },
+    less: {
+      'diamondash.css': {
+        options: {
+          paths: ['<%= paths.diamondash.css.paths %>']
+        },
+        files: {
+          '<%= paths.diamondash.css.dest %>':
+            '<%= paths.diamondash.css.entry %>'
+        }
       }
     },
     watch: {
@@ -34,7 +48,7 @@ module.exports = function(grunt) {
       },
       'diamondash.css': {
         files: ['<%= paths.diamondash.css.src %>'],
-        tasks: ['concat:diamondash.css']
+        tasks: ['build:css']
       },
       'vendor.js': {
         files: ['<%= paths.vendor.js.src %>'],
@@ -55,6 +69,12 @@ module.exports = function(grunt) {
       },
       'tests.cleanup': {
         cmd: 'rm <%= paths.tests.cleanup %>'
+      },
+      'diamondash.js.cleanup': {
+        cmd: 'rm <%= paths.diamondash.js.cleanup.join(" ") %>'
+      },
+      'diamondash.css.cleanup': {
+        cmd: 'rm <%= paths.diamondash.css.cleanup.join(" ") %>'
       }
     },
     jst: {
@@ -68,8 +88,7 @@ module.exports = function(grunt) {
       'test-templates.jst': {
         files: {
           '<%= paths.tests.jst.dest %>': [
-            '<%= paths.tests.jst.src %>'
-          ]
+            '<%= paths.tests.jst.src %>']
         }
       },
     },
@@ -82,10 +101,36 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.registerTask('build', [
+  grunt.registerTask('build:vendor.js', [
+    'concat:vendor.js',
+  ]);
+
+  grunt.registerTask('build:diamondash.js', [
     'jst:diamondash.jst',
-    'exec:vendor.fonts',
-    'concat'
+    'concat:diamondash.js',
+    'exec:diamondash.js.cleanup'
+  ]);
+
+  grunt.registerTask('build:vendor.css', [
+    'concat:vendor.css',
+  ]);
+
+  grunt.registerTask('build:diamondash.css', [
+    'concat:widgets.less',
+    'less:diamondash.css',
+    'exec:diamondash.css.cleanup',
+  ]);
+
+  grunt.registerTask('build:vendor.fonts', [
+    'exec:vendor.fonts'
+  ]);
+
+  grunt.registerTask('build', [
+    'build:vendor.css',
+    'build:vendor.js',
+    'build:vendor.fonts',
+    'build:diamondash.css',
+    'build:diamondash.js'
   ]);
 
   grunt.registerTask('default', [
@@ -95,6 +140,8 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [
     'jst:diamondash.jst',
-    'karma'
+    'build:diamondash.css',
+    'karma',
+    'exec:tests.cleanup'
   ]);
 };

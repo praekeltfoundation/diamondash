@@ -90,6 +90,17 @@ describe("diamondash.components.structures", function() {
         views.add(view, 'c');
         assert.strictEqual(views.findByCustom('c'), view);
       });
+
+      it("should allowing adding view instances", function() {
+        var view = new Backbone.View({id: 'c'});
+        views.add(view);
+        assert.strictEqual(views.get('c'), view);
+      });
+
+      it("should allow adding views from an options object", function() {
+        views.add({id: 'c'});
+        assert(views.get('c') instanceof Backbone.View);
+      });
     });
 
     describe(".get()", function() {

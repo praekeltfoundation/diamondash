@@ -1,6 +1,7 @@
 vendor:
   js:
     src:
+      - 'bower_components/js-base64/base64.js'
       - 'bower_components/jquery/jquery.js'
       - 'bower_components/underscore/underscore.js'
       - 'bower_components/backbone/backbone.js'
@@ -18,39 +19,52 @@ vendor:
     dest: 'diamondash/public/fonts/'
 
 diamondash:
+  jst:
+    src:
+      - 'diamondash/widgets/**/*.jst'
+      - 'diamondash/client/jst/**/*.jst'
+    dest: &diamondash.jst.dest 'diamondash/public/js/templates.js'
   js:
     src:
       - 'diamondash/client/js/index.js'
       - 'diamondash/client/js/utils.js'
       - 'diamondash/client/js/components/index.js'
       - 'diamondash/client/js/components/structures.js'
-      - 'diamondash/client/js/components/charts.js'
+      - 'diamondash/client/js/models.js'
       - 'diamondash/client/js/widgets.js'
       - 'diamondash/widgets/widget/widget.js'
       - 'diamondash/widgets/dynamic/dynamic.js'
+      - 'diamondash/widgets/chart/js/index.js'
+      - 'diamondash/widgets/chart/js/models.js'
+      - 'diamondash/widgets/chart/js/views.js'
       - 'diamondash/widgets/graph/js/index.js'
       - 'diamondash/widgets/graph/js/models.js'
       - 'diamondash/widgets/graph/js/views.js'
       - 'diamondash/widgets/lvalue/lvalue.js'
       - 'diamondash/client/js/dashboard.js'
+      - 'diamondash/client/js/init.js'
     dest: 'diamondash/public/js/diamondash.js'
-  jst:
-    src:
-      - 'diamondash/widgets/**/*.jst'
-      - 'diamondash/client/jst/**/*.jst'
-    dest: 'diamondash/public/js/templates.js'
+    cleanup:
+      - *diamondash.jst.dest
   css:
+    widgets:
+      src: &diamondash.css.widgets.src 'diamondash/widgets/**/*.less'
+      dest: &diamondash.css.widgets.dest 'diamondash/client/css/widgets.less'
+    paths: 'diamondash/client/css'
+    entry: 'diamondash/client/css/diamondash.less'
     src:
-      - 'diamondash/client/css/*.css'
-      - "diamondash/widgets/**/*.css"
+      - *diamondash.css.widgets.src
+      - 'diamondash/client/css/*.less'
     dest: 'diamondash/public/css/diamondash.css'
+    cleanup:
+      - *diamondash.css.widgets.dest
 
 tests:
   jst:
     src:
       - 'diamondash/widgets/**/*.fixture.jst'
       - 'diamondash/client/tests/**/*.fixture.jst'
-    dest: &test_templates 'diamondash/public/js/test-templates.js'
+    dest: &tests.jst.dest 'diamondash/public/js/test-templates.js'
   vendor:
     - 'bower_components/sinon/index.js'
     - 'bower_components/chai/chai.js'
@@ -62,4 +76,4 @@ tests:
     - 'diamondash/client/tests/**/*.test.js'
     - 'diamondash/widgets/**/*.test.js'
   cleanup:
-    - *test_templates
+    - *diamondash.jst.dest

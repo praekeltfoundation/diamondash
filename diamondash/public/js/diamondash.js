@@ -1,22 +1,82 @@
+this["JST"] = this["JST"] || {};
+
+this["JST"]["diamondash/widgets/graph/legend.jst"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
+function print() { __p += __j.call(arguments, '') }
+with (obj) {
+__p += '<div class="row">\n  ';
+ self.model.get('metrics').each(function(m) { ;
+__p += '\n    <div class="legend-item col-md-6" data-metric-id="' +
+((__t = ( m.get('id') )) == null ? '' : __t) +
+'">\n      <span class="swatch"></span>\n      <span class="title">' +
+((__t = ( m.get('title') )) == null ? '' : __t) +
+'</span>\n      <span class="value">' +
+((__t = ( self.format(x ? m.valueAt(x) : m.lastValue()) )) == null ? '' : __t) +
+'</span>\n    </div>\n  ';
+ }); ;
+__p += '\n</div>\n';
+
+}
+return __p
+};
+
+this["JST"]["diamondash/widgets/lvalue/lvalue.jst"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<h1 class="last"></h1>\n<div class="' +
+((__t = ( change )) == null ? '' : __t) +
+' change">\n  <span class="diff">' +
+((__t = ( diff )) == null ? '' : __t) +
+'</span>\n  <span class="percentage">(' +
+((__t = ( percentage )) == null ? '' : __t) +
+')</span>\n</div>\n<div class="time">\n  <span class="from">from ' +
+((__t = ( from )) == null ? '' : __t) +
+'</span>\n  <span class="to">to ' +
+((__t = ( to )) == null ? '' : __t) +
+'<span>\n</div>\n';
+
+}
+return __p
+};
+
+this["JST"]["diamondash/client/jst/dashboard.jst"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
+function print() { __p += __j.call(arguments, '') }
+with (obj) {
+__p += '<div class="container">\n  <div class="row">\n    <div class="dashboard-body col-md-12">\n      ';
+ dashboard.model.get('rows').each(function(row) { ;
+__p += '\n      <div class="row">\n        ';
+ row.get('widgets').each(function(widget) { ;
+__p += '\n          <div\n           data-widget="' +
+((__t = ( widget.id )) == null ? '' : __t) +
+'"\n           class="' +
+((__t = ( widget.get('type_name') )) == null ? '' : __t) +
+' widget col-md-' +
+((__t = ( widget.get('width') )) == null ? '' : __t) +
+'">\n            <div class="widget-head"><h4>' +
+((__t = ( widget.get('title') )) == null ? '' : __t) +
+'</h4></div>\n            <div class="widget-body"></div>\n          </div>\n        ';
+ }); ;
+__p += '\n      </div>\n      ';
+ }); ;
+__p += '\n    </div>\n  </div>\n</div>\n';
+
+}
+return __p
+};
 window.diamondash = function() {
-  var DiamondashConfigModel = Backbone.RelationalModel.extend({
-    defaults: {
-      url_prefix: ''
-    }
-  });
-
-  var config = new DiamondashConfigModel();
-
   function url() {
     var parts = _(arguments).toArray();
-    parts.unshift(config.get('url_prefix'));
+    parts.unshift(diamondash.config.get('url_prefix'));
     parts.unshift('/');
     return diamondash.utils.joinPaths.apply(this, parts);
   }
 
   return {
-    url: url,
-    config: config
+    url: url
   };
 }.call(this);
 
@@ -94,6 +154,10 @@ diamondash.utils = function() {
     return result;
   }
 
+  function basicAuth(username, password) {
+    return 'Basic ' + Base64.encode(username + ':' + password);
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -101,7 +165,8 @@ diamondash.utils = function() {
     bindEvents: bindEvents,
     snap: snap,
     d3Map: d3Map,
-    joinPaths: joinPaths
+    joinPaths: joinPaths,
+    basicAuth: basicAuth
   };
 }.call(this);
 
@@ -189,14 +254,25 @@ diamondash.components.structures = function() {
       return this.findByCustom(key);
     },
 
-    add: function(widget, key) {
-      if (typeof key == 'undefined') { key = this.keyOf(widget); }
-      return ViewSet.__super__.add.call(this, widget, key);
+    make: function(options) {
+      return new Backbone.View(options);
+    },
+
+    ensure: function(obj) {
+      return !(obj instanceof Backbone.View)
+        ? this.make(obj)
+        : obj;
+    },
+
+    add: function(obj, key) {
+      var view = this.ensure(obj);
+      if (typeof key == 'undefined') { key = this.keyOf(view); }
+      return ViewSet.__super__.add.call(this, view, key);
     },
 
     remove: function(obj) {
-      var widget = this.get(this.ensureKey(obj));
-      if (widget) { ViewSet.__super__.remove.call(this, widget); }
+      var view = this.get(this.ensureKey(obj));
+      if (view) { ViewSet.__super__.remove.call(this, view); }
       return this;
     },
 
@@ -244,9 +320,313 @@ diamondash.components.structures = function() {
   };
 }.call(this);
 
-diamondash.components.charts = function() {
-  var structures = diamondash.components.structures,
+diamondash.models = function() {
+  var DiamondashConfigModel = Backbone.RelationalModel.extend({
+    relations: [{
+      type: Backbone.HasOne,
+      key: 'auth',
+      relatedModel: 'diamondash.models.AuthModel',
+      includeInJSON: false
+    }],
+
+    defaults: {
+      auth: {}
+    }
+  });
+
+  var AuthModel = Backbone.RelationalModel.extend({
+    defaults: {
+      all: false
+    },
+
+    stringify: function() {
+      return diamondash.utils.basicAuth(
+        this.get('username'),
+        this.get('password'));
+    }
+  });
+
+  var Model = Backbone.RelationalModel.extend({
+    sync: function(method, model, options) {
+      options = options || {};
+
+      if (options.auth || diamondash.config.get('auth').get('all')) {
+        options.beforeSend = function(xhr) {
+          xhr.setRequestHeader(
+            'Authorization',
+            diamondash.config.get('auth').stringify());
+        };
+      }
+
+      return Backbone.sync.call(this, method, model, options);
+    }
+  });
+
+  return {
+    Model: Model,
+    AuthModel: AuthModel,
+    DiamondashConfigModel: DiamondashConfigModel
+  };
+}.call(this);
+
+diamondash.widgets = function() {
+  var structures = diamondash.components.structures;
+
+  var WidgetViewRegistry = structures.Registry.extend({
+    make: function(options) {
+      var type;
+
+      if (options.model) {
+        type = this.get(options.model.get('type_name'));
+      }
+
+      type = type || diamondash.widgets.widget.WidgetView;
+      return new type(options);
+    }
+  });
+
+  var registry = {
+    models: new structures.Registry(),
+    views: new WidgetViewRegistry()
+  };
+
+  return {
+    registry: registry,
+    WidgetViewRegistry: WidgetViewRegistry
+  };
+}.call(this);
+
+diamondash.widgets.widget = function() {
+  var models = diamondash.models,
+      widgets = diamondash.widgets;
+
+  var WidgetModel = models.Model.extend({
+    idAttribute: 'name',
+
+    subModelTypes: {},
+    subModelTypeAttribute: 'type_name',
+
+    url: function() {
+      return diamondash.url(
+        'api/widgets',
+        this.get('dashboard').get('name'),
+        this.get('name'));
+    },
+
+    defaults: {
+      width: 3
+    }
+  });
+
+  var WidgetCollection = Backbone.Collection.extend({
+    model: WidgetModel
+  });
+
+  var WidgetView = Backbone.View.extend({
+    id: function() {
+      return this.model.id;
+    }
+  });
+
+  widgets.registry.models.add('widget', WidgetModel);
+  widgets.registry.views.add('widget', WidgetView);
+
+  widgets.registry.models.on('add', function(name, type) {
+    var objName = 'diamondash.widgets.registry.models.items.' + name;
+
+    // Modifying something on the prototype and changing internal properties
+    // set by backbone-relational is not ideal, but is the only way to
+    // dynamically add/remove sub-models without changing backbone-relational
+    WidgetModel.prototype.subModelTypes[name] = objName;
+    WidgetModel._subModels[name] = type;
+  });
+
+  widgets.registry.models.on('remove', function(name) {
+    delete WidgetModel.prototype.subModelTypes[name];
+    delete WidgetModel._subModels[name];
+  });
+
+  return {
+    WidgetModel: WidgetModel,
+    WidgetCollection: WidgetCollection,
+    WidgetView: WidgetView
+  };
+}.call(this);
+
+diamondash.widgets.dynamic = function() {
+  var widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget,
       utils = diamondash.utils;
+
+  var DynamicWidgetModel = widget.WidgetModel.extend({
+    snapshotUrl: function() {
+      return utils.joinPaths(_(this).result('url'), 'snapshot');
+    },
+
+    fetchSnapshot: function(options) {
+      options = options || {};
+      options.url = _(this).result('snapshotUrl');
+      
+      return this.fetch(options);
+    }
+  });
+
+  widgets.registry.models.add('dynamic', DynamicWidgetModel);
+
+  return {
+    DynamicWidgetModel: DynamicWidgetModel
+  };
+}.call(this);
+
+diamondash.widgets.chart = function() {
+  return {
+  };
+}.call(this);
+
+diamondash.widgets.chart.models = function() {
+  var widgets = diamondash.widgets,
+      dynamic = diamondash.widgets.dynamic,
+      structures = diamondash.components.structures,
+      utils = diamondash.utils;
+
+  var ChartMetricModel = Backbone.RelationalModel.extend({
+    defaults: {
+      datapoints: []
+    },
+
+    bisect: d3
+      .bisector(function(d) { return d.x; })
+      .left,
+
+    lastValue: function(x) {
+      var datapoints = this.get('datapoints'),
+          d = datapoints[datapoints.length - 1];
+
+      return d && (typeof d.y !== 'undefined')
+        ? d.y
+        : null;
+    },
+
+    valueAt: function(x) {
+      var datapoints = this.get('datapoints'),
+          i = this.bisect(datapoints, x);
+          d = datapoints[i];
+
+      return d && (x === d.x)
+        ? d.y
+        : null;
+    },
+
+    xMin: function() {
+      return d3.min(
+        this.get('datapoints'),
+        function(d) { return d.x; });
+    },
+
+    xMax: function() {
+      return d3.max(
+        this.get('datapoints'),
+        function(d) { return d.x; });
+    },
+
+    domain: function() {
+      return [this.xMin(), this.xMax()];
+    },
+
+    yMin: function() {
+      return d3.min(
+        this.get('datapoints'),
+        function(d) { return d.y; });
+    },
+
+    yMax: function() {
+      return d3.max(
+        this.get('datapoints'),
+        function(d) { return d.y; });
+    },
+
+    range: function() {
+      return [this.yMin(), this.yMax()];
+    }
+  });
+
+  var ChartMetricCollection = Backbone.Collection.extend({
+    colorOptions: {
+      n: 10,
+      scale: d3.scale.category10()
+    },
+
+    initialize: function() {
+      this.colors = new structures.ColorMaker(this.colorOptions);
+      utils.bindEvents(this.bindings, this);
+    },
+
+    bindings: {
+      'add': function(metric) {
+        metric.set('color', this.colors.next());
+      }
+    }
+  });
+
+  var ChartModel = dynamic.DynamicWidgetModel.extend({
+    relations: [{
+      type: Backbone.HasMany,
+      key: 'metrics',
+      relatedModel: ChartMetricModel,
+      collectionType: ChartMetricCollection
+    }],
+
+    defaults: {
+      'metrics': []
+    },
+
+    xMin: function() {
+      return d3.min(this.get('metrics').map(function(m) {
+        return m.xMin();
+      }));
+    },
+
+    xMax: function() {
+      return d3.max(this.get('metrics').map(function(m) {
+        return m.xMax();
+      }));
+    },
+
+    domain: function() {
+      return [this.xMin(), this.xMax()];
+    },
+
+    yMin: function() {
+      return d3.min(this.get('metrics').map(function(m) {
+        return m.yMin();
+      }));
+    },
+
+    yMax: function() {
+      return d3.max(this.get('metrics').map(function(m) {
+        return m.yMax();
+      }));
+    },
+
+    range: function() {
+      return [this.yMin(), this.yMax()];
+    }
+  });
+
+  widgets.registry.models.add('chart', ChartModel);
+
+  return {
+    ChartModel: ChartModel,
+    ChartMetricModel: ChartMetricModel,
+    ChartMetricCollection: ChartMetricCollection,
+  };
+}.call(this);
+
+diamondash.widgets.chart.views = function() {
+  var structures = diamondash.components.structures,
+      utils = diamondash.utils,
+      widgets = diamondash.widgets,
+      widget = diamondash.widgets.widget;
 
   var components = {};
 
@@ -267,7 +647,7 @@ diamondash.components.charts = function() {
     return target;
   };
 
-  var Dimensions = structures.Extendable.extend({
+  var ChartDimensions = structures.Extendable.extend({
     height: 0,
     width: 0,
 
@@ -297,7 +677,7 @@ diamondash.components.charts = function() {
     }
   });
 
-  var AxisView = structures.Eventable.extend({
+  var ChartAxisView = structures.Eventable.extend({
     height: 24,
     orient: 'bottom',
 
@@ -377,17 +757,12 @@ diamondash.components.charts = function() {
     }
   });
 
-  var ChartView = Backbone.View.extend({
+  var ChartView = widget.WidgetView.extend({
     className: 'chart',
-
-    dimensions: new Dimensions(),
 
     initialize: function(options) {
       options = options || {};
-
-      if ('dimensions' in options) {
-        this.dimensions = options.dimensions;
-      }
+      this.dimensions = new ChartDimensions(options.dimensions);
 
       this.svg = d3.select(this.el).append('svg');
       this.canvas = this.svg.append('g');
@@ -419,124 +794,13 @@ diamondash.components.charts = function() {
     }
   });
 
+  widgets.registry.views.add('chart', ChartView);
+
   return {
     components: components,
-    AxisView: AxisView,
+    ChartAxisView: ChartAxisView,
     ChartView: ChartView,
-    Dimensions: Dimensions
-  };
-}.call(this);
-
-diamondash.widgets = function() {
-  var structures = diamondash.components.structures;
-
-  var WidgetViewRegistry = structures.Registry.extend({
-    make: function(options) {
-      var type;
-
-      if (options.model) {
-        type = this.get(options.model.get('type_name'));
-      }
-
-      type = type || diamondash.widgets.widget.WidgetView;
-      return new type(options);
-    },
-
-    ensure: function(obj) {
-      return !(obj instanceof Backbone.View)
-        ? this.make(obj)
-        : obj;
-    }
-  });
-
-  var registry = {
-    models: new structures.Registry(),
-    views: new WidgetViewRegistry()
-  };
-
-  return {
-    registry: registry,
-    WidgetViewRegistry: WidgetViewRegistry
-  };
-}.call(this);
-
-diamondash.widgets.widget = function() {
-  var widgets = diamondash.widgets;
-
-  var WidgetModel = Backbone.RelationalModel.extend({
-    idAttribute: 'name',
-
-    subModelTypes: {},
-    subModelTypeAttribute: 'type_name',
-
-    url: function() {
-      return diamondash.url(
-        'api/widgets',
-        this.get('dashboard').get('name'),
-        this.get('name'));
-    },
-
-    defaults: {
-      width: 3
-    }
-  });
-
-  var WidgetCollection = Backbone.Collection.extend({
-    model: WidgetModel
-  });
-
-  var WidgetView = Backbone.View.extend({
-    id: function() {
-      return this.model.id;
-    }
-  });
-
-  widgets.registry.models.add('widget', WidgetModel);
-  widgets.registry.views.add('widget', WidgetView);
-
-  widgets.registry.models.on('add', function(name, type) {
-    var objName = 'diamondash.widgets.registry.models.items.' + name;
-
-    // Modifying something on the prototype and changing internal properties
-    // set by backbone-relational is not ideal, but is the only way to
-    // dynamically add/remove sub-models without changing backbone-relational
-    WidgetModel.prototype.subModelTypes[name] = objName;
-    WidgetModel._subModels[name] = type;
-  });
-
-  widgets.registry.models.on('remove', function(name) {
-    delete WidgetModel.prototype.subModelTypes[name];
-    delete WidgetModel._subModels[name];
-  });
-
-  return {
-    WidgetModel: WidgetModel,
-    WidgetCollection: WidgetCollection,
-    WidgetView: WidgetView
-  };
-}.call(this);
-
-diamondash.widgets.dynamic = function() {
-  var widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget;
-
-  var DynamicWidgetModel = widget.WidgetModel.extend({
-    snapshotUrl: function() {
-      return diamondash.url(_(this).result('url'), 'snapshot');
-    },
-
-    fetchSnapshot: function(options) {
-      options = options || {};
-      options.url = _(this).result('snapshotUrl');
-      
-      return this.fetch(options);
-    }
-  });
-
-  widgets.registry.models.add('dynamic', DynamicWidgetModel);
-
-  return {
-    DynamicWidgetModel: DynamicWidgetModel
+    ChartDimensions: ChartDimensions
   };
 }.call(this);
 
@@ -547,80 +811,19 @@ diamondash.widgets.graph = function() {
 
 diamondash.widgets.graph.models = function() {
   var widgets = diamondash.widgets,
-      dynamic = diamondash.widgets.dynamic,
-      structures = diamondash.components.structures,
-      utils = diamondash.utils;
+      chart = diamondash.widgets.chart;
 
-  var GraphMetricModel = Backbone.RelationalModel.extend({
-    defaults: {
+  var GraphModel = chart.models.ChartModel.extend({
+    defaults: _({
       dotted: false,
-      smooth: false,
-      datapoints: []
-    },
-
-    bisect: d3
-      .bisector(function(d) { return d.x; })
-      .left,
-
-    lastValue: function(x) {
-      var datapoints = this.get('datapoints'),
-          d = datapoints[datapoints.length - 1];
-
-      return d && (typeof d.y !== 'undefined')
-        ? d.y
-        : null;
-    },
-
-    valueAt: function(x) {
-      var datapoints = this.get('datapoints'),
-          i = this.bisect(datapoints, x);
-          d = datapoints[i];
-
-      return d && (x === d.x)
-        ? d.y
-        : null;
-    }
-  });
-
-  var GraphMetricCollection = Backbone.Collection.extend({
-    colorOptions: {
-      n: 10,
-      scale: d3.scale.category10()
-    },
-
-    initialize: function() {
-      this.colors = new structures.ColorMaker(this.colorOptions);
-      utils.bindEvents(this.bindings, this);
-    },
-
-    bindings: {
-      'add': function(metric) {
-        metric.set('color', this.colors.next());
-      }
-    }
-  });
-
-  var GraphModel = dynamic.DynamicWidgetModel.extend({
-    relations: [{
-      type: Backbone.HasMany,
-      key: 'metrics',
-      relatedModel: GraphMetricModel,
-      collectionType: GraphMetricCollection
-    }],
-
-    defaults: {
-      'domain': [0, 0],
-      'range': [0, 0],
-      'metrics': []
-    },
+      smooth: false
+    }).defaults(chart.models.ChartModel.prototype.defaults)
   });
 
   widgets.registry.models.add('graph', GraphModel);
 
   return {
-    GraphModel: GraphModel,
-    GraphMetricModel: GraphMetricModel,
-    GraphMetricCollection: GraphMetricCollection,
+    GraphModel: GraphModel
   };
 }.call(this);
 
@@ -628,7 +831,7 @@ diamondash.widgets.graph.views = function() {
   var widgets = diamondash.widgets,
       utils = diamondash.utils,
       structures = diamondash.components.structures,
-      charts = diamondash.components.charts;
+      chart = diamondash.widgets.chart;
 
   var GraphLegendView = Backbone.View.extend({
     className: 'legend',
@@ -700,7 +903,7 @@ diamondash.widgets.graph.views = function() {
 
       marker.enter().append('g')
         .attr('class', 'hover-marker')
-        .call(charts.components.marker)
+        .call(chart.views.components.marker)
         .transition()
           .select('text')
           .attr('fill-opacity', 1);
@@ -855,7 +1058,7 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
-  var GraphView = charts.ChartView.extend({
+  var GraphView = chart.views.ChartView.extend({
     height: 214,
     axisHeight: 24,
 
@@ -872,7 +1075,7 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dimensions: new charts.Dimensions({
+        dimensions: new chart.views.ChartDimensions({
           height: this.height,
           margin: this.margin
         })
@@ -888,7 +1091,7 @@ diamondash.widgets.graph.views = function() {
 
       this.lines = new GraphLines({graph: this});
 
-      this.axis = new charts.AxisView({
+      this.axis = new chart.views.ChartAxisView({
         chart: this,
         scale: this.fx,
         height: this.axisHeight
@@ -910,12 +1113,11 @@ diamondash.widgets.graph.views = function() {
     render: function() {
       this.dimensions.set({width: this.$el.width()});
       GraphView.__super__.render.call(this);
-
       this.resetScales();
-      var domain = this.model.get('domain');
-      var range = this.model.get('range');
+
+      var domain = this.model.domain();
       this.fx.domain(domain);
-      this.fy.domain(range);
+      this.fy.domain(this.model.range());
 
       this.lines.render();
 
@@ -945,7 +1147,7 @@ diamondash.widgets.graph.views = function() {
       // it to the closest timestep
       position.x = utils.snap(
         this.fx.invert(position.svg.x),
-        this.model.get('domain')[0],
+        this.model.xMin(),
         this.model.get('bucket_size'));
 
       // shift the svg x value to correspond to the snapped time value
@@ -1127,11 +1329,12 @@ diamondash.widgets.lvalue = function() {
 
 diamondash.dashboard = function() {
   var structures = diamondash.components.structures,
+      models = diamondash.models,
       widgets = diamondash.widgets,
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
-  var DashboardRowModel = Backbone.RelationalModel.extend({
+  var DashboardRowModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -1140,7 +1343,7 @@ diamondash.dashboard = function() {
     }]
   });
 
-  var DashboardModel = Backbone.RelationalModel.extend({
+  var DashboardModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -1204,9 +1407,8 @@ diamondash.dashboard = function() {
       return '[data-widget=' + key + '] .widget-body';
     },
 
-    add: function(obj) {
-      var widget = widgets.registry.views.ensure(obj);
-      return DashboardWidgetViews.__super__.add.call(this, widget);
+    make: function(options) {
+      return widgets.registry.views.make(options);
     }
   });
 
@@ -1236,3 +1438,7 @@ diamondash.dashboard = function() {
     DashboardRowModel: DashboardRowModel
   };
 }.call(this);
+
+(function() {
+  diamondash.config = new diamondash.models.DiamondashConfigModel();
+}).call(this);

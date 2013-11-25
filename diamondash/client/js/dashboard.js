@@ -1,10 +1,11 @@
 diamondash.dashboard = function() {
   var structures = diamondash.components.structures,
+      models = diamondash.models,
       widgets = diamondash.widgets,
       widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
-  var DashboardRowModel = Backbone.RelationalModel.extend({
+  var DashboardRowModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -13,7 +14,7 @@ diamondash.dashboard = function() {
     }]
   });
 
-  var DashboardModel = Backbone.RelationalModel.extend({
+  var DashboardModel = models.Model.extend({
     relations: [{
       type: Backbone.HasMany,
       key: 'widgets',
@@ -77,9 +78,8 @@ diamondash.dashboard = function() {
       return '[data-widget=' + key + '] .widget-body';
     },
 
-    add: function(obj) {
-      var widget = widgets.registry.views.ensure(obj);
-      return DashboardWidgetViews.__super__.add.call(this, widget);
+    make: function(options) {
+      return widgets.registry.views.make(options);
     }
   });
 
