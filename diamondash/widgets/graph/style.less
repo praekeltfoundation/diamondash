@@ -32,7 +32,7 @@
   .legend {
     text-align: left;
 
-    .legend-items {
+    .legend-item {
       .swatch {
         display: inline-block;
         vertical-align: middle;
@@ -47,8 +47,12 @@
       }
     }
 
-    &.hover .legend-items .value {
-      color: #555;
+    &.hover {
+       .legend-item {
+         .value {
+          color: #555;
+        }
+      }
     }
   }
 
