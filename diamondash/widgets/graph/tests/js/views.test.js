@@ -39,6 +39,27 @@ describe("diamondash.widgets.graph", function() {
       legend = graph.legend;
     });
 
+    describe("if the graph metrics have no datapoints", function() {
+        beforeEach(function() {
+            graph.model.get('metrics').each(function(m) {
+                m.set('datapoints', []);
+            });
+        });
+
+        it("should use the graph's default value", function() {
+            graph.model.set('default_value', -1);
+            legend.render();
+
+            assert.equal(
+              legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+              -1);
+
+            assert.equal(
+              legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+              -1);
+        });
+    });
+
     describe("when the graph is hovered over", function() {
       beforeEach(function() {
         legend.render();
