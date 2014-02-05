@@ -16,14 +16,14 @@ diamondash.widgets.graph.views = function() {
     },
 
     valueOf: function(metricId, x) {
-        var metric = this.model.get('metrics').get(metricId);
-        var v = typeof x == 'undefined'
-            ? metric.lastValue()
-            : metric.valueAt(x);
+      var metric = this.model.get('metrics').get(metricId);
+      var v = typeof x == 'undefined'
+        ? metric.lastValue()
+        : metric.valueAt(x);
 
         return v === null
-            ? this.model.get('default_value')
-            : v;
+          ? this.model.get('default_value')
+          : v;
     },
 
     format: d3.format(",f"),
