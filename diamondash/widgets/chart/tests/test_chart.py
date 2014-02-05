@@ -76,7 +76,6 @@ class ChartWidgetTestCase(unittest.TestCase):
         self.assertEqual(self.widget.backend.get_requests(),
                          [{'from_time': expected_from_time}])
         d.addCallback(self.assertEqual, expected_data)
-        d.callback(None)
         return d
 
     def test_snapshot_retrieval(self):
@@ -122,7 +121,6 @@ class ChartWidgetTestCase(unittest.TestCase):
             ]
         })
 
-        d.callback(None)
         return d
 
     def test_snapshot_retrieval_for_empty_datapoints(self):
@@ -145,7 +143,6 @@ class ChartWidgetTestCase(unittest.TestCase):
                 {'id': '2', 'datapoints': []}]
         })
 
-        d.callback(None)
         return d
 
     def test_snapshot_retrieval_for_align_to_start(self):

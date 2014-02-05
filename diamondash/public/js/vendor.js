@@ -11854,12 +11854,50 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 /* vim: set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab: */
 /**
- * Backbone-relational.js 0.8.6
+ * Backbone-relational.js 0.8.7
  * (c) 2011-2013 Paul Uithol and contributors (https://github.com/PaulUithol/Backbone-relational/graphs/contributors)
- * 
+ *
  * Backbone-relational may be freely distributed under the MIT license; see the accompanying LICENSE.txt.
  * For details and documentation: https://github.com/PaulUithol/Backbone-relational.
  * Depends on Backbone (and thus on Underscore as well): https://github.com/documentcloud/backbone.
+ *
+ * Example:
+ *
+	Zoo = Backbone.RelationalModel.extend( {
+	 relations: [ {
+	     type: Backbone.HasMany,
+	     key: 'animals',
+	     relatedModel: 'Animal',
+	     reverseRelation: {
+	         key: 'livesIn',
+	         includeInJSON: 'id'
+	         // 'relatedModel' is automatically set to 'Zoo'; the 'relationType' to 'HasOne'.
+	     }
+	 } ],
+
+	 toString: function() {
+	     return this.get( 'name' );
+	 }
+	} );
+
+	Animal = Backbone.RelationalModel.extend( {
+	 toString: function() {
+	     return this.get( 'species' );
+	 }
+	} );
+
+	// Creating the zoo will give it a collection with one animal in it: the monkey.
+	// The animal created after that has a relation `livesIn` that points to the zoo it's currently associated with.
+	// If you instantiate (or fetch) the zebra later, it will automatically be added.
+
+	var zoo = new Zoo( {
+	 name: 'Artis',
+	 animals: [ { id: 'monkey-1', species: 'Chimp' }, 'lion-1', 'zebra-1' ]
+	} );
+
+	var lion = new Animal( { id: 'lion-1', species: 'Lion' } ),
+	    monkey = zoo.get( 'animals' ).first(),
+	    sameZoo = lion.get( 'livesIn' );
  */
 ( function( undefined ) {
 	"use strict";
@@ -12078,7 +12116,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 					return val === rel[ key ];
 				});
 			});
-			
+
 			if ( !exists && relation.model && relation.type ) {
 				this._reverseRelations.push( relation );
 				this._addRelation( relation.model, relation );
@@ -12159,20 +12197,20 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			if ( type instanceof Backbone.RelationalModel ) {
 				type = type.constructor;
 			}
-			
+
 			var rootModel = type;
 			while ( rootModel._superModel ) {
 				rootModel = rootModel._superModel;
 			}
-			
+
 			var coll = _.find( this._collections, function(item) {
-			  return item.model === rootModel;	
+			  return item.model === rootModel;
 			});
-			
+
 			if ( !coll && create !== false ) {
 				coll = this._createCollection( rootModel );
 			}
-			
+
 			return coll;
 		},
 
@@ -12200,20 +12238,20 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		_createCollection: function( type ) {
 			var coll;
-			
+
 			// If 'type' is an instance, take its constructor
 			if ( type instanceof Backbone.RelationalModel ) {
 				type = type.constructor;
 			}
-			
+
 			// Type should inherit from Backbone.RelationalModel.
 			if ( type.prototype instanceof Backbone.RelationalModel ) {
 				coll = new Backbone.Collection();
 				coll.model = type;
-				
+
 				this._collections.push( coll );
 			}
-			
+
 			return coll;
 		},
 
@@ -12249,9 +12287,9 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		 * @param {String|Number|Object|Backbone.RelationalModel} item
 		 */
 		find: function( type, item ) {
-			var id = this.resolveIdForItem( type, item );
-			var coll = this.getCollection( type );
-			
+			var id = this.resolveIdForItem( type, item ),
+				coll = this.getCollection( type );
+
 			// Because the found object could be of any of the type's superModel
 			// types, only return it if it's actually of the type asked for.
 			if ( coll ) {
@@ -12315,9 +12353,16 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		/**
 		 * Remove a 'model' from the store.
 		 * @param {Backbone.RelationalModel} model
+		 * @param {Backbone.Collection} [collection]
+		 * @param {Object} [options]
 		 */
 		unregister: function( model, collection, options ) {
 			this.stopListening( model );
+
+			_.each( model.getRelations(), function( rel ) {
+				rel.stopListening();
+			});
+
 			var coll = this.getCollection( model );
 			coll && coll.remove( model, options );
 		},
@@ -12527,7 +12572,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 						}
 					}, this );
 			}, this );
-			
+
 			return reverseRelations;
 		},
 
@@ -12544,7 +12589,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			else if ( this instanceof Backbone.HasMany ) {
 				this.setRelated( this._prepareCollection() );
 			}
-			
+
 			_.each( this.getReverseRelations(), function( relation ) {
 				relation.removeRelated( this.instance );
 			}, this );
@@ -12587,7 +12632,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			}
 
 			// Nullify `keyId` if we have a related model; in case it was already part of the relation
-			if ( this.related ) {
+			if ( related ) {
 				this.keyId = null;
 			}
 
@@ -12614,19 +12659,19 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			}
 			this.acquire();
 			options = options ? _.clone( options ) : {};
-			
+
 			// 'options.__related' is set by 'addRelated'/'removeRelated'. If it is set, the change
-			// is the result of a call from a relation. If it's not, the change is the result of 
+			// is the result of a call from a relation. If it's not, the change is the result of
 			// a 'set' call on this.instance.
 			var changed = _.isUndefined( options.__related ),
 				oldRelated = changed ? this.related : options.__related;
-			
+
 			if ( changed ) {
 				this.setKeyContents( attr );
 				var related = this.findRelated( options );
 				this.setRelated( related );
 			}
-			
+
 			// Notify old 'related' object of the terminated relation
 			if ( oldRelated && this.related !== oldRelated ) {
 				_.each( this.getReverseRelations( oldRelated ), function( relation ) {
@@ -12640,7 +12685,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			_.each( this.getReverseRelations(), function( relation ) {
 				relation.addRelated( this.instance, options );
 			}, this );
-			
+
 			// Fire the 'change:<key>' event if 'related' was updated
 			if ( !options.silent && this.related !== oldRelated ) {
 				var dit = this;
@@ -12680,7 +12725,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			if ( !this.related ) {
 				return;
 			}
-			
+
 			if ( model === this.related ) {
 				var oldRelated = this.related || null;
 				this.setRelated( null );
@@ -12701,7 +12746,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		initialize: function( opts ) {
 			this.listenTo( this.instance, 'relational:change:' + this.key, this.onChange );
-			
+
 			// Handle a custom 'collectionType'
 			this.collectionType = this.options.collectionType;
 			if ( _.isFunction( this.collectionType ) && this.collectionType !== Backbone.Collection && !( this.collectionType.prototype instanceof Backbone.Collection ) ) {
@@ -12737,10 +12782,10 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			}
 
 			collection.model = this.relatedModel;
-			
+
 			if ( this.options.collectionKey ) {
 				var key = this.options.collectionKey === true ? this.options.reverseRelation.key : this.options.collectionKey;
-				
+
 				if ( collection[ key ] && collection[ key ] !== this.instance ) {
 					if ( Backbone.Relational.showWarnings && typeof console !== 'undefined' ) {
 						console.warn( 'Relation=%o; collectionKey=%s already exists on collection=%o', this, key, this.options.collectionKey );
@@ -12754,7 +12799,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			this.listenTo( collection, 'relational:add', this.handleAddition )
 				.listenTo( collection, 'relational:remove', this.handleRemoval )
 				.listenTo( collection, 'relational:reset', this.handleReset );
-			
+
 			return collection;
 		},
 
@@ -12863,7 +12908,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			//console.debug('handleAddition called; args=%o', arguments);
 			options = options ? _.clone( options ) : {};
 			this.changed = true;
-			
+
 			_.each( this.getReverseRelations( model ), function( relation ) {
 				relation.addRelated( this.instance, options );
 			}, this );
@@ -12883,11 +12928,11 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			//console.debug('handleRemoval called; args=%o', arguments);
 			options = options ? _.clone( options ) : {};
 			this.changed = true;
-			
+
 			_.each( this.getReverseRelations( model ), function( relation ) {
 				relation.removeRelated( this.instance, null, options );
 			}, this );
-			
+
 			var dit = this;
 			!options.silent && Backbone.Relational.eventQueue.add( function() {
 				 dit.instance.trigger( 'remove:' + dit.key, model, dit.related, options );
@@ -12977,7 +13022,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			}
 
 			Backbone.Relational.store.processOrphanRelations();
-			
+
 			this._queue = new Backbone.BlockingQueue();
 			this._queue.block();
 			Backbone.Relational.eventQueue.block();
@@ -13056,7 +13101,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			this.acquire(); // Setting up relations often also involve calls to 'set', and we only want to enter this function once
 			this._relations = {};
 
-			_.each( _.result( this, 'relations' ) || [], function( rel ) {
+			_.each( this.relations || [], function( rel ) {
 				Backbone.Relational.store.initializeRelation( this, rel, options );
 			}, this );
 
@@ -13067,20 +13112,28 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		/**
 		 * When new values are set, notify this model's relations (also if options.silent is set).
-		 * (Relation.setRelated locks this model before calling 'set' on it to prevent loops)
+		 * (called from `set`; Relation.setRelated locks this model before calling 'set' on it to prevent loops)
+		 * @param {Object} [changedAttrs]
+		 * @param {Object} [options]
 		 */
-		updateRelations: function( options ) {
+		updateRelations: function( changedAttrs, options ) {
 			if ( this._isInitialized && !this.isLocked() ) {
 				_.each( this._relations, function( rel ) {
-					// Update from data in `rel.keySource` if data got set in there, or `rel.key` otherwise
-					var val = this.attributes[ rel.keySource ] || this.attributes[ rel.key ];
-					if ( rel.related !== val ) {
-						this.trigger( 'relational:change:' + rel.key, this, val, options || {} );
+					if ( !changedAttrs || ( rel.keySource in changedAttrs || rel.key in changedAttrs ) ) {
+						// Fetch data in `rel.keySource` if data got set in there, or `rel.key` otherwise
+						var value = this.attributes[ rel.keySource ] || this.attributes[ rel.key ],
+							attr = changedAttrs && ( changedAttrs[ rel.keySource ] || changedAttrs[ rel.key ] );
+
+						// Update a relation if its value differs from this model's attributes, or it's been explicitly nullified.
+						// Which can also happen before the originally intended related model has been found (`val` is null).
+						if ( rel.related !== value || ( value === null && attr === null ) ) {
+							this.trigger( 'relational:change:' + rel.key, this, value, options || {} );
+						}
 					}
 
 					// Explicitly clear 'keySource', to prevent a leaky abstraction if 'keySource' differs from 'key'.
 					if ( rel.keySource !== rel.key ) {
-						delete rel.instance.attributes[ rel.keySource ];
+						delete this.attributes[ rel.keySource ];
 					}
 				}, this );
 			}
@@ -13104,7 +13157,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		/**
 		 * Get a specific relation.
-		 * @param key {string} The relation key to look for.
+		 * @param {string} key The relation key to look for.
 		 * @return {Backbone.Relation} An instance of 'Backbone.Relation', if a relation was found for 'key', or null.
 		 */
 		getRelation: function( key ) {
@@ -13121,23 +13174,24 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		/**
 		 * Retrieve related objects.
-		 * @param key {string} The relation key to fetch models for.
-		 * @param [options] {Object} Options for 'Backbone.Model.fetch' and 'Backbone.sync'.
-		 * @param [refresh=false] {boolean} Fetch existing models from the server as well (in order to update them).
+		 * @param {string} key The relation key to fetch models for.
+		 * @param {Object} [options] Options for 'Backbone.Model.fetch' and 'Backbone.sync'.
+		 * @param {Boolean} [refresh=false] Fetch existing models from the server as well (in order to update them).
 		 * @return {jQuery.when[]} An array of request objects
 		 */
 		fetchRelated: function( key, options, refresh ) {
 			// Set default `options` for fetch
 			options = _.extend( { update: true, remove: false }, options );
 
-			var setUrl,
+			var models,
+				setUrl,
 				requests = [],
 				rel = this.getRelation( key ),
 				idsToFetch = rel && ( ( rel.keyIds && rel.keyIds.slice( 0 ) ) || ( ( rel.keyId || rel.keyId === 0 ) ? [ rel.keyId ] : [] ) );
 
 			// On `refresh`, add the ids for current models in the relation to `idsToFetch`
 			if ( refresh ) {
-				var models = rel.related instanceof Backbone.Collection ? rel.related.models : [ rel.related ];
+				models = rel.related instanceof Backbone.Collection ? rel.related.models : [ rel.related ];
 				_.each( models, function( model ) {
 					if ( model.id || model.id === 0 ) {
 						idsToFetch.push( model.id );
@@ -13147,20 +13201,20 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 			if ( idsToFetch && idsToFetch.length ) {
 				// Find (or create) a model for each one that is to be fetched
-				var created = [],
-					models = _.map( idsToFetch, function( id ) {
-						var model = Backbone.Relational.store.find( rel.relatedModel, id );
-						
-						if ( !model ) {
-							var attrs = {};
-							attrs[ rel.relatedModel.prototype.idAttribute ] = id;
-							model = rel.relatedModel.findOrCreate( attrs, options );
-							created.push( model );
-						}
+				var created = [];
+				models = _.map( idsToFetch, function( id ) {
+					var model = rel.relatedModel.findModel( id );
 
-						return model;
-					}, this );
-				
+					if ( !model ) {
+						var attrs = {};
+						attrs[ rel.relatedModel.prototype.idAttribute ] = id;
+						model = rel.relatedModel.findOrCreate( attrs, options );
+						created.push( model );
+					}
+
+					return model;
+				}, this );
+
 				// Try if the 'collection' can provide a url to fetch a set of models in one request.
 				if ( rel.related instanceof Backbone.Collection && _.isFunction( rel.related.url ) ) {
 					setUrl = rel.related.url( models );
@@ -13203,7 +13257,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 					}, this );
 				}
 			}
-			
+
 			return requests;
 		},
 
@@ -13275,14 +13329,14 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 				}
 
 				if ( attributes ) {
-					this.updateRelations( options );
+					this.updateRelations( attributes, options );
 				}
 			}
 			finally {
 				// Try to run the global queue holding external events
 				Backbone.Relational.eventQueue.unblock();
 			}
-			
+
 			return result;
 		},
 
@@ -13340,6 +13394,10 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 						}
 						else if  ( rel instanceof Backbone.HasOne ) {
 							value = value || rel.keyId;
+
+							if ( !value && !_.isObject( rel.keyContents ) ) {
+								value = rel.keyContents || null;
+							}
 						}
 					}
 				}
@@ -13373,7 +13431,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 					delete json[ rel.key ];
 				}
 			});
-			
+
 			this.release();
 			return json;
 		}
@@ -13385,8 +13443,8 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		 * @returns {Backbone.RelationalModel.constructor}
 		 */
 		setup: function( superModel ) {
-			// We don't want to share a relations array with a parent, as this will cause problems with
-			// reverse relations.
+			// We don't want to share a relations array with a parent, as this will cause problems with reverse
+			// relations. Since `relations` may also be a property or function, only use slice if we have an array.
 			this.prototype.relations = ( this.prototype.relations || [] ).slice( 0 );
 
 			this._subModels = {};
@@ -13406,7 +13464,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 				if ( !rel.model ) {
 					rel.model = this;
 				}
-				
+
 				if ( rel.reverseRelation && rel.model === this ) {
 					var preInitialize = true;
 					if ( _.isString( rel.relatedModel ) ) {
@@ -13431,7 +13489,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 					}
 				}
 			}, this );
-			
+
 			return this;
 		},
 
@@ -13446,8 +13504,8 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			this.initializeModelHierarchy();
 
 			// Determine what type of (sub)model should be built if applicable.
-			var model = this._findSubModelType(this, attributes) || this;
-			
+			var model = this._findSubModelType( this, attributes ) || this;
+
 			return new model( attributes, options );
 		},
 
@@ -13460,16 +13518,17 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		 * @param {Object} attributes
 		 * @return {Backbone.Model}
 		 */
-		_findSubModelType: function (type, attributes) {
+		_findSubModelType: function( type, attributes ) {
 			if ( type._subModels && type.prototype.subModelTypeAttribute in attributes ) {
-				var subModelTypeAttribute = attributes[type.prototype.subModelTypeAttribute];
-				var subModelType = type._subModels[subModelTypeAttribute];
+				var subModelTypeAttribute = attributes[ type.prototype.subModelTypeAttribute ];
+				var subModelType = type._subModels[ subModelTypeAttribute ];
 				if ( subModelType ) {
 					return subModelType;
-				} else {
+				}
+				else {
 					// Recurse into subModelTypes to find a match
 					for ( subModelTypeAttribute in type._subModels ) {
-						subModelType = this._findSubModelType(type._subModels[subModelTypeAttribute], attributes);
+						subModelType = this._findSubModelType( type._subModels[ subModelTypeAttribute ], attributes );
 						if ( subModelType ) {
 							return subModelType;
 						}
@@ -13485,46 +13544,46 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		initializeModelHierarchy: function() {
 			// Inherit any relations that have been defined in the parent model.
 			this.inheritRelations();
-	
+
 			// If we came here through 'build' for a model that has 'subModelTypes' then try to initialize the ones that
 			// haven't been resolved yet.
 			if ( this.prototype.subModelTypes ) {
-				var resolvedSubModels = _.keys(this._subModels);
-				var unresolvedSubModels = _.omit(this.prototype.subModelTypes, resolvedSubModels);
+				var resolvedSubModels = _.keys( this._subModels );
+				var unresolvedSubModels = _.omit( this.prototype.subModelTypes, resolvedSubModels );
 				_.each( unresolvedSubModels, function( subModelTypeName ) {
 					var subModelType = Backbone.Relational.store.getObjectByName( subModelTypeName );
 					subModelType && subModelType.initializeModelHierarchy();
 				});
 			}
 		},
-		
+
 		inheritRelations: function() {
 			// Bail out if we've been here before.
-			if (!_.isUndefined( this._superModel ) && !_.isNull( this._superModel )) { 
-				return; 
+			if (!_.isUndefined( this._superModel ) && !_.isNull( this._superModel )) {
+				return;
 			}
 			// Try to initialize the _superModel.
 			Backbone.Relational.store.setupSuperModel( this );
-	
-			// If a superModel has been found, copy relations from the _superModel if they haven't been inherited automatically 
+
+			// If a superModel has been found, copy relations from the _superModel if they haven't been inherited automatically
 			// (due to a redefinition of 'relations').
 			if ( this._superModel ) {
-				// The _superModel needs a chance to initialize its own inherited relations before we attempt to inherit relations 
+				// The _superModel needs a chance to initialize its own inherited relations before we attempt to inherit relations
 				// from the _superModel. You don't want to call 'initializeModelHierarchy' because that could cause sub-models of
 				// this class to inherit their relations before this class has had chance to inherit it's relations.
 				this._superModel.inheritRelations();
 				if ( this._superModel.prototype.relations ) {
 					// Find relations that exist on the '_superModel', but not yet on this model.
-					var inheritedRelations = _.select( this._superModel.prototype.relations || [], function( superRel ) {
+					var inheritedRelations = _.filter( this._superModel.prototype.relations || [], function( superRel ) {
 						return !_.any( this.prototype.relations || [], function( rel ) {
 							return superRel.relatedModel === rel.relatedModel && superRel.key === rel.key;
 						}, this );
 					}, this );
-	
+
 					this.prototype.relations = inheritedRelations.concat( this.prototype.relations );
 				}
 			}
-			// Otherwise, make sure we don't get here again for this type by making '_superModel' false so we fail the 
+			// Otherwise, make sure we don't get here again for this type by making '_superModel' false so we fail the
 			// isUndefined/isNull check next time.
 			else {
 				this._superModel = false;
@@ -13533,9 +13592,9 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		/**
 		 * Find an instance of `this` type in 'Backbone.Relational.store'.
-		 * - If `attributes` is a string or a number, `findOrCreate` will just query the `store` and return a model if found.
+		 * A new model is created with `attributes` (unless `options.create` is explicitly set to `false`) if no match is found.
+		 * - If `attributes` is a string or a number, `findOrCreate` will query the `store` and return a model if found.
 		 * - If `attributes` is an object and is found in the store, the model will be updated with `attributes` unless `options.update` is `false`.
-		 *   Otherwise, a new model is created with `attributes` (unless `options.create` is explicitly set to `false`).
 		 * @param {Object|String|Number} attributes Either a model's id, or the attributes used to create or update a model.
 		 * @param {Object} [options]
 		 * @param {Boolean} [options.create=true]
@@ -13548,8 +13607,9 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			var parsedAttributes = ( _.isObject( attributes ) && options.parse && this.prototype.parse ) ?
 				this.prototype.parse( _.clone( attributes ) ) : attributes;
 
-			// Try to find an instance of 'this' model type in the store
-			var model = Backbone.Relational.store.find( this, parsedAttributes );
+			// If specified, use a custom `find` function to match up existing models to the given attributes.
+			// Otherwise, try to find an instance of 'this' model type in the store
+			var model = this.findModel( parsedAttributes );
 
 			// If we found an instance, update it with the data in 'item' (unless 'options.merge' is false).
 			// If not, create an instance (unless 'options.create' is false).
@@ -13571,7 +13631,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		/**
 		 * Find an instance of `this` type in 'Backbone.Relational.store'.
-		 * - If `attributes` is a string or a number, `find` will just query the `store` and return a model if found.
+		 * - If `attributes` is a string or a number, `find` will query the `store` and return a model if found.
 		 * - If `attributes` is an object and is found in the store, the model will be updated with `attributes` unless `options.update` is `false`.
 		 * @param {Object|String|Number} attributes Either a model's id, or the attributes used to create or update a model.
 		 * @param {Object} [options]
@@ -13583,6 +13643,16 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			options || ( options = {} );
 			options.create = false;
 			return this.findOrCreate( attributes, options );
+		},
+
+		/**
+		 * A hook to override the matching when updating (or creating) a model.
+		 * The default implementation is to look up the model by id in the store.
+		 * @param {Object} attributes
+		 * @returns {Backbone.RelationalModel}
+		 */
+		findModel: function( attributes ) {
+			return Backbone.Relational.store.find( this, attributes );
 		}
 	});
 	_.extend( Backbone.RelationalModel.prototype, Backbone.Semaphore );
@@ -13596,7 +13666,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 	Backbone.Collection.prototype.__prepareModel = Backbone.Collection.prototype._prepareModel;
 	Backbone.Collection.prototype._prepareModel = function ( attrs, options ) {
 		var model;
-		
+
 		if ( attrs instanceof Backbone.Model ) {
 			if ( !attrs.collection ) {
 				attrs.collection = this;
@@ -13604,22 +13674,22 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			model = attrs;
 		}
 		else {
-			options || ( options = {} );
+			options = options ? _.clone( options ) : {};
 			options.collection = this;
-			
+
 			if ( typeof this.model.findOrCreate !== 'undefined' ) {
 				model = this.model.findOrCreate( attrs, options );
 			}
 			else {
 				model = new this.model( attrs, options );
 			}
-			
-			if ( model && model.isNew() && !model._validate( attrs, options ) ) {
+
+			if ( model && model.validationError ) {
 				this.trigger( 'invalid', this, attrs, options );
 				model = false;
 			}
 		}
-		
+
 		return model;
 	};
 
@@ -13639,9 +13709,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			models = this.parse( models, options );
 		}
 
-		if ( !_.isArray( models ) ) {
-			models = models ? [ models ] : [];
-		}
+		models = _.isArray( models ) ? models.slice() : ( models ? [ models ] : [] );
 
 		var newModels = [],
 			toAdd = [];
@@ -13668,7 +13736,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 		// Add 'models' in a single batch, so the original add will only be called once (and thus 'sort', etc).
 		// If `parse` was specified, the collection and contained models have been parsed now.
-		set.call( this, toAdd, _.defaults( { parse: false }, options ) );
+		var result = set.call( this, toAdd, _.defaults( { parse: false }, options ) );
 
 		_.each( newModels, function( model ) {
 			// Fire a `relational:add` event for any model in `newModels` that has actually been added to the collection.
@@ -13676,8 +13744,8 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 				this.trigger( 'relational:add', model, this, options );
 			}
 		}, this );
-		
-		return this;
+
+		return result;
 	};
 
 	/**
@@ -13690,7 +13758,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			return remove.apply( this, arguments );
 		}
 
-		models = _.isArray( models ) ? models.slice( 0 ) : [ models ];
+		models = _.isArray( models ) ? models.slice() : [ models ];
 		options || ( options = {} );
 
 		var toRemove = [];
@@ -13701,15 +13769,13 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 			model && toRemove.push( model );
 		}, this );
 
-		if ( toRemove.length ) {
-			remove.call( this, toRemove, options );
+		var result = remove.call( this, toRemove, options );
 
-			_.each( toRemove, function( model ) {
-				this.trigger('relational:remove', model, this, options);
-			}, this );
-		}
-		
-		return this;
+		_.each( toRemove, function( model ) {
+			this.trigger('relational:remove', model, this, options);
+		}, this );
+
+		return result;
 	};
 
 	/**
@@ -13718,13 +13784,13 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 	var reset = Backbone.Collection.prototype.__reset = Backbone.Collection.prototype.reset;
 	Backbone.Collection.prototype.reset = function( models, options ) {
 		options = _.extend( { merge: true }, options );
-		reset.call( this, models, options );
+		var result = reset.call( this, models, options );
 
 		if ( this.model.prototype instanceof Backbone.RelationalModel ) {
 			this.trigger( 'relational:reset', this, options );
 		}
 
-		return this;
+		return result;
 	};
 
 	/**
@@ -13732,13 +13798,13 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 	 */
 	var sort = Backbone.Collection.prototype.__sort = Backbone.Collection.prototype.sort;
 	Backbone.Collection.prototype.sort = function( options ) {
-		sort.call( this, options );
+		var result = sort.call( this, options );
 
 		if ( this.model.prototype instanceof Backbone.RelationalModel ) {
 			this.trigger( 'relational:reset', this, options );
 		}
 
-		return this;
+		return result;
 	};
 
 	/**
@@ -13755,14 +13821,14 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		if ( eventName === 'add' || eventName === 'remove' || eventName === 'reset' || eventName === 'sort' ) {
 			var dit = this,
 				args = arguments;
-			
+
 			if ( _.isObject( args[ 3 ] ) ) {
 				args = _.toArray( args );
 				// the fourth argument is the option object.
 				// we need to clone it, as it could be modified while we wait on the eventQueue to be unblocked
 				args[ 3 ] = _.clone( args[ 3 ] );
 			}
-			
+
 			Backbone.Relational.eventQueue.add( function() {
 				trigger.apply( dit, args );
 			});
@@ -13770,14 +13836,14 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 		else {
 			trigger.apply( this, arguments );
 		}
-		
+
 		return this;
 	};
 
 	// Override .extend() to automatically call .setup()
 	Backbone.RelationalModel.extend = function( protoProps, classProps ) {
 		var child = Backbone.Model.extend.apply( this, arguments );
-		
+
 		child.setup( this );
 
 		return child;
@@ -13786,7 +13852,7 @@ if ( typeof window === "object" && typeof window.document === "object" ) {
 
 d3 = function() {
   var d3 = {
-    version: "3.3.8"
+    version: "3.3.13"
   };
   if (!Date.now) Date.now = function() {
     return +new Date();
@@ -14393,7 +14459,7 @@ d3 = function() {
   d3_selectionPrototype.classed = function(name, value) {
     if (arguments.length < 2) {
       if (typeof name === "string") {
-        var node = this.node(), n = (name = name.trim().split(/^|\s+/g)).length, i = -1;
+        var node = this.node(), n = (name = d3_selection_classes(name)).length, i = -1;
         if (value = node.classList) {
           while (++i < n) if (!value.contains(name[i])) return false;
         } else {
@@ -14410,8 +14476,11 @@ d3 = function() {
   function d3_selection_classedRe(name) {
     return new RegExp("(?:^|\\s+)" + d3.requote(name) + "(?:\\s+|$)", "g");
   }
+  function d3_selection_classes(name) {
+    return name.trim().split(/^|\s+/);
+  }
   function d3_selection_classed(name, value) {
-    name = name.trim().split(/\s+/).map(d3_selection_classedName);
+    name = d3_selection_classes(name).map(d3_selection_classedName);
     var n = name.length;
     function classedConstant() {
       var i = -1;
@@ -14626,7 +14695,7 @@ d3 = function() {
       subgroups.push(subgroup = []);
       subgroup.parentNode = (group = this[j]).parentNode;
       for (var i = 0, n = group.length; i < n; i++) {
-        if ((node = group[i]) && filter.call(node, node.__data__, i)) {
+        if ((node = group[i]) && filter.call(node, node.__data__, i, j)) {
           subgroup.push(node);
         }
       }
@@ -14845,13 +14914,16 @@ d3 = function() {
       }
     };
   }
-  var d3_event_dragSelect = d3_vendorSymbol(d3_documentElement.style, "userSelect"), d3_event_dragId = 0;
+  var d3_event_dragSelect = "onselectstart" in d3_document ? null : d3_vendorSymbol(d3_documentElement.style, "userSelect"), d3_event_dragId = 0;
   function d3_event_dragSuppress() {
-    var name = ".dragsuppress-" + ++d3_event_dragId, touchmove = "touchmove" + name, selectstart = "selectstart" + name, dragstart = "dragstart" + name, click = "click" + name, w = d3.select(d3_window).on(touchmove, d3_eventPreventDefault).on(selectstart, d3_eventPreventDefault).on(dragstart, d3_eventPreventDefault), style = d3_documentElement.style, select = style[d3_event_dragSelect];
-    style[d3_event_dragSelect] = "none";
+    var name = ".dragsuppress-" + ++d3_event_dragId, click = "click" + name, w = d3.select(d3_window).on("touchmove" + name, d3_eventPreventDefault).on("dragstart" + name, d3_eventPreventDefault).on("selectstart" + name, d3_eventPreventDefault);
+    if (d3_event_dragSelect) {
+      var style = d3_documentElement.style, select = style[d3_event_dragSelect];
+      style[d3_event_dragSelect] = "none";
+    }
     return function(suppressClick) {
       w.on(name, null);
-      style[d3_event_dragSelect] = select;
+      if (d3_event_dragSelect) style[d3_event_dragSelect] = select;
       if (suppressClick) {
         function off() {
           w.on(click, null);
@@ -15720,11 +15792,11 @@ d3 = function() {
     var reFormat = new RegExp('["' + delimiter + "\n]"), delimiterCode = delimiter.charCodeAt(0);
     function dsv(url, row, callback) {
       if (arguments.length < 3) callback = row, row = null;
-      var xhr = d3.xhr(url, mimeType, callback);
+      var xhr = d3_xhr(url, mimeType, row == null ? response : typedResponse(row), callback);
       xhr.row = function(_) {
         return arguments.length ? xhr.response((row = _) == null ? response : typedResponse(_)) : row;
       };
-      return xhr.row(row);
+      return xhr;
     }
     function response(request) {
       return dsv.parse(request.responseText);
@@ -17297,6 +17369,15 @@ d3 = function() {
   function d3_geo_resample(project) {
     var δ2 = .5, cosMinDistance = Math.cos(30 * d3_radians), maxDepth = 16;
     function resample(stream) {
+      return (maxDepth ? resampleRecursive : resampleNone)(stream);
+    }
+    function resampleNone(stream) {
+      return d3_geo_transformPoint(stream, function(x, y) {
+        x = project(x, y);
+        stream.point(x[0], x[1]);
+      });
+    }
+    function resampleRecursive(stream) {
       var λ00, φ00, x00, y00, a00, b00, c00, λ0, x0, y0, a0, b0, c0;
       var resample = {
         point: point,
@@ -17348,7 +17429,7 @@ d3 = function() {
     function resampleLineTo(x0, y0, λ0, a0, b0, c0, x1, y1, λ1, a1, b1, c1, depth, stream) {
       var dx = x1 - x0, dy = y1 - y0, d2 = dx * dx + dy * dy;
       if (d2 > 4 * δ2 && depth--) {
-        var a = a0 + a1, b = b0 + b1, c = c0 + c1, m = Math.sqrt(a * a + b * b + c * c), φ2 = Math.asin(c /= m), λ2 = abs(abs(c) - 1) < ε ? (λ0 + λ1) / 2 : Math.atan2(b, a), p = project(λ2, φ2), x2 = p[0], y2 = p[1], dx2 = x2 - x0, dy2 = y2 - y0, dz = dy * dx2 - dx * dy2;
+        var a = a0 + a1, b = b0 + b1, c = c0 + c1, m = Math.sqrt(a * a + b * b + c * c), φ2 = Math.asin(c /= m), λ2 = abs(abs(c) - 1) < ε || abs(λ0 - λ1) < ε ? (λ0 + λ1) / 2 : Math.atan2(b, a), p = project(λ2, φ2), x2 = p[0], y2 = p[1], dx2 = x2 - x0, dy2 = y2 - y0, dz = dy * dx2 - dx * dy2;
         if (dz * dz / d2 > δ2 || abs((dx * dx2 + dy * dy2) / d2 - .5) > .3 || a0 * a1 + b0 * b1 + c0 * c1 < cosMinDistance) {
           resampleLineTo(x0, y0, λ0, a0, b0, c0, x2, y2, λ2, a /= m, b /= m, c, depth, stream);
           stream.point(x2, y2);
@@ -17363,38 +17444,6 @@ d3 = function() {
     };
     return resample;
   }
-  d3.geo.transform = function(methods) {
-    return {
-      stream: function(stream) {
-        var transform = new d3_geo_transform(stream);
-        for (var k in methods) transform[k] = methods[k];
-        return transform;
-      }
-    };
-  };
-  function d3_geo_transform(stream) {
-    this.stream = stream;
-  }
-  d3_geo_transform.prototype = {
-    point: function(x, y) {
-      this.stream.point(x, y);
-    },
-    sphere: function() {
-      this.stream.sphere();
-    },
-    lineStart: function() {
-      this.stream.lineStart();
-    },
-    lineEnd: function() {
-      this.stream.lineEnd();
-    },
-    polygonStart: function() {
-      this.stream.polygonStart();
-    },
-    polygonEnd: function() {
-      this.stream.polygonEnd();
-    }
-  };
   d3.geo.path = function() {
     var pointRadius = 4.5, projection, context, projectStream, contextStream, cacheStream;
     function path(object) {
@@ -17447,11 +17496,59 @@ d3 = function() {
       return project([ x * d3_degrees, y * d3_degrees ]);
     });
     return function(stream) {
-      var transform = new d3_geo_transform(stream = resample(stream));
-      transform.point = function(x, y) {
-        stream.point(x * d3_radians, y * d3_radians);
-      };
-      return transform;
+      return d3_geo_projectionRadians(resample(stream));
+    };
+  }
+  d3.geo.transform = function(methods) {
+    return {
+      stream: function(stream) {
+        var transform = new d3_geo_transform(stream);
+        for (var k in methods) transform[k] = methods[k];
+        return transform;
+      }
+    };
+  };
+  function d3_geo_transform(stream) {
+    this.stream = stream;
+  }
+  d3_geo_transform.prototype = {
+    point: function(x, y) {
+      this.stream.point(x, y);
+    },
+    sphere: function() {
+      this.stream.sphere();
+    },
+    lineStart: function() {
+      this.stream.lineStart();
+    },
+    lineEnd: function() {
+      this.stream.lineEnd();
+    },
+    polygonStart: function() {
+      this.stream.polygonStart();
+    },
+    polygonEnd: function() {
+      this.stream.polygonEnd();
+    }
+  };
+  function d3_geo_transformPoint(stream, point) {
+    return {
+      point: point,
+      sphere: function() {
+        stream.sphere();
+      },
+      lineStart: function() {
+        stream.lineStart();
+      },
+      lineEnd: function() {
+        stream.lineEnd();
+      },
+      polygonStart: function() {
+        stream.polygonStart();
+      },
+      polygonEnd: function() {
+        stream.polygonEnd();
+      }
     };
   }
   d3.geo.projection = d3_geo_projection;
@@ -17534,11 +17631,9 @@ d3 = function() {
     };
   }
   function d3_geo_projectionRadians(stream) {
-    var transform = new d3_geo_transform(stream);
-    transform.point = function(λ, φ) {
-      stream.point(λ * d3_radians, φ * d3_radians);
-    };
-    return transform;
+    return d3_geo_transformPoint(stream, function(x, y) {
+      stream.point(x * d3_radians, y * d3_radians);
+    });
   }
   function d3_geo_equirectangular(λ, φ) {
     return [ λ, φ ];
@@ -17926,14 +18021,21 @@ d3 = function() {
     return d3_geo_projection(d3_geo_stereographic);
   }).raw = d3_geo_stereographic;
   function d3_geo_transverseMercator(λ, φ) {
-    var B = Math.cos(φ) * Math.sin(λ);
-    return [ Math.log((1 + B) / (1 - B)) / 2, Math.atan2(Math.tan(φ), Math.cos(λ)) ];
+    return [ Math.log(Math.tan(π / 4 + φ / 2)), -λ ];
   }
   d3_geo_transverseMercator.invert = function(x, y) {
-    return [ Math.atan2(d3_sinh(x), Math.cos(y)), d3_asin(Math.sin(y) / d3_cosh(x)) ];
+    return [ -y, 2 * Math.atan(Math.exp(x)) - halfπ ];
   };
   (d3.geo.transverseMercator = function() {
-    return d3_geo_mercatorProjection(d3_geo_transverseMercator);
+    var projection = d3_geo_mercatorProjection(d3_geo_transverseMercator), center = projection.center, rotate = projection.rotate;
+    projection.center = function(_) {
+      return _ ? center([ -_[1], _[0] ]) : (_ = center(), [ -_[1], _[0] ]);
+    };
+    projection.rotate = function(_) {
+      return _ ? rotate([ _[0], _[1], _.length > 2 ? _[2] + 90 : 90 ]) : (_ = rotate(), 
+      [ _[0], _[1], _[2] - 90 ]);
+    };
+    return projection.rotate([ 0, 0 ]);
   }).raw = d3_geo_transverseMercator;
   d3.geom = {};
   function d3_geom_pointX(d) {
@@ -20607,10 +20709,16 @@ d3 = function() {
         return Math.exp(random());
       };
     },
+    bates: function(m) {
+      var random = d3.random.irwinHall(m);
+      return function() {
+        return random() / m;
+      };
+    },
     irwinHall: function(m) {
       return function() {
         for (var s = 0, j = 0; j < m; j++) s += Math.random();
-        return s / m;
+        return s;
       };
     }
   };
@@ -20741,10 +20849,24 @@ d3 = function() {
     return d3.range.apply(d3, d3_scale_linearTickRange(domain, m));
   }
   function d3_scale_linearTickFormat(domain, m, format) {
-    var precision = -Math.floor(Math.log(d3_scale_linearTickRange(domain, m)[2]) / Math.LN10 + .01);
+    var range = d3_scale_linearTickRange(domain, m);
     return d3.format(format ? format.replace(d3_format_re, function(a, b, c, d, e, f, g, h, i, j) {
-      return [ b, c, d, e, f, g, h, i || "." + (precision - (j === "%") * 2), j ].join("");
-    }) : ",." + precision + "f");
+      return [ b, c, d, e, f, g, h, i || "." + d3_scale_linearFormatPrecision(j, range), j ].join("");
+    }) : ",." + d3_scale_linearPrecision(range[2]) + "f");
+  }
+  var d3_scale_linearFormatSignificant = {
+    s: 1,
+    g: 1,
+    p: 1,
+    r: 1,
+    e: 1
+  };
+  function d3_scale_linearPrecision(value) {
+    return -Math.floor(Math.log(value) / Math.LN10 + .01);
+  }
+  function d3_scale_linearFormatPrecision(type, range) {
+    var p = d3_scale_linearPrecision(range[2]);
+    return type in d3_scale_linearFormatSignificant ? Math.abs(p - d3_scale_linearPrecision(Math.max(Math.abs(range[0]), Math.abs(range[1])))) + +(type !== "e") : p - (type === "%") * 2;
   }
   d3.scale.log = function() {
     return d3_scale_log(d3.scale.linear().domain([ 0, 1 ]), 10, true, [ 1, 10 ]);
@@ -21692,7 +21814,7 @@ d3 = function() {
     for (var j = 0, m = this.length; j < m; j++) {
       subgroups.push(subgroup = []);
       for (var group = this[j], i = 0, n = group.length; i < n; i++) {
-        if ((node = group[i]) && filter.call(node, node.__data__, i)) {
+        if ((node = group[i]) && filter.call(node, node.__data__, i, j)) {
           subgroup.push(node);
         }
       }
@@ -21982,16 +22104,17 @@ d3 = function() {
           }
         }
         if (scale1.rangeBand) {
-          var dx = scale1.rangeBand() / 2, x = function(d) {
-            return scale1(d) + dx;
+          var x = scale1, dx = x.rangeBand() / 2;
+          scale0 = scale1 = function(d) {
+            return x(d) + dx;
           };
-          tickEnter.call(tickTransform, x);
-          tickUpdate.call(tickTransform, x);
+        } else if (scale0.rangeBand) {
+          scale0 = scale1;
         } else {
-          tickEnter.call(tickTransform, scale0);
-          tickUpdate.call(tickTransform, scale1);
           tickExit.call(tickTransform, scale1);
         }
+        tickEnter.call(tickTransform, scale0);
+        tickUpdate.call(tickTransform, scale1);
       });
     }
     axis.scale = function(x) {
@@ -22971,7 +23094,9 @@ d3 = function() {
   var d3_time_scaleMilliseconds = {
     range: function(start, stop, step) {
       return d3.range(+start, +stop, step).map(d3_time_scaleDate);
-    }
+    },
+    floor: d3_identity,
+    ceil: d3_identity
   };
   var d3_time_scaleUTCMethods = d3_time_scaleLocalMethods.map(function(m) {
     return [ m[0].utc, m[1] ];
