@@ -158,6 +158,20 @@ diamondash.utils = function() {
     return 'Basic ' + Base64.encode(username + ':' + password);
   }
 
+  function ensureDefined(v) {
+    return typeof v == 'undefined'
+      ? null
+      : v;
+  }
+
+  function min() {
+    return ensureDefined(d3.min.apply(null, arguments));
+  }
+
+  function max() {
+    return ensureDefined(d3.max.apply(null, arguments));
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -166,7 +180,10 @@ diamondash.utils = function() {
     snap: snap,
     d3Map: d3Map,
     joinPaths: joinPaths,
-    basicAuth: basicAuth
+    basicAuth: basicAuth,
+    ensureDefined: ensureDefined,
+    min: min,
+    max: max
   };
 }.call(this);
 
@@ -518,23 +535,15 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      var min = d3.min(
+      return utils.min(
         this.get('datapoints'),
         function(d) { return d.x; });
-
-      return typeof min == 'undefined'
-        ? null
-        : min;
     },
 
     xMax: function() {
-      var max = d3.max(
+      return utils.max(
         this.get('datapoints'),
         function(d) { return d.x; });
-
-      return typeof max == 'undefined'
-        ? null
-        : max;
     },
 
     domain: function() {
@@ -542,23 +551,15 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      var min = d3.min(
+      return utils.min(
         this.get('datapoints'),
         function(d) { return d.y; });
-
-      return typeof min == 'undefined'
-        ? null
-        : min;
     },
 
     yMax: function() {
-      var max = d3.max(
+      return utils.max(
         this.get('datapoints'),
         function(d) { return d.y; });
-
-      return typeof max == 'undefined'
-        ? null
-        : max;
     },
 
     range: function() {
@@ -597,23 +598,15 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      var min = d3.min(this.get('metrics').map(function(m) {
+      return utils.min(this.get('metrics').map(function(m) {
         return m.xMin();
       }));
-
-      return typeof min == 'undefined'
-        ? null
-        : min;
     },
 
     xMax: function() {
-      var max = d3.max(this.get('metrics').map(function(m) {
+      return utils.max(this.get('metrics').map(function(m) {
         return m.xMax();
       }));
-
-      return typeof max == 'undefined'
-        ? null
-        : max;
     },
 
     domain: function() {
@@ -621,23 +614,15 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      var min = d3.min(this.get('metrics').map(function(m) {
+      return utils.min(this.get('metrics').map(function(m) {
         return m.yMin();
       }));
-
-      return typeof min == 'undefined'
-        ? null
-        : min;
     },
 
     yMax: function() {
-      var max = d3.max(this.get('metrics').map(function(m) {
+      return utils.max(this.get('metrics').map(function(m) {
         return m.yMax();
       }));
-
-      return typeof max == 'undefined'
-        ? null
-        : max;
     },
 
     range: function() {
