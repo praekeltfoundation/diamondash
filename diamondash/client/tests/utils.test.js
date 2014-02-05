@@ -139,4 +139,44 @@ describe("diamondash.utils", function() {
         'Basic ' + Base64.encode('spam:ham'));
     });
   });
+
+  describe(".ensureDefined", function() {
+      it("should return the value if it is defined", function() {
+          assert.strictEqual(utils.ensureDefined(2), 2);
+      });
+
+      it("should return null if the value is undefined", function() {
+          assert.isNull(utils.ensureDefined());
+      });
+  });
+
+  describe(".min", function() {
+      describe("it should return the minimum value", function() {
+          assert.equal(utils.min([-1, 1, 23]), -1);
+      });
+
+      describe("it should return null if an empty list is given", function() {
+          assert.isNull(utils.min([]));
+      });
+
+      describe("it should exclude null data", function() {
+          assert.equal(utils.min([null, 2, 3]), 2);
+          assert.isNull(utils.min([null, null]));
+      });
+  });
+
+  describe(".min", function() {
+      describe("it should return the maximum value", function() {
+          assert.equal(utils.max([-1, 1, 23]), 23);
+      });
+
+      describe("it should return null if an empty list is given", function() {
+          assert.isNull(utils.max([]));
+      });
+
+      describe("it should exclude null data", function() {
+          assert.equal(utils.max([null, 2, 3]), 3);
+          assert.isNull(utils.max([null, null]));
+      });
+  });
 });
