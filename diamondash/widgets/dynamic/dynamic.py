@@ -28,11 +28,6 @@ class DynamicWidget(Widget):
         backend_cls = utils.load_class_by_string(config['backend']['type'])
         self.backend = backend_cls(config['backend'])
 
-    def handle_bad_backend_response(self, failure):
-        failure.trap(BadBackendResponseError)
-        log.msg(failure)
-        return "{}"
-
     def get_snapshot(self):
         """Returns a snapshot of the widget's non-static data."""
         raise NotImplementedError()

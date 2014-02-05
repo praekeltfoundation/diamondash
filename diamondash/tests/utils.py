@@ -1,7 +1,7 @@
 from twisted.web.server import Site
 from twisted.web.resource import Resource
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, DeferredQueue, inlineCallbacks
+from twisted.internet.defer import succeed, DeferredQueue, inlineCallbacks
 
 from diamondash.backends import Backend
 from diamondash.widgets.dynamic import DynamicWidgetConfig, DynamicWidget
@@ -20,7 +20,7 @@ class ToyBackend(Backend):
         return self.requests
 
     def get_data(self, **params):
-        d = Deferred()
+        d = succeed(None)
         self.requests.append(params)
         d.addCallback(lambda *a, **kw: self.response)
         return d

@@ -113,6 +113,10 @@ diamondash.widgets.chart.views = function() {
     },
 
     tickValues: function(start, end, step) {
+      start = start || 0;
+      end = end || 0;
+      step = step || 1;
+
       var n = (end - start) / step;
       var m = _(this).result('tickCount');
       var i = 1;

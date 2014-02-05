@@ -7,6 +7,7 @@ class ChartWidgetConfig(DynamicWidgetConfig):
     DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
+        'default_value' : 0,
         'align_to_start': False,
     }
 
@@ -83,5 +84,4 @@ class ChartWidget(DynamicWidget):
 
         d = self.backend.get_data(from_time=from_time)
         d.addCallback(self.process_backend_response)
-        d.addErrback(self.handle_bad_backend_response)
         return d

@@ -1,9 +1,9 @@
 describe("diamondash.widgets.graph", function() {
   var utils = diamondash.utils,
-      testUtils = diamondash.test.utils,
-      fixtures = diamondash.test.fixtures,
-      views = diamondash.widgets.graph.views,
-      models = diamondash.widgets.graph.models;
+  testUtils = diamondash.test.utils,
+  fixtures = diamondash.test.fixtures,
+  views = diamondash.widgets.graph.views,
+  models = diamondash.widgets.graph.models;
 
   function hover(graph, coords) {
     coords = _(coords || {}).defaults({x: 0, y: 0});
@@ -25,18 +25,39 @@ describe("diamondash.widgets.graph", function() {
 
   describe("GraphLegendView", function() {
     var legend,
-        graph;
+    graph;
 
     beforeEach(function() {
       graph = new views.GraphView({
         el: $('<div>')
-          .width(960)
-          .height(64),
+        .width(960)
+        .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
 
       legend = graph.legend;
+    });
+
+    describe("if the graph metrics have no datapoints", function() {
+      beforeEach(function() {
+        graph.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+      });
+
+      it("should use the graph's default value", function() {
+        graph.model.set('default_value', -1);
+        legend.render();
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          -1);
+
+          assert.equal(
+            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+            -1);
+      });
     });
 
     describe("when the graph is hovered over", function() {
@@ -51,25 +72,25 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should display the metric values at the hovered over time interval",
-      function() {
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          24);
+         function() {
+           assert.equal(
+             legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+             24);
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          16);
+             assert.equal(
+               legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+               16);
 
-        hover.inverse(graph, {x: 1340876295000});
+               hover.inverse(graph, {x: 1340876295000});
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          12);
+               assert.equal(
+                 legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+                 12);
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          22);
-      });
+                 assert.equal(
+                   legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+                   22);
+         });
     });
 
     describe("when the graph is unhovered", function() {
@@ -92,37 +113,37 @@ describe("diamondash.widgets.graph", function() {
           legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
           12);
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          22);
+          assert.equal(
+            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+            22);
 
-        graph.trigger('unhover');
+            graph.trigger('unhover');
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          24);
+            assert.equal(
+              legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+              24);
 
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          16);
+              assert.equal(
+                legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+                16);
       });
     });
   });
 
   describe("GraphHoverMarker", function() {
     var marker,
-        graph;
+    graph;
 
     function markerOpacities() {
       var opacities = {};
 
       graph.axis.line
-        .selectAll('g')
-        .each(function(tick) {
-          if (tick) {
-            opacities[tick] = $(this).css('fill-opacity');
-          }
-        });
+      .selectAll('g')
+      .each(function(tick) {
+        if (tick) {
+          opacities[tick] = $(this).css('fill-opacity');
+        }
+      });
 
       return opacities;
     }
@@ -130,8 +151,8 @@ describe("diamondash.widgets.graph", function() {
     beforeEach(function() {
       graph = new views.GraphView({
         el: $('<div>')
-          .width(960)
-          .height(64),
+        .width(960)
+        .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
@@ -174,6 +195,17 @@ describe("diamondash.widgets.graph", function() {
           1340877495000: '1'
         });
       });
+
+      it("shouldn't show the hover marker if the graph has no datapoints",
+      function() {
+        graph.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+
+        hover(graph);
+
+        assert.equal(graph.$('.hover-marker').length, 0);
+      });
     });
 
     describe("when the graph is unhovered", function() {
@@ -214,7 +246,7 @@ describe("diamondash.widgets.graph", function() {
 
   describe("GraphDots", function() {
     var dots,
-        graph;
+    graph;
 
     function dotToCoords() {
       var el = d3.select(this);
@@ -227,8 +259,8 @@ describe("diamondash.widgets.graph", function() {
 
     function metricDotCoords(id) {
       var selection = graph.svg
-        .select('.metric-dots[data-metric-id=' + id + ']')
-        .selectAll('.dot');
+      .select('.metric-dots[data-metric-id=' + id + ']')
+      .selectAll('.dot');
 
       return utils.d3Map(selection, dotToCoords);
     }
@@ -236,8 +268,8 @@ describe("diamondash.widgets.graph", function() {
     beforeEach(function() {
       graph = new views.GraphView({
         el: $('<div>')
-          .width(960)
-          .height(64),
+        .width(960)
+        .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
@@ -257,9 +289,9 @@ describe("diamondash.widgets.graph", function() {
           metrics.get('metric-a').get('datapoints'),
           metricDotCoords('metric-a'));
 
-        assert.deepEqual(
-          metrics.get('metric-b').get('datapoints'),
-          metricDotCoords('metric-b'));
+          assert.deepEqual(
+            metrics.get('metric-b').get('datapoints'),
+            metricDotCoords('metric-b'));
       });
     });
 
@@ -267,7 +299,7 @@ describe("diamondash.widgets.graph", function() {
       beforeEach(function() {
         graph.render();
       });
-      
+
       it("should display dots at the hovered over location", function() {
         assert.equal(graph.$('.hover-dot').length, 0);
         hover.inverse(graph, {x: 1340876295000});
@@ -276,7 +308,7 @@ describe("diamondash.widgets.graph", function() {
         assert.deepEqual(
           utils.d3Map(graph.svg.selectAll('.hover-dot'), dotToCoords),
           [{x: 1340876295000, y: 12},
-           {x: 1340876295000, y: 22}]);
+            {x: 1340876295000, y: 22}]);
       });
     });
 
@@ -296,13 +328,13 @@ describe("diamondash.widgets.graph", function() {
 
   describe("GraphLines", function() {
     var lines,
-        graph;
+    graph;
 
     beforeEach(function() {
       graph = new views.GraphView({
         el: $('<div>')
-          .width(960)
-          .height(64),
+        .width(960)
+        .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
@@ -320,38 +352,38 @@ describe("diamondash.widgets.graph", function() {
 
         assert.strictEqual(
           graph.svg
-            .select('.metric-line[data-metric-id=metric-a]')
-            .datum(),
+          .select('.metric-line[data-metric-id=metric-a]')
+          .datum(),
           metrics.get('metric-a'));
 
-        assert.strictEqual(
-          graph.svg
+          assert.strictEqual(
+            graph.svg
             .select('.metric-line[data-metric-id=metric-b]')
             .datum(),
-          metrics.get('metric-b'));
+            metrics.get('metric-b'));
       });
 
       it("should color the lines according to the metrics' colors",
-      function() {
-        var metrics = graph.model.get('metrics');
-        lines.render();
+         function() {
+           var metrics = graph.model.get('metrics');
+           lines.render();
 
-        assert.equal(
-          graph
-            .$('.metric-line[data-metric-id=metric-a]')
-            .css('stroke'),
-          metrics
-            .get('metric-a')
-            .get('color'));
+           assert.equal(
+             graph
+             .$('.metric-line[data-metric-id=metric-a]')
+             .css('stroke'),
+             metrics
+             .get('metric-a')
+             .get('color'));
 
-        assert.equal(
-          graph
-            .$('.metric-line[data-metric-id=metric-b]')
-            .css('stroke'),
-          metrics
-            .get('metric-b')
-            .get('color'));
-      });
+             assert.equal(
+               graph
+               .$('.metric-line[data-metric-id=metric-b]')
+               .css('stroke'),
+               metrics
+               .get('metric-b')
+               .get('color'));
+         });
     });
   });
 
@@ -360,8 +392,8 @@ describe("diamondash.widgets.graph", function() {
 
     function domain() {
       return graph.fx
-        .domain()
-        .map(function(d) { return d.valueOf(); });
+      .domain()
+      .map(function(d) { return d.valueOf(); });
     }
 
     function range() {
@@ -371,8 +403,8 @@ describe("diamondash.widgets.graph", function() {
     beforeEach(function() {
       graph = new views.GraphView({
         el: $('<div>')
-          .width(960)
-          .height(64),
+        .width(960)
+        .height(64),
         model: new models.GraphModel(
           fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
       });
@@ -386,30 +418,30 @@ describe("diamondash.widgets.graph", function() {
           domain(),
           [1340875995000, 1340877495000]);
 
-        assert.deepEqual(
-          range(),
-          [2, 24]);
+          assert.deepEqual(
+            range(),
+            [2, 24]);
 
-        graph.model.get('metrics').set([{
-          id: 'metric-a',
-          datapoints: [{
-            x: 1340875998000,
-            y: 3
-          }, {
-            x: 1340877498000,
-            y: 25
-          }]
-        }]);
+            graph.model.get('metrics').set([{
+              id: 'metric-a',
+              datapoints: [{
+                x: 1340875998000,
+                y: 3
+              }, {
+                x: 1340877498000,
+                y: 25
+              }]
+            }]);
 
-        graph.render();
+            graph.render();
 
-        assert.deepEqual(
-          domain(),
-          [1340875998000, 1340877498000]);
+            assert.deepEqual(
+              domain(),
+              [1340875998000, 1340877498000]);
 
-        assert.deepEqual(
-          range(),
-          [3, 25]);
+              assert.deepEqual(
+                range(),
+                [3, 25]);
       });
 
       it("draw render its lines", function() {
@@ -432,11 +464,11 @@ describe("diamondash.widgets.graph", function() {
         assert.equal(
           graph.$('.axis').text(),
           ['28-06 09:33',
-           '28-06 09:38',
-           '28-06 09:43',
-           '28-06 09:48',
-           '28-06 09:53',
-           '28-06 09:58'].join(''));
+            '28-06 09:38',
+            '28-06 09:43',
+            '28-06 09:48',
+            '28-06 09:53',
+            '28-06 09:58'].join(''));
       });
 
       describe("if the graph is dotted", function() {
@@ -468,16 +500,16 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should trigger an event with the calculated position information",
-      function(done) {
-        graph.on('hover', function(position) {
-          assert.equal(position.x, 1340876295000);
-          assert.equal(position.svg.x, 190.4);
-          assert.equal(position.svg.y, -11);
-          done();
-        });
+         function(done) {
+           graph.on('hover', function(position) {
+             assert.equal(position.x, 1340876295000);
+             assert.equal(position.svg.x, 190.4);
+             assert.equal(position.svg.y, -11);
+             done();
+           });
 
-        graph.trigger('mousemove', {});
-      });
+           graph.trigger('mousemove', {});
+         });
     });
 
     describe("when the mouse is moved away from the graph", function() {
