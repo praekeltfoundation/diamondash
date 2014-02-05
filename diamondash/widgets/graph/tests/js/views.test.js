@@ -195,6 +195,17 @@ describe("diamondash.widgets.graph", function() {
           1340877495000: '1'
         });
       });
+
+      it("shouldn't show the hover marker if the graph has no datapoints",
+      function() {
+        graph.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+
+        hover(graph);
+
+        assert.equal(graph.$('.hover-marker').length, 0);
+      });
     });
 
     describe("when the graph is unhovered", function() {

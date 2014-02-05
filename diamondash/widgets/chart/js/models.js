@@ -33,15 +33,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      return d3.min(
+      var min = d3.min(
         this.get('datapoints'),
         function(d) { return d.x; });
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     xMax: function() {
-      return d3.max(
+      var max = d3.max(
         this.get('datapoints'),
         function(d) { return d.x; });
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     domain: function() {
@@ -49,15 +57,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      return d3.min(
+      var min = d3.min(
         this.get('datapoints'),
         function(d) { return d.y; });
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     yMax: function() {
-      return d3.max(
+      var max = d3.max(
         this.get('datapoints'),
         function(d) { return d.y; });
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     range: function() {
@@ -96,15 +112,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      return d3.min(this.get('metrics').map(function(m) {
+      var min = d3.min(this.get('metrics').map(function(m) {
         return m.xMin();
       }));
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     xMax: function() {
-      return d3.max(this.get('metrics').map(function(m) {
+      var max = d3.max(this.get('metrics').map(function(m) {
         return m.xMax();
       }));
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     domain: function() {
@@ -112,15 +136,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      return d3.min(this.get('metrics').map(function(m) {
+      var min = d3.min(this.get('metrics').map(function(m) {
         return m.yMin();
       }));
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     yMax: function() {
-      return d3.max(this.get('metrics').map(function(m) {
+      var max = d3.max(this.get('metrics').map(function(m) {
         return m.yMax();
       }));
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     range: function() {

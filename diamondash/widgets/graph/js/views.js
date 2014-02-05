@@ -120,7 +120,9 @@ diamondash.widgets.graph.views = function() {
 
     bindings: {
       'hover graph': function(position) {
-        this.show(position);
+        if (position.x !== null) {
+          this.show(position);
+        }
       },
 
       'unhover graph': function() {
@@ -325,15 +327,21 @@ diamondash.widgets.graph.views = function() {
       position.svg.x = coords.x;
       position.svg.y = coords.y;
 
-      // convert the svg x value to the corresponding time value, then snap
-      // it to the closest timestep
-      position.x = utils.snap(
-        this.fx.invert(position.svg.x),
-        this.model.xMin(),
-        this.model.get('bucket_size'));
+      var min = this.model.xMin();
+      if (min === null) {
+        position.x = null;
+      }
+      else {
+        // convert the svg x value to the corresponding time value, then snap
+        // it to the closest timestep
+        position.x = utils.snap(
+          this.fx.invert(position.svg.x),
+          min,
+          this.model.get('bucket_size'));
 
-      // shift the svg x value to correspond to the snapped time value
-      position.svg.x = this.fx(position.x);
+        // shift the svg x value to correspond to the snapped time value
+        position.svg.x = this.fx(position.x);
+      }
 
       return position;
     },
