@@ -83,5 +83,4 @@ class ChartWidget(DynamicWidget):
 
         d = self.backend.get_data(from_time=from_time)
         d.addCallback(self.process_backend_response)
-        d.addErrback(self.handle_bad_backend_response)
         return d

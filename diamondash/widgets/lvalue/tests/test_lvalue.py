@@ -82,20 +82,10 @@ class LValueWidgetTestCase(unittest.TestCase):
             })
 
         deferred_result.addCallback(assert_snapshot_retrieval)
-        deferred_result.callback(None)
         return deferred_result
 
-    def test_snapshot_retrieval_for_bad_backend_responses(self):
-        def assert_handled_bad_response(datapoints):
-            widget = self.mk_widget()
-
-            widget.backend.set_response([{
-                'target': 'some.target',
-                'datapoints': datapoints
-            }])
-
-            d = widget.get_snapshot()
-            return self.assertFailure(d, BadBackendResponseError)
-
-        assert_handled_bad_response([])
-        assert_handled_bad_response([{'x': 0, 'y': 0}])
+    def test_snapshot_retrieval_for_empty_backend_responses(self):
+        widget = self.mk_widget()
+        widget.backend.set_response([])
+        d = widget.get_snapshot()
+        return self.assertFailure(d, BadBackendResponseError)
