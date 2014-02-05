@@ -1,6 +1,7 @@
 import time
 
 from twisted.trial import unittest
+from twisted.internet.defer import inlineCallbacks
 
 from diamondash import utils
 from diamondash.config import ConfigError
@@ -82,9 +83,9 @@ class LValueWidgetTestCase(unittest.TestCase):
             })
 
         deferred_result.addCallback(assert_snapshot_retrieval)
-        deferred_result.callback(None)
         return deferred_result
 
+    @inlineCallbacks
     def test_snapshot_retrieval_for_bad_backend_responses(self):
         def assert_handled_bad_response(datapoints):
             widget = self.mk_widget()
@@ -97,5 +98,5 @@ class LValueWidgetTestCase(unittest.TestCase):
             d = widget.get_snapshot()
             return self.assertFailure(d, BadBackendResponseError)
 
-        assert_handled_bad_response([])
-        assert_handled_bad_response([{'x': 0, 'y': 0}])
+        yield assert_handled_bad_response([])
+        yield assert_handled_bad_response([{'x': 0, 'y': 0}])
