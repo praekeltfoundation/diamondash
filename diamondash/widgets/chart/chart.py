@@ -7,6 +7,7 @@ class ChartWidgetConfig(DynamicWidgetConfig):
     DEFAULTS = {
         'time_range': '1d',
         'bucket_size': '1h',
+        'default_value' : 0,
         'align_to_start': False,
     }
 

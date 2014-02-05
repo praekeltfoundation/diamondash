@@ -84,6 +84,26 @@ class LValueWidgetTestCase(unittest.TestCase):
         deferred_result.addCallback(assert_snapshot_retrieval)
         return deferred_result
 
+    def test_snapshot_retrieval_for_default_values(self):
+        widget = self.mk_widget(default_value=-1)
+
+        widget.backend.set_response([{
+            'target': 'some.target',
+            'datapoints': []
+        }])
+
+        def check(result):
+            self.assertEqual(result, {
+                'from': 1340875997000,
+                'to': 1340876001999,
+                'last': -1,
+                'prev': -1,
+            })
+
+        d = widget.get_snapshot()
+        d.addCallback(check)
+        return d
+
     def test_snapshot_retrieval_for_empty_backend_responses(self):
         widget = self.mk_widget()
         widget.backend.set_response([])
