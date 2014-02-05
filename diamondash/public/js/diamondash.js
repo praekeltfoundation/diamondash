@@ -12,7 +12,7 @@ __p += '\n    <div class="legend-item col-md-6" data-metric-id="' +
 '">\n      <span class="swatch"></span>\n      <span class="title">' +
 ((__t = ( m.get('title') )) == null ? '' : __t) +
 '</span>\n      <span class="value">' +
-((__t = ( self.format(x ? m.valueAt(x) : m.lastValue()) )) == null ? '' : __t) +
+((__t = ( self.valueOf(m.get('id'), x) )) == null ? '' : __t) +
 '</span>\n    </div>\n  ';
  }); ;
 __p += '\n</div>\n';
@@ -518,15 +518,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      return d3.min(
+      var min = d3.min(
         this.get('datapoints'),
         function(d) { return d.x; });
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     xMax: function() {
-      return d3.max(
+      var max = d3.max(
         this.get('datapoints'),
         function(d) { return d.x; });
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     domain: function() {
@@ -534,15 +542,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      return d3.min(
+      var min = d3.min(
         this.get('datapoints'),
         function(d) { return d.y; });
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     yMax: function() {
-      return d3.max(
+      var max = d3.max(
         this.get('datapoints'),
         function(d) { return d.y; });
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     range: function() {
@@ -581,15 +597,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     xMin: function() {
-      return d3.min(this.get('metrics').map(function(m) {
+      var min = d3.min(this.get('metrics').map(function(m) {
         return m.xMin();
       }));
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     xMax: function() {
-      return d3.max(this.get('metrics').map(function(m) {
+      var max = d3.max(this.get('metrics').map(function(m) {
         return m.xMax();
       }));
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     domain: function() {
@@ -597,15 +621,23 @@ diamondash.widgets.chart.models = function() {
     },
 
     yMin: function() {
-      return d3.min(this.get('metrics').map(function(m) {
+      var min = d3.min(this.get('metrics').map(function(m) {
         return m.yMin();
       }));
+
+      return typeof min == 'undefined'
+        ? null
+        : min;
     },
 
     yMax: function() {
-      return d3.max(this.get('metrics').map(function(m) {
+      var max = d3.max(this.get('metrics').map(function(m) {
         return m.yMax();
       }));
+
+      return typeof max == 'undefined'
+        ? null
+        : max;
     },
 
     range: function() {
@@ -737,6 +769,10 @@ diamondash.widgets.chart.views = function() {
     },
 
     tickValues: function(start, end, step) {
+      start = start || 0;
+      end = end || 0;
+      step = step || 1;
+
       var n = (end - start) / step;
       var m = _(this).result('tickCount');
       var i = 1;
@@ -844,6 +880,17 @@ diamondash.widgets.graph.views = function() {
       utils.bindEvents(this.bindings, this);
     },
 
+    valueOf: function(metricId, x) {
+      var metric = this.model.get('metrics').get(metricId);
+      var v = typeof x == 'undefined'
+        ? metric.lastValue()
+        : metric.valueAt(x);
+
+        return v === null
+          ? this.model.get('default_value')
+          : v;
+    },
+
     format: d3.format(",f"),
 
     render: function(x) {
@@ -938,7 +985,9 @@ diamondash.widgets.graph.views = function() {
 
     bindings: {
       'hover graph': function(position) {
-        this.show(position);
+        if (position.x !== null) {
+          this.show(position);
+        }
       },
 
       'unhover graph': function() {
@@ -1143,15 +1192,21 @@ diamondash.widgets.graph.views = function() {
       position.svg.x = coords.x;
       position.svg.y = coords.y;
 
-      // convert the svg x value to the corresponding time value, then snap
-      // it to the closest timestep
-      position.x = utils.snap(
-        this.fx.invert(position.svg.x),
-        this.model.xMin(),
-        this.model.get('bucket_size'));
+      var min = this.model.xMin();
+      if (min === null) {
+        position.x = null;
+      }
+      else {
+        // convert the svg x value to the corresponding time value, then snap
+        // it to the closest timestep
+        position.x = utils.snap(
+          this.fx.invert(position.svg.x),
+          min,
+          this.model.get('bucket_size'));
 
-      // shift the svg x value to correspond to the snapped time value
-      position.svg.x = this.fx(position.x);
+        // shift the svg x value to correspond to the snapped time value
+        position.svg.x = this.fx(position.x);
+      }
 
       return position;
     },
