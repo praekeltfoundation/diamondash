@@ -86,5 +86,4 @@ class LValueWidget(DynamicWidget):
 
         d = self.backend.get_data(from_time=from_time)
         d.addCallback(self.handle_backend_response, now)
-        d.addErrback(self.handle_bad_backend_response)
         return d
