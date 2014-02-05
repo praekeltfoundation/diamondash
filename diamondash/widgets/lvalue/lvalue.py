@@ -10,7 +10,8 @@ class LValueWidgetConfig(DynamicWidgetConfig):
     TYPE_NAME = 'lvalue'
 
     DEFAULTS = {
-        'time_range': '1d'
+        'time_range': '1d',
+        'default_value': 0
     }
 
     MIN_COLUMN_SPAN = 2
@@ -44,14 +45,9 @@ class LValueWidget(DynamicWidget):
     CONFIG_CLS = LValueWidgetConfig
 
     def format_data(self, prev, last):
-        time_range = self.config['time_range']
-
-        # 'to' gets added the widget's time range converted from its internal
-        # representation (seconds) to the representation used by the client
-        # side (milliseconds).
         return {
             'from': last['x'],
-            'to': last['x'] + time_range - 1,
+            'to': last['x'] + self.config['time_range'] - 1,
             'last': last['y'],
             'prev': prev['y'],
         }
@@ -64,18 +60,19 @@ class LValueWidget(DynamicWidget):
         datapoints = metric_data[0]['datapoints']
         prev_time = from_time - self.config['time_range']
 
-        prev = None
+        prev = {
+            'x': prev_time,
+            'y': self.config['default_value']
+        }
         for n in takewhile(lambda d: d['x'] <= prev_time, datapoints):
             prev = n
 
-        last = None
+        last = {
+            'x': from_time,
+            'y': self.config['default_value']
+        }
         for n in takewhile(lambda d: d['x'] <= from_time, datapoints):
             last = n
-
-        if last is None or prev is None:
-            raise BadBackendResponseError(
-                "LValueWidget did not receive all the datapoints it needed "
-                "the backend")
 
         return self.format_data(prev, last)
 

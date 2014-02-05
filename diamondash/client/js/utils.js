@@ -76,6 +76,20 @@ diamondash.utils = function() {
     return 'Basic ' + Base64.encode(username + ':' + password);
   }
 
+  function ensureDefined(v) {
+    return typeof v == 'undefined'
+      ? null
+      : v;
+  }
+
+  function min() {
+    return ensureDefined(d3.min.apply(null, arguments));
+  }
+
+  function max() {
+    return ensureDefined(d3.max.apply(null, arguments));
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -84,6 +98,9 @@ diamondash.utils = function() {
     snap: snap,
     d3Map: d3Map,
     joinPaths: joinPaths,
-    basicAuth: basicAuth
+    basicAuth: basicAuth,
+    ensureDefined: ensureDefined,
+    min: min,
+    max: max
   };
 }.call(this);
