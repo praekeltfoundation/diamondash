@@ -72,13 +72,45 @@ class LValueWidgetTestCase(unittest.TestCase):
         def assert_snapshot_retrieval(result):
             self.assertEqual(
                 widget.backend.get_requests(),
-                [{'from_time': 1340875990000}])
+                [{'from_time': 1340875987000}])
 
             self.assertEqual(result, {
-                'from': 1340875995000,
-                'to': 1340875999999,
-                'last': 9227465.0,
-                'prev': 5702887.0,
+                'from': 1340875992000,
+                'to': 1340875997000,
+                'last': 5702887.0,
+                'prev': 3524578.0,
+            })
+
+        deferred_result.addCallback(assert_snapshot_retrieval)
+        return deferred_result
+
+    def test_snapshot_retrieval_align_to_start(self):
+        widget = self.mk_widget(align_to_start=True)
+
+        widget.backend.set_response([{
+            'target': 'some.target',
+            'datapoints': [
+                {'x': 1340875975000, 'y': 1346269.0},
+                {'x': 1340875980000, 'y': 2178309.0},
+                {'x': 1340875985000, 'y': 3524578.0},
+                {'x': 1340875990000, 'y': 5702887.0},
+                {'x': 1340875995000, 'y': 9227465.0},
+                {'x': 1340876000000, 'y': 0.0}
+            ]
+        }])
+
+        deferred_result = widget.get_snapshot()
+
+        def assert_snapshot_retrieval(result):
+            self.assertEqual(
+                widget.backend.get_requests(),
+                [{'from_time': 1340875985000}])
+
+            self.assertEqual(result, {
+                'from': 1340875990000,
+                'to': 1340875995000,
+                'last': 5702887.0,
+                'prev': 3524578.0,
             })
 
         deferred_result.addCallback(assert_snapshot_retrieval)
@@ -94,8 +126,8 @@ class LValueWidgetTestCase(unittest.TestCase):
 
         def check(result):
             self.assertEqual(result, {
-                'from': 1340875997000,
-                'to': 1340876001999,
+                'from': 1340875992000,
+                'to': 1340875997000,
                 'last': -1,
                 'prev': -1,
             })
