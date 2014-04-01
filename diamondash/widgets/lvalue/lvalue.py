@@ -11,7 +11,8 @@ class LValueWidgetConfig(DynamicWidgetConfig):
 
     DEFAULTS = {
         'time_range': '1d',
-        'default_value': 0
+        'default_value': 0,
+        'align_to_start': False,
     }
 
     MIN_COLUMN_SPAN = 2
@@ -44,20 +45,13 @@ class LValueWidgetConfig(DynamicWidgetConfig):
 class LValueWidget(DynamicWidget):
     CONFIG_CLS = LValueWidgetConfig
 
-    def format_data(self, prev, last):
-        return {
-            'from': last['x'],
-            'to': last['x'] + self.config['time_range'] - 1,
-            'last': last['y'],
-            'prev': prev['y'],
-        }
-
-    def handle_backend_response(self, metric_data, from_time):
+    def handle_backend_response(self, metric_data, until_time):
         if not metric_data:
             raise BadBackendResponseError(
                 "LValueWidget '%s' received empty response from backend")
 
         datapoints = metric_data[0]['datapoints']
+        from_time = until_time - self.config['time_range']
         prev_time = from_time - self.config['time_range']
 
         prev = {
@@ -74,13 +68,24 @@ class LValueWidget(DynamicWidget):
         for n in takewhile(lambda d: d['x'] <= from_time, datapoints):
             last = n
 
-        return self.format_data(prev, last)
+        return {
+            'from': from_time,
+            'to': until_time,
+            'last': last['y'],
+            'prev': prev['y'],
+        }
 
     def get_snapshot(self):
-        now = utils.now()
         time_range = self.config['time_range']
-        from_time = utils.floor_time(now - time_range, time_range)
 
+        if self.config['align_to_start']:
+            until_time = utils.floor_time(utils.now(), time_range)
+        else:
+            until_time = utils.now()
+
+        # ask for time since double the time range so we can compare with the
+        # previous time range
+        from_time = until_time - (time_range * 2)
         d = self.backend.get_data(from_time=from_time)
-        d.addCallback(self.handle_backend_response, now)
+        d.addCallback(self.handle_backend_response, until_time)
         return d
