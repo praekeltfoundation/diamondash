@@ -30,6 +30,7 @@ def mk_backend_config_data(**overrides):
         'null_filter': 'zeroize',
         'bucket_size': '5m',
         'time_aligner': 'round',
+        'relative_time': True,
         'url': 'http://some-graphite-url.moc:8080/',
         'metrics': [{
             'target': 'a.last',
@@ -52,11 +53,13 @@ class GraphiteBackendConfigTestCase(unittest.TestCase):
         self.assertEqual(m1_config['bucket_size'], 300000)
         self.assertEqual(m1_config['time_aligner'], 'round')
         self.assertEqual(m1_config['null_filter'], 'zeroize')
+        self.assertEqual(m1_config['relative_time'], True)
 
         self.assertEqual(m2_config['target'], 'b.sum')
         self.assertEqual(m2_config['bucket_size'], 300000)
         self.assertEqual(m2_config['time_aligner'], 'round')
         self.assertEqual(m2_config['null_filter'], 'skip')
+        self.assertEqual(m1_config['relative_time'], True)
 
     def test_parsing_for_no_url(self):
         config = mk_backend_config_data()

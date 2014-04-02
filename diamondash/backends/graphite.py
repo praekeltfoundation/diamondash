@@ -21,6 +21,7 @@ class GraphiteBackendConfig(BackendConfig):
         'bucket_size',
         'null_filter',
         'time_aligner',
+        'relative_time',
     ]
 
     @classmethod
@@ -122,6 +123,7 @@ class GraphiteMetricConfig(MetricConfig):
     DEFAULTS = {
         'null_filter': 'skip',
         'time_alignment': 'round',
+        'relative_time': False
     }
 
     @classmethod
@@ -151,7 +153,8 @@ class GraphiteMetric(Metric):
         self.summarizer = processors.summarizers.get(
             self.config['agg_method'],
             self.config['time_alignment'],
-            self.config['bucket_size'])
+            self.config['bucket_size'],
+            relative=self.config['relative_time'])
 
     @staticmethod
     def alias_target(target):
