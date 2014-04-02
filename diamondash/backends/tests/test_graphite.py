@@ -29,8 +29,7 @@ def mk_backend_config_data(**overrides):
     return utils.add_dicts({
         'null_filter': 'zeroize',
         'bucket_size': '5m',
-        'time_aligner': 'round',
-        'relative_time': True,
+        'time_alignment': 'round',
         'url': 'http://some-graphite-url.moc:8080/',
         'metrics': [{
             'target': 'a.last',
@@ -46,18 +45,20 @@ def mk_backend_config_data(**overrides):
 
 class GraphiteBackendConfigTestCase(unittest.TestCase):
     def test_parsing(self):
-        config = GraphiteBackendConfig(mk_backend_config_data())
+        config = GraphiteBackendConfig(mk_backend_config_data(
+            time_alignment='floor',
+            relative_time=True))
 
         m1_config, m2_config = config['metrics']
         self.assertEqual(m1_config['target'], 'a.last')
         self.assertEqual(m1_config['bucket_size'], 300000)
-        self.assertEqual(m1_config['time_aligner'], 'round')
+        self.assertEqual(m1_config['time_alignment'], 'floor')
         self.assertEqual(m1_config['null_filter'], 'zeroize')
         self.assertEqual(m1_config['relative_time'], True)
 
         self.assertEqual(m2_config['target'], 'b.sum')
         self.assertEqual(m2_config['bucket_size'], 300000)
-        self.assertEqual(m2_config['time_aligner'], 'round')
+        self.assertEqual(m2_config['time_alignment'], 'floor')
         self.assertEqual(m2_config['null_filter'], 'skip')
         self.assertEqual(m1_config['relative_time'], True)
 

@@ -14,13 +14,13 @@ from diamondash.backends import (
 
 class GraphiteBackendConfig(BackendConfig):
     DEFAULTS = {
-        'time_aligner': 'round'
+        'time_alignment': 'round'
     }
 
     METRIC_UNDERRIDES = [
         'bucket_size',
         'null_filter',
-        'time_aligner',
+        'time_alignment',
         'relative_time',
     ]
 
