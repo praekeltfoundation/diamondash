@@ -28,12 +28,14 @@ def agg_avg(vals):
 
 
 class Summarizer(object):
-    def __init__(self, time_aligner, bucket_size):
+    def __init__(self, time_aligner, bucket_size, relative=False):
+        self.relative = relative
         self.time_aligner = time_aligner
         self.bucket_size = bucket_size
 
-    def align_time(self, t):
-        return self.time_aligner(t, self.bucket_size)
+    def align_time(self, t, from_time):
+        relative_to = from_time if self.relative else None
+        return self.time_aligner(t, self.bucket_size, relative_to=relative_to)
 
     def __call__(self, from_time, datapoints):
         raise NotImplementedError()
@@ -41,7 +43,7 @@ class Summarizer(object):
 
 class LastDatapointSummarizer(Summarizer):
     def __call__(self, from_time, datapoints):
-        step = self.align_time(from_time)
+        step = self.align_time(from_time, from_time)
 
         results = []
         if not datapoints:
@@ -50,7 +52,7 @@ class LastDatapointSummarizer(Summarizer):
         it = iter(datapoints)
         prev = next(it)
         for curr in it:
-            aligned_x = self.align_time(curr['x'])
+            aligned_x = self.align_time(curr['x'], from_time)
             if aligned_x > step:
                 results.append({'x': step, 'y': prev['y']})
                 step = aligned_x
@@ -58,7 +60,7 @@ class LastDatapointSummarizer(Summarizer):
 
         # add the last datapoint
         results.append({
-            'x': self.align_time(prev['x']),
+            'x': self.align_time(prev['x'], from_time),
             'y': prev['y']
         })
 
@@ -66,12 +68,13 @@ class LastDatapointSummarizer(Summarizer):
 
 
 class AggregatingSummarizer(Summarizer):
-    def __init__(self, time_aligner, bucket_size, aggregator):
-        super(AggregatingSummarizer, self).__init__(time_aligner, bucket_size)
+    def __init__(self, time_aligner, bucket_size, aggregator, relative=False):
+        super(AggregatingSummarizer, self).__init__(
+            time_aligner, bucket_size, relative)
         self.aggregator = aggregator
 
     def __call__(self, from_time, datapoints):
-        step = self.align_time(from_time)
+        step = self.align_time(from_time, from_time)
 
         results = []
         if not datapoints:
@@ -79,7 +82,7 @@ class AggregatingSummarizer(Summarizer):
 
         bucket = []
         for datapoint in datapoints:
-            aligned_x = self.align_time(datapoint['x'])
+            aligned_x = self.align_time(datapoint['x'], from_time)
             if aligned_x > step:
                 if bucket:
                     results.append({'x': step, 'y': self.aggregator(bucket)})
@@ -97,14 +100,14 @@ class Summarizers(object):
     def __init__(self, summarizers):
         self.summarizers = summarizers
 
-    def get(self, name, time_alignment, bucket_size):
+    def get(self, name, time_alignment, bucket_size, relative=False):
         time_aligner = utils.time_aligners.get(time_alignment)
 
         if name not in self.summarizers:
             raise KeyError("No summarizer called '%s' exists" % name)
 
         summarizer_cls = self.summarizers[name]
-        return summarizer_cls(time_aligner, bucket_size)
+        return summarizer_cls(time_aligner, bucket_size, relative=relative)
 
 
 null_filters = {
