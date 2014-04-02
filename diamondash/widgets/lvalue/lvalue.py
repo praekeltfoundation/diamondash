@@ -30,6 +30,7 @@ class LValueWidgetConfig(DynamicWidgetConfig):
         config['backend'].update({
             'bucket_size': config['time_range'],
             'time_alignment': 'floor',
+            'relative_time': True,
             'metrics': [{
                 'target': config.pop('target'),
                 'null_filter': 'skip',
