@@ -74,6 +74,33 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(utils.round_time(15, 10), 20)
         self.assertEqual(utils.round_time(18, 10), 20)
 
+    def test_round_time_relative(self):
+        self.assertEqual(utils.round_time(1, 5, 3), 3)
+        self.assertEqual(utils.round_time(2, 5, 3), 3)
+        self.assertEqual(utils.round_time(3, 5, 3), 3)
+        self.assertEqual(utils.round_time(5, 5, 3), 3)
+        self.assertEqual(utils.round_time(6, 5, 3), 8)
+        self.assertEqual(utils.round_time(7, 5, 3), 8)
+        self.assertEqual(utils.round_time(8, 5, 3), 8)
+        self.assertEqual(utils.round_time(9, 5, 3), 8)
+        self.assertEqual(utils.round_time(10, 5, 3), 8)
+        self.assertEqual(utils.round_time(11, 5, 3), 13)
+        self.assertEqual(utils.round_time(13, 5, 3), 13)
+        self.assertEqual(utils.round_time(14, 5, 3), 13)
+
+        self.assertEqual(utils.round_time(1, 5, 18), 3)
+        self.assertEqual(utils.round_time(2, 5, 18), 3)
+        self.assertEqual(utils.round_time(3, 5, 18), 3)
+        self.assertEqual(utils.round_time(5, 5, 18), 3)
+        self.assertEqual(utils.round_time(6, 5, 18), 8)
+        self.assertEqual(utils.round_time(7, 5, 18), 8)
+        self.assertEqual(utils.round_time(8, 5, 18), 8)
+        self.assertEqual(utils.round_time(9, 5, 18), 8)
+        self.assertEqual(utils.round_time(10, 5, 18), 8)
+        self.assertEqual(utils.round_time(11, 5, 18), 13)
+        self.assertEqual(utils.round_time(13, 5, 18), 13)
+        self.assertEqual(utils.round_time(14, 5, 18), 13)
+
     def test_floor_time(self):
         self.assertEqual(utils.floor_time(2, 5), 0)
         self.assertEqual(utils.floor_time(3, 5), 0)
@@ -92,6 +119,33 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(utils.floor_time(15, 10), 10)
         self.assertEqual(utils.floor_time(18, 10), 10)
         self.assertEqual(utils.floor_time(22, 10), 20)
+
+    def test_floor_time_relative(self):
+        self.assertEqual(utils.floor_time(1, 5, 3), 0)
+        self.assertEqual(utils.floor_time(2, 5, 3), 0)
+        self.assertEqual(utils.floor_time(3, 5, 3), 3)
+        self.assertEqual(utils.floor_time(5, 5, 3), 3)
+        self.assertEqual(utils.floor_time(6, 5, 3), 3)
+        self.assertEqual(utils.floor_time(7, 5, 3), 3)
+        self.assertEqual(utils.floor_time(8, 5, 3), 8)
+        self.assertEqual(utils.floor_time(9, 5, 3), 8)
+        self.assertEqual(utils.floor_time(10, 5, 3), 8)
+        self.assertEqual(utils.floor_time(11, 5, 3), 8)
+        self.assertEqual(utils.floor_time(13, 5, 3), 13)
+        self.assertEqual(utils.floor_time(14, 5, 3), 13)
+
+        self.assertEqual(utils.floor_time(1, 5, 18), 0)
+        self.assertEqual(utils.floor_time(2, 5, 18), 0)
+        self.assertEqual(utils.floor_time(3, 5, 18), 3)
+        self.assertEqual(utils.floor_time(5, 5, 18), 3)
+        self.assertEqual(utils.floor_time(6, 5, 18), 3)
+        self.assertEqual(utils.floor_time(7, 5, 18), 3)
+        self.assertEqual(utils.floor_time(8, 5, 18), 8)
+        self.assertEqual(utils.floor_time(9, 5, 18), 8)
+        self.assertEqual(utils.floor_time(10, 5, 18), 8)
+        self.assertEqual(utils.floor_time(11, 5, 18), 8)
+        self.assertEqual(utils.floor_time(13, 5, 18), 13)
+        self.assertEqual(utils.floor_time(14, 5, 18), 13)
 
 
 class HttpUtilsTestCase(unittest.TestCase):

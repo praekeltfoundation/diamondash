@@ -24,7 +24,8 @@ class LValueWidgetConfigTestCase(unittest.TestCase):
         config = LValueWidgetConfig(mk_config_data())
 
         self.assertEqual(config['backend']['bucket_size'], 5000)
-        self.assertEqual(config['backend']['time_aligner'], 'floor')
+        self.assertEqual(config['backend']['time_alignment'], 'floor')
+        self.assertEqual(config['backend']['relative_time'], True)
 
         metric_config, = config['backend']['metrics']
         self.assertEqual(metric_config['target'], 'some.target')
