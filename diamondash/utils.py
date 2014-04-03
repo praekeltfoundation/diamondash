@@ -2,9 +2,9 @@ import re
 import sys
 import time
 from os import path
-from math import floor
 from unidecode import unidecode
 from urlparse import urlparse
+from math import floor
 
 from twisted.internet import reactor
 from twisted.web.client import HTTPClientFactory
@@ -127,14 +127,16 @@ def http_request(url, data=None, headers={}, method='GET'):
     return factory.deferred
 
 
-def floor_time(t, interval):
-    i = int(floor(t / float(interval)))
-    return interval * i
+def floor_time(t, interval, relative_to=None):
+    offset = relative_to % interval if relative_to is not None else 0
+    i = int(floor((t - offset) / float(interval)))
+    return max(offset + (i * interval), 0)
 
 
-def round_time(t, interval):
-    i = int(round(t / float(interval)))
-    return interval * i
+def round_time(t, interval, relative_to=None):
+    offset = relative_to % interval if relative_to is not None else 0
+    i = int(round((t - offset) / float(interval)))
+    return max(offset + (i * interval), 0)
 
 
 time_aligners = {

@@ -45,6 +45,50 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 20, 'y': 4}
             ])
 
+    def test_last_datapoint_summarizer_with_relative_round_alignment(self):
+        summarizer = processors.summarizers.get(
+            'last', 'round', 5, relative=True)
+
+        self.assertEqual(
+            summarizer(3, []),
+            [])
+
+        self.assertEqual(
+            summarizer(12, [{'x': 12, 'y': 3}]),
+            [{'x': 12, 'y': 3}])
+
+        self.assertEqual(
+            summarizer(3, [{'x': 12, 'y': 3}]),
+            [{'x': 13, 'y': 3}])
+
+        self.assertEqual(
+            summarizer(3, [
+                {'x': 3, 'y': 1},
+                {'x': 8, 'y': 2},
+                {'x': 11, 'y': 3},
+                {'x': 12, 'y': 4},
+                {'x': 22, 'y': 6},
+                {'x': 28, 'y': 7}
+            ]), [
+                {'x': 3, 'y': 1},
+                {'x': 8, 'y': 2},
+                {'x': 13, 'y': 4},
+                {'x': 23, 'y': 6},
+                {'x': 28, 'y': 7},
+            ])
+
+        self.assertEqual(
+            summarizer(8, [
+                {'x': 8, 'y': 1},
+                {'x': 12, 'y': 2},
+                {'x': 21, 'y': 3},
+                {'x': 22, 'y': 4}
+            ]), [
+                {'x': 8, 'y': 1},
+                {'x': 13, 'y': 2},
+                {'x': 23, 'y': 4}
+            ])
+
     def test_last_datapoint_summarizer_with_floor_alignment(self):
         summarizer = processors.summarizers.get('last', 'floor', 5)
 
@@ -78,6 +122,40 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 5, 'y': 1},
                 {'x': 10, 'y': 2},
                 {'x': 20, 'y': 4}
+            ])
+
+    def test_last_datapoint_summarizer_with_relative_floor_alignment(self):
+        summarizer = processors.summarizers.get(
+            'last', 'floor', 5, relative=True)
+
+        self.assertEqual(
+            summarizer(12, [{'x': 12, 'y': 3}]),
+            [{'x': 12, 'y': 3}])
+
+        self.assertEqual(
+            summarizer(3, [
+                {'x': 3, 'y': 1},
+                {'x': 8, 'y': 2},
+                {'x': 11, 'y': 3},
+                {'x': 12, 'y': 4},
+                {'x': 22, 'y': 6},
+                {'x': 28, 'y': 7}
+            ]), [
+                {'x': 3, 'y': 1},
+                {'x': 8, 'y': 4},
+                {'x': 18, 'y': 6},
+                {'x': 28, 'y': 7},
+            ])
+
+        self.assertEqual(
+            summarizer(8, [
+                {'x': 8, 'y': 1},
+                {'x': 12, 'y': 2},
+                {'x': 21, 'y': 3},
+                {'x': 22, 'y': 4}
+            ]), [
+                {'x': 8, 'y': 2},
+                {'x': 18, 'y': 4}
             ])
 
     def test_aggregating_summarizer_with_round_alignment(self):
@@ -117,6 +195,46 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 20, 'y': 3.5}
             ])
 
+    def test_aggregating_summarizer_with_relative_round_alignment(self):
+        summarizer = processors.summarizers.get(
+            'avg', 'round', 5, relative=True)
+
+        self.assertEqual(
+            summarizer(3, []),
+            [])
+
+        self.assertEqual(
+            summarizer(12, [{'x': 12, 'y': 3}]),
+            [{'x': 12, 'y': 3}])
+
+        self.assertEqual(
+            summarizer(3, [
+                {'x': 3, 'y': 1.0},
+                {'x': 8, 'y': 2.0},
+                {'x': 11, 'y': 3.0},
+                {'x': 12, 'y': 4.0},
+                {'x': 22, 'y': 6.0},
+                {'x': 28, 'y': 7.0}
+            ]), [
+                {'x': 3, 'y': 1.0},
+                {'x': 8, 'y': 2.0},
+                {'x': 13, 'y': 3.5},
+                {'x': 23, 'y': 6.0},
+                {'x': 28, 'y': 7.0}
+            ])
+
+        self.assertEqual(
+            summarizer(8, [
+                {'x': 8, 'y': 1.0},
+                {'x': 12, 'y': 2.0},
+                {'x': 21, 'y': 3.0},
+                {'x': 22, 'y': 4.0}
+            ]), [
+                {'x': 8, 'y': 1.0},
+                {'x': 13, 'y': 2.0},
+                {'x': 23, 'y': 3.5}
+            ])
+
     def test_aggregating_summarizer_with_floor_alignment(self):
         summarizer = processors.summarizers.get('avg', 'floor', 5)
 
@@ -154,6 +272,44 @@ class SummarizersTestCase(unittest.TestCase):
                 {'x': 5, 'y': 1.0},
                 {'x': 10, 'y': 2.0},
                 {'x': 20, 'y': 3.5}
+            ])
+
+    def test_aggregating_summarizer_with_relative_floor_alignment(self):
+        summarizer = processors.summarizers.get(
+            'avg', 'floor', 5, relative=True)
+
+        self.assertEqual(
+            summarizer(3, []),
+            [])
+
+        self.assertEqual(
+            summarizer(12, [{'x': 12, 'y': 3}]),
+            [{'x': 12, 'y': 3}])
+
+        self.assertEqual(
+            summarizer(3, [
+                {'x': 3, 'y': 1.0},
+                {'x': 8, 'y': 2.0},
+                {'x': 11, 'y': 3.0},
+                {'x': 12, 'y': 4.0},
+                {'x': 22, 'y': 6.0},
+                {'x': 28, 'y': 7.0}
+            ]), [
+                {'x': 3, 'y': 1.0},
+                {'x': 8, 'y': 3.0},
+                {'x': 18, 'y': 6.0},
+                {'x': 28, 'y': 7.0}
+            ])
+
+        self.assertEqual(
+            summarizer(8, [
+                {'x': 8, 'y': 1.0},
+                {'x': 12, 'y': 2.0},
+                {'x': 21, 'y': 3.0},
+                {'x': 22, 'y': 4.0}
+            ]), [
+                {'x': 8, 'y': 1.5},
+                {'x': 18, 'y': 3.5},
             ])
 
 
