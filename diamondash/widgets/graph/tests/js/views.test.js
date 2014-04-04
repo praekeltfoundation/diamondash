@@ -72,25 +72,25 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should display the metric values at the hovered over time interval",
-         function() {
-           assert.equal(
-             legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-             24);
+      function() {
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          24);
 
-             assert.equal(
-               legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-               16);
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          16);
 
-               hover.inverse(graph, {x: 1340876295000});
+        hover.inverse(graph, {x: 1340876295000});
 
-               assert.equal(
-                 legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-                 12);
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          12);
 
-                 assert.equal(
-                   legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-                   22);
-         });
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          22);
+      });
     });
 
     describe("when the graph is unhovered", function() {
@@ -289,9 +289,9 @@ describe("diamondash.widgets.graph", function() {
           metrics.get('metric-a').get('datapoints'),
           metricDotCoords('metric-a'));
 
-          assert.deepEqual(
-            metrics.get('metric-b').get('datapoints'),
-            metricDotCoords('metric-b'));
+        assert.deepEqual(
+          metrics.get('metric-b').get('datapoints'),
+          metricDotCoords('metric-b'));
       });
     });
 
@@ -308,7 +308,7 @@ describe("diamondash.widgets.graph", function() {
         assert.deepEqual(
           utils.d3Map(graph.svg.selectAll('.hover-dot'), dotToCoords),
           [{x: 1340876295000, y: 12},
-            {x: 1340876295000, y: 22}]);
+           {x: 1340876295000, y: 22}]);
       });
     });
 
@@ -352,38 +352,39 @@ describe("diamondash.widgets.graph", function() {
 
         assert.strictEqual(
           graph.svg
-          .select('.metric-line[data-metric-id=metric-a]')
-          .datum(),
+            .select('.metric-line[data-metric-id=metric-a]')
+            .datum(),
           metrics.get('metric-a'));
 
-          assert.strictEqual(
-            graph.svg
+        assert.strictEqual(
+          graph.svg
             .select('.metric-line[data-metric-id=metric-b]')
             .datum(),
-            metrics.get('metric-b'));
+          metrics.get('metric-b'));
       });
 
       it("should color the lines according to the metrics' colors",
-         function() {
-           var metrics = graph.model.get('metrics');
-           lines.render();
+      function() {
+         var metrics = graph.model.get('metrics');
+         lines.render();
 
-           assert.equal(
-             graph
+         assert.equal(
+           graph
              .$('.metric-line[data-metric-id=metric-a]')
              .css('stroke'),
-             metrics
-             .get('metric-a')
-             .get('color'));
 
-             assert.equal(
-               graph
-               .$('.metric-line[data-metric-id=metric-b]')
-               .css('stroke'),
-               metrics
-               .get('metric-b')
-               .get('color'));
-         });
+         metrics
+           .get('metric-a')
+           .get('color'));
+
+         assert.equal(
+           graph
+             .$('.metric-line[data-metric-id=metric-b]')
+             .css('stroke'),
+           metrics
+             .get('metric-b')
+             .get('color'));
+      });
     });
   });
 
@@ -418,30 +419,30 @@ describe("diamondash.widgets.graph", function() {
           domain(),
           [1340875995000, 1340877495000]);
 
-          assert.deepEqual(
-            range(),
-            [2, 24]);
+        assert.deepEqual(
+          range(),
+          [2, 24]);
 
-            graph.model.get('metrics').set([{
-              id: 'metric-a',
-              datapoints: [{
-                x: 1340875998000,
-                y: 3
-              }, {
-                x: 1340877498000,
-                y: 25
-              }]
-            }]);
+        graph.model.get('metrics').set([{
+          id: 'metric-a',
+          datapoints: [{
+            x: 1340875998000,
+            y: 3
+          }, {
+            x: 1340877498000,
+            y: 25
+          }]
+        }]);
 
-            graph.render();
+        graph.render();
 
-            assert.deepEqual(
-              domain(),
-              [1340875998000, 1340877498000]);
+        assert.deepEqual(
+          domain(),
+          [1340875998000, 1340877498000]);
 
-              assert.deepEqual(
-                range(),
-                [3, 25]);
+        assert.deepEqual(
+          range(),
+          [3, 25]);
       });
 
       it("draw render its lines", function() {
@@ -485,8 +486,6 @@ describe("diamondash.widgets.graph", function() {
     });
 
     describe("when the mouse is moved over the graph", function() {
-      var coords;
-
       beforeEach(function() {
         graph.render();
 
@@ -500,16 +499,16 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should trigger an event with the calculated position information",
-         function(done) {
-           graph.on('hover', function(position) {
-             assert.equal(position.x, 1340876295000);
-             assert.equal(position.svg.x, 190.4);
-             assert.equal(position.svg.y, -11);
-             done();
-           });
+      function(done) {
+        graph.on('hover', function(position) {
+          assert.equal(position.x, 1340876295000);
+          assert.equal(position.svg.x, 190.4);
+          assert.equal(position.svg.y, -11);
+          done();
+        });
 
-           graph.trigger('mousemove', {});
-         });
+        graph.trigger('mousemove', {});
+      });
     });
 
     describe("when the mouse is moved away from the graph", function() {
