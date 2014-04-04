@@ -1,6 +1,5 @@
 diamondash.widgets.chart.views = function() {
   var structures = diamondash.components.structures,
-      utils = diamondash.utils,
       widgets = diamondash.widgets,
       widget = diamondash.widgets.widget;
 
