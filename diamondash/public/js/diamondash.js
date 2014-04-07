@@ -193,8 +193,6 @@ diamondash.components = function() {
 }.call(this);
 
 diamondash.components.structures = function() {
-  var utils = diamondash.utils;
-
   function Extendable() {}
   Extendable.extend = Backbone.Model.extend;
 
@@ -641,7 +639,6 @@ diamondash.widgets.chart.models = function() {
 
 diamondash.widgets.chart.views = function() {
   var structures = diamondash.components.structures,
-      utils = diamondash.utils,
       widgets = diamondash.widgets,
       widget = diamondash.widgets.widget;
 
@@ -1371,7 +1368,6 @@ diamondash.dashboard = function() {
   var structures = diamondash.components.structures,
       models = diamondash.models,
       widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
   var DashboardRowModel = models.Model.extend({
