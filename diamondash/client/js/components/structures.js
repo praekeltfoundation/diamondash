@@ -1,6 +1,4 @@
 diamondash.components.structures = function() {
-  var utils = diamondash.utils;
-
   function Extendable() {}
   Extendable.extend = Backbone.Model.extend;
 

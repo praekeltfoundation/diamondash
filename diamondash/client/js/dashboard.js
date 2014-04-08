@@ -2,7 +2,6 @@ diamondash.dashboard = function() {
   var structures = diamondash.components.structures,
       models = diamondash.models,
       widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget,
       dynamic = diamondash.widgets.dynamic;
 
   var DashboardRowModel = models.Model.extend({
