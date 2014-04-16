@@ -730,11 +730,11 @@ diamondash.widgets.chart.views = function() {
         return "translate(" + this.height + ", 0)";
       }
       else if (this.orient == 'right') {
-        p = this.chart.dimensions.width - this.height;
+        p = this.chart.dims.width - this.height;
         return "translate(" + p + ", 0)";
       }
 
-      p = this.chart.dimensions.height - this.height;
+      p = this.chart.dims.height - this.height;
       return "translate(0, " + p + ")";
     },
 
@@ -744,7 +744,7 @@ diamondash.widgets.chart.views = function() {
     }(),
 
     tickCount: function() {
-      var width = this.chart.dimensions.width;
+      var width = this.chart.dims.width;
       var count = Math.floor(width / this.markerWidth);
 
       return Math.max(0, count);
@@ -780,7 +780,7 @@ diamondash.widgets.chart.views = function() {
 
     initialize: function(options) {
       options = options || {};
-      this.dimensions = new ChartDimensions(options.dimensions);
+      this.dims = new ChartDimensions(options.dims);
 
       this.svg = d3.select(this.el).append('svg');
       this.canvas = this.svg.append('g');
@@ -795,18 +795,18 @@ diamondash.widgets.chart.views = function() {
 
     render: function() {
       this.svg
-        .attr('width', this.dimensions.width)
-        .attr('height', this.dimensions.height);
+        .attr('width', this.dims.width)
+        .attr('height', this.dims.height);
 
       this.canvas
         .attr('transform', 'translate('
-          + this.dimensions.margin.left
+          + this.dims.margin.left
           + ','
-          + this.dimensions.margin.top + ')');
+          + this.dims.margin.top + ')');
 
       this.overlay
-        .attr('width', this.dimensions.width)
-        .attr('height', this.dimensions.height);
+        .attr('width', this.dims.width)
+        .attr('height', this.dims.height);
 
       return this;
     }
@@ -1106,7 +1106,7 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dimensions: new chart.views.ChartDimensions({
+        dims: new chart.views.ChartDimensions({
           height: this.height,
           margin: this.margin
         })
@@ -1136,13 +1136,13 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dimensions.innerHeight - this.axisHeight;
+      var maxY = this.dims.innerHeight - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dimensions.innerWidth]);
+      this.fx.range([0, this.dims.innerWidth]);
     },
 
     render: function() {
-      this.dimensions.set({width: this.$el.width()});
+      this.dims.set({width: this.$el.width()});
       GraphView.__super__.render.call(this);
       this.resetScales();
 

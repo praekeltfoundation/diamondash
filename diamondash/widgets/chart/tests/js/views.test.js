@@ -8,10 +8,10 @@ describe("diamondash.widgets.chart.views", function() {
   });
 
   describe(".ChartDimensions", function() {
-    var dimensions;
+    var dims;
 
     beforeEach(function() {
-      dimensions = new views.ChartDimensions({
+      dims = new views.ChartDimensions({
         height: 128,
         width: 64,
         margin: {
@@ -23,9 +23,9 @@ describe("diamondash.widgets.chart.views", function() {
       });
     });
 
-    it("should calculate the inner dimensions", function() {
-      assert.equal(dimensions.innerWidth, 60);
-      assert.equal(dimensions.innerHeight, 124);
+    it("should calculate the inner dims", function() {
+      assert.equal(dims.innerWidth, 60);
+      assert.equal(dims.innerHeight, 124);
     });
   });
 
@@ -36,7 +36,7 @@ describe("diamondash.widgets.chart.views", function() {
     beforeEach(function() {
       chart = new views.ChartView({
         model: new models.ChartModel({id: 'chart-1'}),
-        dimensions: {
+        dims: {
           width: 128,
           height: 74
         }
@@ -45,7 +45,7 @@ describe("diamondash.widgets.chart.views", function() {
       axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
-        scale: d3.time.scale().range([0, chart.dimensions.innerWidth])
+        scale: d3.time.scale().range([0, chart.dims.innerWidth])
       });
     });
 
