@@ -36,10 +36,10 @@ describe("diamondash.widgets.chart.views", function() {
     beforeEach(function() {
       chart = new views.ChartView({
         model: new models.ChartModel({id: 'chart-1'}),
-        dims: {
+        dims: new views.ChartDimensions({
           width: 128,
           height: 74
-        }
+        })
       });
 
       axis = new views.ChartAxisView({

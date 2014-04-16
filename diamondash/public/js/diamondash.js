@@ -780,7 +780,7 @@ diamondash.widgets.chart.views = function() {
 
     initialize: function(options) {
       options = options || {};
-      this.dims = new ChartDimensions(options.dims);
+      this.dims = options.dims || new ChartDimensions();
 
       this.svg = d3.select(this.el).append('svg');
       this.canvas = this.svg.append('g');
