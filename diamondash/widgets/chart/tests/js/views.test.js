@@ -23,9 +23,36 @@ describe("diamondash.widgets.chart.views", function() {
       });
     });
 
-    it("should calculate the inner dims", function() {
-      assert.equal(dims.innerWidth, 60);
-      assert.equal(dims.innerHeight, 124);
+    it("should expose its width", function() {
+      assert.equal(dims.width(), 64);
+    });
+
+    it("should expose its height", function() {
+      assert.equal(dims.height(), 128);
+    });
+
+    it("should expose its margin", function() {
+      assert.deepEqual(dims.margin(), {
+        top: 2,
+        right: 2,
+        bottom: 2,
+        left: 2
+      });
+    });
+
+    it("should expose its inner width", function() {
+      assert.equal(dims.innerWidth(), 60);
+    });
+
+    it("should expose its inner height", function() {
+      assert.equal(dims.innerHeight(), 124);
+    });
+
+    it("should expose its offset", function() {
+      assert.deepEqual(dims.offset(), {
+        x: 2,
+        y: 2
+      });
     });
   });
 
@@ -45,7 +72,7 @@ describe("diamondash.widgets.chart.views", function() {
       axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
-        scale: d3.time.scale().range([0, chart.dims.innerWidth])
+        scale: d3.time.scale().range([0, chart.dims.innerWidth()])
       });
     });
 

@@ -289,13 +289,13 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dims.innerHeight - this.axisHeight;
+      var maxY = this.dims.innerHeight() - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.innerWidth]);
+      this.fx.range([0, this.dims.innerWidth()]);
     },
 
     render: function() {
-      this.dims.set({width: this.$el.width()});
+      this.dims.set('width', this.$el.width());
       GraphView.__super__.render.call(this);
       this.resetScales();
 

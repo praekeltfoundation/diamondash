@@ -22,33 +22,47 @@ diamondash.widgets.chart.views = function() {
     return target;
   };
 
-  var ChartDimensions = structures.Extendable.extend({
-    height: 0,
-    width: 0,
-
-    margin: {
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0
+  var ChartDimensions = Backbone.Model.extend({
+    defaults: {
+      height: 0,
+      width: 0,
+      margin: {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+      },
     },
 
-    constructor: function(options) {
-      this.set(options);
+    height: function() {
+      return this.get('height');
     },
 
-    set: function(options) {
-      options = options || {};
+    width: function() {
+      return this.get('width');
+    },
 
-      if ('height' in options) { this.height = options.height; }
-      if ('width' in options) { this.width = options.width; }
+    margin: function() {
+      return this.get('margin');
+    },
 
-      if (options.margin) {
-        this.margin = _({}).defaults(options.margin, this.margin);
-      }
+    offset: function() {
+      var margin = this.margin();
 
-      this.innerWidth = this.width - this.margin.left - this.margin.right;
-      this.innerHeight = this.height - this.margin.top - this.margin.bottom;
+      return {
+        x: margin.left,
+        y: margin.right
+      };
+    },
+
+    innerWidth: function() {
+      var margin = this.margin();
+      return this.width() - margin.left - margin.right;
+    },
+
+    innerHeight: function() {
+      var margin = this.margin();
+      return this.height() - margin.top - margin.bottom;
     }
   });
 
@@ -91,11 +105,11 @@ diamondash.widgets.chart.views = function() {
         return "translate(" + this.height + ", 0)";
       }
       else if (this.orient == 'right') {
-        p = this.chart.dims.width - this.height;
+        p = this.chart.dims.width() - this.height;
         return "translate(" + p + ", 0)";
       }
 
-      p = this.chart.dims.height - this.height;
+      p = this.chart.dims.height() - this.height;
       return "translate(0, " + p + ")";
     },
 
@@ -105,9 +119,7 @@ diamondash.widgets.chart.views = function() {
     }(),
 
     tickCount: function() {
-      var width = this.chart.dims.width;
-      var count = Math.floor(width / this.markerWidth);
-
+      var count = Math.floor(this.chart.dims.width() / this.markerWidth);
       return Math.max(0, count);
     },
 
@@ -155,21 +167,19 @@ diamondash.widgets.chart.views = function() {
     },
 
     render: function() {
-      this.svg
-        .attr('width', this.dims.width)
-        .attr('height', this.dims.height);
+      var offset = this.dims.offset();
 
-      this.canvas
-        .attr('transform', 'translate('
-          + this.dims.margin.left
-          + ','
-          + this.dims.margin.top + ')');
+      this.canvas.attr(
+        'transform',
+        'translate(' + offset.x + ',' + offset.y + ')'); 
+
+      this.svg
+        .attr('width', this.dims.width())
+        .attr('height', this.dims.height());
 
       this.overlay
-        .attr('width', this.dims.width)
-        .attr('height', this.dims.height);
-
-      return this;
+        .attr('width', this.dims.width())
+        .attr('height', this.dims.height());
     }
   });
 
