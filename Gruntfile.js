@@ -56,7 +56,7 @@ module.exports = function(grunt) {
       },
       'diamondash.js': {
         files: ['<%= paths.diamondash.js.src %>'],
-        tasks: ['concat:diamondash.js']
+        tasks: ['build:diamondash.js']
       },
       'diamondash.jst': {
         files: ['<%= paths.diamondash.jst.src %>'],

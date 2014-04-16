@@ -8,10 +8,10 @@ describe("diamondash.widgets.chart.views", function() {
   });
 
   describe(".ChartDimensions", function() {
-    var dimensions;
+    var dims;
 
     beforeEach(function() {
-      dimensions = new views.ChartDimensions({
+      dims = new views.ChartDimensions({
         height: 128,
         width: 64,
         margin: {
@@ -23,9 +23,36 @@ describe("diamondash.widgets.chart.views", function() {
       });
     });
 
-    it("should calculate the inner dimensions", function() {
-      assert.equal(dimensions.innerWidth, 60);
-      assert.equal(dimensions.innerHeight, 124);
+    it("should expose its width", function() {
+      assert.equal(dims.width(), 64);
+    });
+
+    it("should expose its height", function() {
+      assert.equal(dims.height(), 128);
+    });
+
+    it("should expose its margin", function() {
+      assert.deepEqual(dims.margin(), {
+        top: 2,
+        right: 2,
+        bottom: 2,
+        left: 2
+      });
+    });
+
+    it("should expose its inner width", function() {
+      assert.equal(dims.innerWidth(), 60);
+    });
+
+    it("should expose its inner height", function() {
+      assert.equal(dims.innerHeight(), 124);
+    });
+
+    it("should expose its offset", function() {
+      assert.deepEqual(dims.offset(), {
+        x: 2,
+        y: 2
+      });
     });
   });
 
@@ -36,16 +63,16 @@ describe("diamondash.widgets.chart.views", function() {
     beforeEach(function() {
       chart = new views.ChartView({
         model: new models.ChartModel({id: 'chart-1'}),
-        dimensions: {
+        dims: new views.ChartDimensions({
           width: 128,
           height: 74
-        }
+        })
       });
 
       axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
-        scale: d3.time.scale().range([0, chart.dimensions.innerWidth])
+        scale: d3.time.scale().range([0, chart.dims.innerWidth()])
       });
     });
 
@@ -77,6 +104,67 @@ describe("diamondash.widgets.chart.views", function() {
            '28-06 10:13',
            '28-06 10:23',
            '28-06 10:33'].join(''));
+      });
+    });
+  });
+
+  describe(".ChartView", function() {
+    var  chart;
+
+    beforeEach(function() {
+      chart = new views.ChartView({
+        model: new models.ChartModel({id: 'chart-1'}),
+        dims: new views.ChartDimensions({
+          width: 128,
+          height: 74,
+          margin: {
+            top: 2,
+            right: 2,
+            bottom: 2,
+            left: 2
+          }
+        })
+      });
+    });
+
+    describe("when its dimensions change", function() {
+      it("should retranslate the chart", function() {
+        assert.equal(chart.canvas.attr('transform'), 'translate(2,2)');
+
+        chart.dims.set('margin', {
+          top: 4,
+          right: 2,
+          bottom: 2,
+          left: 4
+        });
+
+        assert.equal(chart.canvas.attr('transform'), 'translate(4,4)');
+      });
+
+      it("should resize the chart", function() {
+        assert.equal(chart.svg.attr('width'), '128');
+        assert.equal(chart.svg.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.svg.attr('width'), '123');
+        assert.equal(chart.svg.attr('height'), '64');
+      });
+
+      it("should resize the chart's overlay's", function() {
+        assert.equal(chart.overlay.attr('width'), '128');
+        assert.equal(chart.overlay.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.overlay.attr('width'), '123');
+        assert.equal(chart.overlay.attr('height'), '64');
       });
     });
   });

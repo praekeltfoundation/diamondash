@@ -661,33 +661,47 @@ diamondash.widgets.chart.views = function() {
     return target;
   };
 
-  var ChartDimensions = structures.Extendable.extend({
-    height: 0,
-    width: 0,
-
-    margin: {
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0
+  var ChartDimensions = Backbone.Model.extend({
+    defaults: {
+      height: 0,
+      width: 0,
+      margin: {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+      },
     },
 
-    constructor: function(options) {
-      this.set(options);
+    height: function() {
+      return this.get('height');
     },
 
-    set: function(options) {
-      options = options || {};
+    width: function() {
+      return this.get('width');
+    },
 
-      if ('height' in options) { this.height = options.height; }
-      if ('width' in options) { this.width = options.width; }
+    margin: function() {
+      return this.get('margin');
+    },
 
-      if (options.margin) {
-        this.margin = _({}).defaults(options.margin, this.margin);
-      }
+    offset: function() {
+      var margin = this.margin();
 
-      this.innerWidth = this.width - this.margin.left - this.margin.right;
-      this.innerHeight = this.height - this.margin.top - this.margin.bottom;
+      return {
+        x: margin.left,
+        y: margin.top
+      };
+    },
+
+    innerWidth: function() {
+      var margin = this.margin();
+      return this.width() - margin.left - margin.right;
+    },
+
+    innerHeight: function() {
+      var margin = this.margin();
+      return this.height() - margin.top - margin.bottom;
     }
   });
 
@@ -730,11 +744,11 @@ diamondash.widgets.chart.views = function() {
         return "translate(" + this.height + ", 0)";
       }
       else if (this.orient == 'right') {
-        p = this.chart.dimensions.width - this.height;
+        p = this.chart.dims.width() - this.height;
         return "translate(" + p + ", 0)";
       }
 
-      p = this.chart.dimensions.height - this.height;
+      p = this.chart.dims.height() - this.height;
       return "translate(0, " + p + ")";
     },
 
@@ -744,9 +758,7 @@ diamondash.widgets.chart.views = function() {
     }(),
 
     tickCount: function() {
-      var width = this.chart.dimensions.width;
-      var count = Math.floor(width / this.markerWidth);
-
+      var count = Math.floor(this.chart.dims.width() / this.markerWidth);
       return Math.max(0, count);
     },
 
@@ -780,7 +792,7 @@ diamondash.widgets.chart.views = function() {
 
     initialize: function(options) {
       options = options || {};
-      this.dimensions = new ChartDimensions(options.dimensions);
+      this.dims = options.dims || new ChartDimensions();
 
       this.svg = d3.select(this.el).append('svg');
       this.canvas = this.svg.append('g');
@@ -791,24 +803,28 @@ diamondash.widgets.chart.views = function() {
         .attr('fill-opacity', 0)
         .on('mousemove', function() { self.trigger('mousemove', this); })
         .on('mouseout', function() { self.trigger('mouseout', this); });
+
+      this.refreshDims();
+
+      this.dims.on('change', function() {
+        this.refreshDims();
+      }, this);
     },
 
-    render: function() {
-      this.svg
-        .attr('width', this.dimensions.width)
-        .attr('height', this.dimensions.height);
+    refreshDims: function() {
+      var offset = this.dims.offset();
 
-      this.canvas
-        .attr('transform', 'translate('
-          + this.dimensions.margin.left
-          + ','
-          + this.dimensions.margin.top + ')');
+      this.canvas.attr(
+        'transform',
+        'translate(' + offset.x + ',' + offset.y + ')'); 
+
+      this.svg
+        .attr('width', this.dims.width())
+        .attr('height', this.dims.height());
 
       this.overlay
-        .attr('width', this.dimensions.width)
-        .attr('height', this.dimensions.height);
-
-      return this;
+        .attr('width', this.dims.width())
+        .attr('height', this.dims.height());
     }
   });
 
@@ -1106,7 +1122,7 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dimensions: new chart.views.ChartDimensions({
+        dims: new chart.views.ChartDimensions({
           height: this.height,
           margin: this.margin
         })
@@ -1136,14 +1152,13 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dimensions.innerHeight - this.axisHeight;
+      var maxY = this.dims.innerHeight() - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dimensions.innerWidth]);
+      this.fx.range([0, this.dims.innerWidth()]);
     },
 
     render: function() {
-      this.dimensions.set({width: this.$el.width()});
-      GraphView.__super__.render.call(this);
+      this.dims.set('width', this.$el.width());
       this.resetScales();
 
       var domain = this.model.domain();
