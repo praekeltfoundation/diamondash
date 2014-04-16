@@ -296,7 +296,6 @@ diamondash.widgets.graph.views = function() {
 
     render: function() {
       this.dims.set('width', this.$el.width());
-      GraphView.__super__.render.call(this);
       this.resetScales();
 
       var domain = this.model.domain();

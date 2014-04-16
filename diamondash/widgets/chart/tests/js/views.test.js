@@ -107,4 +107,65 @@ describe("diamondash.widgets.chart.views", function() {
       });
     });
   });
+
+  describe(".ChartView", function() {
+    var  chart;
+
+    beforeEach(function() {
+      chart = new views.ChartView({
+        model: new models.ChartModel({id: 'chart-1'}),
+        dims: new views.ChartDimensions({
+          width: 128,
+          height: 74,
+          margin: {
+            top: 2,
+            right: 2,
+            bottom: 2,
+            left: 2
+          }
+        })
+      });
+    });
+
+    describe("when its dimensions change", function() {
+      it("should retranslate the chart", function() {
+        assert.equal(chart.canvas.attr('transform'), 'translate(2,2)');
+
+        chart.dims.set('margin', {
+          top: 4,
+          right: 2,
+          bottom: 2,
+          left: 4
+        });
+
+        assert.equal(chart.canvas.attr('transform'), 'translate(4,4)');
+      });
+
+      it("should resize the chart", function() {
+        assert.equal(chart.svg.attr('width'), '128');
+        assert.equal(chart.svg.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.svg.attr('width'), '123');
+        assert.equal(chart.svg.attr('height'), '64');
+      });
+
+      it("should resize the chart's overlay's", function() {
+        assert.equal(chart.overlay.attr('width'), '128');
+        assert.equal(chart.overlay.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.overlay.attr('width'), '123');
+        assert.equal(chart.overlay.attr('height'), '64');
+      });
+    });
+  });
 });

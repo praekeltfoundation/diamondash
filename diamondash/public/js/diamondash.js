@@ -690,7 +690,7 @@ diamondash.widgets.chart.views = function() {
 
       return {
         x: margin.left,
-        y: margin.right
+        y: margin.top
       };
     },
 
@@ -803,9 +803,15 @@ diamondash.widgets.chart.views = function() {
         .attr('fill-opacity', 0)
         .on('mousemove', function() { self.trigger('mousemove', this); })
         .on('mouseout', function() { self.trigger('mouseout', this); });
+
+      this.refreshDims();
+
+      this.dims.on('change', function() {
+        this.refreshDims();
+      }, this);
     },
 
-    render: function() {
+    refreshDims: function() {
       var offset = this.dims.offset();
 
       this.canvas.attr(
@@ -1153,7 +1159,6 @@ diamondash.widgets.graph.views = function() {
 
     render: function() {
       this.dims.set('width', this.$el.width());
-      GraphView.__super__.render.call(this);
       this.resetScales();
 
       var domain = this.model.domain();
