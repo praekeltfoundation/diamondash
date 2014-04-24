@@ -665,12 +665,10 @@ diamondash.widgets.chart.views = function() {
     defaults: {
       height: 0,
       width: 0,
-      margin: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
-      },
+      offset: {
+        x: 0,
+        y: 0
+      }
     },
 
     height: function() {
@@ -681,27 +679,8 @@ diamondash.widgets.chart.views = function() {
       return this.get('width');
     },
 
-    margin: function() {
-      return this.get('margin');
-    },
-
     offset: function() {
-      var margin = this.margin();
-
-      return {
-        x: margin.left,
-        y: margin.top
-      };
-    },
-
-    innerWidth: function() {
-      var margin = this.margin();
-      return this.width() - margin.left - margin.right;
-    },
-
-    innerHeight: function() {
-      var margin = this.margin();
-      return this.height() - margin.top - margin.bottom;
+      return this.get('offset');
     }
   });
 
@@ -1109,23 +1088,13 @@ diamondash.widgets.graph.views = function() {
     height: 214,
     axisHeight: 24,
 
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
-    },
-
     id: function() {
       return this.model.id;
     },
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dims: new chart.views.ChartDimensions({
-          height: this.height,
-          margin: this.margin
-        })
+        dims: new chart.views.ChartDimensions({height: this.height})
       });
 
       var fx = d3.time.scale();
@@ -1152,9 +1121,9 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dims.innerHeight() - this.axisHeight;
+      var maxY = this.dims.height() - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.innerWidth()]);
+      this.fx.range([0, this.dims.width()]);
     },
 
     render: function() {
@@ -1237,6 +1206,107 @@ diamondash.widgets.graph.views = function() {
     GraphHoverMarker: GraphHoverMarker,
 
     GraphView: GraphView
+  };
+}.call(this);
+
+diamondash.widgets.pie = function() {
+  return {
+  };
+}.call(this);
+
+diamondash.widgets.pie.models = function() {
+  var widgets = diamondash.widgets,
+      chart = diamondash.widgets.chart;
+
+  var PieModel = chart.models.ChartModel.extend({
+  });
+
+  widgets.registry.models.add('pie', PieModel);
+
+  return {
+    PieModel: PieModel
+  };
+}.call(this);
+
+diamondash.widgets.pie.views = function() {
+  var chart = diamondash.widgets.chart,
+      widgets = diamondash.widgets,
+      utils = diamondash.utils;
+
+  var PieDimensions = chart.views.ChartDimensions.extend({
+    height: function() {
+      return this.width();
+    },
+
+    radius: function() {
+      return this.width() / 2;
+    },
+
+    offset: function() {
+      var radius = this.radius();
+
+      return {
+        x: radius,
+        y: radius
+      };
+    }
+  });
+
+  var PieView = chart.views.ChartView.extend({
+    id: function() {
+      return this.model.id;
+    },
+
+    bindings: {
+      'sync model': function() {
+        this.render();
+      }
+    },
+
+    initialize: function() {
+      PieView.__super__.initialize.call(this, {
+        dims: new PieDimensions()
+      });
+
+      this.arc = d3.svg.arc();
+
+      this.pie = d3.layout.pie().value(function(d) {
+        var datapoint = d.get('datapoints')[0];
+        return datapoint
+          ? datapoint.y
+          : 1;
+      });
+
+      utils.bindEvents(this.bindings, this);
+    },
+
+    render: function() {
+      this.dims.set({width: this.$el.width()});
+
+      this.arc
+        .outerRadius(this.dims.radius())
+        .innerRadius(0);
+
+      var g = this.canvas.selectAll('.arc')
+        .data(this.pie(this.model.get('metrics').models))
+        .enter().append('g')
+          .attr('class', 'arc');
+
+      g.append('path')
+        .attr('d', this.arc)
+        .style('fill', function(d) {
+          return d.data.get('color');
+        });
+
+      this.$el.append($(this.svg.node()));
+    }
+  });
+
+  widgets.registry.views.add('pie', PieView);
+
+  return {
+    PieView: PieView,
+    PieDimensions: PieDimensions
   };
 }.call(this);
 

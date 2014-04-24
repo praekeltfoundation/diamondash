@@ -246,23 +246,13 @@ diamondash.widgets.graph.views = function() {
     height: 214,
     axisHeight: 24,
 
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
-    },
-
     id: function() {
       return this.model.id;
     },
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dims: new chart.views.ChartDimensions({
-          height: this.height,
-          margin: this.margin
-        })
+        dims: new chart.views.ChartDimensions({height: this.height})
       });
 
       var fx = d3.time.scale();
@@ -289,9 +279,9 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dims.innerHeight() - this.axisHeight;
+      var maxY = this.dims.height() - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.innerWidth()]);
+      this.fx.range([0, this.dims.width()]);
     },
 
     render: function() {

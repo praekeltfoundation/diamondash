@@ -502,7 +502,7 @@ describe("diamondash.widgets.graph", function() {
       function(done) {
         graph.on('hover', function(position) {
           assert.equal(position.x, 1340876295000);
-          assert.equal(position.svg.x, 190.4);
+          assert.equal(position.svg.x, 192);
           assert.equal(position.svg.y, -11);
           done();
         });
