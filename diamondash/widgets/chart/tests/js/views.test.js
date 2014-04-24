@@ -1,5 +1,6 @@
 describe("diamondash.widgets.chart.views", function() {
   var utils = diamondash.test.utils,
+      testUtils = diamondash.test.utils,
       fixtures = diamondash.test.fixtures,
       models = diamondash.widgets.chart.models,
       views = diamondash.widgets.chart.views;
@@ -139,14 +140,115 @@ describe("diamondash.widgets.chart.views", function() {
     });
   });
 
+  describe("ChartLegendView", function() {
+    var legend,
+        chart;
+
+    beforeEach(function() {
+      chart = new views.XYChartView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.ChartModel(
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
+      });
+
+      legend = new views.ChartLegendView({chart: chart});
+      chart.render();
+      legend.render();
+    });
+
+    describe("if the chart metrics have no datapoints", function() {
+      beforeEach(function() {
+        chart.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+      });
+
+      it("should use the chart's default value", function() {
+        chart.model.set('default_value', -1);
+        legend.render();
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          -1);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          -1);
+      });
+    });
+
+    describe("when the chart is hovered over", function() {
+      it("should add a 'hover' class to the legend", function() {
+        assert(!legend.$el.hasClass('hover'));
+        testUtils.hover.inverse(chart, {x: 1340876295000});
+        assert(legend.$el.hasClass('hover'));
+      });
+
+      it("should display the metric values at the hovered over time interval",
+      function() {
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          16);
+
+        testUtils.hover.inverse(chart, {x: 1340876295000});
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          22);
+      });
+    });
+
+    describe("when the chart is unhovered", function() {
+      it("should remove the 'hover' class from the legend", function() {
+        testUtils.hover.inverse(chart, {x: 1340876295000});
+        assert(legend.$el.hasClass('hover'));
+
+        chart.trigger('unhover');
+        assert(!legend.$el.hasClass('hover'));
+      });
+
+      it("should display the last metric values", function() {
+        testUtils.hover.inverse(chart, {x: 1340876295000});
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          22);
+
+        chart.trigger('unhover');
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          16);
+      });
+    });
+  });
+
   describe(".XYChartView", function() {
     var chart;
 
     beforeEach(function() {
       chart = new views.XYChartView({
         el: $('<div>')
-        .width(960)
-        .height(64),
+          .width(960)
+          .height(64),
         model: new models.ChartModel(
           fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
         dims: new views.ChartDimensions({

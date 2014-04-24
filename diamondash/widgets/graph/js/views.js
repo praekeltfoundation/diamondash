@@ -4,62 +4,6 @@ diamondash.widgets.graph.views = function() {
       structures = diamondash.components.structures,
       chart = diamondash.widgets.chart;
 
-  var GraphLegendView = Backbone.View.extend({
-    className: 'legend',
-
-    jst: JST['diamondash/widgets/graph/legend.jst'],
-
-    initialize: function(options) {
-      this.graph = options.graph;
-      this.model = this.graph.model;
-      utils.bindEvents(this.bindings, this);
-    },
-
-    valueOf: function(metricId, x) {
-      var metric = this.model.get('metrics').get(metricId);
-      var v = typeof x == 'undefined'
-        ? metric.lastValue()
-        : metric.valueAt(x);
-
-        return v === null
-          ? this.model.get('default_value')
-          : v;
-    },
-
-    format: d3.format(",f"),
-
-    render: function(x) {
-      this.$el.html(this.jst({
-        self: this,
-        x: x
-      }));
-
-      var metrics = this.model.get('metrics');
-      this.$('.legend-item').each(function() {
-        var $el = $(this),
-            id = $el.attr('data-metric-id');
-
-        $el
-          .find('.swatch')
-          .css('background-color', metrics.get(id).get('color'));
-      });
-
-      return this;
-    },
-
-    bindings: {
-      'hover graph': function(position) {
-        this.$el.addClass('hover');
-        return this.render(position.x);
-      },
-
-      'unhover graph': function() {
-        this.$el.removeClass('hover');
-        return this.render();
-      }
-    }
-  });
-
   var GraphHoverMarker = structures.Eventable.extend({
     collisionDistance: 60,
 
@@ -248,9 +192,9 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this);
+      this.legend = new chart.views.ChartLegendView({chart: this});
       this.lines = new GraphLines({graph: this});
       this.hoverMarker = new GraphHoverMarker({graph: this});
-      this.legend = new GraphLegendView({graph: this});
       this.dots = new GraphDots({graph: this});
     },
 
@@ -277,9 +221,7 @@ diamondash.widgets.graph.views = function() {
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
-    GraphLegendView: GraphLegendView,
     GraphHoverMarker: GraphHoverMarker,
-
     GraphView: GraphView
   };
 }.call(this);
