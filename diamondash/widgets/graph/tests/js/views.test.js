@@ -484,38 +484,5 @@ describe("diamondash.widgets.graph", function() {
         });
       });
     });
-
-    describe("when the mouse is moved over the graph", function() {
-      beforeEach(function() {
-        graph.render();
-
-        sinon.stub(d3, 'mouse', function() {
-          return [190.4, -11];
-        });
-      });
-
-      afterEach(function() {
-        d3.mouse.restore();
-      });
-
-      it("should trigger an event with the calculated position information",
-      function(done) {
-        graph.on('hover', function(position) {
-          assert.equal(position.x, 1340876295000);
-          assert.equal(position.svg.x, 192);
-          assert.equal(position.svg.y, -11);
-          done();
-        });
-
-        graph.trigger('mousemove', {});
-      });
-    });
-
-    describe("when the mouse is moved away from the graph", function() {
-      it("should trigger an event", function(done) {
-        graph.on('unhover', function() { done(); });
-        graph.trigger('mouseout');
-      });
-    });
   });
 });

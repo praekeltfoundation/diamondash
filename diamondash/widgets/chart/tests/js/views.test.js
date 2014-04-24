@@ -1,5 +1,6 @@
 describe("diamondash.widgets.chart.views", function() {
   var utils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures,
       models = diamondash.widgets.chart.models,
       views = diamondash.widgets.chart.views;
 
@@ -134,6 +135,73 @@ describe("diamondash.widgets.chart.views", function() {
 
         assert.equal(chart.overlay.attr('width'), '123');
         assert.equal(chart.overlay.attr('height'), '64');
+      });
+    });
+  });
+
+  describe(".XYChartView", function() {
+    var chart;
+
+    beforeEach(function() {
+      chart = new views.XYChartView({
+        el: $('<div>')
+        .width(960)
+        .height(64),
+        model: new models.ChartModel(
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
+        dims: new views.ChartDimensions({
+          width: 128,
+          height: 74
+        })
+      });
+    });
+
+    describe("when the mouse is moved over the chart", function() {
+      beforeEach(function() {
+        chart.render();
+        sinon.stub(d3, 'mouse', _.identity);
+      });
+
+      afterEach(function() {
+        d3.mouse.restore();
+      });
+
+      it("should trigger an event with the calculated position information",
+      function(done) {
+        chart.render();
+
+        chart.on('hover', function(position) {
+          assert.equal(position.x, 1340876295000);
+          assert.equal(position.svg.x, 192);
+          assert.equal(position.svg.y, -11);
+          done();
+        });
+
+        chart.trigger('mousemove', [192, -11]);
+      });
+    });
+
+    describe("when the mouse is moved away from the chart", function() {
+      it("should trigger an event", function(done) {
+        chart.on('unhover', function() { done(); });
+        chart.trigger('mouseout');
+      });
+    });
+
+    describe(".render", function() {
+      it("should render the chart's axis", function() {
+        assert.equal(chart.$('.axis').text(), '');
+
+        chart.render();
+
+        assert.equal(
+          chart.$('.axis').text(),
+          ['28-06 09:33',
+            '28-06 09:38',
+            '28-06 09:43',
+            '28-06 09:48',
+            '28-06 09:53',
+            '28-06 09:58'].join(''));
       });
     });
   });
