@@ -69,6 +69,23 @@
 .diamondash.dashboard .widget .widget-head h4 {
   padding: 4px;
 }
+.diamondash .legend {
+  text-align: left;
+}
+.diamondash .legend .legend-item .swatch {
+  display: inline-block;
+  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+  margin: 0 4px;
+  border-radius: 4px;
+}
+.diamondash .legend .legend-item .value {
+  font-weight: bold;
+}
+.diamondash .legend.hover .legend-item .value {
+  color: #555;
+}
 .diamondash .graph .chart *,
 .diamondash .graph .axis * {
   pointer-events: none;
