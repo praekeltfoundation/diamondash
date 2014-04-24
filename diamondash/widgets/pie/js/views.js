@@ -1,7 +1,6 @@
 diamondash.widgets.pie.views = function() {
   var chart = diamondash.widgets.chart,
-      widgets = diamondash.widgets,
-      utils = diamondash.utils;
+      widgets = diamondash.widgets;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
     height: function() {
@@ -23,16 +22,6 @@ diamondash.widgets.pie.views = function() {
   });
 
   var PieView = chart.views.ChartView.extend({
-    id: function() {
-      return this.model.id;
-    },
-
-    bindings: {
-      'sync model': function() {
-        this.render();
-      }
-    },
-
     initialize: function() {
       PieView.__super__.initialize.call(this, {
         dims: new PieDimensions()
@@ -46,8 +35,6 @@ diamondash.widgets.pie.views = function() {
           ? datapoint.y
           : 1;
       });
-
-      utils.bindEvents(this.bindings, this);
     },
 
     render: function() {

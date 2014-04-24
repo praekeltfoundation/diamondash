@@ -440,6 +440,11 @@ diamondash.widgets.widget = function() {
   var WidgetView = Backbone.View.extend({
     id: function() {
       return this.model.id;
+    },
+
+    constructor: function() {
+      WidgetView.__super__.constructor.apply(this, arguments);
+      this.listenTo(this.model, 'sync', this.render);
     }
   });
 
@@ -640,7 +645,8 @@ diamondash.widgets.chart.models = function() {
 diamondash.widgets.chart.views = function() {
   var structures = diamondash.components.structures,
       widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget;
+      widget = diamondash.widgets.widget,
+      utils = diamondash.utils;
 
   var components = {};
 
@@ -807,12 +813,95 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var XYChartView = ChartView.extend({
+    height: 214,
+    axisHeight: 24,
+
+    initialize: function() {
+      XYChartView.__super__.initialize.call(this, {
+        dims: new ChartDimensions({height: this.height})
+      });
+
+      var fx = d3.time.scale();
+      fx.accessor = function(d) { return fx(d.x); };
+      this.fx = fx;
+
+      var fy = d3.scale.linear();
+      fy.accessor = function(d) { return fy(d.y); };
+      this.fy = fy;
+
+      this.axis = new ChartAxisView({
+        chart: this,
+        scale: this.fx,
+        height: this.axisHeight
+      });
+
+      utils.bindEvents(XYChartView.prototype.bindings, this);
+    },
+
+    bindings: {
+      'mousemove': function(target) {
+        var mouse = d3.mouse(target);
+
+        this.trigger('hover', this.positionOf({
+          x: mouse[0],
+          y: mouse[1]
+        }));
+      },
+
+      'mouseout': function() {
+        this.trigger('unhover');
+      }
+    },
+
+    render: function() {
+      this.dims.set('width', this.$el.width());
+
+      var maxY = this.dims.height() - this.axisHeight;
+      this.fy.range([maxY, 0]);
+      this.fx.range([0, this.dims.width()]);
+
+      var domain = this.model.domain();
+      this.fx.domain(domain);
+      this.fy.domain(this.model.range());
+
+      var step = this.model.get('bucket_size');
+      this.axis.render(domain[0], domain[1], step);
+    },
+
+    positionOf: function(coords) {
+      var position = {svg: {}};
+
+      position.svg.x = coords.x;
+      position.svg.y = coords.y;
+
+      var min = this.model.xMin();
+      if (min === null) {
+        position.x = null;
+      }
+      else {
+        // convert the svg x value to the corresponding time value, then snap
+        // it to the closest timestep
+        position.x = utils.snap(
+          this.fx.invert(position.svg.x),
+          min,
+          this.model.get('bucket_size'));
+
+        // shift the svg x value to correspond to the snapped time value
+        position.svg.x = this.fx(position.x);
+      }
+
+      return position;
+    }
+  });
+
   widgets.registry.views.add('chart', ChartView);
 
   return {
     components: components,
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
+    XYChartView: XYChartView,
     ChartDimensions: ChartDimensions
   };
 }.call(this);
@@ -1084,64 +1173,25 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
-  var GraphView = chart.views.ChartView.extend({
+  var GraphView = chart.views.XYChartView.extend({
     height: 214,
     axisHeight: 24,
 
-    id: function() {
-      return this.model.id;
-    },
-
     initialize: function() {
-      GraphView.__super__.initialize.call(this, {
-        dims: new chart.views.ChartDimensions({height: this.height})
-      });
-
-      var fx = d3.time.scale();
-      fx.accessor = function(d) { return fx(d.x); };
-      this.fx = fx;
-
-      var fy = d3.scale.linear();
-      fy.accessor = function(d) { return fy(d.y); };
-      this.fy = fy;
-
+      GraphView.__super__.initialize.call(this);
       this.lines = new GraphLines({graph: this});
-
-      this.axis = new chart.views.ChartAxisView({
-        chart: this,
-        scale: this.fx,
-        height: this.axisHeight
-      });
-
       this.hoverMarker = new GraphHoverMarker({graph: this});
       this.legend = new GraphLegendView({graph: this});
       this.dots = new GraphDots({graph: this});
-
-      utils.bindEvents(this.bindings, this);
-    },
-
-    resetScales: function() {
-      var maxY = this.dims.height() - this.axisHeight;
-      this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.width()]);
     },
 
     render: function() {
-      this.dims.set('width', this.$el.width());
-      this.resetScales();
-
-      var domain = this.model.domain();
-      this.fx.domain(domain);
-      this.fy.domain(this.model.range());
-
+      GraphView.__super__.render.call(this);
       this.lines.render();
 
       if (this.model.get('dotted')) {
         this.dots.render();
       }
-
-      var step = this.model.get('bucket_size');
-      this.axis.render(domain[0], domain[1], step);
 
       this.legend.render();
 
@@ -1150,50 +1200,6 @@ diamondash.widgets.graph.views = function() {
         .append(this.legend.$el);
 
       return this;
-    },
-
-    positionOf: function(coords) {
-      var position = {svg: {}};
-
-      position.svg.x = coords.x;
-      position.svg.y = coords.y;
-
-      var min = this.model.xMin();
-      if (min === null) {
-        position.x = null;
-      }
-      else {
-        // convert the svg x value to the corresponding time value, then snap
-        // it to the closest timestep
-        position.x = utils.snap(
-          this.fx.invert(position.svg.x),
-          min,
-          this.model.get('bucket_size'));
-
-        // shift the svg x value to correspond to the snapped time value
-        position.svg.x = this.fx(position.x);
-      }
-
-      return position;
-    },
-
-    bindings: {
-      'mousemove': function(target) {
-        var mouse = d3.mouse(target);
-
-        this.trigger('hover', this.positionOf({
-          x: mouse[0],
-          y: mouse[1]
-        }));
-      },
-
-      'mouseout': function() {
-        this.trigger('unhover');
-      },
-
-      'sync model': function() {
-        this.render();
-      }
     }
   });
 
@@ -1230,8 +1236,7 @@ diamondash.widgets.pie.models = function() {
 
 diamondash.widgets.pie.views = function() {
   var chart = diamondash.widgets.chart,
-      widgets = diamondash.widgets,
-      utils = diamondash.utils;
+      widgets = diamondash.widgets;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
     height: function() {
@@ -1253,16 +1258,6 @@ diamondash.widgets.pie.views = function() {
   });
 
   var PieView = chart.views.ChartView.extend({
-    id: function() {
-      return this.model.id;
-    },
-
-    bindings: {
-      'sync model': function() {
-        this.render();
-      }
-    },
-
     initialize: function() {
       PieView.__super__.initialize.call(this, {
         dims: new PieDimensions()
@@ -1276,8 +1271,6 @@ diamondash.widgets.pie.views = function() {
           ? datapoint.y
           : 1;
       });
-
-      utils.bindEvents(this.bindings, this);
     },
 
     render: function() {
@@ -1381,8 +1374,6 @@ diamondash.widgets.lvalue = function() {
     jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
-      this.listenTo(this.model, 'change', this.render);
-
       this.last = new LastValueView({
         widget: this,
         model: this.model
