@@ -13,13 +13,7 @@ describe("diamondash.widgets.chart.views", function() {
     beforeEach(function() {
       dims = new views.ChartDimensions({
         height: 128,
-        width: 64,
-        margin: {
-          top: 2,
-          right: 2,
-          bottom: 2,
-          left: 2
-        }
+        width: 64
       });
     });
 
@@ -31,27 +25,10 @@ describe("diamondash.widgets.chart.views", function() {
       assert.equal(dims.height(), 128);
     });
 
-    it("should expose its margin", function() {
-      assert.deepEqual(dims.margin(), {
-        top: 2,
-        right: 2,
-        bottom: 2,
-        left: 2
-      });
-    });
-
-    it("should expose its inner width", function() {
-      assert.equal(dims.innerWidth(), 60);
-    });
-
-    it("should expose its inner height", function() {
-      assert.equal(dims.innerHeight(), 124);
-    });
-
     it("should expose its offset", function() {
       assert.deepEqual(dims.offset(), {
-        x: 2,
-        y: 2
+        x: 0,
+        y: 0
       });
     });
   });
@@ -72,7 +49,7 @@ describe("diamondash.widgets.chart.views", function() {
       axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
-        scale: d3.time.scale().range([0, chart.dims.innerWidth()])
+        scale: d3.time.scale().range([0, chart.dims.width()])
       });
     });
 
@@ -116,26 +93,18 @@ describe("diamondash.widgets.chart.views", function() {
         model: new models.ChartModel({id: 'chart-1'}),
         dims: new views.ChartDimensions({
           width: 128,
-          height: 74,
-          margin: {
-            top: 2,
-            right: 2,
-            bottom: 2,
-            left: 2
-          }
+          height: 74
         })
       });
     });
 
     describe("when its dimensions change", function() {
       it("should retranslate the chart", function() {
-        assert.equal(chart.canvas.attr('transform'), 'translate(2,2)');
+        assert.equal(chart.canvas.attr('transform'), 'translate(0,0)');
 
-        chart.dims.set('margin', {
-          top: 4,
-          right: 2,
-          bottom: 2,
-          left: 4
+        chart.dims.set('offset', {
+          x: 4,
+          y: 4
         });
 
         assert.equal(chart.canvas.attr('transform'), 'translate(4,4)');
