@@ -1,23 +1,9 @@
 describe("diamondash.widgets.graph", function() {
   var utils = diamondash.utils,
-  testUtils = diamondash.test.utils,
-  fixtures = diamondash.test.fixtures,
-  views = diamondash.widgets.graph.views,
-  models = diamondash.widgets.graph.models;
-
-  function hover(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-    graph.trigger('hover', graph.positionOf(coords));
-  }
-
-  hover.inverse = function(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-
-    this(graph, {
-      x: graph.fx(coords.x),
-      y: graph.fy(coords.y)
-    });
-  };
+      testUtils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures,
+      views = diamondash.widgets.graph.views,
+      models = diamondash.widgets.graph.models;
 
   afterEach(function() {
     testUtils.unregisterModels();
@@ -67,7 +53,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should add a 'hover' class to the legend", function() {
         assert(!legend.$el.hasClass('hover'));
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
       });
 
@@ -81,7 +67,7 @@ describe("diamondash.widgets.graph", function() {
           legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           16);
 
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
@@ -99,7 +85,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should remove the 'hover' class from the legend", function() {
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
 
         graph.trigger('unhover');
@@ -107,7 +93,7 @@ describe("diamondash.widgets.graph", function() {
       });
 
       it("should display the last metric values", function() {
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
@@ -168,7 +154,7 @@ describe("diamondash.widgets.graph", function() {
       it("should show the marker", function() {
         assert.equal(graph.$('.hover-marker').length, 0);
 
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
 
         assert.equal(graph.$('.hover-marker').length, 1);
         assert.equal(graph.$('.hover-marker').text(), '28-06 09:38');
@@ -184,7 +170,7 @@ describe("diamondash.widgets.graph", function() {
           1340877495000: ''
         });
 
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
 
         assert.deepEqual(markerOpacities(), {
           1340875995000: '1',
@@ -202,7 +188,7 @@ describe("diamondash.widgets.graph", function() {
           m.set('datapoints', []);
         });
 
-        hover(graph);
+        testUtils.hover(graph);
 
         assert.equal(graph.$('.hover-marker').length, 0);
       });
@@ -211,7 +197,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
       });
 
       it("should hide the marker", function() {
@@ -302,7 +288,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should display dots at the hovered over location", function() {
         assert.equal(graph.$('.hover-dot').length, 0);
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
         assert.equal(graph.$('.hover-dot').length, 2);
 
         assert.deepEqual(
@@ -315,7 +301,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover.inverse(graph, {x: 1340876295000});
       });
 
       it("should not display any hover dots", function() {

@@ -8,7 +8,22 @@ diamondash.test.utils = function() {
     Backbone.Relational.store._collections = [];
   }
 
+  function hover(chart, coords) {
+    coords = _(coords || {}).defaults({x: 0, y: 0});
+    chart.trigger('hover', chart.positionOf(coords));
+  }
+
+  hover.inverse = function(chart, coords) {
+    coords = _(coords || {}).defaults({x: 0, y: 0});
+
+    this(chart, {
+      x: chart.fx(coords.x),
+      y: chart.fy(coords.y)
+    });
+  };
+
   return {
+    hover: hover,
     unregisterModels: unregisterModels
   };
 }.call(this);
