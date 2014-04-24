@@ -246,10 +246,6 @@ diamondash.widgets.graph.views = function() {
     height: 214,
     axisHeight: 24,
 
-    id: function() {
-      return this.model.id;
-    },
-
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
         dims: new chart.views.ChartDimensions({height: this.height})
@@ -347,10 +343,6 @@ diamondash.widgets.graph.views = function() {
 
       'mouseout': function() {
         this.trigger('unhover');
-      },
-
-      'sync model': function() {
-        this.render();
       }
     }
   });

@@ -440,6 +440,11 @@ diamondash.widgets.widget = function() {
   var WidgetView = Backbone.View.extend({
     id: function() {
       return this.model.id;
+    },
+
+    constructor: function() {
+      WidgetView.__super__.constructor.apply(this, arguments);
+      this.listenTo(this.model, 'sync', this.render);
     }
   });
 
@@ -1088,10 +1093,6 @@ diamondash.widgets.graph.views = function() {
     height: 214,
     axisHeight: 24,
 
-    id: function() {
-      return this.model.id;
-    },
-
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
         dims: new chart.views.ChartDimensions({height: this.height})
@@ -1189,10 +1190,6 @@ diamondash.widgets.graph.views = function() {
 
       'mouseout': function() {
         this.trigger('unhover');
-      },
-
-      'sync model': function() {
-        this.render();
       }
     }
   });
@@ -1230,8 +1227,7 @@ diamondash.widgets.pie.models = function() {
 
 diamondash.widgets.pie.views = function() {
   var chart = diamondash.widgets.chart,
-      widgets = diamondash.widgets,
-      utils = diamondash.utils;
+      widgets = diamondash.widgets;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
     height: function() {
@@ -1253,16 +1249,6 @@ diamondash.widgets.pie.views = function() {
   });
 
   var PieView = chart.views.ChartView.extend({
-    id: function() {
-      return this.model.id;
-    },
-
-    bindings: {
-      'sync model': function() {
-        this.render();
-      }
-    },
-
     initialize: function() {
       PieView.__super__.initialize.call(this, {
         dims: new PieDimensions()
@@ -1276,8 +1262,6 @@ diamondash.widgets.pie.views = function() {
           ? datapoint.y
           : 1;
       });
-
-      utils.bindEvents(this.bindings, this);
     },
 
     render: function() {
@@ -1381,8 +1365,6 @@ diamondash.widgets.lvalue = function() {
     jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
-      this.listenTo(this.model, 'change', this.render);
-
       this.last = new LastValueView({
         widget: this,
         model: this.model
