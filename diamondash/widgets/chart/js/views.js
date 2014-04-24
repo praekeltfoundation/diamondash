@@ -26,12 +26,10 @@ diamondash.widgets.chart.views = function() {
     defaults: {
       height: 0,
       width: 0,
-      margin: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
-      },
+      offset: {
+        x: 0,
+        y: 0
+      }
     },
 
     height: function() {
@@ -42,27 +40,8 @@ diamondash.widgets.chart.views = function() {
       return this.get('width');
     },
 
-    margin: function() {
-      return this.get('margin');
-    },
-
     offset: function() {
-      var margin = this.margin();
-
-      return {
-        x: margin.left,
-        y: margin.top
-      };
-    },
-
-    innerWidth: function() {
-      var margin = this.margin();
-      return this.width() - margin.left - margin.right;
-    },
-
-    innerHeight: function() {
-      var margin = this.margin();
-      return this.height() - margin.top - margin.bottom;
+      return this.get('offset');
     }
   });
 

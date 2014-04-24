@@ -4,26 +4,20 @@ diamondash.widgets.pie.views = function() {
       utils = diamondash.utils;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
-    defaults: _.extend({
-      scale: 0.6
-    }, chart.views.ChartDimensions.prototype.defaults),
-
-    scale: function() {
-      return this.get('scale');
-    },
-
     height: function() {
-      return this.width() * this.scale();
+      return this.width();
     },
 
     radius: function() {
-      return (this.width() / 2) * this.scale();
+      return this.width() / 2;
     },
 
     offset: function() {
+      var radius = this.radius();
+
       return {
-        x: this.width() / 2,
-        y: this.radius()
+        x: radius,
+        y: radius
       };
     }
   });
@@ -31,13 +25,6 @@ diamondash.widgets.pie.views = function() {
   var PieView = chart.views.ChartView.extend({
     id: function() {
       return this.model.id;
-    },
-
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
     },
 
     bindings: {
@@ -48,7 +35,7 @@ diamondash.widgets.pie.views = function() {
 
     initialize: function() {
       PieView.__super__.initialize.call(this, {
-        dims: new PieDimensions({margin: this.margin})
+        dims: new PieDimensions()
       });
 
       this.arc = d3.svg.arc();

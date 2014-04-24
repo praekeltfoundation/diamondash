@@ -665,12 +665,10 @@ diamondash.widgets.chart.views = function() {
     defaults: {
       height: 0,
       width: 0,
-      margin: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
-      },
+      offset: {
+        x: 0,
+        y: 0
+      }
     },
 
     height: function() {
@@ -681,27 +679,8 @@ diamondash.widgets.chart.views = function() {
       return this.get('width');
     },
 
-    margin: function() {
-      return this.get('margin');
-    },
-
     offset: function() {
-      var margin = this.margin();
-
-      return {
-        x: margin.left,
-        y: margin.top
-      };
-    },
-
-    innerWidth: function() {
-      var margin = this.margin();
-      return this.width() - margin.left - margin.right;
-    },
-
-    innerHeight: function() {
-      var margin = this.margin();
-      return this.height() - margin.top - margin.bottom;
+      return this.get('offset');
     }
   });
 
@@ -1109,23 +1088,13 @@ diamondash.widgets.graph.views = function() {
     height: 214,
     axisHeight: 24,
 
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
-    },
-
     id: function() {
       return this.model.id;
     },
 
     initialize: function() {
       GraphView.__super__.initialize.call(this, {
-        dims: new chart.views.ChartDimensions({
-          height: this.height,
-          margin: this.margin
-        })
+        dims: new chart.views.ChartDimensions({height: this.height})
       });
 
       var fx = d3.time.scale();
@@ -1152,9 +1121,9 @@ diamondash.widgets.graph.views = function() {
     },
 
     resetScales: function() {
-      var maxY = this.dims.innerHeight() - this.axisHeight;
+      var maxY = this.dims.height() - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.innerWidth()]);
+      this.fx.range([0, this.dims.width()]);
     },
 
     render: function() {
@@ -1265,26 +1234,20 @@ diamondash.widgets.pie.views = function() {
       utils = diamondash.utils;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
-    defaults: _.extend({
-      scale: 0.6
-    }, chart.views.ChartDimensions.prototype.defaults),
-
-    scale: function() {
-      return this.get('scale');
-    },
-
     height: function() {
-      return this.width() * this.scale();
+      return this.width();
     },
 
     radius: function() {
-      return (this.width() / 2) * this.scale();
+      return this.width() / 2;
     },
 
     offset: function() {
+      var radius = this.radius();
+
       return {
-        x: this.width() / 2,
-        y: this.radius()
+        x: radius,
+        y: radius
       };
     }
   });
@@ -1292,13 +1255,6 @@ diamondash.widgets.pie.views = function() {
   var PieView = chart.views.ChartView.extend({
     id: function() {
       return this.model.id;
-    },
-
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
     },
 
     bindings: {
@@ -1309,7 +1265,7 @@ diamondash.widgets.pie.views = function() {
 
     initialize: function() {
       PieView.__super__.initialize.call(this, {
-        dims: new PieDimensions({margin: this.margin})
+        dims: new PieDimensions()
       });
 
       this.arc = d3.svg.arc();

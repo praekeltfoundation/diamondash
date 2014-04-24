@@ -7,34 +7,21 @@ describe("diamondash.widgets.pie", function() {
     var dims;
 
     beforeEach(function() {
-      dims = new views.PieDimensions({
-        width: 64,
-        scale: 0.4,
-        margin: {
-          top: 2,
-          right: 2,
-          bottom: 2,
-          left: 2
-        }
-      });
+      dims = new views.PieDimensions({width: 64});
     });
 
-    it("should expose its scale", function() {
-        assert.equal(dims.scale(), 0.4);
-    });
-
-    it("should expose its height", function() {
-        assert.equal(dims.height(), 64 * 0.4);
+    it("should expose its width as its height", function() {
+        assert.equal(dims.height(), 64);
     });
 
     it("should expose its radius", function() {
-        assert.equal(dims.radius(), (64 / 2) * 0.4);
+        assert.equal(dims.radius(), 64 / 2);
     });
 
     it("should expose its offset", function() {
         assert.deepEqual(dims.offset(), {
             x: 64 / 2,
-            y: (64 / 2) * 0.4
+            y: 64 / 2
         });
     });
   });
@@ -65,7 +52,7 @@ describe("diamondash.widgets.pie", function() {
             .attr('class', 'arc')
               .append('path')
               .attr('d', d3.svg.arc()
-                .outerRadius((960 / 2) * 0.6)
+                .outerRadius(960 / 2)
                 .innerRadius(0));
 
         var $actual = pie.$('.arc path');
