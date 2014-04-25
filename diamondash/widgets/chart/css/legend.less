@@ -1,0 +1,26 @@
+.legend {
+  text-align: left;
+
+  .legend-item {
+    .swatch {
+      display: inline-block;
+      vertical-align: middle;
+      width: 14px;
+      height: 14px;
+      margin: 0 4px;
+      border-radius: 4px;
+    }
+
+    .value {
+      font-weight: bold;
+    }
+  }
+
+  &.hover {
+    .legend-item {
+      .value {
+        color: #555;
+      }
+    }
+  }
+}

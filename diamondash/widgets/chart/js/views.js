@@ -169,6 +169,63 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var ChartLegendView = Backbone.View.extend({
+    className: 'legend',
+
+    jst: JST['diamondash/widgets/chart/jst/legend.jst'],
+
+    initialize: function(options) {
+      this.chart = options.chart;
+      this.model = this.chart.model;
+      this.x = null;
+      utils.bindEvents(this.bindings, this);
+    },
+
+    valueOf: function(metricId) {
+      var metric = this.model.get('metrics').get(metricId);
+      var v = this.x === null
+        ? metric.lastValue()
+        : metric.valueAt(this.x);
+
+        return v === null
+          ? this.model.get('default_value')
+          : v;
+    },
+
+    format: d3.format(",f"),
+
+    render: function() {
+      var metrics = this.model.get('metrics');
+      this.$el.html(this.jst({self: this}));
+
+      this.$('.legend-item').each(function() {
+        var $el = $(this),
+            id = $el.attr('data-metric-id');
+
+        $el
+          .find('.swatch')
+          .css('background-color', metrics.get(id).get('color'));
+      });
+
+      return this;
+    },
+
+    bindings: {
+      'hover chart': function(position) {
+        this.$el.addClass('hover');
+        this.x = position.x;
+        return this.render();
+      },
+
+      'unhover chart': function() {
+        this.$el.removeClass('hover');
+        this.x = null;
+        return this.render();
+      }
+    }
+  });
+
+
   var XYChartView = ChartView.extend({
     height: 214,
     axisHeight: 24,
@@ -258,6 +315,7 @@ diamondash.widgets.chart.views = function() {
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
     XYChartView: XYChartView,
-    ChartDimensions: ChartDimensions
+    ChartDimensions: ChartDimensions,
+    ChartLegendView: ChartLegendView
   };
 }.call(this);

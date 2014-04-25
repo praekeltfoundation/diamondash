@@ -1,133 +1,12 @@
 describe("diamondash.widgets.graph", function() {
   var utils = diamondash.utils,
-  testUtils = diamondash.test.utils,
-  fixtures = diamondash.test.fixtures,
-  views = diamondash.widgets.graph.views,
-  models = diamondash.widgets.graph.models;
-
-  function hover(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-    graph.trigger('hover', graph.positionOf(coords));
-  }
-
-  hover.inverse = function(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-
-    this(graph, {
-      x: graph.fx(coords.x),
-      y: graph.fy(coords.y)
-    });
-  };
+      testUtils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures,
+      views = diamondash.widgets.graph.views,
+      models = diamondash.widgets.graph.models;
 
   afterEach(function() {
     testUtils.unregisterModels();
-  });
-
-  describe("GraphLegendView", function() {
-    var legend,
-    graph;
-
-    beforeEach(function() {
-      graph = new views.GraphView({
-        el: $('<div>')
-        .width(960)
-        .height(64),
-        model: new models.GraphModel(
-          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
-      });
-
-      legend = graph.legend;
-    });
-
-    describe("if the graph metrics have no datapoints", function() {
-      beforeEach(function() {
-        graph.model.get('metrics').each(function(m) {
-          m.set('datapoints', []);
-        });
-      });
-
-      it("should use the graph's default value", function() {
-        graph.model.set('default_value', -1);
-        legend.render();
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          -1);
-
-          assert.equal(
-            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-            -1);
-      });
-    });
-
-    describe("when the graph is hovered over", function() {
-      beforeEach(function() {
-        legend.render();
-      });
-
-      it("should add a 'hover' class to the legend", function() {
-        assert(!legend.$el.hasClass('hover'));
-        hover.inverse(graph, {x: 1340876295000});
-        assert(legend.$el.hasClass('hover'));
-      });
-
-      it("should display the metric values at the hovered over time interval",
-      function() {
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          24);
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          16);
-
-        hover.inverse(graph, {x: 1340876295000});
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          12);
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-          22);
-      });
-    });
-
-    describe("when the graph is unhovered", function() {
-      beforeEach(function() {
-        legend.render();
-      });
-
-      it("should remove the 'hover' class from the legend", function() {
-        hover.inverse(graph, {x: 1340876295000});
-        assert(legend.$el.hasClass('hover'));
-
-        graph.trigger('unhover');
-        assert(!legend.$el.hasClass('hover'));
-      });
-
-      it("should display the last metric values", function() {
-        hover.inverse(graph, {x: 1340876295000});
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          12);
-
-          assert.equal(
-            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-            22);
-
-            graph.trigger('unhover');
-
-            assert.equal(
-              legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-              24);
-
-              assert.equal(
-                legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-                16);
-      });
-    });
   });
 
   describe("GraphHoverMarker", function() {
@@ -168,7 +47,7 @@ describe("diamondash.widgets.graph", function() {
       it("should show the marker", function() {
         assert.equal(graph.$('.hover-marker').length, 0);
 
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
 
         assert.equal(graph.$('.hover-marker').length, 1);
         assert.equal(graph.$('.hover-marker').text(), '28-06 09:38');
@@ -184,7 +63,7 @@ describe("diamondash.widgets.graph", function() {
           1340877495000: ''
         });
 
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
 
         assert.deepEqual(markerOpacities(), {
           1340875995000: '1',
@@ -202,7 +81,7 @@ describe("diamondash.widgets.graph", function() {
           m.set('datapoints', []);
         });
 
-        hover(graph);
+        testUtils.hover_svg(graph);
 
         assert.equal(graph.$('.hover-marker').length, 0);
       });
@@ -211,7 +90,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
       });
 
       it("should hide the marker", function() {
@@ -302,7 +181,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should display dots at the hovered over location", function() {
         assert.equal(graph.$('.hover-dot').length, 0);
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
         assert.equal(graph.$('.hover-dot').length, 2);
 
         assert.deepEqual(
@@ -315,7 +194,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
       });
 
       it("should not display any hover dots", function() {
