@@ -47,7 +47,7 @@ describe("diamondash.widgets.graph", function() {
       it("should show the marker", function() {
         assert.equal(graph.$('.hover-marker').length, 0);
 
-        testUtils.hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
 
         assert.equal(graph.$('.hover-marker').length, 1);
         assert.equal(graph.$('.hover-marker').text(), '28-06 09:38');
@@ -63,7 +63,7 @@ describe("diamondash.widgets.graph", function() {
           1340877495000: ''
         });
 
-        testUtils.hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
 
         assert.deepEqual(markerOpacities(), {
           1340875995000: '1',
@@ -81,7 +81,7 @@ describe("diamondash.widgets.graph", function() {
           m.set('datapoints', []);
         });
 
-        testUtils.hover(graph);
+        testUtils.hover_svg(graph);
 
         assert.equal(graph.$('.hover-marker').length, 0);
       });
@@ -90,7 +90,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        testUtils.hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
       });
 
       it("should hide the marker", function() {
@@ -181,7 +181,7 @@ describe("diamondash.widgets.graph", function() {
 
       it("should display dots at the hovered over location", function() {
         assert.equal(graph.$('.hover-dot').length, 0);
-        testUtils.hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
         assert.equal(graph.$('.hover-dot').length, 2);
 
         assert.deepEqual(
@@ -194,7 +194,7 @@ describe("diamondash.widgets.graph", function() {
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        testUtils.hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
       });
 
       it("should not display any hover dots", function() {

@@ -182,7 +182,7 @@ describe("diamondash.widgets.chart.views", function() {
     describe("when the chart is hovered over", function() {
       it("should add a 'hover' class to the legend", function() {
         assert(!legend.$el.hasClass('hover'));
-        testUtils.hover.inverse(chart, {x: 1340876295000});
+        testUtils.hover_axes(chart, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
       });
 
@@ -196,7 +196,7 @@ describe("diamondash.widgets.chart.views", function() {
           legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
           16);
 
-        testUtils.hover.inverse(chart, {x: 1340876295000});
+        testUtils.hover_axes(chart, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
@@ -210,7 +210,7 @@ describe("diamondash.widgets.chart.views", function() {
 
     describe("when the chart is unhovered", function() {
       it("should remove the 'hover' class from the legend", function() {
-        testUtils.hover.inverse(chart, {x: 1340876295000});
+        testUtils.hover_axes(chart, {x: 1340876295000});
         assert(legend.$el.hasClass('hover'));
 
         chart.trigger('unhover');
@@ -218,7 +218,7 @@ describe("diamondash.widgets.chart.views", function() {
       });
 
       it("should display the last metric values", function() {
-        testUtils.hover.inverse(chart, {x: 1340876295000});
+        testUtils.hover_axes(chart, {x: 1340876295000});
 
         assert.equal(
           legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
