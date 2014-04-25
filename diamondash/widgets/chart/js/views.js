@@ -1,7 +1,8 @@
 diamondash.widgets.chart.views = function() {
   var structures = diamondash.components.structures,
       widgets = diamondash.widgets,
-      widget = diamondash.widgets.widget;
+      widget = diamondash.widgets.widget,
+      utils = diamondash.utils;
 
   var components = {};
 
@@ -168,12 +169,95 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var XYChartView = ChartView.extend({
+    height: 214,
+    axisHeight: 24,
+
+    initialize: function() {
+      XYChartView.__super__.initialize.call(this, {
+        dims: new ChartDimensions({height: this.height})
+      });
+
+      var fx = d3.time.scale();
+      fx.accessor = function(d) { return fx(d.x); };
+      this.fx = fx;
+
+      var fy = d3.scale.linear();
+      fy.accessor = function(d) { return fy(d.y); };
+      this.fy = fy;
+
+      this.axis = new ChartAxisView({
+        chart: this,
+        scale: this.fx,
+        height: this.axisHeight
+      });
+
+      utils.bindEvents(XYChartView.prototype.bindings, this);
+    },
+
+    bindings: {
+      'mousemove': function(target) {
+        var mouse = d3.mouse(target);
+
+        this.trigger('hover', this.positionOf({
+          x: mouse[0],
+          y: mouse[1]
+        }));
+      },
+
+      'mouseout': function() {
+        this.trigger('unhover');
+      }
+    },
+
+    render: function() {
+      this.dims.set('width', this.$el.width());
+
+      var maxY = this.dims.height() - this.axisHeight;
+      this.fy.range([maxY, 0]);
+      this.fx.range([0, this.dims.width()]);
+
+      var domain = this.model.domain();
+      this.fx.domain(domain);
+      this.fy.domain(this.model.range());
+
+      var step = this.model.get('bucket_size');
+      this.axis.render(domain[0], domain[1], step);
+    },
+
+    positionOf: function(coords) {
+      var position = {svg: {}};
+
+      position.svg.x = coords.x;
+      position.svg.y = coords.y;
+
+      var min = this.model.xMin();
+      if (min === null) {
+        position.x = null;
+      }
+      else {
+        // convert the svg x value to the corresponding time value, then snap
+        // it to the closest timestep
+        position.x = utils.snap(
+          this.fx.invert(position.svg.x),
+          min,
+          this.model.get('bucket_size'));
+
+        // shift the svg x value to correspond to the snapped time value
+        position.svg.x = this.fx(position.x);
+      }
+
+      return position;
+    }
+  });
+
   widgets.registry.views.add('chart', ChartView);
 
   return {
     components: components,
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
+    XYChartView: XYChartView,
     ChartDimensions: ChartDimensions
   };
 }.call(this);
