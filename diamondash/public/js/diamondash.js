@@ -1,6 +1,6 @@
 this["JST"] = this["JST"] || {};
 
-this["JST"]["diamondash/widgets/graph/legend.jst"] = function(obj) {
+this["JST"]["diamondash/widgets/chart/jst/legend.jst"] = function(obj) {
 obj || (obj = {});
 var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
 function print() { __p += __j.call(arguments, '') }
@@ -12,7 +12,7 @@ __p += '\n    <div class="legend-item col-md-6" data-metric-id="' +
 '">\n      <span class="swatch"></span>\n      <span class="title">' +
 ((__t = ( m.get('title') )) == null ? '' : __t) +
 '</span>\n      <span class="value">' +
-((__t = ( self.valueOf(m.get('id'), x) )) == null ? '' : __t) +
+((__t = ( self.valueOf(m.get('id')) )) == null ? '' : __t) +
 '</span>\n    </div>\n  ';
  }); ;
 __p += '\n</div>\n';
@@ -813,6 +813,63 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var ChartLegendView = Backbone.View.extend({
+    className: 'legend',
+
+    jst: JST['diamondash/widgets/chart/jst/legend.jst'],
+
+    initialize: function(options) {
+      this.chart = options.chart;
+      this.model = this.chart.model;
+      this.x = null;
+      utils.bindEvents(this.bindings, this);
+    },
+
+    valueOf: function(metricId) {
+      var metric = this.model.get('metrics').get(metricId);
+      var v = this.x === null
+        ? metric.lastValue()
+        : metric.valueAt(this.x);
+
+        return v === null
+          ? this.model.get('default_value')
+          : v;
+    },
+
+    format: d3.format(",f"),
+
+    render: function() {
+      var metrics = this.model.get('metrics');
+      this.$el.html(this.jst({self: this}));
+
+      this.$('.legend-item').each(function() {
+        var $el = $(this),
+            id = $el.attr('data-metric-id');
+
+        $el
+          .find('.swatch')
+          .css('background-color', metrics.get(id).get('color'));
+      });
+
+      return this;
+    },
+
+    bindings: {
+      'hover chart': function(position) {
+        this.$el.addClass('hover');
+        this.x = position.x;
+        return this.render();
+      },
+
+      'unhover chart': function() {
+        this.$el.removeClass('hover');
+        this.x = null;
+        return this.render();
+      }
+    }
+  });
+
+
   var XYChartView = ChartView.extend({
     height: 214,
     axisHeight: 24,
@@ -902,7 +959,8 @@ diamondash.widgets.chart.views = function() {
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
     XYChartView: XYChartView,
-    ChartDimensions: ChartDimensions
+    ChartDimensions: ChartDimensions,
+    ChartLegendView: ChartLegendView
   };
 }.call(this);
 
@@ -934,62 +992,6 @@ diamondash.widgets.graph.views = function() {
       utils = diamondash.utils,
       structures = diamondash.components.structures,
       chart = diamondash.widgets.chart;
-
-  var GraphLegendView = Backbone.View.extend({
-    className: 'legend',
-
-    jst: JST['diamondash/widgets/graph/legend.jst'],
-
-    initialize: function(options) {
-      this.graph = options.graph;
-      this.model = this.graph.model;
-      utils.bindEvents(this.bindings, this);
-    },
-
-    valueOf: function(metricId, x) {
-      var metric = this.model.get('metrics').get(metricId);
-      var v = typeof x == 'undefined'
-        ? metric.lastValue()
-        : metric.valueAt(x);
-
-        return v === null
-          ? this.model.get('default_value')
-          : v;
-    },
-
-    format: d3.format(",f"),
-
-    render: function(x) {
-      this.$el.html(this.jst({
-        self: this,
-        x: x
-      }));
-
-      var metrics = this.model.get('metrics');
-      this.$('.legend-item').each(function() {
-        var $el = $(this),
-            id = $el.attr('data-metric-id');
-
-        $el
-          .find('.swatch')
-          .css('background-color', metrics.get(id).get('color'));
-      });
-
-      return this;
-    },
-
-    bindings: {
-      'hover graph': function(position) {
-        this.$el.addClass('hover');
-        return this.render(position.x);
-      },
-
-      'unhover graph': function() {
-        this.$el.removeClass('hover');
-        return this.render();
-      }
-    }
-  });
 
   var GraphHoverMarker = structures.Eventable.extend({
     collisionDistance: 60,
@@ -1179,9 +1181,9 @@ diamondash.widgets.graph.views = function() {
 
     initialize: function() {
       GraphView.__super__.initialize.call(this);
+      this.legend = new chart.views.ChartLegendView({chart: this});
       this.lines = new GraphLines({graph: this});
       this.hoverMarker = new GraphHoverMarker({graph: this});
-      this.legend = new GraphLegendView({graph: this});
       this.dots = new GraphDots({graph: this});
     },
 
@@ -1208,9 +1210,7 @@ diamondash.widgets.graph.views = function() {
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
-    GraphLegendView: GraphLegendView,
     GraphHoverMarker: GraphHoverMarker,
-
     GraphView: GraphView
   };
 }.call(this);
