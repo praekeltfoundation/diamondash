@@ -133,6 +133,39 @@ describe("diamondash.widgets.pie", function() {
         assert.equal($actual.eq(1).attr('d'), $expected.eq(1).attr('d'));
         assert.equal($actual.eq(2).attr('d'), $expected.eq(2).attr('d'));
       });
+
+      it("should omit metrics with 0 values", function() {
+        pie.model.get('metrics').set([{
+          id: 'metric-a',
+          datapoints: [{x: 1340875995000, y: 3}]
+        }, {
+          id: 'metric-b',
+          datapoints: [{x: 1340875995000, y: 0}]
+        }, {
+          id: 'metric-c',
+          datapoints: [{x: 1340875995000, y: 9}]
+        }]);
+
+        pie.render();
+
+        var $pie = draw_pie({
+          radius: 960 / 2,
+          data: [{
+            k: 'metric-a',
+            v: 3
+          }, {
+            k: 'metric-c',
+            v: 9
+          }]
+        });
+
+        var $actual = pie.$('.arc');
+        var $expected = $pie.find('.arc');
+
+        assert.equal($actual.length, $expected.length);
+        assert.equal($actual.eq(0).attr('d'), $expected.eq(0).attr('d'));
+        assert.equal($actual.eq(1).attr('d'), $expected.eq(1).attr('d'));
+      });
     });
   });
 });
