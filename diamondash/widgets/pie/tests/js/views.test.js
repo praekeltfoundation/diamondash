@@ -29,6 +29,7 @@ describe("diamondash.widgets.pie", function() {
 
   describe(".PieView", function() {
     var pie;
+    var $diamondash;
 
     function draw_pie(opts) {
       var $svg = $('<svg>');
@@ -54,24 +55,40 @@ describe("diamondash.widgets.pie", function() {
 
     beforeEach(function() {
       pie = new views.PieView({
-        el: $('<div>').width(960),
+        el: $('<div>').attr('class', 'pie').width(960),
         model: new models.PieModel(
           fixtures.get('diamondash.widgets.pie.models.PieModel:simple'))
       });
+
+      $diamondash = $('<div>')
+        .attr('class', 'diamondash')
+        .append(pie.$el);
+
+      $('body').append($diamondash);
     });
     
     afterEach(function() {
       testUtils.unregisterModels();
+      $('body').remove('.diamondash');
     });
 
     describe(".render", function() {
+      it("should set its chart height to equal its width", function() {
+        pie.render();
+        pie.$el.width(220);
+
+        assert.notEqual(pie.$('.chart').height(), pie.$('.chart').width());
+        pie.render();
+        assert.equal(pie.$('.chart').height(), pie.$('.chart').width());
+      });
+
       it("should render a pie chart from its model's metrics", function() {
         assert.lengthOf(pie.$('.arc'), 0);
         pie.render();
         assert.lengthOf(pie.$('.arc'), 3);
 
         var $pie = draw_pie({
-          radius: 960 / 2,
+          radius: 400 / 2,
           data: [{
             k: 'metric-a',
             v: 18
@@ -113,7 +130,7 @@ describe("diamondash.widgets.pie", function() {
         pie.render();
 
         var $pie = draw_pie({
-          radius: 960 / 2,
+          radius: 400 / 2,
           data: [{
             k: 'metric-a',
             v: 3
@@ -149,7 +166,7 @@ describe("diamondash.widgets.pie", function() {
         pie.render();
 
         var $pie = draw_pie({
-          radius: 960 / 2,
+          radius: 400 / 2,
           data: [{
             k: 'metric-a',
             v: 3
