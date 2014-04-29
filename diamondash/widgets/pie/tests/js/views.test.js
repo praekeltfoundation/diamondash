@@ -43,12 +43,11 @@ describe("diamondash.widgets.pie", function() {
           return d.data.k;
         })
         .enter()
-          .append('g')
+          .append('path')
           .attr('class', 'arc')
-            .append('path')
-            .attr('d', d3.svg.arc()
-              .outerRadius(opts.radius)
-              .innerRadius(0));
+          .attr('d', d3.svg.arc()
+            .outerRadius(opts.radius)
+            .innerRadius(0));
 
       return $svg;
     }
@@ -85,8 +84,8 @@ describe("diamondash.widgets.pie", function() {
           }]
         });
 
-        var $actual = pie.$('.arc path');
-        var $expected = $pie.find('.arc path');
+        var $actual = pie.$('.arc');
+        var $expected = $pie.find('.arc');
         assert.equal($actual.eq(0).attr('d'), $expected.eq(0).attr('d'));
         assert.equal($actual.eq(1).attr('d'), $expected.eq(1).attr('d'));
         assert.equal($actual.eq(2).attr('d'), $expected.eq(2).attr('d'));
@@ -102,19 +101,13 @@ describe("diamondash.widgets.pie", function() {
 
         pie.model.get('metrics').set([{
           id: 'metric-a',
-          name: 'metric-a',
-          datapoints: [
-            {x: 1340875995000, y: 3}]
+          datapoints: [{x: 1340875995000, y: 3}]
         }, {
           id: 'metric-b',
-          name: 'metric-b',
-          datapoints: [
-            {x: 1340875995000, y: 2}]
+          datapoints: [{x: 1340875995000, y: 2}]
         }, {
           id: 'metric-c',
-          name: 'metric-c',
-          datapoints: [
-            {x: 1340875995000, y: 9}]
+          datapoints: [{x: 1340875995000, y: 9}]
         }]);
 
         pie.render();
@@ -133,8 +126,9 @@ describe("diamondash.widgets.pie", function() {
           }]
         });
 
-        var $actual = pie.$('.arc path');
-        var $expected = $pie.find('.arc path');
+        var $actual = pie.$('.arc');
+        var $expected = $pie.find('.arc');
+
         assert.equal($actual.eq(0).attr('d'), $expected.eq(0).attr('d'));
         assert.equal($actual.eq(1).attr('d'), $expected.eq(1).attr('d'));
         assert.equal($actual.eq(2).attr('d'), $expected.eq(2).attr('d'));
