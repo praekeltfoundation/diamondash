@@ -111,23 +111,6 @@
   stroke-width: 1.5px;
   pointer-events: none;
 }
-.diamondash .graph .legend {
-  text-align: left;
-}
-.diamondash .graph .legend .legend-item .swatch {
-  display: inline-block;
-  vertical-align: middle;
-  width: 14px;
-  height: 14px;
-  margin: 0 4px;
-  border-radius: 4px;
-}
-.diamondash .graph .legend .legend-item .value {
-  font-weight: bold;
-}
-.diamondash .graph .legend.hover .legend-item .value {
-  color: #555;
-}
 .diamondash .graph .dot,
 .diamondash .graph .hover-dot {
   pointer-events: none;
@@ -183,6 +166,16 @@
 }
 .diamondash .lvalue .change span {
   display: block;
+}
+.diamondash .pie .chart {
+  margin-left: auto;
+  margin-right: auto;
+  width: 65%;
+  max-width: 400px;
+}
+.diamondash .pie .chart,
+.diamondash .pie .legend {
+  margin-top: 15px;
 }
 .diamondash .text-widget-text {
   margin: 0 auto;
