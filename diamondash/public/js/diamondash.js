@@ -41,6 +41,16 @@ __p += '<h1 class="last"></h1>\n<div class="' +
 return __p
 };
 
+this["JST"]["diamondash/widgets/pie/layout.jst"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<div class="chart"></div>\n<div class="legend"></div>\n';
+
+}
+return __p
+};
+
 this["JST"]["diamondash/client/jst/dashboard.jst"] = function(obj) {
 obj || (obj = {});
 var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
@@ -1258,6 +1268,8 @@ diamondash.widgets.pie.views = function() {
   });
 
   var PieView = chart.views.ChartView.extend({
+    jst: JST['diamondash/widgets/pie/layout.jst'],
+
     initialize: function() {
       PieView.__super__.initialize.call(this, {
         dims: new PieDimensions()
@@ -1268,16 +1280,23 @@ diamondash.widgets.pie.views = function() {
       this.pie = d3.layout.pie().value(function(d) {
         return d.lastValue();
       });
+
+      this.legend = new chart.views.ChartLegendView({chart: this});
     },
 
-    render: function() {
+    refreshChartDims: function() {
+      var $chart = this.$('.chart');
+      var width = $chart.width();
+      $chart.height(width);
+      this.dims.set({width: width});
+    },
+
+    renderChart: function() {
       var metrics = this.model
         .get('metrics')
         .filter(function(m) {
           return m.lastValue() > 0;
         });
-
-      this.dims.set({width: this.$el.width()});
 
       this.arc
         .outerRadius(this.dims.radius())
@@ -1295,9 +1314,17 @@ diamondash.widgets.pie.views = function() {
         });
 
       arc.attr('d', this.arc);
-
       arc.exit().remove();
-      this.$el.append($(this.svg.node()));
+
+      this.$('.chart').html(this.svg.node());
+    },
+
+    render: function() {
+      this.$el.html(this.jst());
+      this.refreshChartDims();
+      this.renderChart();
+      this.legend.setElement(this.$('.legend'));
+      this.legend.render();
     }
   });
 
