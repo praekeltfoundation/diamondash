@@ -1266,31 +1266,37 @@ diamondash.widgets.pie.views = function() {
       this.arc = d3.svg.arc();
 
       this.pie = d3.layout.pie().value(function(d) {
-        var datapoint = d.get('datapoints')[0];
-        return datapoint
-          ? datapoint.y
-          : 1;
+        return d.lastValue();
       });
     },
 
     render: function() {
+      var metrics = this.model
+        .get('metrics')
+        .filter(function(m) {
+          return m.lastValue() > 0;
+        });
+
       this.dims.set({width: this.$el.width()});
 
       this.arc
         .outerRadius(this.dims.radius())
         .innerRadius(0);
 
-      var g = this.canvas.selectAll('.arc')
-        .data(this.pie(this.model.get('metrics').models))
-        .enter().append('g')
-          .attr('class', 'arc');
+      var arc = this.canvas.selectAll('.arc')
+        .data(this.pie(metrics), function(d) {
+          return d.data.id;
+        });
 
-      g.append('path')
-        .attr('d', this.arc)
+      arc.enter().append('path')
+        .attr('class', 'arc')
         .style('fill', function(d) {
           return d.data.get('color');
         });
 
+      arc.attr('d', this.arc);
+
+      arc.exit().remove();
       this.$el.append($(this.svg.node()));
     }
   });
