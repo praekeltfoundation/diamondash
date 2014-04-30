@@ -4,77 +4,6 @@ diamondash.widgets.graph.views = function() {
       structures = diamondash.components.structures,
       chart = diamondash.widgets.chart;
 
-  var GraphHoverMarker = structures.Eventable.extend({
-    collisionDistance: 60,
-
-    constructor: function(options) {
-      this.graph = options.graph;
-
-      if ('collisionsDistance' in options) {
-        this.collisionDistance = options.collisionDistance;
-      }
-
-      utils.bindEvents(this.bindings, this);
-    },
-
-    collision: function(position, tick) {
-      var d = Math.abs(position.svg.x - this.graph.fx(tick));
-      return d < this.collisionDistance;
-    },
-
-    show: function(position) {
-      var marker = this.graph.axis.line
-        .selectAll('.hover-marker')
-        .data([null]);
-
-      marker.enter().append('g')
-        .attr('class', 'hover-marker')
-        .call(chart.views.components.marker)
-        .transition()
-          .select('text')
-          .attr('fill-opacity', 1);
-
-      marker
-        .attr('transform', "translate(" + position.svg.x + ", 0)")
-        .select('text').text(this.graph.axis.format(position.x));
-
-      var self = this;
-      this.graph.axis.line
-        .selectAll('g')
-        .style('fill-opacity', function(tick) {
-          return self.collision(position, tick)
-            ? 0
-            : 1;
-        });
-
-      return this;
-    },
-
-    hide: function() {
-      this.graph.canvas
-        .selectAll('.hover-marker')
-        .remove();
-
-      this.graph.axis.line
-        .selectAll('g')
-        .style('fill-opacity', 1);
-
-      return this;
-    },
-
-    bindings: {
-      'hover graph': function(position) {
-        if (position.x !== null) {
-          this.show(position);
-        }
-      },
-
-      'unhover graph': function() {
-        this.hide();
-      }
-    }
-  });
-
   var GraphDots = structures.Eventable.extend({
     size: 3,
     hoverSize: 4,
@@ -194,7 +123,6 @@ diamondash.widgets.graph.views = function() {
       GraphView.__super__.initialize.call(this);
       this.legend = new chart.views.ChartLegendView({chart: this});
       this.lines = new GraphLines({graph: this});
-      this.hoverMarker = new GraphHoverMarker({graph: this});
       this.dots = new GraphDots({graph: this});
     },
 
@@ -221,7 +149,6 @@ diamondash.widgets.graph.views = function() {
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
-    GraphHoverMarker: GraphHoverMarker,
     GraphView: GraphView
   };
 }.call(this);
