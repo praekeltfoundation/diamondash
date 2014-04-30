@@ -1,5 +1,7 @@
 describe("diamondash.widgets.chart.views", function() {
   var utils = diamondash.test.utils,
+      testUtils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures,
       models = diamondash.widgets.chart.models,
       views = diamondash.widgets.chart.views;
 
@@ -8,24 +10,28 @@ describe("diamondash.widgets.chart.views", function() {
   });
 
   describe(".ChartDimensions", function() {
-    var dimensions;
+    var dims;
 
     beforeEach(function() {
-      dimensions = new views.ChartDimensions({
+      dims = new views.ChartDimensions({
         height: 128,
-        width: 64,
-        margin: {
-          top: 2,
-          right: 2,
-          bottom: 2,
-          left: 2
-        }
+        width: 64
       });
     });
 
-    it("should calculate the inner dimensions", function() {
-      assert.equal(dimensions.innerWidth, 60);
-      assert.equal(dimensions.innerHeight, 124);
+    it("should expose its width", function() {
+      assert.equal(dims.width(), 64);
+    });
+
+    it("should expose its height", function() {
+      assert.equal(dims.height(), 128);
+    });
+
+    it("should expose its offset", function() {
+      assert.deepEqual(dims.offset(), {
+        x: 0,
+        y: 0
+      });
     });
   });
 
@@ -36,16 +42,16 @@ describe("diamondash.widgets.chart.views", function() {
     beforeEach(function() {
       chart = new views.ChartView({
         model: new models.ChartModel({id: 'chart-1'}),
-        dimensions: {
+        dims: new views.ChartDimensions({
           width: 128,
           height: 74
-        }
+        })
       });
 
       axis = new views.ChartAxisView({
         chart: chart,
         tickCount: 6,
-        scale: d3.time.scale().range([0, chart.dimensions.innerWidth])
+        scale: d3.time.scale().range([0, chart.dims.width()])
       });
     });
 
@@ -77,6 +83,227 @@ describe("diamondash.widgets.chart.views", function() {
            '28-06 10:13',
            '28-06 10:23',
            '28-06 10:33'].join(''));
+      });
+    });
+  });
+
+  describe(".ChartView", function() {
+    var  chart;
+
+    beforeEach(function() {
+      chart = new views.ChartView({
+        model: new models.ChartModel({id: 'chart-1'}),
+        dims: new views.ChartDimensions({
+          width: 128,
+          height: 74
+        })
+      });
+    });
+
+    describe("when its dimensions change", function() {
+      it("should retranslate the chart", function() {
+        assert.equal(chart.canvas.attr('transform'), 'translate(0,0)');
+
+        chart.dims.set('offset', {
+          x: 4,
+          y: 4
+        });
+
+        assert.equal(chart.canvas.attr('transform'), 'translate(4,4)');
+      });
+
+      it("should resize the chart", function() {
+        assert.equal(chart.svg.attr('width'), '128');
+        assert.equal(chart.svg.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.svg.attr('width'), '123');
+        assert.equal(chart.svg.attr('height'), '64');
+      });
+
+      it("should resize the chart's overlay's", function() {
+        assert.equal(chart.overlay.attr('width'), '128');
+        assert.equal(chart.overlay.attr('height'), '74');
+
+        chart.dims.set({
+          width: 123,
+          height: 64
+        });
+
+        assert.equal(chart.overlay.attr('width'), '123');
+        assert.equal(chart.overlay.attr('height'), '64');
+      });
+    });
+  });
+
+  describe("ChartLegendView", function() {
+    var legend,
+        chart;
+
+    beforeEach(function() {
+      chart = new views.XYChartView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.ChartModel(
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
+      });
+
+      legend = new views.ChartLegendView({chart: chart});
+      chart.render();
+      legend.render();
+    });
+
+    describe("if the chart metrics have no datapoints", function() {
+      beforeEach(function() {
+        chart.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+      });
+
+      it("should use the chart's default value", function() {
+        chart.model.set('default_value', -1);
+        legend.render();
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          -1);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          -1);
+      });
+    });
+
+    describe("when the chart is hovered over", function() {
+      it("should add a 'hover' class to the legend", function() {
+        assert(!legend.$el.hasClass('hover'));
+        testUtils.hover_axes(chart, {x: 1340876295000});
+        assert(legend.$el.hasClass('hover'));
+      });
+
+      it("should display the metric values at the hovered over time interval",
+      function() {
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          16);
+
+        testUtils.hover_axes(chart, {x: 1340876295000});
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          22);
+      });
+    });
+
+    describe("when the chart is unhovered", function() {
+      it("should remove the 'hover' class from the legend", function() {
+        testUtils.hover_axes(chart, {x: 1340876295000});
+        assert(legend.$el.hasClass('hover'));
+
+        chart.trigger('unhover');
+        assert(!legend.$el.hasClass('hover'));
+      });
+
+      it("should display the last metric values", function() {
+        testUtils.hover_axes(chart, {x: 1340876295000});
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          12);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          22);
+
+        chart.trigger('unhover');
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
+          24);
+
+        assert.equal(
+          legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
+          16);
+      });
+    });
+  });
+
+  describe(".XYChartView", function() {
+    var chart;
+
+    beforeEach(function() {
+      chart = new views.XYChartView({
+        el: $('<div>')
+          .width(960)
+          .height(64),
+        model: new models.ChartModel(
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
+        dims: new views.ChartDimensions({
+          width: 128,
+          height: 74
+        })
+      });
+    });
+
+    describe("when the mouse is moved over the chart", function() {
+      beforeEach(function() {
+        chart.render();
+        sinon.stub(d3, 'mouse', _.identity);
+      });
+
+      afterEach(function() {
+        d3.mouse.restore();
+      });
+
+      it("should trigger an event with the calculated position information",
+      function(done) {
+        chart.render();
+
+        chart.on('hover', function(position) {
+          assert.equal(position.x, 1340876295000);
+          assert.equal(position.svg.x, 192);
+          assert.equal(position.svg.y, -11);
+          done();
+        });
+
+        chart.trigger('mousemove', [192, -11]);
+      });
+    });
+
+    describe("when the mouse is moved away from the chart", function() {
+      it("should trigger an event", function(done) {
+        chart.on('unhover', function() { done(); });
+        chart.trigger('mouseout');
+      });
+    });
+
+    describe(".render", function() {
+      it("should render the chart's axis", function() {
+        assert.equal(chart.$('.axis').text(), '');
+
+        chart.render();
+
+        assert.equal(
+          chart.$('.axis').text(),
+          ['28-06 09:33',
+            '28-06 09:38',
+            '28-06 09:43',
+            '28-06 09:48',
+            '28-06 09:53',
+            '28-06 09:58'].join(''));
       });
     });
   });

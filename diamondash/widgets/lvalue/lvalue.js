@@ -69,8 +69,6 @@ diamondash.widgets.lvalue = function() {
     jst: JST['diamondash/widgets/lvalue/lvalue.jst'],
    
     initialize: function(options) {
-      this.listenTo(this.model, 'change', this.render);
-
       this.last = new LastValueView({
         widget: this,
         model: this.model

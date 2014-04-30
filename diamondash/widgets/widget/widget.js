@@ -27,6 +27,11 @@ diamondash.widgets.widget = function() {
   var WidgetView = Backbone.View.extend({
     id: function() {
       return this.model.id;
+    },
+
+    constructor: function() {
+      WidgetView.__super__.constructor.apply(this, arguments);
+      this.listenTo(this.model, 'sync', this.render);
     }
   });
 

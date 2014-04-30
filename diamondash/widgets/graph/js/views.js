@@ -4,62 +4,6 @@ diamondash.widgets.graph.views = function() {
       structures = diamondash.components.structures,
       chart = diamondash.widgets.chart;
 
-  var GraphLegendView = Backbone.View.extend({
-    className: 'legend',
-
-    jst: JST['diamondash/widgets/graph/legend.jst'],
-
-    initialize: function(options) {
-      this.graph = options.graph;
-      this.model = this.graph.model;
-      utils.bindEvents(this.bindings, this);
-    },
-
-    valueOf: function(metricId, x) {
-      var metric = this.model.get('metrics').get(metricId);
-      var v = typeof x == 'undefined'
-        ? metric.lastValue()
-        : metric.valueAt(x);
-
-        return v === null
-          ? this.model.get('default_value')
-          : v;
-    },
-
-    format: d3.format(",f"),
-
-    render: function(x) {
-      this.$el.html(this.jst({
-        self: this,
-        x: x
-      }));
-
-      var metrics = this.model.get('metrics');
-      this.$('.legend-item').each(function() {
-        var $el = $(this),
-            id = $el.attr('data-metric-id');
-
-        $el
-          .find('.swatch')
-          .css('background-color', metrics.get(id).get('color'));
-      });
-
-      return this;
-    },
-
-    bindings: {
-      'hover graph': function(position) {
-        this.$el.addClass('hover');
-        return this.render(position.x);
-      },
-
-      'unhover graph': function() {
-        this.$el.removeClass('hover');
-        return this.render();
-      }
-    }
-  });
-
   var GraphHoverMarker = structures.Eventable.extend({
     collisionDistance: 60,
 
@@ -242,75 +186,25 @@ diamondash.widgets.graph.views = function() {
     }
   });
 
-  var GraphView = chart.views.ChartView.extend({
+  var GraphView = chart.views.XYChartView.extend({
     height: 214,
     axisHeight: 24,
 
-    margin: {
-      top: 4,
-      right: 4,
-      left: 4,
-      bottom: 0
-    },
-
-    id: function() {
-      return this.model.id;
-    },
-
     initialize: function() {
-      GraphView.__super__.initialize.call(this, {
-        dimensions: new chart.views.ChartDimensions({
-          height: this.height,
-          margin: this.margin
-        })
-      });
-
-      var fx = d3.time.scale();
-      fx.accessor = function(d) { return fx(d.x); };
-      this.fx = fx;
-
-      var fy = d3.scale.linear();
-      fy.accessor = function(d) { return fy(d.y); };
-      this.fy = fy;
-
+      GraphView.__super__.initialize.call(this);
+      this.legend = new chart.views.ChartLegendView({chart: this});
       this.lines = new GraphLines({graph: this});
-
-      this.axis = new chart.views.ChartAxisView({
-        chart: this,
-        scale: this.fx,
-        height: this.axisHeight
-      });
-
       this.hoverMarker = new GraphHoverMarker({graph: this});
-      this.legend = new GraphLegendView({graph: this});
       this.dots = new GraphDots({graph: this});
-
-      utils.bindEvents(this.bindings, this);
-    },
-
-    resetScales: function() {
-      var maxY = this.dimensions.innerHeight - this.axisHeight;
-      this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dimensions.innerWidth]);
     },
 
     render: function() {
-      this.dimensions.set({width: this.$el.width()});
       GraphView.__super__.render.call(this);
-      this.resetScales();
-
-      var domain = this.model.domain();
-      this.fx.domain(domain);
-      this.fy.domain(this.model.range());
-
       this.lines.render();
 
       if (this.model.get('dotted')) {
         this.dots.render();
       }
-
-      var step = this.model.get('bucket_size');
-      this.axis.render(domain[0], domain[1], step);
 
       this.legend.render();
 
@@ -319,50 +213,6 @@ diamondash.widgets.graph.views = function() {
         .append(this.legend.$el);
 
       return this;
-    },
-
-    positionOf: function(coords) {
-      var position = {svg: {}};
-
-      position.svg.x = coords.x;
-      position.svg.y = coords.y;
-
-      var min = this.model.xMin();
-      if (min === null) {
-        position.x = null;
-      }
-      else {
-        // convert the svg x value to the corresponding time value, then snap
-        // it to the closest timestep
-        position.x = utils.snap(
-          this.fx.invert(position.svg.x),
-          min,
-          this.model.get('bucket_size'));
-
-        // shift the svg x value to correspond to the snapped time value
-        position.svg.x = this.fx(position.x);
-      }
-
-      return position;
-    },
-
-    bindings: {
-      'mousemove': function(target) {
-        var mouse = d3.mouse(target);
-
-        this.trigger('hover', this.positionOf({
-          x: mouse[0],
-          y: mouse[1]
-        }));
-      },
-
-      'mouseout': function() {
-        this.trigger('unhover');
-      },
-
-      'sync model': function() {
-        this.render();
-      }
     }
   });
 
@@ -371,9 +221,7 @@ diamondash.widgets.graph.views = function() {
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
-    GraphLegendView: GraphLegendView,
     GraphHoverMarker: GraphHoverMarker,
-
     GraphView: GraphView
   };
 }.call(this);
