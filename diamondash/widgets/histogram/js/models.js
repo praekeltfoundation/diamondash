@@ -3,6 +3,9 @@ diamondash.widgets.histogram.models = function() {
       chart = diamondash.widgets.chart;
 
   var HistogramModel = chart.models.ChartModel.extend({
+    range: function() {
+      return [0, this.yMax()];
+    }
   });
 
   widgets.registry.models.add('histogram', HistogramModel);
