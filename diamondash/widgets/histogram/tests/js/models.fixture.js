@@ -9,8 +9,8 @@ diamondash.test.fixtures.add('diamondash.widgets.histogram.models.HistogramModel
       {x: 1340875995000, y: 18},
       {x: 1340876295000, y: 12},
       {x: 1340876595000, y: 6},
-      {x: 1340876895000, y: 16},
-      {x: 1340877195000, y: 14},
+      {x: 1340876895000, y: 3},
+      {x: 1340877195000, y: 9},
       {x: 1340877495000, y: 24}]
   }]
 });
