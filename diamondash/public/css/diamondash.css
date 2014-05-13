@@ -69,6 +69,31 @@
 .diamondash.dashboard .widget .widget-head h4 {
   padding: 4px;
 }
+.diamondash .axis * {
+  pointer-events: none;
+}
+.diamondash .axis path,
+.diamondash .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.diamondash .axis text {
+  font-family: sans-serif;
+  font-size: 11px;
+}
+.diamondash .axis g {
+  -webkit-transition: fill-opacity 250ms linear;
+  -moz-transition: fill-opacity 250ms linear;
+  -o-transition: fill-opacity 250ms linear;
+  transition: fill-opacity 250ms linear;
+}
+.diamondash .hover-marker line {
+  stroke: #555;
+}
+.diamondash .hover-marker text {
+  fill: #555;
+}
 .diamondash .legend {
   text-align: left;
 }
@@ -86,25 +111,8 @@
 .diamondash .legend.hover .legend-item .value {
   color: #555;
 }
-.diamondash .graph .chart *,
-.diamondash .graph .axis * {
+.diamondash .graph .chart * {
   pointer-events: none;
-}
-.diamondash .graph .axis path,
-.diamondash .graph .axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-.diamondash .graph .axis text {
-  font-family: sans-serif;
-  font-size: 11px;
-}
-.diamondash .graph .axis g {
-  -webkit-transition: fill-opacity 250ms linear;
-  -moz-transition: fill-opacity 250ms linear;
-  -o-transition: fill-opacity 250ms linear;
-  transition: fill-opacity 250ms linear;
 }
 .diamondash .graph .metric-line {
   fill: none;
@@ -121,12 +129,6 @@
 .diamondash .graph .hover-dot {
   fill: none;
   stroke-width: 1.5px;
-}
-.diamondash .graph .hover-marker line {
-  stroke: #555;
-}
-.diamondash .graph .hover-marker text {
-  fill: #555;
 }
 .diamondash .lvalue .widget-body {
   padding: 0;
