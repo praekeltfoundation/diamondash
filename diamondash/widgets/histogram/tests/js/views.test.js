@@ -20,6 +20,8 @@ describe("diamondash.widgets.histogram", function() {
         .domain(opts.model.range())
         .range([opts.chartHeight, 0]);
 
+      var format = d3.format(".1s");
+
       var barWidth = fx(opts.model.get('bucket_size')) - fx(0);
       barWidth -= opts.barPadding;
 
@@ -41,6 +43,10 @@ describe("diamondash.widgets.histogram", function() {
             .attr("width", barWidth)
             .attr("height", function(d) {
               return opts.chartHeight - fy(d.y);
+            })
+          .append('text')
+            .text(function(d) {
+              return format(d.y);
             });
 
       return $svg;
@@ -89,6 +95,10 @@ describe("diamondash.widgets.histogram", function() {
           assert.equal(
             $actual.eq(i).find('rect').attr('width'), 
             $expected.eq(i).find('rect').attr('width'));
+
+          assert.equal(
+            $actual.eq(i).find('text').text(), 
+            $expected.eq(i).find('text').text());
         });
       });
 
@@ -126,6 +136,10 @@ describe("diamondash.widgets.histogram", function() {
           assert.equal(
             $actual.eq(i).find('rect').attr('width'), 
             $expected.eq(i).find('rect').attr('width'));
+
+          assert.equal(
+            $actual.eq(i).find('text').text(), 
+            $expected.eq(i).find('text').text());
         });
       });
     });
