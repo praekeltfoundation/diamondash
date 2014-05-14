@@ -128,6 +128,78 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var XYChartHoverMarker = structures.Eventable.extend({
+    collisionDistance: 60,
+
+    constructor: function(options) {
+      this.chart = options.chart;
+
+      if ('collisionsDistance' in options) {
+        this.collisionDistance = options.collisionDistance;
+      }
+
+      utils.bindEvents(this.bindings, this);
+    },
+
+    collision: function(position, tick) {
+      var d = Math.abs(position.svg.x - this.chart.fx(tick));
+      return d < this.collisionDistance;
+    },
+
+    show: function(position) {
+      var marker = this.chart.axis.line
+        .selectAll('.hover-marker')
+        .data([null]);
+
+      marker.enter().append('g')
+        .attr('class', 'hover-marker')
+        .call(components.marker)
+        .transition()
+          .select('text')
+          .attr('fill-opacity', 1);
+
+      marker
+        .attr('transform', "translate(" + position.svg.x + ", 0)")
+        .select('text').text(this.chart.axis.format(position.x));
+
+      var self = this;
+      this.chart.axis.line
+        .selectAll('g')
+        .style('fill-opacity', function(tick) {
+          return self.collision(position, tick)
+            ? 0
+            : 1;
+        });
+
+      return this;
+    },
+
+    hide: function() {
+      this.chart.canvas
+        .selectAll('.hover-marker')
+        .remove();
+
+      this.chart.axis.line
+        .selectAll('g')
+        .style('fill-opacity', 1);
+
+      return this;
+    },
+
+    bindings: {
+      'hover chart': function(position) {
+        if (position.x !== null) {
+          this.show(position);
+        }
+      },
+
+      'unhover chart': function() {
+        this.hide();
+      }
+    }
+  });
+
+
   var ChartView = widget.WidgetView.extend({
     className: 'chart',
 
@@ -249,6 +321,7 @@ diamondash.widgets.chart.views = function() {
         height: this.axisHeight
       });
 
+      this.hoverMarker = new XYChartHoverMarker({chart: this});
       utils.bindEvents(XYChartView.prototype.bindings, this);
     },
 
@@ -314,6 +387,7 @@ diamondash.widgets.chart.views = function() {
     components: components,
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
+    XYChartHoverMarker: XYChartHoverMarker,
     XYChartView: XYChartView,
     ChartDimensions: ChartDimensions,
     ChartLegendView: ChartLegendView

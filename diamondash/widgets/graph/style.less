@@ -1,26 +1,6 @@
 .graph {
-  .chart *, .axis * {
+  .chart * {
     pointer-events: none;
-  }
-
-  .axis {
-    path, line {
-      fill: none;
-      stroke: #000;
-      shape-rendering: crispEdges;
-    }
-
-    text {
-      font-family: sans-serif;
-      font-size: 11px;
-    }
-
-    g {
-      -webkit-transition: fill-opacity 250ms linear;
-      -moz-transition: fill-opacity 250ms linear;
-      -o-transition: fill-opacity 250ms linear;
-      transition: fill-opacity 250ms linear;
-    }
   }
 
   .metric-line {
@@ -40,15 +20,5 @@
   .hover-dot {
     fill: none;
     stroke-width: 1.5px;
-  }
-
-  .hover-marker {
-    line {
-      stroke: #555;
-    }
-
-    text {
-      fill: #555;
-    }
   }
 }

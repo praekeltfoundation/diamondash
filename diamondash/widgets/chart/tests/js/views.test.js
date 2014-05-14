@@ -35,6 +35,120 @@ describe("diamondash.widgets.chart.views", function() {
     });
   });
 
+  describe("XYChartHoverMarker", function() {
+    var marker,
+    chart;
+
+    function markerOpacities() {
+      var opacities = {};
+
+      chart.axis.line
+      .selectAll('g')
+      .each(function(tick) {
+        if (tick) {
+          opacities[tick] = $(this).css('fill-opacity');
+        }
+      });
+
+      return opacities;
+    }
+
+    beforeEach(function() {
+      chart = new views.XYChartView({
+        el: $('<div>')
+        .width(960)
+        .height(64),
+        model: new models.ChartModel(
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple'))
+      });
+
+      marker = chart.hoverMarker;
+    });
+
+    describe("when the chart is hovered over", function() {
+      beforeEach(function() {
+        chart.render();
+      });
+
+      it("should show the marker", function() {
+        assert.equal(chart.$('.hover-marker').length, 0);
+
+        testUtils.hover_axes(chart, {x: 1340876295000});
+
+        assert.equal(chart.$('.hover-marker').length, 1);
+        assert.equal(chart.$('.hover-marker').text(), '28-06 09:38');
+      });
+
+      it("should hide nearby axis markers", function() {
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '',
+          1340876295000: '',
+          1340876595000: '',
+          1340876895000: '',
+          1340877195000: '',
+          1340877495000: ''
+        });
+
+        testUtils.hover_axes(chart, {x: 1340876295000});
+
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '0',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
+      });
+
+      it("shouldn't show the hover marker if the chart has no datapoints",
+      function() {
+        chart.model.get('metrics').each(function(m) {
+          m.set('datapoints', []);
+        });
+
+        testUtils.hover_svg(chart);
+
+        assert.equal(chart.$('.hover-marker').length, 0);
+      });
+    });
+
+    describe("when the chart is unhovered", function() {
+      beforeEach(function() {
+        chart.render();
+        testUtils.hover_axes(chart, {x: 1340876295000});
+      });
+
+      it("should hide the marker", function() {
+        assert.equal(chart.$('.hover-marker').length, 1);
+        chart.trigger('unhover');
+        assert.equal(chart.$('.hover-marker').length, 0);
+      });
+
+      it("should unhide all axis markers", function() {
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '0',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
+
+        chart.trigger('unhover');
+
+        assert.deepEqual(markerOpacities(), {
+          1340875995000: '1',
+          1340876295000: '1',
+          1340876595000: '1',
+          1340876895000: '1',
+          1340877195000: '1',
+          1340877495000: '1'
+        });
+      });
+    });
+  });
+
   describe(".ChartAxisView", function() {
     var axis,
         chart;

@@ -782,6 +782,78 @@ diamondash.widgets.chart.views = function() {
     }
   });
 
+  var XYChartHoverMarker = structures.Eventable.extend({
+    collisionDistance: 60,
+
+    constructor: function(options) {
+      this.chart = options.chart;
+
+      if ('collisionsDistance' in options) {
+        this.collisionDistance = options.collisionDistance;
+      }
+
+      utils.bindEvents(this.bindings, this);
+    },
+
+    collision: function(position, tick) {
+      var d = Math.abs(position.svg.x - this.chart.fx(tick));
+      return d < this.collisionDistance;
+    },
+
+    show: function(position) {
+      var marker = this.chart.axis.line
+        .selectAll('.hover-marker')
+        .data([null]);
+
+      marker.enter().append('g')
+        .attr('class', 'hover-marker')
+        .call(components.marker)
+        .transition()
+          .select('text')
+          .attr('fill-opacity', 1);
+
+      marker
+        .attr('transform', "translate(" + position.svg.x + ", 0)")
+        .select('text').text(this.chart.axis.format(position.x));
+
+      var self = this;
+      this.chart.axis.line
+        .selectAll('g')
+        .style('fill-opacity', function(tick) {
+          return self.collision(position, tick)
+            ? 0
+            : 1;
+        });
+
+      return this;
+    },
+
+    hide: function() {
+      this.chart.canvas
+        .selectAll('.hover-marker')
+        .remove();
+
+      this.chart.axis.line
+        .selectAll('g')
+        .style('fill-opacity', 1);
+
+      return this;
+    },
+
+    bindings: {
+      'hover chart': function(position) {
+        if (position.x !== null) {
+          this.show(position);
+        }
+      },
+
+      'unhover chart': function() {
+        this.hide();
+      }
+    }
+  });
+
+
   var ChartView = widget.WidgetView.extend({
     className: 'chart',
 
@@ -903,6 +975,7 @@ diamondash.widgets.chart.views = function() {
         height: this.axisHeight
       });
 
+      this.hoverMarker = new XYChartHoverMarker({chart: this});
       utils.bindEvents(XYChartView.prototype.bindings, this);
     },
 
@@ -968,6 +1041,7 @@ diamondash.widgets.chart.views = function() {
     components: components,
     ChartAxisView: ChartAxisView,
     ChartView: ChartView,
+    XYChartHoverMarker: XYChartHoverMarker,
     XYChartView: XYChartView,
     ChartDimensions: ChartDimensions,
     ChartLegendView: ChartLegendView
@@ -1002,77 +1076,6 @@ diamondash.widgets.graph.views = function() {
       utils = diamondash.utils,
       structures = diamondash.components.structures,
       chart = diamondash.widgets.chart;
-
-  var GraphHoverMarker = structures.Eventable.extend({
-    collisionDistance: 60,
-
-    constructor: function(options) {
-      this.graph = options.graph;
-
-      if ('collisionsDistance' in options) {
-        this.collisionDistance = options.collisionDistance;
-      }
-
-      utils.bindEvents(this.bindings, this);
-    },
-
-    collision: function(position, tick) {
-      var d = Math.abs(position.svg.x - this.graph.fx(tick));
-      return d < this.collisionDistance;
-    },
-
-    show: function(position) {
-      var marker = this.graph.axis.line
-        .selectAll('.hover-marker')
-        .data([null]);
-
-      marker.enter().append('g')
-        .attr('class', 'hover-marker')
-        .call(chart.views.components.marker)
-        .transition()
-          .select('text')
-          .attr('fill-opacity', 1);
-
-      marker
-        .attr('transform', "translate(" + position.svg.x + ", 0)")
-        .select('text').text(this.graph.axis.format(position.x));
-
-      var self = this;
-      this.graph.axis.line
-        .selectAll('g')
-        .style('fill-opacity', function(tick) {
-          return self.collision(position, tick)
-            ? 0
-            : 1;
-        });
-
-      return this;
-    },
-
-    hide: function() {
-      this.graph.canvas
-        .selectAll('.hover-marker')
-        .remove();
-
-      this.graph.axis.line
-        .selectAll('g')
-        .style('fill-opacity', 1);
-
-      return this;
-    },
-
-    bindings: {
-      'hover graph': function(position) {
-        if (position.x !== null) {
-          this.show(position);
-        }
-      },
-
-      'unhover graph': function() {
-        this.hide();
-      }
-    }
-  });
 
   var GraphDots = structures.Eventable.extend({
     size: 3,
@@ -1193,7 +1196,6 @@ diamondash.widgets.graph.views = function() {
       GraphView.__super__.initialize.call(this);
       this.legend = new chart.views.ChartLegendView({chart: this});
       this.lines = new GraphLines({graph: this});
-      this.hoverMarker = new GraphHoverMarker({graph: this});
       this.dots = new GraphDots({graph: this});
     },
 
@@ -1220,8 +1222,93 @@ diamondash.widgets.graph.views = function() {
   return {
     GraphLines: GraphLines,
     GraphDots: GraphDots,
-    GraphHoverMarker: GraphHoverMarker,
     GraphView: GraphView
+  };
+}.call(this);
+
+diamondash.widgets.histogram = function() {
+  return {
+  };
+}.call(this);
+
+diamondash.widgets.histogram.models = function() {
+  var widgets = diamondash.widgets,
+      chart = diamondash.widgets.chart;
+
+  var HistogramModel = chart.models.ChartModel.extend({
+    range: function() {
+      return [0, this.yMax()];
+    }
+  });
+
+  widgets.registry.models.add('histogram', HistogramModel);
+
+  return {
+    HistogramModel: HistogramModel
+  };
+}.call(this);
+
+diamondash.widgets.histogram.views = function() {
+  var chart = diamondash.widgets.chart,
+      widgets = diamondash.widgets;
+
+  var HistogramView = chart.views.XYChartView.extend({
+    height: 278,
+    barPadding: 2,
+
+    initialize: function() {
+      HistogramView.__super__.initialize.call(this);
+    },
+
+    render: function() {
+      HistogramView.__super__.render.call(this);
+
+      var self = this;
+      var metric = this.model.get('metrics').at(0);
+      var bucketSize = this.model.get('bucket_size');
+      var maxY = this.dims.height() - this.axisHeight;
+
+      function key(d) {
+        return d.x;
+      }
+
+      var bar = this.svg.selectAll('.bar')
+        .data(metric.get('datapoints'), key);
+
+      bar.enter().append('g')
+        .attr('class', 'bar');
+
+      bar.exit().remove();
+
+      bar.attr('transform', function(d) {
+        var x = self.fx(d.x - bucketSize);
+        var y = self.fy(d.y);
+        return "translate(" + x + "," + y + ")";
+      });
+
+      var rect = bar.selectAll('rect')
+        .data(function(d) {
+          return [d];
+        }, key);
+
+      rect.enter().append('rect');
+
+      rect
+        .style('fill', metric.get('color'))
+        .attr('width', this.fx(bucketSize) - this.fx(0) - this.barPadding)
+        .attr('height', function(d) {
+          return maxY - self.fy(d.y);
+        });
+
+      this.$el.append($(this.svg.node()));
+      return this;
+    }
+  });
+
+  widgets.registry.views.add('histogram', HistogramView);
+
+  return {
+    HistogramView: HistogramView
   };
 }.call(this);
 
