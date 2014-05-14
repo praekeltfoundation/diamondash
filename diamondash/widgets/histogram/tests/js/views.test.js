@@ -1,7 +1,7 @@
 describe("diamondash.widgets.histogram", function() {
   var models = diamondash.widgets.histogram.models,
       views = diamondash.widgets.histogram.views,
-      fixtures = diamondash.test.fixtures;
+      fixtures = diamondash.test.fixtures,
       testUtils = diamondash.test.utils;
 
   describe("HistogramView", function() {
