@@ -91,11 +91,14 @@ describe("diamondash.widgets.chart.models", function() {
     var collection;
 
     beforeEach(function() {
+      sinon.stub(_, 'random', _.constant(0));
       collection = new models.ChartMetricCollection();
+      _.random.restore();
     });
 
     describe("when a metric is added", function() {
       it("should assign it a color", function(done) {
+
         collection.on('add', function(metric) {
           assert.equal(metric.get('color'), '#1f77b4');
           done();

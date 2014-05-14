@@ -7,13 +7,17 @@ diamondash.components.structures = function() {
   var ColorMaker = Extendable.extend({
     constructor: function(options) {
       options = _({}).defaults(options, this.defaults);
-      this.colors = options.scale.domain(d3.range(0, options.n));
-      this.i = 0;
+      this.n = options.n;
+      this.colors = options.scale.domain(d3.range(0, this.n));
+      this.i = diamondash.utils.functor(options.i).call(this);
     },
 
     defaults: {
-      scale: d3.scale.category10(),
-      n: 10
+      i: function() {
+        return _.random(this.n);
+      },
+      scale: d3.scale.category20(),
+      n: 20
     },
 
     next: function() {
