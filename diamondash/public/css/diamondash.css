@@ -105,11 +105,11 @@
   margin: 0 4px;
   border-radius: 4px;
 }
-.diamondash .legend .legend-item .value {
+.diamondash .legend .legend-item .title {
   font-weight: bold;
 }
 .diamondash .legend.hover .legend-item .value {
-  color: #555;
+  color: #5e5e5e;
 }
 .diamondash .graph .chart * {
   pointer-events: none;
