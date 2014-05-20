@@ -756,6 +756,8 @@ diamondash.widgets.chart.views = function() {
 
       p = this.chart.dims.height();
       p = p - (margin.bottom + margin.top + this.height);
+
+      // fixes z-fighting in Chromium Version 32.0.1700.77 (linux)
       p = p + 0.1;
       return "translate(0, " + p + ")";
     },
