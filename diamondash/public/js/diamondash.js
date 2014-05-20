@@ -1295,7 +1295,7 @@ diamondash.widgets.histogram.views = function() {
       var bar = this.canvas.selectAll('.bar')
         .data(metric.get('datapoints').slice(1), key);
 
-      bar.enter().insert('g')
+      bar.enter().append('g')
         .attr('class', 'bar');
 
       bar.exit().remove();
