@@ -179,6 +179,10 @@
 .diamondash .pie .legend {
   margin-top: 15px;
 }
+.diamondash .pie .arc {
+  stroke: #eee;
+  stroke-width: 2px;
+}
 .diamondash .text-widget-text {
   margin: 0 auto;
   text-align: center;
