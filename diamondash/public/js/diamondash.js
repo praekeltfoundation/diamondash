@@ -211,13 +211,17 @@ diamondash.components.structures = function() {
   var ColorMaker = Extendable.extend({
     constructor: function(options) {
       options = _({}).defaults(options, this.defaults);
-      this.colors = options.scale.domain(d3.range(0, options.n));
-      this.i = 0;
+      this.n = options.n;
+      this.colors = options.scale.domain(d3.range(0, this.n));
+      this.i = diamondash.utils.functor(options.i).call(this);
     },
 
     defaults: {
-      scale: d3.scale.category10(),
-      n: 10
+      i: function() {
+        return _.random(this.n);
+      },
+      scale: d3.scale.category20(),
+      n: 20
     },
 
     next: function() {
@@ -681,6 +685,12 @@ diamondash.widgets.chart.views = function() {
     defaults: {
       height: 0,
       width: 0,
+      margin: {
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 8
+      },
       offset: {
         x: 0,
         y: 0
@@ -697,6 +707,10 @@ diamondash.widgets.chart.views = function() {
 
     offset: function() {
       return this.get('offset');
+    },
+
+    margin: function() {
+      return this.get('margin');
     }
   });
 
@@ -730,6 +744,7 @@ diamondash.widgets.chart.views = function() {
     },
 
     _translation: function() {
+      var margin = this.chart.dims.margin();
       var p;
 
       if (this.orient == 'top') {
@@ -743,7 +758,11 @@ diamondash.widgets.chart.views = function() {
         return "translate(" + p + ", 0)";
       }
 
-      p = this.chart.dims.height() - this.height;
+      p = this.chart.dims.height();
+      p = p - (margin.bottom + margin.top + this.height);
+
+      // fixes z-fighting in Chromium Version 32.0.1700.77 (linux)
+      p = p + 0.1;
       return "translate(0, " + p + ")";
     },
 
@@ -862,7 +881,8 @@ diamondash.widgets.chart.views = function() {
       this.dims = options.dims || new ChartDimensions();
 
       this.svg = d3.select(this.el).append('svg');
-      this.canvas = this.svg.append('g');
+      this.canvas = this.svg.append('g')
+        .attr('class', 'canvas');
 
       var self = this;
       this.overlay = this.canvas.append('rect')
@@ -880,10 +900,13 @@ diamondash.widgets.chart.views = function() {
 
     refreshDims: function() {
       var offset = this.dims.offset();
+      var margin = this.dims.margin();
+      var tX = margin.left + offset.x;
+      var tY = margin.top + offset.y;
 
       this.canvas.attr(
         'transform',
-        'translate(' + offset.x + ',' + offset.y + ')'); 
+        'translate(' + tX + ',' + tY + ')'); 
 
       this.svg
         .attr('width', this.dims.width())
@@ -996,10 +1019,13 @@ diamondash.widgets.chart.views = function() {
 
     render: function() {
       this.dims.set('width', this.$el.width());
+      var margin = this.dims.margin();
+      var width = this.dims.width() - margin.left - margin.right;
+      var height = this.dims.height() - margin.top - margin.bottom;
 
-      var maxY = this.dims.height() - this.axisHeight;
+      var maxY = height - this.axisHeight;
       this.fy.range([maxY, 0]);
-      this.fx.range([0, this.dims.width()]);
+      this.fx.range([0, width]);
 
       var domain = this.model.domain();
       this.fx.domain(domain);
@@ -1255,6 +1281,7 @@ diamondash.widgets.histogram.views = function() {
   var HistogramView = chart.views.XYChartView.extend({
     height: 278,
     barPadding: 2,
+    format: {value: d3.format(".1s")},
 
     initialize: function() {
       HistogramView.__super__.initialize.call(this);
@@ -1266,14 +1293,19 @@ diamondash.widgets.histogram.views = function() {
       var self = this;
       var metric = this.model.get('metrics').at(0);
       var bucketSize = this.model.get('bucket_size');
-      var maxY = this.dims.height() - this.axisHeight;
+      var maxY = this.fy.range()[0];
+      var barWidth = this.fx(bucketSize) - this.fx(0) - this.barPadding;
+
+      function data(d) {
+        return [d];
+      }
 
       function key(d) {
         return d.x;
       }
 
-      var bar = this.svg.selectAll('.bar')
-        .data(metric.get('datapoints'), key);
+      var bar = this.canvas.selectAll('.bar')
+        .data(metric.get('datapoints').slice(1), key);
 
       bar.enter().append('g')
         .attr('class', 'bar');
@@ -1286,19 +1318,28 @@ diamondash.widgets.histogram.views = function() {
         return "translate(" + x + "," + y + ")";
       });
 
-      var rect = bar.selectAll('rect')
-        .data(function(d) {
-          return [d];
-        }, key);
-
+      var rect = bar.selectAll('rect').data(data, key);
       rect.enter().append('rect');
 
       rect
         .style('fill', metric.get('color'))
-        .attr('width', this.fx(bucketSize) - this.fx(0) - this.barPadding)
+        .attr('width', barWidth)
         .attr('height', function(d) {
           return maxY - self.fy(d.y);
         });
+
+      var text = bar.selectAll('text').data(data, key);
+      text.enter().append('text')
+        .attr('class', 'value')
+        .attr("text-anchor", "middle")
+        .attr("dy", ".75em")
+        .attr("y", 6);
+
+      text
+          .attr("x", barWidth / 2)
+          .text(function(d) {
+            return self.format.value(d.y);
+          });
 
       this.$el.append($(this.svg.node()));
       return this;
