@@ -16,14 +16,14 @@ diamondash.widgets.histogram.views = function() {
       var self = this;
       var metric = this.model.get('metrics').at(0);
       var bucketSize = this.model.get('bucket_size');
-      var maxY = this.dims.height() - this.axisHeight;
+      var maxY = this.fy.range()[0];
 
       function key(d) {
         return d.x;
       }
 
-      var bar = this.svg.selectAll('.bar')
-        .data(metric.get('datapoints'), key);
+      var bar = this.canvas.selectAll('.bar')
+        .data(metric.get('datapoints').slice(1), key);
 
       bar.enter().append('g')
         .attr('class', 'bar');

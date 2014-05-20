@@ -209,21 +209,27 @@ describe("diamondash.widgets.chart.views", function() {
         model: new models.ChartModel({id: 'chart-1'}),
         dims: new views.ChartDimensions({
           width: 128,
-          height: 74
+          height: 74,
+          margin: {
+            left: 2,
+            right: 2,
+            top: 2,
+            bottom: 2
+          }
         })
       });
     });
 
     describe("when its dimensions change", function() {
       it("should retranslate the chart", function() {
-        assert.equal(chart.canvas.attr('transform'), 'translate(0,0)');
+        assert.equal(chart.canvas.attr('transform'), 'translate(2,2)');
 
         chart.dims.set('offset', {
           x: 4,
           y: 4
         });
 
-        assert.equal(chart.canvas.attr('transform'), 'translate(4,4)');
+        assert.equal(chart.canvas.attr('transform'), 'translate(6,6)');
       });
 
       it("should resize the chart", function() {
@@ -364,16 +370,19 @@ describe("diamondash.widgets.chart.views", function() {
           .width(960)
           .height(64),
         model: new models.ChartModel(
-          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple')),
-        dims: new views.ChartDimensions({
-          width: 128,
-          height: 74
-        })
+          fixtures.get('diamondash.widgets.chart.models.ChartModel:simple'))
       });
     });
 
     describe("when the mouse is moved over the chart", function() {
       beforeEach(function() {
+        chart.dims.set('margin', {
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0
+        });
+
         chart.render();
         sinon.stub(d3, 'mouse', _.identity);
       });

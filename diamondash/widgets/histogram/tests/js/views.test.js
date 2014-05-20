@@ -28,7 +28,8 @@ describe("diamondash.widgets.histogram", function() {
         .data(opts.model
           .get('metrics')
           .at(0)
-          .get('datapoints'))
+          .get('datapoints')
+          .slice(1))
         .enter()
           .append('g')
           .attr('class', 'bar')
@@ -55,6 +56,13 @@ describe("diamondash.widgets.histogram", function() {
           fixtures.get(
             'diamondash.widgets.histogram.models.HistogramModel:simple'))
       });
+
+      histogram.dims.set('margin', {
+        left: 2,
+        right: 2,
+        top: 2,
+        bottom: 2
+      });
     });
 
     afterEach(function() {
@@ -67,17 +75,17 @@ describe("diamondash.widgets.histogram", function() {
 
         $svg = draw_histogram({
           color: histogram.model.get('metrics').at(0).get('color'),
-          chartWidth: 960,
-          chartHeight: 278 - 24,
+          chartWidth: 960 - 4,
+          chartHeight: 278 - 24 - 4,
           barPadding: 2,
           model: histogram.model
         });
 
         var $actual = histogram.$('.bar');
         var $expected = $svg.find('.bar');
-        assert.equal($actual.length, 6);
+        assert.equal($actual.length, 5);
 
-        _(6).times(function(i) {
+        _(5).times(function(i) {
           assert.equal(
             $actual.eq(i).attr('transform'), 
             $expected.eq(i).attr('transform'));
@@ -104,17 +112,17 @@ describe("diamondash.widgets.histogram", function() {
 
         $svg = draw_histogram({
           color: histogram.model.get('metrics').at(0).get('color'),
-          chartWidth: 960,
-          chartHeight: 278 - 24,
+          chartWidth: 960 - 4,
+          chartHeight: 278 - 24 - 4,
           barPadding: 2,
           model: histogram.model
         });
 
         var $actual = histogram.$('.bar');
         var $expected = $svg.find('.bar');
-        assert.equal($actual.length, 5);
+        assert.equal($actual.length, 4);
 
-        _(5).times(function(i) {
+        _(4).times(function(i) {
           assert.equal(
             $actual.eq(i).attr('transform'), 
             $expected.eq(i).attr('transform'));
