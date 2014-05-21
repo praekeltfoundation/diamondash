@@ -8,7 +8,13 @@ describe("diamondash.widgets.pie", function() {
     var dims;
 
     beforeEach(function() {
-      dims = new views.PieDimensions({width: 64});
+      dims = new views.PieDimensions({
+        width: 64,
+        margin: {
+          left: 2,
+          right: 2
+        }
+      });
     });
 
     it("should expose its width as its height", function() {
@@ -16,13 +22,13 @@ describe("diamondash.widgets.pie", function() {
     });
 
     it("should expose its radius", function() {
-        assert.equal(dims.radius(), 64 / 2);
+        assert.equal(dims.radius(), (64 - 4)/ 2);
     });
 
     it("should expose its offset", function() {
         assert.deepEqual(dims.offset(), {
-            x: 64 / 2,
-            y: 64 / 2
+            x: (64 - 4)/ 2,
+            y: (64 - 4)/ 2
         });
     });
   });
@@ -60,6 +66,11 @@ describe("diamondash.widgets.pie", function() {
           fixtures.get('diamondash.widgets.pie.models.PieModel:simple'))
       });
 
+      pie.dims.set('margin', {
+        left: 2,
+        right: 2
+      });
+
       $diamondash = $('<div>')
         .attr('class', 'diamondash')
         .append(pie.$el);
@@ -88,7 +99,7 @@ describe("diamondash.widgets.pie", function() {
         assert.lengthOf(pie.$('.arc'), 3);
 
         var $pie = draw_pie({
-          radius: 400 / 2,
+          radius: (400 - 4) / 2,
           data: [{
             k: 'metric-a',
             v: 18
@@ -130,7 +141,7 @@ describe("diamondash.widgets.pie", function() {
         pie.render();
 
         var $pie = draw_pie({
-          radius: 400 / 2,
+          radius: (400 - 4) / 2,
           data: [{
             k: 'metric-a',
             v: 3
@@ -166,7 +177,7 @@ describe("diamondash.widgets.pie", function() {
         pie.render();
 
         var $pie = draw_pie({
-          radius: 400 / 2,
+          radius: (400 - 4) / 2,
           data: [{
             k: 'metric-a',
             v: 3

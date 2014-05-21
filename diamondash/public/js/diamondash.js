@@ -1358,12 +1358,17 @@ diamondash.widgets.pie.views = function() {
       widgets = diamondash.widgets;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
+    innerWidth: function() {
+      var margin = this.margin();
+      return this.width() - margin.left - margin.right;
+    },
+
     height: function() {
       return this.width();
     },
 
     radius: function() {
-      return this.width() / 2;
+      return this.innerWidth() / 2;
     },
 
     offset: function() {
