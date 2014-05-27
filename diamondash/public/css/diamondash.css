@@ -130,6 +130,26 @@
   fill: none;
   stroke-width: 1.5px;
 }
+.diamondash .histogram .bar {
+  -webkit-transition: fill-opacity 550ms ease;
+  -moz-transition: fill-opacity 550ms ease;
+  -o-transition: fill-opacity 550ms ease;
+  transition: fill-opacity 550ms ease;
+}
+.diamondash .histogram .value {
+  fill: #eee;
+  text-anchor: middle;
+}
+.diamondash .histogram .not-hover.bar {
+  fill-opacity: 0.5;
+}
+.diamondash .histogram .hover.bar {
+  fill-opacity: 0.9;
+}
+.diamondash .histogram .hover.bar .value {
+  fill-opacity: 1;
+  fill: #333;
+}
 .diamondash .lvalue .widget-body {
   padding: 0;
   text-align: center;
