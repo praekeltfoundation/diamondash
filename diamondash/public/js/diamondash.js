@@ -936,9 +936,11 @@ diamondash.widgets.chart.views = function() {
         ? metric.lastValue()
         : metric.valueAt(this.x);
 
-        return v === null
+        v = v === null
           ? this.model.get('default_value')
           : v;
+
+        return this.format(v);
     },
 
     format: d3.format(",f"),
@@ -1377,12 +1379,17 @@ diamondash.widgets.pie.views = function() {
       widgets = diamondash.widgets;
 
   var PieDimensions = chart.views.ChartDimensions.extend({
+    innerWidth: function() {
+      var margin = this.margin();
+      return this.width() - margin.left - margin.right;
+    },
+
     height: function() {
       return this.width();
     },
 
     radius: function() {
-      return this.width() / 2;
+      return this.innerWidth() / 2;
     },
 
     offset: function() {

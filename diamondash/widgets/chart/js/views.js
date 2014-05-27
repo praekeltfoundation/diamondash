@@ -285,9 +285,11 @@ diamondash.widgets.chart.views = function() {
         ? metric.lastValue()
         : metric.valueAt(this.x);
 
-        return v === null
+        v = v === null
           ? this.model.get('default_value')
           : v;
+
+        return this.format(v);
     },
 
     format: d3.format(",f"),
