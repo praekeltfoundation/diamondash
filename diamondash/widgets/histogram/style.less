@@ -1,2 +1,26 @@
 .histogram {
+  .bar {
+    -webkit-transition: fill-opacity 550ms ease;
+    -moz-transition: fill-opacity 550ms ease;
+    -o-transition: fill-opacity 550ms ease;
+    transition: fill-opacity 550ms ease;
+  }
+
+  .value {
+    fill: #eee;
+    text-anchor: middle;
+  }
+
+  .not-hover.bar {
+    fill-opacity: 0.5;
+  }
+
+  .hover.bar {
+    fill-opacity: 0.9;
+
+    .value {
+      fill-opacity: 1;
+      fill: #333;
+    }
+  }
 }

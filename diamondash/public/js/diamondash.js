@@ -182,6 +182,21 @@ diamondash.utils = function() {
     return ensureDefined(d3.max.apply(null, arguments));
   }
 
+  // adapted from http://erlycoder.com/49/javascript-hash-functions-to-
+  // convert-string-into-integer-hash-
+  function hash(str) {
+    var result = 0;
+    var c;
+
+    for (i = 0; i < str.length; i++) {
+        c = str.charCodeAt(i);
+        result = ((result << 5) - result) + c;
+        result = result & result;
+    }
+
+    return result;
+  }
+
   return {
     functor: functor,
     objectByName: objectByName,
@@ -193,7 +208,8 @@ diamondash.utils = function() {
     basicAuth: basicAuth,
     ensureDefined: ensureDefined,
     min: min,
-    max: max
+    max: max,
+    hash: hash
   };
 }.call(this);
 
@@ -207,23 +223,6 @@ diamondash.components.structures = function() {
   Extendable.extend = Backbone.Model.extend;
 
   var Eventable = Extendable.extend(Backbone.Events);
-
-  var ColorMaker = Extendable.extend({
-    constructor: function(options) {
-      options = _({}).defaults(options, this.defaults);
-      this.colors = options.scale.domain(d3.range(0, options.n));
-      this.i = 0;
-    },
-
-    defaults: {
-      scale: d3.scale.category10(),
-      n: 10
-    },
-
-    next: function() {
-      return this.colors(this.i++);
-    }
-  });
 
   Registry = Eventable.extend({
     constructor: function(items) {
@@ -339,7 +338,6 @@ diamondash.components.structures = function() {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
-    ColorMaker: ColorMaker,
     ViewSet: ViewSet,
     SubviewSet: SubviewSet
   };
@@ -516,7 +514,6 @@ diamondash.widgets.chart = function() {
 diamondash.widgets.chart.models = function() {
   var widgets = diamondash.widgets,
       dynamic = diamondash.widgets.dynamic,
-      structures = diamondash.components.structures,
       utils = diamondash.utils;
 
   var ChartMetricModel = Backbone.RelationalModel.extend({
@@ -580,23 +577,7 @@ diamondash.widgets.chart.models = function() {
     }
   });
 
-  var ChartMetricCollection = Backbone.Collection.extend({
-    colorOptions: {
-      n: 10,
-      scale: d3.scale.category10()
-    },
-
-    initialize: function() {
-      this.colors = new structures.ColorMaker(this.colorOptions);
-      utils.bindEvents(this.bindings, this);
-    },
-
-    bindings: {
-      'add': function(metric) {
-        metric.set('color', this.colors.next());
-      }
-    }
-  });
+  var ChartMetricCollection = Backbone.Collection.extend({});
 
   var ChartModel = dynamic.DynamicWidgetModel.extend({
     relations: [{
@@ -894,6 +875,13 @@ diamondash.widgets.chart.views = function() {
       }, this);
     },
 
+    color: function() {
+      var color = d3.scale.category20();
+      return function(metric) {
+        return color(utils.hash(metric.get('name')) % metric.collection.size());
+      };
+    }(),
+
     refreshDims: function() {
       var offset = this.dims.offset();
       var margin = this.dims.margin();
@@ -942,6 +930,7 @@ diamondash.widgets.chart.views = function() {
     format: d3.format(",f"),
 
     render: function() {
+      var self = this;
       var metrics = this.model.get('metrics');
       this.$el.html(this.jst({self: this}));
 
@@ -951,7 +940,7 @@ diamondash.widgets.chart.views = function() {
 
         $el
           .find('.swatch')
-          .css('background-color', metrics.get(id).get('color'));
+          .css('background-color', self.chart.color(metrics.get(id)));
       });
 
       return this;
@@ -1113,6 +1102,8 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
+      var self = this;
+
       var metricDots = this.graph.canvas
         .selectAll('.metric-dots')
         .data(this.graph.model.get('metrics').models);
@@ -1120,7 +1111,7 @@ diamondash.widgets.graph.views = function() {
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
         .attr('data-metric-id', function(d) { return d.get('id'); })
-        .style('fill', function(d) { return d.get('color'); });
+        .style('fill', function(d) { return self.graph.color(d); });
 
       metricDots.exit().remove();
 
@@ -1143,6 +1134,8 @@ diamondash.widgets.graph.views = function() {
 
     bindings: {
       'hover graph': function(position) {
+        var self = this;
+
         var data = this.graph.model
           .get('metrics')
           .map(function(metric) {
@@ -1163,7 +1156,7 @@ diamondash.widgets.graph.views = function() {
           .attr('class', 'hover-dot')
           .attr('r', 0)
           .style('stroke', function(d) {
-            return d.metric.get('color');
+            return self.graph.color(d.metric);
           })
           .transition()
             .attr('r', this.hoverSize);
@@ -1190,6 +1183,8 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
+      var self = this;
+
       this.line.interpolate(this.graph.model.get('smooth')
         ? 'monotone'
         : 'linear');
@@ -1201,9 +1196,8 @@ diamondash.widgets.graph.views = function() {
       line.enter().append('path')
         .attr('class', 'metric-line')
         .attr('data-metric-id', function(d) { return d.get('id'); })
-        .style('stroke', function(d) { return d.get('color'); });
+        .style('stroke', function(d) { return self.graph.color(d); });
 
-      var self = this;
       line.attr('d', function(d) {
         return self.line(d.get('datapoints'));
       });
@@ -1273,24 +1267,37 @@ diamondash.widgets.histogram.models = function() {
 }.call(this);
 
 diamondash.widgets.histogram.views = function() {
-  var chart = diamondash.widgets.chart,
+  var utils = diamondash.utils,
+      chart = diamondash.widgets.chart,
       widgets = diamondash.widgets;
 
   var HistogramView = chart.views.XYChartView.extend({
     height: 278,
+    topMargin: 14,
     barPadding: 2,
+    format: {
+      short: d3.format(".2s"),
+      long: d3.format(",f")
+    },
 
     initialize: function() {
       HistogramView.__super__.initialize.call(this);
+      this.dims.set('margin', _.extend(this.dims.get('margin'), {
+        top: this.topMargin
+      }));
+      utils.bindEvents(this.bindings, this);
     },
 
-    render: function() {
-      HistogramView.__super__.render.call(this);
-
+    draw: function() {
       var self = this;
       var metric = this.model.get('metrics').at(0);
       var bucketSize = this.model.get('bucket_size');
       var maxY = this.fy.range()[0];
+      var barWidth = this.fx(bucketSize) - this.fx(0) - this.barPadding;
+
+      function data(d) {
+        return [d];
+      }
 
       function key(d) {
         return d.x;
@@ -1310,22 +1317,74 @@ diamondash.widgets.histogram.views = function() {
         return "translate(" + x + "," + y + ")";
       });
 
-      var rect = bar.selectAll('rect')
-        .data(function(d) {
-          return [d];
-        }, key);
-
+      var rect = bar.selectAll('rect').data(data, key);
       rect.enter().append('rect');
 
       rect
-        .style('fill', metric.get('color'))
-        .attr('width', this.fx(bucketSize) - this.fx(0) - this.barPadding)
+        .style('fill', this.color(metric))
+        .style('pointer-events', 'none')
+        .attr('width', barWidth)
         .attr('height', function(d) {
           return maxY - self.fy(d.y);
         });
 
+      var text = bar.selectAll('.value')
+        .data(data, key);
+
+      text.enter().append('text')
+        .attr('class', 'value')
+        .attr("dy", ".75em");
+
+      text
+        .attr("x", barWidth / 2)
+        .attr("y", 6)
+        .text(function(d) {
+          return self.format.short(d.y);
+        });
+
+      this.svg.selectAll('.hover.bar .value')
+        .attr("y", -15)
+        .text(function(d) {
+          return self.format.long(d.y);
+        });
+    },
+
+    render: function() {
+      HistogramView.__super__.render.call(this);
+      this.draw();
       this.$el.append($(this.svg.node()));
       return this;
+    },
+
+    bindings: {
+      'hover': function(position) {
+        var bucketSize = this.model.get('bucket_size');
+
+        function match(d) {
+          return d.x === (position.x + bucketSize);
+        }
+
+        this.svg.selectAll('.bar')
+          .sort(function(d) {
+            return match(d)
+              ? 1
+              : 0;
+          })
+          .attr('class', function(d) {
+            return match(d)
+              ? 'hover bar'
+              : 'not-hover bar';
+          });
+
+        this.draw();
+      },
+
+      'unhover': function() {
+        this.svg.selectAll('.bar')
+          .attr('class', 'bar');
+
+        this.draw();
+      }
     }
   });
 
@@ -1408,6 +1467,8 @@ diamondash.widgets.pie.views = function() {
     },
 
     renderChart: function() {
+      var self = this;
+
       var metrics = this.model
         .get('metrics')
         .filter(function(m) {
@@ -1426,7 +1487,7 @@ diamondash.widgets.pie.views = function() {
       arc.enter().append('path')
         .attr('class', 'arc')
         .style('fill', function(d) {
-          return d.data.get('color');
+          return self.color(d.data);
         });
 
       arc.attr('d', this.arc);

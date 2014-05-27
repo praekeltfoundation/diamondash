@@ -137,18 +137,15 @@ describe("diamondash.widgets.graph", function() {
            graph
              .$('.metric-line[data-metric-id=metric-a]')
              .css('stroke'),
-
-         metrics
-           .get('metric-a')
-           .get('color'));
+           graph
+            .color(metrics.get('metric-a')));
 
          assert.equal(
            graph
              .$('.metric-line[data-metric-id=metric-b]')
              .css('stroke'),
-           metrics
-             .get('metric-b')
-             .get('color'));
+           graph
+            .color(metrics.get('metric-b')));
       });
     });
   });

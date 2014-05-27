@@ -51,6 +51,8 @@ diamondash.widgets.pie.views = function() {
     },
 
     renderChart: function() {
+      var self = this;
+
       var metrics = this.model
         .get('metrics')
         .filter(function(m) {
@@ -69,7 +71,7 @@ diamondash.widgets.pie.views = function() {
       arc.enter().append('path')
         .attr('class', 'arc')
         .style('fill', function(d) {
-          return d.data.get('color');
+          return self.color(d.data);
         });
 
       arc.attr('d', this.arc);
