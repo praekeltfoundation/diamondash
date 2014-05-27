@@ -4,27 +4,6 @@ diamondash.components.structures = function() {
 
   var Eventable = Extendable.extend(Backbone.Events);
 
-  var ColorMaker = Extendable.extend({
-    constructor: function(options) {
-      options = _({}).defaults(options, this.defaults);
-      this.n = options.n;
-      this.colors = options.scale.domain(d3.range(0, this.n));
-      this.i = diamondash.utils.functor(options.i).call(this);
-    },
-
-    defaults: {
-      i: function() {
-        return _.random(this.n);
-      },
-      scale: d3.scale.category20(),
-      n: 20
-    },
-
-    next: function() {
-      return this.colors(this.i++);
-    }
-  });
-
   Registry = Eventable.extend({
     constructor: function(items) {
       this.items = {};
@@ -139,7 +118,6 @@ diamondash.components.structures = function() {
     Extendable: Extendable,
     Eventable: Eventable,
     Registry: Registry,
-    ColorMaker: ColorMaker,
     ViewSet: ViewSet,
     SubviewSet: SubviewSet
   };

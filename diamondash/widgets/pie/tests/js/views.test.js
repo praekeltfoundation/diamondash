@@ -107,10 +107,9 @@ describe("diamondash.widgets.pie", function() {
         assert.equal($actual.eq(1).attr('d'), $expected.eq(1).attr('d'));
         assert.equal($actual.eq(2).attr('d'), $expected.eq(2).attr('d'));
 
-        var metrics = pie.model.get('metrics');
-        assert.equal($actual.eq(0).css('fill'), metrics.at(0).get('color'));
-        assert.equal($actual.eq(1).css('fill'), metrics.at(1).get('color'));
-        assert.equal($actual.eq(2).css('fill'), metrics.at(2).get('color'));
+        assert.equal($actual.eq(0).css('fill'), $actual.eq(0).css('fill'));
+        assert.equal($actual.eq(1).css('fill'), $actual.eq(1).css('fill'));
+        assert.equal($actual.eq(2).css('fill'), $actual.eq(2).css('fill'));
       });
 
       it("should re-render correctly based on model changes", function() {

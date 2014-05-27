@@ -233,30 +233,4 @@ describe("diamondash.components.structures", function() {
       });
     });
   });
-
-  describe(".ColorMaker", function() {
-    it("should randomize the starting color index", function() {
-        sinon.stub(_, 'random', function() {
-          var i = 0;
-
-          return function() {
-            return [3, 4][i++];
-          };
-        }());
-
-        var colors1 = new structures.ColorMaker();
-        var colors2 = new structures.ColorMaker();
-        assert.notEqual(colors1.next(), colors2.next());
-
-        _.random.restore();
-    });
-
-    describe(".next", function() {
-      it("should return the next color", function() {
-        var colors = new structures.ColorMaker({i: 0});
-        assert.equal(colors.next(), '#1f77b4');
-        assert.equal(colors.next(), '#aec7e8');
-      });
-    });
-  });
 });

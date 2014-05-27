@@ -53,7 +53,7 @@ diamondash.widgets.histogram.views = function() {
       rect.enter().append('rect');
 
       rect
-        .style('fill', metric.get('color'))
+        .style('fill', this.color(metric))
         .style('pointer-events', 'none')
         .attr('width', barWidth)
         .attr('height', function(d) {

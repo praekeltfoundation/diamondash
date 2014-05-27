@@ -240,6 +240,13 @@ diamondash.widgets.chart.views = function() {
       }, this);
     },
 
+    color: function() {
+      var color = d3.scale.category20();
+      return function(metric) {
+        return color(utils.hash(metric.get('name')));
+      };
+    }(),
+
     refreshDims: function() {
       var offset = this.dims.offset();
       var margin = this.dims.margin();
@@ -286,6 +293,7 @@ diamondash.widgets.chart.views = function() {
     format: d3.format(",f"),
 
     render: function() {
+      var self = this;
       var metrics = this.model.get('metrics');
       this.$el.html(this.jst({self: this}));
 
@@ -295,7 +303,7 @@ diamondash.widgets.chart.views = function() {
 
         $el
           .find('.swatch')
-          .css('background-color', metrics.get(id).get('color'));
+          .css('background-color', self.chart.color(metrics.get(id)));
       });
 
       return this;

@@ -16,6 +16,8 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
+      var self = this;
+
       var metricDots = this.graph.canvas
         .selectAll('.metric-dots')
         .data(this.graph.model.get('metrics').models);
@@ -23,7 +25,7 @@ diamondash.widgets.graph.views = function() {
       metricDots.enter().append('g')
         .attr('class', 'metric-dots')
         .attr('data-metric-id', function(d) { return d.get('id'); })
-        .style('fill', function(d) { return d.get('color'); });
+        .style('fill', function(d) { return self.graph.color(d); });
 
       metricDots.exit().remove();
 
@@ -46,6 +48,8 @@ diamondash.widgets.graph.views = function() {
 
     bindings: {
       'hover graph': function(position) {
+        var self = this;
+
         var data = this.graph.model
           .get('metrics')
           .map(function(metric) {
@@ -66,7 +70,7 @@ diamondash.widgets.graph.views = function() {
           .attr('class', 'hover-dot')
           .attr('r', 0)
           .style('stroke', function(d) {
-            return d.metric.get('color');
+            return self.graph.color(d.metric);
           })
           .transition()
             .attr('r', this.hoverSize);
@@ -93,6 +97,8 @@ diamondash.widgets.graph.views = function() {
     },
 
     render: function() {
+      var self = this;
+
       this.line.interpolate(this.graph.model.get('smooth')
         ? 'monotone'
         : 'linear');
@@ -104,9 +110,8 @@ diamondash.widgets.graph.views = function() {
       line.enter().append('path')
         .attr('class', 'metric-line')
         .attr('data-metric-id', function(d) { return d.get('id'); })
-        .style('stroke', function(d) { return d.get('color'); });
+        .style('stroke', function(d) { return self.graph.color(d); });
 
-      var self = this;
       line.attr('d', function(d) {
         return self.line(d.get('datapoints'));
       });
