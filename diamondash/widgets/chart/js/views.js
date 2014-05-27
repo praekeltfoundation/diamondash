@@ -243,7 +243,7 @@ diamondash.widgets.chart.views = function() {
     color: function() {
       var color = d3.scale.category20();
       return function(metric) {
-        return color(utils.hash(metric.get('name')));
+        return color(utils.hash(metric.get('name')) % metric.collection.size());
       };
     }(),
 
