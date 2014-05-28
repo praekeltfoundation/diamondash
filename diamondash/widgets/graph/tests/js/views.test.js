@@ -1,247 +1,12 @@
 describe("diamondash.widgets.graph", function() {
   var utils = diamondash.utils,
-  testUtils = diamondash.test.utils,
-  fixtures = diamondash.test.fixtures,
-  views = diamondash.widgets.graph.views,
-  models = diamondash.widgets.graph.models;
-
-  function hover(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-    graph.trigger('hover', graph.positionOf(coords));
-  }
-
-  hover.inverse = function(graph, coords) {
-    coords = _(coords || {}).defaults({x: 0, y: 0});
-
-    this(graph, {
-      x: graph.fx(coords.x),
-      y: graph.fy(coords.y)
-    });
-  };
+      testUtils = diamondash.test.utils,
+      fixtures = diamondash.test.fixtures,
+      views = diamondash.widgets.graph.views,
+      models = diamondash.widgets.graph.models;
 
   afterEach(function() {
     testUtils.unregisterModels();
-  });
-
-  describe("GraphLegendView", function() {
-    var legend,
-    graph;
-
-    beforeEach(function() {
-      graph = new views.GraphView({
-        el: $('<div>')
-        .width(960)
-        .height(64),
-        model: new models.GraphModel(
-          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
-      });
-
-      legend = graph.legend;
-    });
-
-    describe("if the graph metrics have no datapoints", function() {
-      beforeEach(function() {
-        graph.model.get('metrics').each(function(m) {
-          m.set('datapoints', []);
-        });
-      });
-
-      it("should use the graph's default value", function() {
-        graph.model.set('default_value', -1);
-        legend.render();
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          -1);
-
-          assert.equal(
-            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-            -1);
-      });
-    });
-
-    describe("when the graph is hovered over", function() {
-      beforeEach(function() {
-        legend.render();
-      });
-
-      it("should add a 'hover' class to the legend", function() {
-        assert(!legend.$el.hasClass('hover'));
-        hover.inverse(graph, {x: 1340876295000});
-        assert(legend.$el.hasClass('hover'));
-      });
-
-      it("should display the metric values at the hovered over time interval",
-         function() {
-           assert.equal(
-             legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-             24);
-
-             assert.equal(
-               legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-               16);
-
-               hover.inverse(graph, {x: 1340876295000});
-
-               assert.equal(
-                 legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-                 12);
-
-                 assert.equal(
-                   legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-                   22);
-         });
-    });
-
-    describe("when the graph is unhovered", function() {
-      beforeEach(function() {
-        legend.render();
-      });
-
-      it("should remove the 'hover' class from the legend", function() {
-        hover.inverse(graph, {x: 1340876295000});
-        assert(legend.$el.hasClass('hover'));
-
-        graph.trigger('unhover');
-        assert(!legend.$el.hasClass('hover'));
-      });
-
-      it("should display the last metric values", function() {
-        hover.inverse(graph, {x: 1340876295000});
-
-        assert.equal(
-          legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-          12);
-
-          assert.equal(
-            legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-            22);
-
-            graph.trigger('unhover');
-
-            assert.equal(
-              legend.$('.legend-item[data-metric-id=metric-a] .value').text(),
-              24);
-
-              assert.equal(
-                legend.$('.legend-item[data-metric-id=metric-b] .value').text(),
-                16);
-      });
-    });
-  });
-
-  describe("GraphHoverMarker", function() {
-    var marker,
-    graph;
-
-    function markerOpacities() {
-      var opacities = {};
-
-      graph.axis.line
-      .selectAll('g')
-      .each(function(tick) {
-        if (tick) {
-          opacities[tick] = $(this).css('fill-opacity');
-        }
-      });
-
-      return opacities;
-    }
-
-    beforeEach(function() {
-      graph = new views.GraphView({
-        el: $('<div>')
-        .width(960)
-        .height(64),
-        model: new models.GraphModel(
-          fixtures.get('diamondash.widgets.graph.models.GraphModel:simple'))
-      });
-
-      marker = graph.hoverMarker;
-    });
-
-    describe("when the graph is hovered over", function() {
-      beforeEach(function() {
-        graph.render();
-      });
-
-      it("should show the marker", function() {
-        assert.equal(graph.$('.hover-marker').length, 0);
-
-        hover.inverse(graph, {x: 1340876295000});
-
-        assert.equal(graph.$('.hover-marker').length, 1);
-        assert.equal(graph.$('.hover-marker').text(), '28-06 09:38');
-      });
-
-      it("should hide nearby axis markers", function() {
-        assert.deepEqual(markerOpacities(), {
-          1340875995000: '',
-          1340876295000: '',
-          1340876595000: '',
-          1340876895000: '',
-          1340877195000: '',
-          1340877495000: ''
-        });
-
-        hover.inverse(graph, {x: 1340876295000});
-
-        assert.deepEqual(markerOpacities(), {
-          1340875995000: '1',
-          1340876295000: '0',
-          1340876595000: '1',
-          1340876895000: '1',
-          1340877195000: '1',
-          1340877495000: '1'
-        });
-      });
-
-      it("shouldn't show the hover marker if the graph has no datapoints",
-      function() {
-        graph.model.get('metrics').each(function(m) {
-          m.set('datapoints', []);
-        });
-
-        hover(graph);
-
-        assert.equal(graph.$('.hover-marker').length, 0);
-      });
-    });
-
-    describe("when the graph is unhovered", function() {
-      beforeEach(function() {
-        graph.render();
-        hover.inverse(graph, {x: 1340876295000});
-      });
-
-      it("should hide the marker", function() {
-        assert.equal(graph.$('.hover-marker').length, 1);
-        graph.trigger('unhover');
-        assert.equal(graph.$('.hover-marker').length, 0);
-      });
-
-      it("should unhide all axis markers", function() {
-        assert.deepEqual(markerOpacities(), {
-          1340875995000: '1',
-          1340876295000: '0',
-          1340876595000: '1',
-          1340876895000: '1',
-          1340877195000: '1',
-          1340877495000: '1'
-        });
-
-        graph.trigger('unhover');
-
-        assert.deepEqual(markerOpacities(), {
-          1340875995000: '1',
-          1340876295000: '1',
-          1340876595000: '1',
-          1340876895000: '1',
-          1340877195000: '1',
-          1340877495000: '1'
-        });
-      });
-    });
   });
 
   describe("GraphDots", function() {
@@ -289,9 +54,9 @@ describe("diamondash.widgets.graph", function() {
           metrics.get('metric-a').get('datapoints'),
           metricDotCoords('metric-a'));
 
-          assert.deepEqual(
-            metrics.get('metric-b').get('datapoints'),
-            metricDotCoords('metric-b'));
+        assert.deepEqual(
+          metrics.get('metric-b').get('datapoints'),
+          metricDotCoords('metric-b'));
       });
     });
 
@@ -302,20 +67,20 @@ describe("diamondash.widgets.graph", function() {
 
       it("should display dots at the hovered over location", function() {
         assert.equal(graph.$('.hover-dot').length, 0);
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
         assert.equal(graph.$('.hover-dot').length, 2);
 
         assert.deepEqual(
           utils.d3Map(graph.svg.selectAll('.hover-dot'), dotToCoords),
           [{x: 1340876295000, y: 12},
-            {x: 1340876295000, y: 22}]);
+           {x: 1340876295000, y: 22}]);
       });
     });
 
     describe("when the graph is unhovered", function() {
       beforeEach(function() {
         graph.render();
-        hover.inverse(graph, {x: 1340876295000});
+        testUtils.hover_axes(graph, {x: 1340876295000});
       });
 
       it("should not display any hover dots", function() {
@@ -352,38 +117,36 @@ describe("diamondash.widgets.graph", function() {
 
         assert.strictEqual(
           graph.svg
-          .select('.metric-line[data-metric-id=metric-a]')
-          .datum(),
+            .select('.metric-line[data-metric-id=metric-a]')
+            .datum(),
           metrics.get('metric-a'));
 
-          assert.strictEqual(
-            graph.svg
+        assert.strictEqual(
+          graph.svg
             .select('.metric-line[data-metric-id=metric-b]')
             .datum(),
-            metrics.get('metric-b'));
+          metrics.get('metric-b'));
       });
 
       it("should color the lines according to the metrics' colors",
-         function() {
-           var metrics = graph.model.get('metrics');
-           lines.render();
+      function() {
+         var metrics = graph.model.get('metrics');
+         lines.render();
 
-           assert.equal(
-             graph
+         assert.equal(
+           graph
              .$('.metric-line[data-metric-id=metric-a]')
              .css('stroke'),
-             metrics
-             .get('metric-a')
-             .get('color'));
+           graph
+            .color(metrics.get('metric-a')));
 
-             assert.equal(
-               graph
-               .$('.metric-line[data-metric-id=metric-b]')
-               .css('stroke'),
-               metrics
-               .get('metric-b')
-               .get('color'));
-         });
+         assert.equal(
+           graph
+             .$('.metric-line[data-metric-id=metric-b]')
+             .css('stroke'),
+           graph
+            .color(metrics.get('metric-b')));
+      });
     });
   });
 
@@ -418,30 +181,30 @@ describe("diamondash.widgets.graph", function() {
           domain(),
           [1340875995000, 1340877495000]);
 
-          assert.deepEqual(
-            range(),
-            [2, 24]);
+        assert.deepEqual(
+          range(),
+          [2, 24]);
 
-            graph.model.get('metrics').set([{
-              id: 'metric-a',
-              datapoints: [{
-                x: 1340875998000,
-                y: 3
-              }, {
-                x: 1340877498000,
-                y: 25
-              }]
-            }]);
+        graph.model.get('metrics').set([{
+          id: 'metric-a',
+          datapoints: [{
+            x: 1340875998000,
+            y: 3
+          }, {
+            x: 1340877498000,
+            y: 25
+          }]
+        }]);
 
-            graph.render();
+        graph.render();
 
-            assert.deepEqual(
-              domain(),
-              [1340875998000, 1340877498000]);
+        assert.deepEqual(
+          domain(),
+          [1340875998000, 1340877498000]);
 
-              assert.deepEqual(
-                range(),
-                [3, 25]);
+        assert.deepEqual(
+          range(),
+          [3, 25]);
       });
 
       it("draw render its lines", function() {
@@ -481,41 +244,6 @@ describe("diamondash.widgets.graph", function() {
           graph.render();
           assert.equal(graph.$('.metric-dots').length, 2);
         });
-      });
-    });
-
-    describe("when the mouse is moved over the graph", function() {
-      var coords;
-
-      beforeEach(function() {
-        graph.render();
-
-        sinon.stub(d3, 'mouse', function() {
-          return [190.4, -11];
-        });
-      });
-
-      afterEach(function() {
-        d3.mouse.restore();
-      });
-
-      it("should trigger an event with the calculated position information",
-         function(done) {
-           graph.on('hover', function(position) {
-             assert.equal(position.x, 1340876295000);
-             assert.equal(position.svg.x, 190.4);
-             assert.equal(position.svg.y, -11);
-             done();
-           });
-
-           graph.trigger('mousemove', {});
-         });
-    });
-
-    describe("when the mouse is moved away from the graph", function() {
-      it("should trigger an event", function(done) {
-        graph.on('unhover', function() { done(); });
-        graph.trigger('mouseout');
       });
     });
   });

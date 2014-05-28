@@ -1,7 +1,6 @@
 diamondash.widgets.chart.models = function() {
   var widgets = diamondash.widgets,
       dynamic = diamondash.widgets.dynamic,
-      structures = diamondash.components.structures,
       utils = diamondash.utils;
 
   var ChartMetricModel = Backbone.RelationalModel.extend({
@@ -65,23 +64,7 @@ diamondash.widgets.chart.models = function() {
     }
   });
 
-  var ChartMetricCollection = Backbone.Collection.extend({
-    colorOptions: {
-      n: 10,
-      scale: d3.scale.category10()
-    },
-
-    initialize: function() {
-      this.colors = new structures.ColorMaker(this.colorOptions);
-      utils.bindEvents(this.bindings, this);
-    },
-
-    bindings: {
-      'add': function(metric) {
-        metric.set('color', this.colors.next());
-      }
-    }
-  });
+  var ChartMetricCollection = Backbone.Collection.extend({});
 
   var ChartModel = dynamic.DynamicWidgetModel.extend({
     relations: [{

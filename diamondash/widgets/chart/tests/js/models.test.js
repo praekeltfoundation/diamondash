@@ -87,25 +87,6 @@ describe("diamondash.widgets.chart.models", function() {
     });
   });
 
-  describe("ChartMetricCollection", function() {
-    var collection;
-
-    beforeEach(function() {
-      collection = new models.ChartMetricCollection();
-    });
-
-    describe("when a metric is added", function() {
-      it("should assign it a color", function(done) {
-        collection.on('add', function(metric) {
-          assert.equal(metric.get('color'), '#1f77b4');
-          done();
-        });
-
-        collection.add({name: 'foo'});
-      });
-    });
-  });
-
   describe(".ChartModel", function() {
     var model;
 
