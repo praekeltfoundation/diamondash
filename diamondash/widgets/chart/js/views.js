@@ -241,9 +241,9 @@ diamondash.widgets.chart.views = function() {
     },
 
     color: function() {
-      var color = d3.scale.category20();
+      var color = d3.scale.category10();
       return function(metric) {
-        return color(utils.hash(metric.get('name')) % metric.collection.size());
+        return color(metric.get('name'));
       };
     }(),
 
