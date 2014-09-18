@@ -90,21 +90,6 @@ diamondash.utils = function() {
     return ensureDefined(d3.max.apply(null, arguments));
   }
 
-  // adapted from http://erlycoder.com/49/javascript-hash-functions-to-
-  // convert-string-into-integer-hash-
-  function hash(str) {
-    var result = 0;
-    var c;
-
-    for (i = 0; i < str.length; i++) {
-        c = str.charCodeAt(i);
-        result = ((result << 5) - result) + c;
-        result = result & result;
-    }
-
-    return result;
-  }
-
   return {
     functor: functor,
     objectByName: objectByName,
@@ -116,7 +101,6 @@ diamondash.utils = function() {
     basicAuth: basicAuth,
     ensureDefined: ensureDefined,
     min: min,
-    max: max,
-    hash: hash
+    max: max
   };
 }.call(this);
