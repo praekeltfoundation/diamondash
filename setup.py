@@ -36,7 +36,7 @@ install_requires, dependency_links = parse_requirements(
 
 setup(
     name="diamondash",
-    version="0.4.0",
+    version="0.5.0-dev",
     url='https://github.com/praekelt/diamondash',
     license='BSD',
     description="A dashboard frontend for Graphite",
