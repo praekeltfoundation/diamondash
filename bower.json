@@ -9,7 +9,6 @@
   "private": false,
   "dependencies": {
     "backbone": "~1.1.2",
-    "underscore": "~1.6.0",
     "d3": "~3.3.3",
     "bootstrap": "~3.0.0",
     "jquery": "~2.0.3",
@@ -19,7 +18,7 @@
   },
   "devDependencies": {
     "chai": "~1.7.2",
-    "sinon": "http://sinonjs.org/releases/sinon-1.7.3.js"
+    "sinon": "http://sinonjs.org/releases/sinon-1.10.3.js"
   },
   "resolutions": {
     "underscore": ">=1.5.0"
